@@ -50,12 +50,9 @@ jobs:
         run: go mod download
 
       - name: Install standard golangci-lint (fallback)
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v8
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
-          skip-cache: true
-          skip-pkg-cache: true
-          skip-build-cache: true
           args: --version
 
       - name: Build custom linter plugins
