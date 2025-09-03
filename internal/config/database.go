@@ -25,7 +25,7 @@ func (conf PostgresDB) Engine() string {
 }
 
 type RedisDB struct {
-	Addr     string `validate:"required" usage:"storage address in format ip:port"`
+	Addr     string `yaml:"addr" usage:"storage address in format ip:port"`
 	User     string `secret:"true" usage:"storage user password"`
 	Password string `secret:"true" usage:"storage db name"`
 	DBIndex  int    `yaml:"db_index" usage:"index of database"`
