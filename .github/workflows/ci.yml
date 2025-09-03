@@ -37,6 +37,11 @@ jobs:
       - name: Create .bin directory
         run: mkdir -p .bin
 
+      - name: Create frontend dist directory
+        run: |
+          mkdir -p frontend/dist
+          echo "/* Empty file for CI build */" > frontend/dist/dummy.txt
+
       - name: Cache custom linter binary
         uses: actions/cache@v4
         with:
@@ -100,16 +105,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-build-
 
-      - name: Make scripts executable
+      - name: Create frontend dist directory
         run: |
-          chmod +x ./scripts/version.sh
-          find ./scripts -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
-
-      - name: Create mock .env file for CI
-        run: |
-          mkdir -p .docker/dev
-          touch .docker/dev/.env
-          echo "# Mock env file for CI" > .docker/dev/.env
+          mkdir -p frontend/dist
+          echo "/* Empty file for CI build */" > frontend/dist/dummy.txt
 
       - name: Build application
         run: |
@@ -117,9 +116,9 @@ jobs:
           make build
           
           # Verify binary was created
-          if [ -f ".bin/github.com/dv-net/dv-merchant" ]; then
+          if [ -f ".bin/dv-merchant" ]; then
             echo "✅ Binary built successfully"
-            ls -la .bin/github.com/dv-net/
+            ls -la .bin/
           else
             echo "❌ Binary not found"
             exit 1
@@ -129,5 +128,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dv-merchant-binary
-          path: .bin/github.com/dv-net/dv-merchant
+          path: .bin/dv-merchant
           retention-days: 7
