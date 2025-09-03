@@ -1,0 +1,29 @@
+CREATE TABLE IF NOT EXISTS monitor_types (
+    id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    slug VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    error_count INT NOT NULL DEFAULT 0,
+    error_count_notify_limit INT NOT NULL DEFAULT 3,
+    start_params JSONB NOT NULL DEFAULT '{}',
+    notify_params JSONB NOT NULL DEFAULT '{}',
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS monitors_messages (
+    id uuid PRIMARY KEY default gen_random_uuid(),
+    monitor_id uuid NOT NULL,
+    failure boolean NOT NULL DEFAULT FALSE,
+    level varchar(100) NOT NULL,
+    message text NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS monitors (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+    monitor_type_id INT NOT NULL,
+    failed BOOLEAN NOT NULL DEFAULT FALSE,
+    finished BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NULL
+);

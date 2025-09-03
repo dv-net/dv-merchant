@@ -1,0 +1,1 @@
+ALTER TABLE exchange_keys ADD CONSTRAINT exchange_id_name_uniq UNIQUE (exchange_id,name);

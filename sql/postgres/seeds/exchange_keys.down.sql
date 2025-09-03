@@ -1,0 +1,1 @@
+DELETE FROM exchange_keys where exchange_id in ('0b08e649-b009-47c9-87c8-4dff132f5362', '4975c77c-7591-4943-8f02-e6ad62172dab');

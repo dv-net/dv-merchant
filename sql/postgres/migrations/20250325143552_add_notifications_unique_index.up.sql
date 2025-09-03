@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS notifications_unique_type_idx ON notifications (type);

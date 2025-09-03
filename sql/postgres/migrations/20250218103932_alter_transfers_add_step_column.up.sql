@@ -1,0 +1,1 @@
+alter table if exists transfers add column if not exists step varchar(255);

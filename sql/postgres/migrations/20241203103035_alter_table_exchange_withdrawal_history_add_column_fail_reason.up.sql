@@ -1,0 +1,1 @@
+ALTER TABLE exchange_withdrawal_history ADD COLUMN fail_reason TEXT NULL;

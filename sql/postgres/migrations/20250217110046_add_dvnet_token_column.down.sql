@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS users DROP COLUMN IF EXISTS dvnet_token;

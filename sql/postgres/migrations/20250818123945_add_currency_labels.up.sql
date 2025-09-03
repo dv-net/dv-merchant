@@ -1,0 +1,3 @@
+ALTER TABLE currencies 
+ADD COLUMN currency_label VARCHAR(255) NULL,
+ADD COLUMN token_label VARCHAR(255) NULL;

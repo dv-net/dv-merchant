@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS withdrawal_wallets ADD CONSTRAINT uniq_user_currency UNIQUE (currency_id, user_id);

@@ -1,0 +1,948 @@
+basePath: /api
+definitions:
+  APIError:
+    properties:
+      field:
+        type: string
+      message:
+        type: string
+    type: object
+  APIErrors:
+    properties:
+      code:
+        type: integer
+      errors:
+        items:
+          $ref: '#/definitions/APIError'
+        type: array
+    type: object
+  Asset:
+    properties:
+      amount:
+        type: string
+      amount_usd:
+        type: string
+      currency_id:
+        type: string
+      identity:
+        type: string
+    type: object
+  Balance:
+    properties:
+      native_token:
+        type: string
+      native_token_usd:
+        type: string
+    type: object
+  Blockchain:
+    enum:
+    - arbitrum
+    - bitcoin
+    - bitcoincash
+    - bsc
+    - dogecoin
+    - ethereum
+    - litecoin
+    - polygon
+    - tron
+    type: string
+    x-enum-varnames:
+    - BlockchainArbitrum
+    - BlockchainBitcoin
+    - BlockchainBitcoinCash
+    - BlockchainBinanceSmartChain
+    - BlockchainDogecoin
+    - BlockchainEthereum
+    - BlockchainLitecoin
+    - BlockchainPolygon
+    - BlockchainTron
+  BlockchainAdditionalData:
+    properties:
+      evm_data:
+        $ref: '#/definitions/wallet.EVMData'
+      tron_data:
+        $ref: '#/definitions/TronData'
+    type: object
+  CreateProcessingWithdrawRequest:
+    properties:
+      address_to:
+        maxLength: 255
+        minLength: 16
+        type: string
+      amount:
+        type: number
+      currency_id:
+        type: string
+      request_id:
+        maxLength: 255
+        minLength: 1
+        type: string
+    required:
+    - address_to
+    - amount
+    - currency_id
+    - request_id
+    type: object
+  CreateWalletExternalRequest:
+    properties:
+      amount:
+        type: number
+      currency:
+        type: string
+      email:
+        format: email
+        type: string
+      ip:
+        format: ipv4
+        type: string
+      locale:
+        type: string
+      store_external_id:
+        format: uuid
+        type: string
+    required:
+    - store_external_id
+    type: object
+  CreateWalletExternalResponse:
+    properties:
+      address:
+        items:
+          $ref: '#/definitions/WalletAddressResponse'
+        type: array
+      amount_usd:
+        type: string
+      created_at:
+        format: date-time
+        type: string
+      id:
+        type: string
+      pay_url:
+        type: string
+      rates:
+        additionalProperties:
+          type: string
+        type: object
+      store_external_id:
+        type: string
+      store_id:
+        type: string
+      updated_at:
+        format: date-time
+        type: string
+    type: object
+  CurrencyDTO:
+    properties:
+      blockchain:
+        $ref: '#/definitions/Blockchain'
+      code:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      sort_order:
+        type: integer
+    type: object
+  CurrencyIcon:
+    properties:
+      icon_128:
+        type: string
+      icon_512:
+        type: string
+      icon_svg:
+        type: string
+    type: object
+  CurrencyRate:
+    properties:
+      code:
+        type: string
+      rate:
+        type: string
+      rate_source:
+        type: string
+    type: object
+  CurrencyShort:
+    properties:
+      blockchain:
+        $ref: '#/definitions/Blockchain'
+      code:
+        type: string
+      id:
+        type: string
+      is_bitcoin_like:
+        type: boolean
+      is_evm_like:
+        type: boolean
+      name:
+        type: string
+      precision:
+        type: integer
+    type: object
+  ExchangeAsset:
+    properties:
+      amount:
+        type: number
+      amount_usd:
+        type: number
+      currency:
+        type: string
+    type: object
+  ExternalExchangeBalanceResponse:
+    properties:
+      balances:
+        items:
+          $ref: '#/definitions/ExchangeAsset'
+        type: array
+      total_usd:
+        type: number
+    type: object
+  GetCurrencyResponse:
+    properties:
+      blockchain:
+        type: string
+      blockchain_icon:
+        $ref: '#/definitions/CurrencyIcon'
+      code:
+        type: string
+      contract_address:
+        type: string
+      explorer_link:
+        type: string
+      has_balance:
+        type: boolean
+      icon:
+        $ref: '#/definitions/CurrencyIcon'
+      id:
+        type: string
+      is_fiat:
+        type: boolean
+      min_confirmation:
+        type: integer
+      name:
+        type: string
+      precision:
+        type: integer
+      status:
+        type: boolean
+      withdrawal_min_balance:
+        type: number
+    type: object
+  JSONResponse-CreateWalletExternalResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/CreateWalletExternalResponse'
+      message:
+        type: string
+    type: object
+  JSONResponse-CurrencyRate:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/CurrencyRate'
+      message:
+        type: string
+    type: object
+  JSONResponse-ExternalExchangeBalanceResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/ExternalExchangeBalanceResponse'
+      message:
+        type: string
+    type: object
+  JSONResponse-ExternalProcessingWalletBalanceResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/ProcessingWalletWithAssets'
+        type: array
+      message:
+        type: string
+    type: object
+  JSONResponse-ProcessingWithdrawalResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/ProcessingWithdrawalResponse'
+      message:
+        type: string
+    type: object
+  JSONResponse-WithdrawalFromProcessingDto:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/WithdrawalFromProcessingDto'
+      message:
+        type: string
+    type: object
+  JSONResponse-array_GetCurrencyResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/GetCurrencyResponse'
+        type: array
+      message:
+        type: string
+    type: object
+  JSONResponse-array_SummaryDTO:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/SummaryDTO'
+        type: array
+      message:
+        type: string
+    type: object
+  JSONResponse-string:
+    properties:
+      code:
+        type: integer
+      data:
+        type: string
+      message:
+        type: string
+    type: object
+  ProcessingWalletWithAssets:
+    properties:
+      additional_data:
+        $ref: '#/definitions/BlockchainAdditionalData'
+      address:
+        type: string
+      assets:
+        items:
+          $ref: '#/definitions/Asset'
+        type: array
+      balance:
+        $ref: '#/definitions/Balance'
+      blockchain:
+        $ref: '#/definitions/Blockchain'
+      currency:
+        $ref: '#/definitions/CurrencyShort'
+    type: object
+  ProcessingWithdrawalResponse:
+    properties:
+      address_from:
+        type: string
+      address_to:
+        type: string
+      amount:
+        type: string
+      amount_usd:
+        type: string
+      created_at:
+        format: date-time
+        type: string
+      currency_id:
+        type: string
+      id:
+        type: string
+      store_id:
+        type: string
+      transfer_id:
+        type: string
+    type: object
+  ShortTransferDto:
+    properties:
+      kind:
+        $ref: '#/definitions/TransferKind'
+      message:
+        type: string
+      stage:
+        $ref: '#/definitions/TransferStage'
+      status:
+        $ref: '#/definitions/TransferStatus'
+    type: object
+  SummaryDTO:
+    properties:
+      balance:
+        type: string
+      balance_usd:
+        type: string
+      count:
+        type: integer
+      count_with_balance:
+        type: integer
+      currency:
+        $ref: '#/definitions/CurrencyDTO'
+    type: object
+  TransferKind:
+    enum:
+    - from_address
+    - from_processing
+    type: string
+    x-enum-varnames:
+    - TransferKindFromAddress
+    - TransferKindFromProcessing
+  TransferStage:
+    enum:
+    - in_progress
+    - failed
+    - completed
+    type: string
+    x-enum-varnames:
+    - TransferStageInProgress
+    - TransferStageFailed
+    - TransferStageCompleted
+  TransferStatus:
+    enum:
+    - new
+    - pending
+    - processing
+    - in_mempool
+    - unconfirmed
+    - completed
+    - failed
+    - frozen
+    type: string
+    x-enum-varnames:
+    - TransferStatusNew
+    - TransferStatusPending
+    - TransferStatusProcessing
+    - TransferStatusInMempool
+    - TransferStatusUnconfirmed
+    - TransferStatusCompleted
+    - TransferStatusFailed
+    - TransferStatusFrozen
+  TronData:
+    properties:
+      available_bandwidth_for_use:
+        type: string
+      available_energy_for_use:
+        type: string
+      stacked_bandwidth:
+        type: string
+      stacked_bandwidth_trx:
+        type: string
+      stacked_energy:
+        type: string
+      stacked_energy_trx:
+        type: string
+      stacked_trx:
+        type: string
+      total_bandwidth:
+        type: string
+      total_energy:
+        type: string
+      total_used_bandwidth:
+        type: string
+      total_used_energy:
+        type: string
+      tron_transfer_data:
+        $ref: '#/definitions/TronTransferData'
+    type: object
+  TronTransferData:
+    properties:
+      max_transfers_native:
+        type: string
+      max_transfers_trc20:
+        type: string
+    type: object
+  WalletAddressResponse:
+    properties:
+      address:
+        type: string
+      blockchain:
+        type: string
+      created_at:
+        format: date-time
+        type: string
+      currency_id:
+        type: string
+      deleted_at:
+        format: date-time
+        type: string
+      dirty:
+        type: boolean
+      id:
+        type: string
+      updated_at:
+        format: date-time
+        type: string
+      user_id:
+        type: string
+      wallet_id:
+        type: string
+    type: object
+  WithdrawalFromProcessingDto:
+    properties:
+      address_from:
+        type: string
+      address_to:
+        type: string
+      amount:
+        type: number
+      amount_usd:
+        type: number
+      created_at:
+        type: string
+      currency_id:
+        type: string
+      store_id:
+        type: string
+      transfer:
+        $ref: '#/definitions/ShortTransferDto'
+      tx_hash:
+        type: string
+    type: object
+  wallet.EVMData:
+    properties:
+      cost_per_erc20:
+        description: Cost in Wei for single ERC20 transfer
+        type: string
+      cost_per_native:
+        description: Cost in Wei for single native transfer
+        type: string
+      is_l2:
+        description: Whether this is an L2 chain
+        type: boolean
+      l1_data_fee_estimate:
+        description: Estimated L1 data fee for L2 chains
+        type: string
+      max_transfers_erc20:
+        type: string
+      max_transfers_native:
+        type: string
+      suggested_gas_price:
+        type: string
+    type: object
+info:
+  contact:
+    email: support@dv.net
+    name: DV Support
+  description: This is an API for DV Merchant
+  title: DV Merchant
+  version: "1.0"
+paths:
+  /v1/external/exchange-balances:
+    get:
+      consumes:
+      - application/json
+      description: Get external exchange balances
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ExternalExchangeBalanceResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Get external exchange balances
+      tags:
+      - Exchange
+  /v1/external/processing-wallet-balances:
+    get:
+      consumes:
+      - application/json
+      description: Get external processing wallet balances
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      - collectionFormat: csv
+        in: query
+        items:
+          enum:
+          - arbitrum
+          - bitcoin
+          - bitcoincash
+          - bsc
+          - dogecoin
+          - ethereum
+          - litecoin
+          - polygon
+          - tron
+          type: string
+        name: blockchains
+        type: array
+        uniqueItems: true
+      - collectionFormat: csv
+        in: query
+        items:
+          type: string
+        name: currencies
+        type: array
+        uniqueItems: true
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ExternalProcessingWalletBalanceResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Get external processing wallet balances
+      tags:
+      - Withdrawal
+  /v1/external/store/currencies:
+    get:
+      consumes:
+      - application/json
+      description: Get store currencies list
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_GetCurrencyResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Get store currencies list
+      tags:
+      - Store
+  /v1/external/store/currencies/{id}/rate:
+    get:
+      consumes:
+      - application/json
+      description: Get store currency rate
+      parameters:
+      - description: Currency ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-CurrencyRate'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Get store currency rate
+      tags:
+      - Store
+  /v1/external/wallet:
+    get:
+      consumes:
+      - application/json
+      description: Create wallet with address
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      - in: query
+        name: amount
+        type: number
+      - in: query
+        name: currency
+        type: string
+      - format: email
+        in: query
+        name: email
+        type: string
+      - format: ipv4
+        in: query
+        name: ip
+        type: string
+      - in: query
+        name: locale
+        type: string
+      - format: uuid
+        in: query
+        name: store_external_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-CreateWalletExternalResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Create wallet with address
+      tags:
+      - Store
+    post:
+      consumes:
+      - application/json
+      description: Create wallet with address
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      - description: Create wallet
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/CreateWalletExternalRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-CreateWalletExternalResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Create wallet with address
+      tags:
+      - Wallet
+  /v1/external/wallet/balance/hot:
+    get:
+      description: Get external hot wallet balances
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      - in: query
+        name: min_balance
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful operation
+          schema:
+            $ref: '#/definitions/JSONResponse-array_SummaryDTO'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Get external hot wallet balances
+      tags:
+      - Store
+  /v1/external/withdrawal-from-processing:
+    post:
+      consumes:
+      - application/json
+      description: Initialize withdrawal from processing
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        required: true
+        type: string
+      - description: Init withdrawal
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/CreateProcessingWithdrawRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ProcessingWithdrawalResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "423":
+          description: Locked
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Initialize withdrawal from processing
+      tags:
+      - Withdrawal
+  /v1/external/withdrawal-from-processing/{id}:
+    delete:
+      description: Delete withdrawal from processing
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      - description: Withdrawal ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Delete withdrawal from processing
+      tags:
+      - Withdrawal
+    get:
+      description: Get withdrawal from processing
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        required: true
+        type: string
+      - description: Withdrawal ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-WithdrawalFromProcessingDto'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "406":
+          description: Not Acceptable
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Get withdrawal from processing
+      tags:
+      - Withdrawal
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+  XApiKey:
+    description: Store API key
+    in: header
+    name: X-Api-Key
+    type: apiKey
+swagger: "2.0"

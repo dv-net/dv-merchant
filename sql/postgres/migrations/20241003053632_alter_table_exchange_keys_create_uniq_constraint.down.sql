@@ -1,0 +1,1 @@
+ALTER TABLE exchange_keys DROP CONSTRAINT IF EXISTS exchange_id_name_uniq;

@@ -1,0 +1,18 @@
+[Unit]
+Description=DV Merchant service
+After=network.target
+
+[Service]
+Environment="GOTRACEBACK=all"
+User=dv
+Restart=always
+RestartSec=3
+WorkingDirectory=/home/dv/merchant
+ExecStart=/bin/bash /home/dv/merchant/start.sh
+
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=github.com/dv-net/dv-merchant
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,1 @@
+ALTER TABLE withdrawal_from_processing_wallets DROP CONSTRAINT IF EXISTS withdrawal_from_processing_wallets_request_id_key;

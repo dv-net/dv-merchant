@@ -1,0 +1,1 @@
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS untrusted_email VARCHAR(255);

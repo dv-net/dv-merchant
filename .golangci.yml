@@ -1,0 +1,141 @@
+version: "2"
+run:
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+linters:
+  default: none
+  enable:
+    - asciicheck
+    - bodyclose
+    - contextcheck
+    - copyloopvar
+    - dbtxcheck
+    - decorder
+    - dogsled
+    - dupl
+    - dupword
+    - durationcheck
+    - errcheck
+    - errname
+    - errorlint
+    - forcetypeassert
+    - funlen
+    - gocheckcompilerdirectives
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - goheader
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - govet
+    - grouper
+    - ineffassign
+    - interfacebloat
+    - loggercheck
+    - misspell
+    - nestif
+    - nilerr
+    - nilnil
+    - noctx
+    - nolintlint
+    - nosprintfhostport
+    - prealloc
+    - promlinter
+    - reassign
+    - revive
+    - staticcheck
+    - structinit
+    - tagliatelle
+    - testableexamples
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - whitespace
+  settings:
+    funlen:
+      lines: 180
+      statements: -1
+      ignore-comments: true
+    gocognit:
+      min-complexity: 60
+    tagliatelle:
+      case:
+        rules:
+          json: snake
+          yaml: snake
+        use-field-name: true
+    custom:
+      dbtxcheck:
+        type: "module"
+        description: Disallow usage of pgx.BeginTransaction
+      structinit:
+        type: "module"
+        description: Check for uninitialized struct fields in constructors
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - funlen
+          - misspell
+          - dupl
+          - goconst
+          - nestif
+          - gocognit
+          - revive
+          - staticcheck
+          - unparam
+          - gosec
+          - gocyclo
+        path: (.+)_test\.go$
+      - linters:
+          - dupl
+        path: internal/delivery/http/handlers/*
+      - linters:
+          - interfacebloat
+        path: internal/storage/*
+      - linters:
+          - dupl
+        path: cmd/console/commands.go
+      - path: (.+)\.go$
+        text: missing type in composite literal
+      - path: (.+)\.go$
+        text: 'var-naming: don''t use an underscore in package name'
+      - path: (.+)\.go$
+        text: should not use underscores in package names
+    paths:
+      - .*\.pb\.go
+      - .*\.connect\.go
+      - bin
+      - api
+      - schema
+      - sql
+      - internal/contracts
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - .*\.pb\.go
+      - .*\.connect\.go
+      - bin
+      - api
+      - schema
+      - sql
+      - internal/contracts
+      - third_party$
+      - builtin$
+      - examples$

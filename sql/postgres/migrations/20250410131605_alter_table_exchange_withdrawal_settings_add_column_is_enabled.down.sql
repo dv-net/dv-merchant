@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS exchange_withdrawal_settings DROP COLUMN IF EXISTS is_enabled;

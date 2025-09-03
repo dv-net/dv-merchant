@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS notifications_unique_type_idx;

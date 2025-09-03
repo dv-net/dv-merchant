@@ -1,0 +1,63 @@
+version: 2
+
+project_name: dv-merchant
+
+
+builds:
+  - id: "dv-merchant"
+    main: "./cmd/app"
+    binary: "dv-merchant"
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=1
+      - CC=gcc
+
+    ldflags:
+      - -installsuffix cgo
+      - -s -w -X main.version={{.Tag}} -X main.commitHash={{.ShortCommit}}
+
+checksum:
+  algorithm: sha1
+
+nfpms:
+  - id: "dv-merchant"
+    maintainer: "dv-merchant"
+    package_name: "dv-merchant"
+    formats:
+      - rpm
+      - deb
+    bindir: /home/dv/merchant
+    builds:
+      - "dv-merchant"
+    contents:
+      - src: configs/config.template.yaml
+        dst: /home/dv/merchant/configs/config.template.yaml
+        type: config
+      - src: configs/rbac_model.conf
+        dst: /home/dv/merchant/configs/rbac_model.conf
+      - src: configs/rbac_policies.csv
+        dst: /home/dv/merchant/configs/rbac_policies.csv
+      - src: artifacts/scripts/start.sh
+        dst: /home/dv/merchant/start.sh
+      - src: artifacts/github.com/dv-net/dv-merchant.service
+        dst: /home/dv/merchant/github.com/dv-net/dv-merchant.service
+    scripts:
+      preinstall: "artifacts/scripts/preinstall.sh"
+      postinstall: "artifacts/scripts/postinstall.sh"
+      preremove: "artifacts/scripts/preremove.sh"
+      postremove: "artifacts/scripts/postremove.sh"
+
+archives:
+  - id: "dv-merchant"
+    format: binary
+
+furies:
+  - account: "{{ .Env.FURY_ACCOUNT }}"
+  - formats:
+      - rpm
+      - deb
+  - ids:
+      - dv-merchant

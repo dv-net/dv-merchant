@@ -1,0 +1,1 @@
+alter table if exists transfers drop column if exists tx_hash;

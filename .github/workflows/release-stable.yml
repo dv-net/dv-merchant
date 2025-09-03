@@ -1,0 +1,69 @@
+name: Release Stable
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  release-rc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checking for existence of tag with current SHA
+        run: |
+          echo "Checking if other tags exist for commit ${{ github.sha }}"
+          git fetch origin --tags
+          EXISTING_TAGS=$(git tag --points-at "${{ github.sha }}")
+          if [ -z "$EXISTING_TAGS" ]; then
+            echo "No tags found for commit ${{ github.sha }}"
+            exit 0
+          fi
+          for TAG in $EXISTING_TAGS; do
+            if [ "$TAG" != "${{  github.ref_name }}" ]; then
+              echo "Error: Tag $TAG already exists for commit ${{ github.sha }}"
+              exit 1
+            fi
+          done
+          echo "No other tags found for commit ${{ github.sha }} (only ${{  github.ref_name }} exists)"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.4'
+
+      - name: Clean dist
+        run: rm -rf dist/*
+
+      - name: Download Frontend
+        run: |
+          set -e
+          FRONTEND_PROJECT_NAME=dv-frontend
+          GITHUB_OWNER=dv-net    
+          DV_FRONTEND_TAG=$(curl -s https://api.github.com/repos/${GITHUB_OWNER}/${FRONTEND_PROJECT_NAME}/releases/latest | jq -r '.tag_name')
+          DV_FRONTEND_ARCHIVE_FILENAME="${FRONTEND_PROJECT_NAME}.${DV_FRONTEND_TAG}.tar.gz"
+          
+          echo "Downloading frontend ${DV_FRONTEND_TAG} ..."
+          curl -sSL \
+            -o ${DV_FRONTEND_ARCHIVE_FILENAME} \
+            "https://github.com/${GITHUB_OWNER}/${FRONTEND_PROJECT_NAME}/releases/download/${DV_FRONTEND_TAG}/${DV_FRONTEND_ARCHIVE_FILENAME}"
+          
+          mkdir -p frontend/dist
+          tar -xf ${DV_FRONTEND_ARCHIVE_FILENAME} -C frontend/dist
+          rm ${DV_FRONTEND_ARCHIVE_FILENAME}
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          distribution: goreleaser-pro
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
+          FURY_ACCOUNT: ${{ secrets.FURY_ACCOUNT_STABLE }}
+          FURY_TOKEN: ${{ secrets.FURY_TOKEN_STABLE }}

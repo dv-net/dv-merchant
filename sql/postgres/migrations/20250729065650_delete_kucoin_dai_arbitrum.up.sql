@@ -1,0 +1,1 @@
+DELETE FROM exchange_chains WHERE currency_id = 'DAI.Arbitrum' AND slug = 'kucoin';

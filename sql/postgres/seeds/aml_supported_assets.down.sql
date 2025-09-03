@@ -1,0 +1,1 @@
+DELETE FROM aml_supported_assets WHERE currency_id != '';

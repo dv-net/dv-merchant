@@ -1,0 +1,1 @@
+INSERT INTO log_types (slug, title) VALUES ('PingProcessing', 'Connect to processing') ON CONFLICT DO NOTHING;

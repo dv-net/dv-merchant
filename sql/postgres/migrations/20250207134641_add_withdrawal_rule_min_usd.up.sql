@@ -1,0 +1,1 @@
+alter table if exists withdrawal_wallets add column if not exists withdrawal_min_balance_usd numeric(28, 4) default null;

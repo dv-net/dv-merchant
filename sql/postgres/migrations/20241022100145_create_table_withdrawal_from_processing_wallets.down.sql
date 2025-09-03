@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS withdrawal_from_processing_wallets;

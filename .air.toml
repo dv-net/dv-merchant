@@ -1,0 +1,36 @@
+# Working directory
+root = "."
+tmp_dir = ".tmp"
+
+[build]
+stop_on_error = true
+send_interrupt = true
+# Just plain old shell command. You could use `make` as well.
+cmd = "make build"
+# Binary file yields from `cmd`.
+bin = ".bin/github.com/dv-net/dv-merchant"
+args_bin = ["start", "-c", "configs/config.yaml"]
+# This log file places in your tmp_dir.
+log = "air_errors.log"
+# Watch these filename extensions.
+include_ext = ["go", "yaml", "yml"]
+# Ignore these filename extensions or directories.
+exclude_dir = [".tmp", "sql/"]
+exclude_regex = []
+# It's not necessary to trigger build each time file changes if it's too frequent.
+delay = 1000 # ms
+
+[log]
+# Show log time
+time = true
+
+[color]
+# Customize each part's color. If no color found, use the raw app log.
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
+
+[misc]
+# Delete tmp directory on exit
+clean_on_exit = true

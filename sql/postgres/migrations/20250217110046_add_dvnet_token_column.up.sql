@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS users ADD COLUMN IF NOT EXISTS dvnet_token varchar(255) default null;

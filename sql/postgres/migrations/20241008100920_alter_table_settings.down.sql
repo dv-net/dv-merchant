@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS settings DROP CONSTRAINT IF EXISTS unique_name_when_model_is_not_null;

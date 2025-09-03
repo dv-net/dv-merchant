@@ -1,0 +1,1 @@
+UPDATE settings SET is_mutable = true WHERE name = 'mailer_state'

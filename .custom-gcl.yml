@@ -1,0 +1,11 @@
+version: v2.1.6
+
+name: dv-golangci-lint
+
+destination: .bin/
+
+plugins:
+  - module: 'github.com/dv-net/dv-merchant/pkg/linters/dbtxcheck'
+    path: ./pkg/linters/dbtxcheck
+  - module: 'github.com/dv-net/dv-merchant/pkg/linters/structinit'
+    path: ./pkg/linters/structinit

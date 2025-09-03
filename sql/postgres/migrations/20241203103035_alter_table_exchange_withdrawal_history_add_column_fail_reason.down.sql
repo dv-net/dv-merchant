@@ -1,0 +1,1 @@
+ALTER TABLE exchange_withdrawal_history DROP COLUMN fail_reason;

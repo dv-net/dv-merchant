@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS withdrawal_wallet_addresses DROP CONSTRAINT IF EXISTS withdrawal_wallet_addresses_pk;
+ALTER TABLE IF EXISTS withdrawal_wallet_addresses ADD CONSTRAINT withdrawal_wallet_addresses_pk unique (withdrawal_wallet_id, address);

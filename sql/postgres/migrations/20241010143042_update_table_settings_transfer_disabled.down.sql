@@ -1,0 +1,1 @@
+update settings set name = 'transfers_disabled'  where name = 'transfers_status';

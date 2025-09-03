@@ -1,0 +1,1 @@
+ALTER TABLE transfers ADD blockchain varchar(255) not null;

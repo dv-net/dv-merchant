@@ -1,0 +1,1 @@
+ALTER TABLE wallets ADD COLUMN ip_address VARCHAR(255) NULL;

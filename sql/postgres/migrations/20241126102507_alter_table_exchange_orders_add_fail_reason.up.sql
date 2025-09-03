@@ -1,0 +1,2 @@
+ALTER TABLE exchange_orders ADD COLUMN fail_reason VARCHAR(255) NULL,
+    ADD COLUMN status VARCHAR(255) NOT NULL DEFAULT 'new';

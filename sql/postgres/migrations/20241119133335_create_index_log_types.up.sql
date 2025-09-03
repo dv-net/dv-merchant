@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS log_types_slug_unique ON log_types (slug);

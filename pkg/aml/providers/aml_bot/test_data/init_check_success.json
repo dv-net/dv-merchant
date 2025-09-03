@@ -1,0 +1,24 @@
+{
+  "data": {
+    "tx": "2e55abe3406109808adb7efde701f4344e3b212bc7f9ff00177130fdd3039a10",
+    "uid": "6874a33fd04c3486052878",
+    "cost": 0,
+    "flow": "advanced",
+    "_type": 7,
+    "asset": "BTC",
+    "status": "pending",
+    "address": "3H4XZbq66cYeEx11fcoi7SDZrdeyA9edFw",
+    "network": "BTC",
+    "timestamp": "2025-07-14 06:27:11",
+    "created_at": 1752470842,
+    "updated_at": 1752474432
+  },
+  "result": true,
+  "amlFlow": "fast",
+  "balance": 13,
+  "proMode": "0",
+  "discount": 0,
+  "promoFlow": false,
+  "discountDueTime": 0,
+  "termsConfirmRequired": false
+}

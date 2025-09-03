@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS wallets ADD COLUMN email varchar(255) CHECK (wallets.email != '');

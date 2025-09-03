@@ -1,0 +1,1 @@
+alter table if exists withdrawal_wallets drop column if exists withdrawal_min_balance_usd;

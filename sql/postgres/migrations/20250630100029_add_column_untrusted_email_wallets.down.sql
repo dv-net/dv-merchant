@@ -1,0 +1,1 @@
+ALTER TABLE wallets DROP COLUMN IF EXISTS untrusted_email;

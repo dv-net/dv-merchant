@@ -1,0 +1,1 @@
+ALTER TABLE exchange_orders ADD COLUMN user_id uuid NOT NULL;

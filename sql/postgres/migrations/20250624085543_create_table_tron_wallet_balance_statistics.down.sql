@@ -1,0 +1,1 @@
+drop table if exists tron_wallet_balance_statistics;

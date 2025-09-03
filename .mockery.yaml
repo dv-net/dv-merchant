@@ -1,0 +1,50 @@
+with-expecter: True
+outpkg: mocks
+mockname: "{{.InterfaceName}}"
+filename: "{{.MockName}}.go"
+dir: "mocks/{{.PackageName}}"
+keeptree: False
+packages:
+  github.com/dv-net/dv-merchant/internal/service/exchange_manager:
+    config:
+    interfaces:
+      IExchangeManager:
+      IExchangeClient:
+  github.com/dv-net/dv-merchant/internal/storage:
+    config:
+    interfaces:
+      IStorage:
+  github.com/dv-net/dv-merchant/pkg/key_value:
+    config:
+    interfaces:
+      IKeyValue:
+  github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchange_chains:
+    config:
+    interfaces:
+      Querier:
+        config:
+          mockname: ExchangeChainsQuerier
+  github.com/dv-net/dv-merchant/internal/service/currconv:
+    config:
+    interfaces:
+      ICurrencyConvertor:
+  github.com/dv-net/dv-merchant/internal/service/currency:
+    config:
+    interfaces:
+      ICurrency:
+  github.com/dv-net/dv-merchant/internal/service/setting:
+    config:
+    interfaces:
+      ISettingService:
+  github.com/dv-net/dv-merchant/internal/storage/repos/repo_users:
+    config:
+    interfaces:
+      ICustomQuerier:
+        config:
+          mockname: UsersCustomQuerier
+  github.com/dv-net/dv-merchant/pkg/admin_gateway:
+    config:
+    interfaces:
+      IOwner:
+        config:
+          mockname: DvAdminOwner

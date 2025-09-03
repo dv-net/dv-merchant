@@ -1,0 +1,1 @@
+ALTER TABLE exchange_orders DROP COLUMN IF EXISTS amount_usd;

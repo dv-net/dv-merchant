@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS withdrawal_wallet_addresses DROP CONSTRAINT IF EXISTS withdrawal_wallet_addresses_pk;
+CREATE UNIQUE INDEX withdrawal_wallet_addresses_pk ON withdrawal_wallet_addresses(withdrawal_wallet_id, address) WHERE deleted_at IS NULL;

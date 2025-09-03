@@ -1,0 +1,111 @@
+roles_model_path: configs/rbac_model.conf
+roles_policies_path: configs/rbac_policies.csv
+app:
+  profile: prod
+http:
+  host: localhost
+  port: "80"
+  fetch_interval: 30s
+  connect_timeout: 5s
+  read_timeout: 10s
+  write_timeout: 10s
+  max_header_megabytes: 1
+  cors:
+    enabled: true
+    allowed_origins: []
+seed:
+  base: seeds
+postgres:
+  addr: ""
+  db_name: ""
+  user: ""
+  password: ""
+  conn_max_lifetime: 180
+  max_open_conns: 100
+  max_idle_conns: 100
+  min_open_conns: 6
+redis:
+  addr: ""
+  user: ""
+  password: ""
+  db_index: 0
+exrate:
+  fetch_interval: 1m0s
+admin:
+  base_url: https://api.dv.net/
+  ping_version_interval: 1h0m0s
+notify:
+  telegram:
+    enabled: false
+    token: ""
+web_hook:
+  max_tries: 30
+e_proxy:
+  grpc:
+    name: connectrpc-client
+    addr: https://explorer-proxy.dv.net
+transfers:
+  group_size: 5
+ops:
+  enabled: false
+  network: tcp
+  tracing_enabled: false
+  metrics:
+    enabled: false
+    path: /metrics
+    port: "10000"
+    basic_auth:
+      enabled: false
+      username: ""
+      password: ""
+  healthy:
+    enabled: false
+    path: /healthy
+    port: "10000"
+  profiler:
+    enabled: false
+    path: /debug/pprof
+    port: "10000"
+    write_timeout: 60
+key_value:
+  engine: redis
+transactions:
+  unconfirmed_collapse_interval: 3m0s
+wallets:
+  update_balances_interval: 2s
+  update_tron_resources_interval: 1h0m0s
+external_store_limits:
+  enabled: false
+  rate_limit_interval: 24h0m0s
+  max_requests_per_interval: 3
+log:
+  format: json
+  level: info
+  console_colored: false
+  trace: fatal
+  with_caller: false
+  with_stack_trace: false
+blockchain:
+  bitcoin:
+    address_type: P2WPKH
+  litecoin:
+    address_type: P2WPKH
+  dogecoin:
+    address_type: P2PKH
+updater:
+  base_url: http://localhost:8081
+turnstile:
+  enabled: false
+  secret: ""
+  site_key: ""
+  base_url: https://challenges.cloudflare.com
+aml:
+  check_interval: 2m0s
+  check_timeout: 30s
+  max_attempts: 5
+  bit_ok:
+    enabled: true
+    base_url: https://kyt-api.bitok.org/
+  aml_bot:
+    enabled: true
+    base_url: https://extrnlapiendpoint.silencatech.com/

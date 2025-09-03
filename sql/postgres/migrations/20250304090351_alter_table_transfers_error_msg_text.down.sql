@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS transfers ALTER COLUMN message TYPE varchar(255);

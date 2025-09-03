@@ -1,0 +1,24 @@
+{
+  "id": "d5adb6a1-e330-4938-8c0a-0c4c84bc297c",
+  "address": null,
+  "transfer": {
+    "amount": 28.83360185,
+    "network": "BTC",
+    "tx_hash": "2e55abe3406109808adb7efde701f4344e3b212bc7f9ff00177130fdd3039a10",
+    "token_id": "native",
+    "direction": "outgoing",
+    "tx_status": "bound",
+    "occurred_at": "2025-05-07T20:22:49+03:00",
+    "token_symbol": "BTC",
+    "input_address": null,
+    "value_in_fiat": 2792665.0127146584,
+    "output_address": "3H4XZbq66cYeEx11fcoi7SDZrdeyA9edFw"
+  },
+  "check_type": "withdrawal",
+  "checked_at": null,
+  "created_at": "2025-07-11T14:08:31.044580+03:00",
+  "risk_level": "undefined",
+  "risk_score": null,
+  "check_status": "checking",
+  "fiat_currency": "USD"
+}

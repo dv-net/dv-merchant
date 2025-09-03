@@ -1,0 +1,1 @@
+alter table if exists exchange_withdrawal_settings add column if not exists is_enabled bool not null default true;

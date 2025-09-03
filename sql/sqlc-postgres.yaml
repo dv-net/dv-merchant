@@ -1,0 +1,1273 @@
+version: "2"
+overrides:
+  go:
+    overrides:
+      # UUID
+      - db_type: "uuid"
+        go_type: "github.com/google/uuid.UUID"
+      - db_type: "uuid"
+        nullable: true
+        go_type: "github.com/google/uuid.NullUUID"
+
+      # Decimal
+      - go_type: "github.com/shopspring/decimal.Decimal"
+        db_type: "pg_catalog.numeric"
+      - go_type: "github.com/shopspring/decimal.NullDecimal"
+        db_type: "pg_catalog.numeric"
+        nullable: true
+
+      # Currencies
+      - column: currencies.blockchain
+        go_type:
+          type: "*Blockchain"
+      - column: currencies.withdrawal_min_balance
+        go_type:
+          type: "*decimal.Decimal"
+      # Users
+      - column: users.email
+        go_struct_tag: validate:"required,email"
+      - column: users.password
+        go_struct_tag: validate:"required,min=8,max=32"
+      - column: users.location
+        go_type:
+          type: string
+        go_struct_tag: validate:"required,timezone"
+      - column: users.exchange_slug
+        go_type:
+          type: "*ExchangeSlug"
+      - column: users.rate_source
+        go_type:
+          type: "RateSource"
+      # PersonalAccessToke
+      - column: personal_access_tokens.expires_at
+        go_type:
+          type: "*time.Time"
+      # stores
+      - column: stores.site
+        go_type:
+          type: "*string"
+      - column: stores.return_url
+        go_type:
+          type: "*string"
+      - column: stores.success_url
+        go_type:
+          type: "*string"
+      - column: stores.rate_scale
+        go_type:
+          type: "decimal.Decimal"
+      - column: stores.minimal_payment
+        go_type:
+          type: "decimal.Decimal"
+      - column: stores.public_payment_form_enabled
+        go_type:
+          type: "bool"
+      - column: stores.rate_source
+        go_type:
+          type: "RateSource"
+      # store_webhook
+      - column: store_webhooks.events
+        go_type:
+          type: "[]*WebhookEvent"
+
+      # webhook_send_histories
+      - column: webhook_send_histories.type
+        go_type:
+          type: "string"
+      - column: webhook_send_histories.status
+        go_type:
+          type: "string"
+      - column: webhook_send_histories.response
+        go_type:
+          type: "*string"
+      - column: webhook_send_histories.response_status_code
+        go_type:
+          type: "int"
+
+      # wallet_address
+      - column: wallet_addresses.blockchain
+        go_type:
+          type: "Blockchain"
+      - column: wallet_addresses.amount
+        go_type:
+          type: "decimal.Decimal"
+
+      # withdrawal_wallets
+      - column: withdrawal_wallets.type
+        go_type:
+          type: "WithdrawalWalletType"
+      - column: withdrawal_wallets.blockchain
+        go_type:
+          type: "Blockchain"
+      - column: withdrawal_wallets.withdrawal_min_balance
+        go_type:
+          type: "decimal.NullDecimal"
+      # withdrawal_wallets_address
+      - column: withdrawal_wallet_addresses.name
+        go_type:
+          type: "*string"
+      # multi_withdrawal_rules
+      - column: multi_withdrawal_rules.mode
+        go_type:
+          type: "MultiWithdrawalMode"
+      # receipts
+      - column: receipts.status
+        go_type:
+          type: "ReceiptStatus"
+      # transfers
+      - column: transfers.kind
+        go_type:
+          type: "TransferKind"
+      - column: transfers.status
+        go_type:
+          type: "TransferStatus"
+      - column: transfers.stage
+        go_type:
+          type: "TransferStage"
+      - column: transfers.blockchain
+        go_type:
+          type: "Blockchain"
+      - column: transfers.message
+        go_type:
+          type: "*string"
+      - column: transfers.step
+        go_type:
+          type: "*string"
+      - column: transfers.tx_hash
+        go_type:
+          type: "*string"
+
+      # Transfer transactions
+      - column: transfer_transactions.tx_type
+        go_type:
+          type: TransferTransactionType
+      - column: transfer_transactions.status
+        go_type:
+          type: TransferTransactionsStatus
+
+      # transactions
+      - column: transactions.bc_uniq_key
+        go_type:
+          type: "*string"
+      - column: transactions.type
+        go_type:
+          type: "TransactionsType"
+      - column: transactions.from_address
+        go_type:
+          type: "string"
+      - column: exchange_withdrawal_history.status
+        go_type:
+          type: "WithdrawalHistoryStatus"
+
+      # unconfirmed_transactions
+      - column: unconfirmed_transactions.bc_uniq_key
+        go_type:
+          type: "*string"
+      - column: unconfirmed_transactions.type
+        go_type:
+          type: "TransactionsType"
+      - column: unconfirmed_transactions.from_address
+        go_type:
+          type: "string"
+
+      # setting
+      - column: settings.model_type
+        go_type:
+          type: "*string"
+
+      # exchanges
+      - column: exchanges.slug
+        go_type:
+          type: "ExchangeSlug"
+
+      # exchange_keys
+      - column: exchange_keys.name
+        go_type:
+          type: "ExchangeKeyName"
+
+      # notification_send_history
+      - column: notification_send_history.type
+        go_type:
+          type: "NotificationType"
+      - column: notification_send_history.channel
+        go_type:
+          type: "DeliveryChannel"
+
+      # notification_send_queue
+      - column: notification_send_queue.channel
+        go_type:
+          type: "DeliveryChannel"
+      - column: notification_send_queue.type
+        go_type:
+          type: "NotificationType"
+      - column: notification_send_queue.args
+        nullable: true
+        go_type:
+          type: "*NotificationArgs"
+          
+      # notifications
+      - column: notifications.type
+        go_type:
+          type: "NotificationType"
+      - column: notifications.category
+        go_type:
+          type: "*NotificationCategory"
+
+      # exchange_orders
+      - column: exchange_orders.side
+        go_type:
+          type: "OrderSide"
+
+      - column: exchange_orders.status
+        go_type:
+          type: "ExchangeOrderStatus"
+
+
+      # user_exchange_pairs
+      - column: user_exchange_pairs.type
+        go_type:
+          type: "OrderSide"
+
+      # exchange_chains
+      - column: exchange_chains.slug
+        go_type:
+          type: "ExchangeSlug"
+
+      # user_exchanges
+      - column: user_exchanges.withdrawal_state
+        go_type:
+          type: "ExchangeWithdrawalState"
+      - column: user_exchanges.swap_state
+        go_type:
+          type: "ExchangeSwapState"
+
+      # withdrawal_from_processing_wallets
+      - column: withdrawal_from_processing_wallets.request_id
+        go_type:
+          type: "*string"
+
+      # aml_services
+      - column: aml_services.slug
+        go_type:
+          type: "AMLSlug"
+
+      # aml_service_keys
+      - column: aml_service_keys.name
+        go_type:
+          type: "AmlKeyType"
+
+      # aml_checks
+      - column: aml_checks.status
+        go_type:
+          type: "AMLCheckStatus"
+      - column: aml_checks.risk_level
+        go_type:
+          type: "*AmlRiskLevel"
+
+      # aml_supported_assets
+      - column: aml_supported_assets.service_slug
+        go_type:
+          type: "AMLSlug"
+
+      # user_address_book
+      - column: user_address_book.blockchain
+        go_type:
+          type: "*Blockchain"
+
+      - column: user_address_book.type
+        go_type:
+          type: "AddressBookType"
+
+sql:
+  - schema: postgres/migrations
+    queries: postgres/queries/currencies
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_currencies
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/users
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_users
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/personal_access_tokens
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_personal_access_tokens
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/stores
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_stores
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/store_api_keys
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_store_api_keys
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/store_webhooks
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_store_webhooks
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+
+  - schema: postgres/migrations
+    queries: postgres/queries/webhook_send_histories
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_webhook_send_histories
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/webhook_send_queue
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_webhook_send_queue
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/store_currencies
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_store_currencies
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/store_whitelist
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_store_whitelist
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/transactions
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_transactions
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/unconfirmed_transactions
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_unconfirmed_transactions
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/wallets
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_wallets
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/wallet_addresses
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_wallet_addresses
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 2
+
+  - schema: postgres/migrations
+    queries: postgres/queries/wallet_addresses_activity_logs
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_wallet_addresses_activity_logs
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 2
+
+  - schema: postgres/migrations
+    queries: postgres/queries/settings
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_settings
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/receipts
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_receipts
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/transfers
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_transfers
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/withdrawal_wallets
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_withdrawal_wallets
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/withdrawal_wallet_addresses
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_withdrawal_wallet_addresses
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/exchanges
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_exchanges
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+  - schema: postgres/migrations
+    queries: postgres/queries/exchange_user_keys
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_exchange_user_keys
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/user_stores
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_user_stores
+        emit_prepared_queries: true
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/notification_send_history
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_notification_send_history
+        emit_prepared_queries: true
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/notification_send_queue
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_notification_send_queue
+        emit_prepared_queries: true
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/withdrawal_from_processing_wallets
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_withdrawal_from_processing_wallets
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/user_exchange_pairs
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_user_exchange_pairs
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/exchange_orders
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_exchange_orders
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/exchange_addresses
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_exchange_addresses
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/exchange_withdrawal_history
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_exchange_withdrawal_history
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+
+  - schema: postgres/migrations
+    queries: postgres/queries/exchange_withdrawal_settings
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_exchange_withdrawal_settings
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/exchange_chains
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_exchange_chains
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/log_types
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_log_types
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/logs
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_logs
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/user_exchanges
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_user_exchanges
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/store_secrets
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_store_secrets
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/notifications
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_notifications
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/user_notifications
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_user_notifications
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/update_balance_queue
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_update_balance_queue
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  - schema: postgres/migrations
+    queries: postgres/queries/multi_withdrawal_rules
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_multi_withdrawal_rules
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+
+  # transfer_transactions
+  - schema: postgres/migrations
+    queries: postgres/queries/transfer_transactions
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_transfer_transactions
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 3
+
+  # tron_wallet_balance_statistics
+  - schema: postgres/migrations
+    queries: postgres/queries/tron_wallet_balance_statistics
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_tron_wallet_balance_statistics
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 3
+
+  # aml_services
+  - schema: postgres/migrations
+    queries: postgres/queries/aml_services
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_aml_services
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 3
+
+  # aml_service_keys
+  - schema: postgres/migrations
+    queries: postgres/queries/aml_service_keys
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_aml_service_keys
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 3
+
+  # aml_user_keys
+  - schema: postgres/migrations
+    queries: postgres/queries/aml_user_keys
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_aml_user_keys
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 3
+
+  # aml_checks
+  - schema: postgres/migrations
+    queries: postgres/queries/aml_checks
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_aml_checks
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 3
+
+  # aml_check_queue
+  - schema: postgres/migrations
+    queries: postgres/queries/aml_check_queue
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_aml_check_queue
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 3
+
+  # aml_checks_history
+  - schema: postgres/migrations
+    queries: postgres/queries/aml_check_history
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_aml_check_history
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 3
+
+  # aml_checks_history
+  - schema: postgres/migrations
+    queries: postgres/queries/aml_supported_assets
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_aml_supported_assets
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 3
+
+  
+    # repo_analytics
+  - schema: postgres/migrations
+    queries: postgres/queries/analytics
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_analytics
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true
+        query_parameter_limit: 3
+
+  # repo_user_address_book
+  - schema: postgres/migrations
+    queries: postgres/queries/user_address_book
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        out: ../internal/storage/repos/repo_user_address_book
+        emit_prepared_queries: false
+        emit_json_tags: true
+        emit_exported_queries: false
+        emit_db_tags: true
+        emit_interface: true
+        emit_exact_table_names: false
+        emit_empty_slices: true
+        emit_result_struct_pointers: true
+        emit_params_struct_pointers: false
+        emit_enum_valid_method: true
+        emit_all_enum_values: true

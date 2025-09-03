@@ -1,0 +1,1 @@
+ALTER TABLE webhook_send_histories ALTER COLUMN type TYPE varchar(30);

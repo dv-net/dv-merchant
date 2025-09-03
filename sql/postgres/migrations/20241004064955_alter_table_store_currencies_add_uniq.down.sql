@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS currency_store_currency_id_store_id_index ON store_currencies(store_id, currency_id);
+ALTER TABLE store_currencies DROP CONSTRAINT IF EXISTS uniq_currency_store_currency_id_store_id;

@@ -1,0 +1,23 @@
+INSERT INTO notifications (category, type)
+VALUES (null, 'user_verification'),
+       (null, 'user_registration'),
+       (null, 'user_password_reset'),
+       (null, 'user_forgot_password'),
+       (null, 'two_factor_authentication'),
+       (null, 'external_wallet_requested'),
+       (null, 'user_email_reset'),
+       (null, 'user_change_email'),
+       (null, 'user_remind_verification'),
+       (null, 'user_access_key_changed'),
+       (null, 'user_crypto_receipt'),
+       ('system', 'system_error'),
+       ('system', 'webhook_error'),
+       ('event', 'payment_received'),
+       ('event', 'transfer'),
+       ('event', 'webhook_sent'),
+       ('event', 'invoice_created'),
+       ('event', 'exrate_gap'),
+       ('report', 'daily_report'),
+       ('report', 'weekly_report'),
+       ('report', 'monthly_report')
+ON CONFLICT DO NOTHING;

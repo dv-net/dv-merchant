@@ -1,0 +1,1 @@
+DELETE FROM settings WHERE name = 'quick_start_guide_status';

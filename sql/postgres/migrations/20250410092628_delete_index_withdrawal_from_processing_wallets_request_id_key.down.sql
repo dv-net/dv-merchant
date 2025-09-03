@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX withdrawal_from_processing_wallets_request_id_key ON withdrawal_from_processing_wallets (request_id);

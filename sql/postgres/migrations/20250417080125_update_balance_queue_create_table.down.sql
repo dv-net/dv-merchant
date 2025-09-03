@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS update_balance_queue;

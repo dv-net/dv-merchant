@@ -1,0 +1,2 @@
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS is_mutable bool NOT NULL DEFAULT false;
+UPDATE settings SET is_mutable = true WHERE name NOT IN ('processing_url', 'mailer_protocol', 'processing_client_id', 'processing_client_key', 'mailer_state')

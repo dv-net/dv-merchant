@@ -1,0 +1,4 @@
+replace pgtype.Timestamp time.Time
+replace pgtype.Text string
+replace uuid.NullUUID uuid.UUID
+replace decimal.NullDecimal decimal.Decimal

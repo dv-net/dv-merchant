@@ -1,0 +1,88 @@
+# github.com/dv-net/dv-merchant
+
+services:
+
+  github.com/dv-net/dv-merchant:
+    image: github.com/dv-net/dv-merchant
+    container_name: github.com/dv-net/dv-merchant
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_SERVER__PORT}:${APP_SERVER__PORT}"
+    networks:
+      - server-side
+    environment:
+      - DB_DSN=${APP_DB__ENGINE}://${APP_DB__USERNAME}:${APP_DB__PASSWORD}@${APP_DB__HOST}:${APP_DB__PORT}/${APP_DB__DATABASE_NAME}
+    depends_on:
+      - postgres-db
+      - redis-db
+    env_file: ./.env
+    volumes:
+      - app_data:/logs
+
+  nats-server:
+    image: "nats:alpine"
+    container_name: nats-server
+    restart: always
+    networks:
+      - server-side
+    ports:
+      - "${APP_NATS_CLIENT__PORT}:${APP_NATS_CLIENT__PORT}"
+      - "${APP_NATS_MONITOR__PORT}:${APP_NATS_MONITOR__PORT}"
+      - "${APP_NATS_ROUTE__PORT}:${APP_NATS_ROUTE__PORT}"
+    volumes:
+      - ./nats-server.conf:/etc/nats/nats-server.conf:ro
+
+  postgres-db:
+    image: "postgres:latest"
+    container_name: postgres-database
+    restart: always
+    networks:
+      - server-side
+    environment:
+      - POSTGRES_USER=${APP_DB__USERNAME}
+      - POSTGRES_PASSWORD=${APP_DB__PASSWORD}
+      - POSTGRES_DB=${APP_DB__DATABASE_NAME}
+      - POSTGRES_HOST=${APP_DB__HOST}
+    ports:
+      - "${APP_DB__PORT}:${APP_DB__PORT}"
+    command: ["postgres", "-c", "log_statement=all", "-c", "max_connections=200"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis-db:
+    image: "redis:latest"
+    container_name: redis-database
+    restart: always
+    networks:
+      - server-side
+    environment:
+      - REDIS_USER=${APP_REDIS__USERNAME}
+      - REDIS_PASSWORD=${APP_REDIS__PASSWORD}
+      - REDIS_DB=${APP_REDIS__DATABASE_NAME}
+    ports:
+      - "${APP_REDIS__PORT}:${APP_REDIS__PORT}"
+
+  maildev:
+    image: "maildev/maildev"
+    networks:
+      - server-side
+    restart: always
+    environment:
+      - MAILDEV_INCOMING_USER=${APP_EMAIL__USERNAME}
+      - MAILDEV_INCOMING_PASS=${APP_EMAIL__PASSWORD}
+    ports:
+      - "1080:1080"
+      - "1025:1025"
+
+networks:
+  server-side: {
+    driver: bridge,
+    external: true,
+  }
+
+volumes:
+  pgdata:
+  app_data:
+    external: false

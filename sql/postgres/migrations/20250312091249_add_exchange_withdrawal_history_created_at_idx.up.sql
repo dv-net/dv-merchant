@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_exchange_withdrawal_history_created_at on exchange_withdrawal_history(created_at);

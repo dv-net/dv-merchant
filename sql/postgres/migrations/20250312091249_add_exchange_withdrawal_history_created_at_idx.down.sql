@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS idx_exchange_withdrawal_history_created_at;

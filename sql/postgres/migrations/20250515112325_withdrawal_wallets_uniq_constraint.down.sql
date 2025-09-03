@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS withdrawal_wallets DROP CONSTRAINT IF EXISTS uniq_user_currency;

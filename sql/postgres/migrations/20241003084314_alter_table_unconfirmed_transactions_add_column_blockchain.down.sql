@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS unconfirmed_transactions DROP CONSTRAINT IF EXISTS unconfirmed_transactions_blockchain_tx_id_bc_key_unique;
+ALTER TABLE IF EXISTS unconfirmed_transactions DROP COLUMN IF EXISTS blockchain;

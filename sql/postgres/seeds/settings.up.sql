@@ -1,0 +1,1 @@
+INSERT INTO settings (name, value, created_at, is_mutable) VALUES ('registration_state', 'enabled', NOW(), true) ON CONFLICT DO NOTHING;

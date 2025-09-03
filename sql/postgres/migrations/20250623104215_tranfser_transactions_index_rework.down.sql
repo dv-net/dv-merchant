@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS transfer_transactions_filter_idx;

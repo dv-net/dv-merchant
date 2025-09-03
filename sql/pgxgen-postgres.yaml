@@ -1,0 +1,836 @@
+version: 1
+sqlc:
+  - schema_dir: postgres/migrations
+    models:
+      replace_sqlc_nullable_types: true
+      move:
+        output_dir: ../internal/models
+        output_file_name: models_gen.go
+        package_name: models
+        package_path: github.com/dv-net/dv-merchant/internal/models
+        imports:
+          - paths: github.com/dv-net/dv-merchant/internal/models
+            go_type: Blockchain
+          - paths: github.com/dv-net/dv-merchant/internal/models
+            go_type: TransferKind
+          - paths: github.com/dv-net/dv-merchant/internal/models
+            go_type: TransferStatus
+          - paths: github.com/dv-net/dv-merchant/internal/models
+            go_type: TransferStage
+          - paths: github.com/dv-net/dv-merchant/internal/models
+            go_type: WebhookEvent
+          - paths: github.com/dv-net/dv-merchant/internal/models
+            go_type: ReceiptStatus
+          - paths: github.com/dv-net/dv-merchant/internal/models
+            go_type: TransactionsType
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: ExchangeSlug
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: ExchangeKeyName
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: NotificationType
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: NotificationCategory
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: DeliveryChannel
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: MessageLogLevel
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: OrderSide
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: WithdrawalHistoryStatus
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: ExchangeOrderStatus
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: ExchangeWithdrawalState
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: ExchangeSwapState
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: RateSource
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: MultiWithdrawalMode
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: TransferTransactionType
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: TransferTransactionsStatus
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: AMLSlug
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: AmlKeyType
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: AMLCheckStatus
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: AmlRiskLevel
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: NotificationArgs
+          - path: github.com/dv-net/dv-merchant/internal/models
+            go_type: AddressBookType
+    crud:
+      auto_remove_generated_files: true
+      exclude_table_name_from_methods: true
+      tables:
+        # Currencies
+        currencies:
+          output_dir: postgres/queries/currencies
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - updated_at
+              returning: "*"
+            get:
+              name: GetByID
+            find:
+              name: GetAll
+        # Users
+        users:
+          output_dir: postgres/queries/users
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              returning: "*"
+              column_values:
+                created_at: now()
+            find:
+              name: GetAll
+              skip_columns:
+                - password
+              where:
+                deleted_at:
+                  value: "IS NULL"
+              order:
+                by: created_at
+              limit: true
+              offset: true
+            update:
+              skip_columns:
+                - id
+                - email
+                - email_verified_at
+                - password
+                - remember_token
+                - processing_owner_id
+                - dvnet_token
+                - deleted_at
+                - created_at
+              column_values:
+                updated_at: now()
+              returning: "*"
+
+            delete:
+        # PersonalAccessTokens
+        personal_access_tokens:
+          output_dir: postgres/queries/personal_access_tokens
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+                - last_used_at
+              returning: "*"
+            delete:
+        # Stores
+        stores:
+          output_dir: postgres/queries/stores
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - minimal_payment
+                - rate_scale
+                - deleted_at
+                - updated_at
+                - slug
+              column_values:
+                created_at: now()
+              returning: "*"
+            get:
+              name: GetByID
+            find:
+              name: GetAll
+              where:
+                deleted_at:
+                  value: "IS NULL"
+              order:
+                by: created_at
+              limit: true
+              offset: true
+            update:
+              skip_columns:
+                - id
+                - user_id
+                - created_at
+                - deleted_at
+              returning: "*"
+        # user_stores
+        user_stores:
+          output_dir: postgres/queries/user_stores
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+              column_values:
+                created_at: now()
+              returning: "*"
+        # store_api_keys
+        store_api_keys:
+          output_dir: postgres/queries/store_api_keys
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              returning: "*"
+            update:
+              name: UpdateStatus
+              skip_columns:
+                - id
+                - key
+                - store_id
+                - created_at
+              returning: "*"
+            delete:
+        # store_webhooks
+        store_webhooks:
+          output_dir: postgres/queries/store_webhooks
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+            update:
+              skip_columns:
+                - id
+                - store_id
+                - secret
+                - created_at
+              returning: "*"
+            delete:
+
+        # webhook_send_queue
+        webhook_send_queue:
+          output_dir: postgres/queries/webhook_send_queue
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+            create:
+              skip_columns:
+                - id
+              column_values:
+                created_at: now()
+              returning: "*"
+
+        # store_currencies
+        store_currencies:
+          output_dir: postgres/queries/store_currencies
+        # store_whitelist
+        store_whitelist:
+          output_dir: postgres/queries/store_whitelist
+          methods:
+            create:
+              returning: "*"
+            find:
+              where:
+                store_id:
+
+        # transactions
+        transactions:
+          output_dir: postgres/queries/transactions
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+                created_at_index: extract(epoch from now()) * 1000
+              returning: "*"
+
+        # transactions
+        unconfirmed_transactions:
+          output_dir: postgres/queries/unconfirmed_transactions
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+                created_at_index: extract(epoch from now()) * 1000
+              returning: "*"
+
+        # wallets
+        wallets:
+          output_dir: postgres/queries/wallets
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+              where:
+                deleted_at:
+                  value: "IS NULL"
+            create:
+              skip_columns:
+                - id
+                - updated_at
+                - deleted_at
+              column_values:
+                created_at: now()
+              returning: "*"
+
+        # wallets
+        wallet_addresses:
+          output_dir: postgres/queries/wallet_addresses
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+              where:
+                deleted_at:
+                  value: "IS NULL"
+            create:
+              skip_columns:
+                - id
+                - amount
+                - updated_at
+                - deleted_at
+              column_values:
+                created_at: now()
+              returning: "*"
+
+        wallet_addresses_activity_logs:
+          output_dir: postgres/queries/wallet_addresses_activity_logs
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+        # Withdrawal wallets
+        withdrawal_wallets:
+          output_dir: postgres/queries/withdrawal_wallets
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+              where:
+                deleted_at:
+                  value: "IS NULL"
+            create:
+              skip_columns:
+                - id
+                - updated_at
+                - deleted_at
+              column_values:
+                created_at: now()
+              returning: "*"
+
+        # Withdrawal wallet addresses
+        withdrawal_wallet_addresses:
+          output_dir: postgres/queries/withdrawal_wallet_addresses
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+              where:
+                deleted_at:
+                  value: "IS NULL"
+            create:
+              skip_columns:
+                - id
+                - updated_at
+                - deleted_at
+              column_values:
+                created_at: now()
+              returning: "*"
+        # Receipts
+        receipts:
+          output_dir: postgres/queries/receipts
+          primary_column: id
+          methods:
+            get:
+              name: GetByID
+            find:
+              name: GetAll
+              order:
+                by: created_at
+              limit: true
+              offset: true
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+        # settings
+        settings:
+          output_dir: postgres/queries/settings
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              returning: "*"
+              column_values:
+                created_at: now()
+            update:
+              skip_columns:
+                - id
+                - created_at
+              returning: "*"
+
+        # Transfers
+        transfers:
+          output_dir: postgres/queries/transfers
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+            find:
+              name: GetAll
+              order:
+                by: created_at
+              limit: true
+              offset: true
+            create:
+              skip_columns:
+                - number
+              column_values:
+                created_at: now()
+                updated_at: now()
+              returning: "*"
+
+        # webhook_send_histories
+        webhook_send_histories:
+          output_dir: postgres/queries/webhook_send_histories
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+
+        # exchange_user_keys
+        exchanges:
+          output_dir: postgres/queries/exchanges
+          primary_column: id
+          methods:
+            get:
+              name: GetByID
+            find:
+              name: GetAll
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+
+        # exchange_user_keys
+        exchange_user_keys:
+          output_dir: postgres/queries/exchange_user_keys
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+
+        # notification_send_history
+        notification_send_history:
+          output_dir: postgres/queries/notification_send_history
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+            create:
+                skip_columns:
+                    - id
+                    - updated_at
+                    - sent_at
+                column_values:
+                    created_at: now()
+            update:
+                skip_columns:
+                    - id
+                    - destination
+                    - created_at
+                    - type
+                    - channel
+                    - message_text
+                    - sender
+                column_values:
+                    updated_at: now()
+                where:
+                  destination:
+                returning: "*"
+
+        # notification_send_queue
+        notification_send_queue:
+          output_dir: postgres/queries/notification_send_queue
+          primary_column: id
+          methods:
+            get:
+              name: GetById
+            create:
+              skip_columns:
+                - id
+                - updated_at
+                - attempts
+              column_values:
+                created_at: now()
+              returning: "*"
+            delete:
+
+        # WithdrawalFromProcessingWallets
+        withdrawal_from_processing_wallets:
+          output_dir: postgres/queries/withdrawal_from_processing_wallets
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+                - created_at
+                - transfer_id
+              returning: "*"
+
+        # UserExchangePairs
+        user_exchange_pairs:
+          output_dir: postgres/queries/user_exchange_pairs
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+            find:
+              where:
+                user_id:
+                exchange_id:
+
+        # ExchangeOrders
+        exchange_orders:
+          output_dir: postgres/queries/exchange_orders
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+            get:
+              name: GetByID
+
+        # ExchangeAddresses
+        exchange_addresses:
+          output_dir: postgres/queries/exchange_addresses
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+            find:
+              name: GetAllByUser
+              where:
+                user_id:
+                exchange_id:
+
+        # ExchangeWithdrawalHistory
+        exchange_withdrawal_history:
+          output_dir: postgres/queries/exchange_withdrawal_history
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+                - txid
+              column_values:
+                created_at: now()
+              returning: "*"
+
+        # ExchangeWithdrawalSettings
+        exchange_withdrawal_settings:
+          output_dir: postgres/queries/exchange_withdrawal_settings
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - is_enabled
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+
+        # ExchangeChains
+        exchange_chains:
+            output_dir: postgres/queries/exchange_chains
+            primary_column: id
+            methods:
+                get:
+                  name: GetByID
+                  returning: "*"
+
+        # log types
+        log_types:
+          output_dir: postgres/queries/log_types
+          primary_column: id
+          methods:
+            get:
+              name: GetByID
+              where:
+                id:
+              returning: "*"
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+            update:
+              name: Update
+              skip_columns:
+                - id
+                - created_at
+              column_values:
+                updated_at: now()
+              returning: "*"
+        # logs
+        logs:
+          output_dir: postgres/queries/logs
+          primary_column: id
+          methods:
+            get:
+              name: GetByID
+              where:
+                id:
+              returning: "*"
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+              returning: "*"
+            update:
+              name: Update
+              skip_columns:
+                - id
+                - created_at
+              column_values:
+                updated_at: now()
+              returning: "*"
+        # user_exchanges
+        user_exchanges:
+          output_dir: postgres/queries/user_exchanges
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+              returning: "*"
+
+        # notifications
+        notifications:
+          output_dir: postgres/queries/notifications
+          primary_column: id
+          methods:
+            get:
+              name: GetByID
+              where:
+                id:
+              returning: "*"
+            create:
+              skip_columns:
+                - id
+              returning: "*"
+
+        # user_notifications
+        user_notifications:
+          output_dir: postgres/queries/user_notifications
+          primary_column: id
+          methods:
+            get:
+              name: GetByID
+              where:
+                id:
+              returning: "*"
+            create:
+              skip_columns:
+                - id
+              returning: "*"
+
+        # update_balance_queue
+        update_balance_queue:
+          output_dir: postgres/queries/update_balance_queue
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - created_at
+                - updated_at
+              returning: "*"
+            delete:
+
+        # multi_withdrawal_rules
+        multi_withdrawal_rules:
+          output_dir: postgres/queries/multi_withdrawal_rules
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+              returning: "*"
+
+        # transfer_transactions
+        transfer_transactions:
+          output_dir: postgres/queries/transfer_transactions
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+              returning: "*"
+              column_values:
+                created_at: now()
+
+        # tron_wallet_balance_statistics
+        tron_wallet_balance_statistics:
+          output_dir: postgres/queries/tron_wallet_balance_statistics
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+              returning: "*"
+              column_values:
+                created_at: now()
+
+        # aml_services
+        aml_services:
+          output_dir: postgres/queries/aml_services
+          primary_column: id
+          methods:
+            get:
+              name: GetByID
+              where:
+                id:
+              returning: "*"
+
+        # aml_service_keys
+        aml_service_keys:
+          output_dir: postgres/queries/aml_service_keys
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+              returning: "*"
+              column_values:
+                created_at: now()
+
+        # aml_user_keys
+        aml_user_keys:
+          output_dir: postgres/queries/aml_user_keys
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+              returning: "*"
+              column_values:
+                created_at: now()
+
+        # aml_checks_history
+        aml_checks:
+          output_dir: postgres/queries/aml_checks
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+              returning: "*"
+              column_values:
+                created_at: now()
+
+        # aml_check_queue
+        aml_check_queue:
+          output_dir: postgres/queries/aml_check_queue
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+                - attempts
+              column_values:
+                created_at: now()
+
+        # aml_check_history
+        aml_check_history:
+          output_dir: postgres/queries/aml_check_history
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              returning: "*"
+              column_values:
+                created_at: now()
+
+        # aml_supported_assets
+        aml_supported_assets:
+          output_dir: postgres/queries/aml_supported_assets
+          primary_column: id
+          methods:
+            find:

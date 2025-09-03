@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS amount_usd_idx ON transactions(amount_usd);

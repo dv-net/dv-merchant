@@ -1,0 +1,1 @@
+DELETE FROM settings WHERE name = 'anonymous_telemetry';

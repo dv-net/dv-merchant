@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS log_types_slug_unique;
