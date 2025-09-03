@@ -1,7 +1,7 @@
 #!/bin/sh
 
-./github.com/dv-net/dv-merchant migrate up --disable-confirmations
+./dv-merchant migrate up --disable-confirmations
 
-./github.com/dv-net/dv-merchant seed
+./dv-merchant seed
 
-./github.com/dv-net/dv-merchant start
+./dv-merchant start
