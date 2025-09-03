@@ -2,18 +2,18 @@
 
 echo "Executing postremove script"
 
-if ! [ -e /home/dv/merchant/github.com/dv-net/dv-merchant ]
+if ! [ -e /home/dv/merchant/dv-merchant ]
  then
    echo "Dv Backend removed. Disabling..."
-   if systemctl list-unit-files | grep "github.com/dv-net/dv-merchant.service"
+   if systemctl list-unit-files | grep "dv-merchant.service"
     then
-       systemctl disable github.com/dv-net/dv-merchant.service
-       systemctl stop github.com/dv-net/dv-merchant.service
+       systemctl disable dv-merchant.service
+       systemctl stop dv-merchant.service
    fi
 
-     if [ -L /usr/bin/github.com/dv-net/dv-merchant ]; then
-       echo "Removing symlink /usr/bin/github.com/dv-net/dv-merchant"
-       rm /usr/bin/github.com/dv-net/dv-merchant
+     if [ -L /usr/bin/dv-merchant ]; then
+       echo "Removing symlink /usr/bin/dv-merchant"
+       rm /usr/bin/dv-merchant
      fi
 fi
 

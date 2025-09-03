@@ -2,9 +2,9 @@
 
 echo "Executing preinstall script"
 
-if systemctl list-unit-files | grep "github.com/dv-net/dv-merchant.service"
+if systemctl list-unit-files | grep "dv-merchant.service"
  then
-   systemctl stop github.com/dv-net/dv-merchant.service
+   systemctl stop dv-merchant.service
 fi
 
 echo "Preinstall script done"
