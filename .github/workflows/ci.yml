@@ -1,14 +1,90 @@
-name: CI
+name: Lint and Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
+
+env:
+  GO_VERSION: '1.24.4'
 
 jobs:
-  build:
+  lint:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Create .bin directory
+        run: mkdir -p .bin
+
+      - name: Create frontend dist directory
+        run: |
+          mkdir -p frontend/dist
+          echo "/* Empty file for CI build */" > frontend/dist/dummy.txt
+
+      - name: Cache custom linter binary
+        uses: actions/cache@v4
+        with:
+          path: .bin/dv-golangci-lint
+          key: ${{ runner.os }}-custom-linter-${{ hashFiles('.custom-gcl.yml', 'pkg/linters/**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-custom-linter-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build custom linter plugins
+        run: |
+          echo "Building custom golangci-lint plugins..."
+          make build_plugins
+
+      - name: Verify custom linter
+        run: |
+          if [ -f ".bin/dv-golangci-lint" ]; then
+            echo "✅ Custom linter built successfully"
+            ./.bin/dv-golangci-lint --version || echo "Custom linter version check failed"
+          else
+            echo "❌ Custom linter binary not found"
+            ls -la .bin/ || echo ".bin directory not found"
+            exit 1
+          fi
+
+      - name: Run custom linters
+        run: |
+          echo "Running custom linters with plugins..."
+          make lint
+
+      - name: Run tests
+        run: make test
+
+      - name: Generate version info
+        run: |
+          echo "Project version: $(make version)"
+          echo "Version number: $(make version-number)"
+
+  build-test:
+    runs-on: ubuntu-latest
+    needs: lint
 
     steps:
       - name: Checkout code
@@ -17,22 +93,40 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24.4'
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Cache Go modules
         uses: actions/cache@v4
         with:
           path: |
-            ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-
+            ${{ runner.os }}-go-build-
 
-      - name: Install golangci-lint
-        uses: golangci/golangci-lint-action@v8
+      - name: Create frontend dist directory
+        run: |
+          mkdir -p frontend/dist
+          echo "/* Empty file for CI build */" > frontend/dist/dummy.txt
+
+      - name: Build application
+        run: |
+          echo "Building application..."
+          make build
+          
+          # Verify binary was created
+          if [ -f ".bin/dv-merchant" ]; then
+            echo "✅ Binary built successfully"
+            ls -la .bin/
+          else
+            echo "❌ Binary not found"
+            exit 1
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          version: v2.1
-
-      - name: Run linter
-        run: golangci-lint run ./...
+          name: dv-merchant-binary
+          path: .bin/dv-merchant
+          retention-days: 7

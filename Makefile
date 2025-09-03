@@ -11,7 +11,7 @@ VERSION ?= $(strip $(shell ./scripts/version.sh))
 VERSION_NUMBER := $(strip $(shell ./scripts/version.sh number))
 COMMIT_HASH := $(shell git rev-parse --short HEAD)
 
-OUT_BIN ?= ./.bin/github.com/dv-net/dv-merchant
+OUT_BIN ?= ./.bin/dv-merchant
 CUSTOM_CI_LINTER ?= ./.bin/dv-golangci-lint
 GO_LDFLAGS ?=
 GO_OPT_BASE := -ldflags "-X main.version=$(VERSION) $(GO_LDFLAGS) -X main.commitHash=$(COMMIT_HASH)"

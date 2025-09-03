@@ -42,8 +42,8 @@ nfpms:
         dst: /home/dv/merchant/configs/rbac_policies.csv
       - src: artifacts/scripts/start.sh
         dst: /home/dv/merchant/start.sh
-      - src: artifacts/github.com/dv-net/dv-merchant.service
-        dst: /home/dv/merchant/github.com/dv-net/dv-merchant.service
+      - src: artifacts/dv-merchant.service
+        dst: /home/dv/merchant/dv-merchant.service
     scripts:
       preinstall: "artifacts/scripts/preinstall.sh"
       postinstall: "artifacts/scripts/postinstall.sh"
