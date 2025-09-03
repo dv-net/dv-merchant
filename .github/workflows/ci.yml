@@ -8,7 +8,6 @@ on:
 
 env:
   GO_VERSION: '1.24.4'
-  GOLANGCI_LINT_VERSION: v2.1
 
 jobs:
   lint:
@@ -49,39 +48,26 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Install standard golangci-lint (fallback)
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
-
       - name: Build custom linter plugins
         run: |
           echo "Building custom golangci-lint plugins..."
-          make build_plugins || {
-            echo "Failed to build custom plugins, falling back to standard linter"
-            golangci-lint run --show-stats
-            exit 0
-          }
+          make build_plugins
 
       - name: Verify custom linter
         run: |
           if [ -f ".bin/dv-golangci-lint" ]; then
-            echo "Custom linter built successfully"
+            echo "✅ Custom linter built successfully"
             ./.bin/dv-golangci-lint --version || echo "Custom linter version check failed"
           else
-            echo "Custom linter binary not found"
+            echo "❌ Custom linter binary not found"
             ls -la .bin/ || echo ".bin directory not found"
+            exit 1
           fi
 
       - name: Run custom linters
         run: |
-          if [ -f ".bin/dv-golangci-lint" ]; then
-            echo "Running custom linters..."
-            make lint
-          else
-            echo "Running standard golangci-lint..."
-            golangci-lint run --show-stats
-          fi
+          echo "Running custom linters with plugins..."
+          make lint
 
       - name: Run tests
         run: make test
@@ -114,15 +100,26 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-build-
 
+      - name: Make scripts executable
+        run: |
+          chmod +x ./scripts/version.sh
+          find ./scripts -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
+
+      - name: Create mock .env file for CI
+        run: |
+          mkdir -p .docker/dev
+          touch .docker/dev/.env
+          echo "# Mock env file for CI" > .docker/dev/.env
+
       - name: Build application
         run: |
           echo "Building application..."
           make build
           
           # Verify binary was created
-          if [ -f ".bin/dv-merchant" ]; then
+          if [ -f ".bin/github.com/dv-net/dv-merchant" ]; then
             echo "✅ Binary built successfully"
-            ls -la .bin/
+            ls -la .bin/github.com/dv-net/
           else
             echo "❌ Binary not found"
             exit 1
@@ -132,5 +129,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dv-merchant-binary
-          path: .bin/dv-merchant
+          path: .bin/github.com/dv-net/dv-merchant
           retention-days: 7
