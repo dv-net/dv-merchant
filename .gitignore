@@ -8,5 +8,3 @@ vendor
 .netrc
 frontend/dist
 .tmp
-artifacts/.release-notes/*
-artifacts/.keys/*
