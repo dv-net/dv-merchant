@@ -89,6 +89,7 @@ func (h Handler) updateBackend(c fiber.Ctx) error {
 func (h *Handler) loadNewVersions(c fiber.Ctx) error {
 	versions, err := h.services.UpdaterService.CheckApplicationVersions(c.Context())
 	if err != nil {
+		h.logger.Error("error checking application versions", err)
 		return c.JSON(response.OkByData(&system_response.VersionResponse{
 			NewBackendVersion:    nil,
 			NewProcessingVersion: nil,
