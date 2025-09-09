@@ -85,6 +85,11 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			return fmt.Errorf("parse fee: %w", err)
 		}
 
+		if amount.IsZero() {
+			s.log.Info("amount is zero tx_hash: %s", dto.Amount)
+			return nil
+		}
+
 		_, err = s.transactionsService.GetByHashAndBcUniq(ctx, dto.Hash, dto.TxUniqKey, repos.WithTx(tx))
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return fmt.Errorf("transaction found error: %w", err)
@@ -280,6 +285,11 @@ func (s *Service) HandleTransferCallback(ctx context.Context, dto TransferWebhoo
 		amount, err := decimal.NewFromString(dto.Amount)
 		if err != nil {
 			return fmt.Errorf("parse amount: %w", err)
+		}
+
+		if amount.IsZero() {
+			s.log.Info("amount is zero tx_hash: %s", dto.Amount)
+			return nil
 		}
 
 		_, err = s.transactionsService.GetByHashAndBcUniq(ctx, dto.Hash, dto.TxUniqKey, repos.WithTx(tx))
