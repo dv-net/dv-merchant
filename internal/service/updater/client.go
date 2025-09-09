@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	getNewVersionURL     = "/api/v1/version/github.com/dv-net/dv-merchant"
+	getNewVersionURL     = "/api/v1/version/dv-merchant"
 	updateProcessingURL  = "/api/v1/update"
 	getUpdaterVersionURL = "/api/v1/version"
 	pingURL              = "/ping"
@@ -84,7 +84,7 @@ func (u *Client) CheckNewVersion(ctx context.Context) (*responses.GetNewVersionR
 func (u *Client) Update(ctx context.Context) error {
 	response := &responses.UpdateResponse{}
 	request := &requests.UpdateRequest{
-		Name: "github.com/dv-net/dv-merchant",
+		Name: "dv-merchant",
 	}
 	reqBody, err := json.Marshal(request)
 	if err != nil {
