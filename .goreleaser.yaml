@@ -49,10 +49,21 @@ nfpms:
       postinstall: "artifacts/scripts/postinstall.sh"
       preremove: "artifacts/scripts/preremove.sh"
       postremove: "artifacts/scripts/postremove.sh"
+    rpm:
+      signature:
+        key_file:  artifacts/.keys/private.asc
+    deb:
+      signature:
+        key_file: artifacts/.keys/private.asc
+#        key_id: {{ .Env.GPG_FINGERPRINT }}
 
 archives:
   - id: "dv-merchant"
     format: binary
+
+signs:
+  - artifacts: all
+    args: ["--batch", "-u", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
 
 furies:
   - account: "{{ .Env.FURY_ACCOUNT }}"

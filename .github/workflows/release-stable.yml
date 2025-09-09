@@ -56,14 +56,29 @@ jobs:
           tar -xf ${DV_FRONTEND_ARCHIVE_FILENAME} -C frontend/dist
           rm ${DV_FRONTEND_ARCHIVE_FILENAME}
 
+      - name: Prepare Release Notes
+        run: awk '/## Unreleased/{flag=1;print;next}/##/{flag=0}flag' CHANGELOG.md >> artifacts/.release-notes/NOTES.md
+
+      - name: Prepare GPG keys
+        run: |
+          echo -n "$GPG_SIGNING_KEY" | gpg --import
+          gpg --export-secret-keys --armor --output artifacts/.keys/private.asc
+        env:
+          GPG_SIGNING_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
           distribution: goreleaser-pro
-          args: release --clean
+          args: release --clean --release-notes=artifacts/.release-notes/NOTES.md
         env:
+          GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-          FURY_ACCOUNT: ${{ secrets.FURY_ACCOUNT_STABLE }}
-          FURY_TOKEN: ${{ secrets.FURY_TOKEN_STABLE }}
+          FURY_ACCOUNT: ${{ secrets.FURY_ACCOUNT_RC }}
+          FURY_TOKEN: ${{ secrets.FURY_TOKEN_RC }}
+
+      - name: Remove GPG keys
+        run: |
+          rm artifacts/.keys/private.asc
