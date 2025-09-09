@@ -87,13 +87,16 @@ func (h Handler) updateBackend(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/system/version [get]
 //	@Security		BearerAuth
 func (h *Handler) loadNewVersions(c fiber.Ctx) error {
+	h.logger.Info("UPDATER DEBUG: Start checking new versions")
 	versions, err := h.services.UpdaterService.CheckApplicationVersions(c.Context())
 	if err != nil {
+		h.logger.Info("UPDATER DEBUG: Checking new version completed without error")
 		return c.JSON(response.OkByData(&system_response.VersionResponse{
 			NewBackendVersion:    nil,
 			NewProcessingVersion: nil,
 		}))
 	}
+	h.logger.Error("UPDATER DEBUG: Checking new version completed without error", err)
 
 	return c.JSON(response.OkByData(&system_response.VersionResponse{
 		NewBackendVersion:    versions.BackendVersion,

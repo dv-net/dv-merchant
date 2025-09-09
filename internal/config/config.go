@@ -85,7 +85,7 @@ type (
 	}
 
 	KeyValue struct {
-		Engine KeyValueEngine `yaml:"engine" required:"true" validate:"oneof=redis in_memory" example:"redis / in_memory" default:"in_memory"`
+		Engine KeyValueEngine `yaml:"engine" required:"true" validate:"oneof=redis in_memory" example:"redis / in_memory" default:"redis"`
 	}
 
 	Transactions struct {
