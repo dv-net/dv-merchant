@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated email change request to accept string for verification code [DV-3194]
 - Added locale migration for wallets [DV-3210]
 - Sort wallet addresses by blockchain and native token in email notification [DV-3174]
+- Mask response with CEX API keys [DV-3332]
 
 ## [0.6.1] - 2025-08-11
 - Internal/External API withdrawal route now takes a random store ID related to the user for internal requests, and uses the store ID from the XApiKey header for external requests. [DV-2704]
