@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/currency"
 	"github.com/dv-net/dv-merchant/internal/service/eproxy"
@@ -347,7 +348,9 @@ func prepareTransactionsCommands(currentAppVersion string) []*cli.Command {
 				}
 
 				eProxyService := eproxy.New(eprCl)
-				transactionService := transactions.New(lg, st, eProxyService, currConvService)
+				eventListener := event.New()
+
+				transactionService := transactions.New(lg, st, eProxyService, currConvService, eventListener, nil)
 
 				blockchains := ctx.StringSlice("blockchains")
 

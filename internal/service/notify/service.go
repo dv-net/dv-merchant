@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/notification_request"
-	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/permission"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
@@ -55,7 +54,6 @@ type SendResult struct {
 type Service struct {
 	logger            logger.Logger
 	storage           storage.IStorage
-	eventListener     event.IListener
 	settingsSvc       setting.ISettingService
 	permissionService permission.IPermission
 
@@ -68,7 +66,6 @@ type Service struct {
 func New(
 	logger logger.Logger,
 	storage storage.IStorage,
-	eventListener event.IListener,
 	settingsSvc setting.ISettingService,
 	sender INotificationSender,
 	permSvc permission.IPermission,
@@ -77,7 +74,6 @@ func New(
 		logger:            logger,
 		storage:           storage,
 		settingsSvc:       settingsSvc,
-		eventListener:     eventListener,
 		permissionService: permSvc,
 		maxRetries:        DefaultMaxRetries,
 		sender:            sender,

@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/transactions_request"
+	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/eproxy"
+	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transactions"
@@ -44,10 +46,12 @@ type IWalletTransaction interface {
 }
 
 type Service struct {
-	storage storage.IStorage
-	conv    currconv.ICurrencyConvertor
-	epr     eproxy.IExplorerProxy
-	log     logger.Logger
+	storage             storage.IStorage
+	conv                currconv.ICurrencyConvertor
+	epr                 eproxy.IExplorerProxy
+	log                 logger.Logger
+	eventListener       event.IListener
+	notificationService notify.INotificationService
 }
 
 const PageSize = 10
@@ -62,13 +66,21 @@ func New(
 	storage storage.IStorage,
 	epr eproxy.IExplorerProxy,
 	conv currconv.ICurrencyConvertor,
+	eventListener event.IListener,
+	notificationService notify.INotificationService,
 ) *Service {
-	return &Service{
-		storage: storage,
-		epr:     epr,
-		conv:    conv,
-		log:     log,
+	srv := &Service{
+		storage:             storage,
+		epr:                 epr,
+		conv:                conv,
+		log:                 log,
+		eventListener:       eventListener,
+		notificationService: notificationService,
 	}
+
+	srv.eventListener.Register(DepositReceiptSentEventType, srv.handleDepositReceiptSent)
+
+	return srv
 }
 
 func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*models.Transaction, error) {

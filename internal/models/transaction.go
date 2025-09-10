@@ -50,6 +50,8 @@ type ITransaction interface { //nolint:interfacebloat
 	GetStoreID() uuid.UUID
 	GetCurrencyID() string
 	IsConfirmed() bool
+	GetReceiptID() uuid.NullUUID
+	GetFee() decimal.Decimal
 }
 
 // transaction
@@ -102,6 +104,10 @@ func (tx Transaction) GetCurrencyID() string {
 	return tx.CurrencyID
 }
 
+func (tx Transaction) GetReceiptID() uuid.NullUUID { return tx.ReceiptID }
+
+func (tx Transaction) GetFee() decimal.Decimal { return tx.Fee }
+
 // Unconfirmed transaction
 
 func (utx UnconfirmedTransaction) GetID() uuid.UUID {
@@ -151,3 +157,7 @@ func (utx UnconfirmedTransaction) IsConfirmed() bool {
 func (utx UnconfirmedTransaction) GetCurrencyID() string {
 	return utx.CurrencyID
 }
+
+func (utx UnconfirmedTransaction) GetReceiptID() uuid.NullUUID { return uuid.NullUUID{} }
+
+func (utx UnconfirmedTransaction) GetFee() decimal.Decimal { return decimal.Zero }

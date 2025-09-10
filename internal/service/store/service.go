@@ -12,6 +12,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/exrate"
 	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/service/processing"
+	"github.com/dv-net/dv-merchant/internal/service/transactions"
 	"github.com/dv-net/dv-merchant/internal/service/wallet"
 	"github.com/dv-net/dv-merchant/internal/service/webhook"
 	"github.com/dv-net/dv-merchant/internal/storage"
@@ -86,9 +87,9 @@ func New(
 		processingSvc:       processingSvc,
 	}
 	// register event
-	srv.eventListener.Register(DepositReceivedEventType, srv.handleDepositReceived)
-	srv.eventListener.Register(DepositUnconfirmedEventType, srv.handleDepositReceived)
-	srv.eventListener.Register(WithdrawalFromProcessingReceivedEventType, srv.handleWithdrawalReceived)
+	srv.eventListener.Register(transactions.DepositReceivedEventType, srv.handleDepositReceived)
+	srv.eventListener.Register(transactions.DepositUnconfirmedEventType, srv.handleDepositReceived)
+	srv.eventListener.Register(transactions.WithdrawalFromProcessingReceivedEventType, srv.handleWithdrawalReceived)
 
 	return srv
 }
