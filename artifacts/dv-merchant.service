@@ -12,7 +12,7 @@ ExecStart=/bin/bash /home/dv/merchant/start.sh
 
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=github.com/dv-net/dv-merchant
+SyslogIdentifier=dv-merchant
 
 [Install]
 WantedBy=multi-user.target

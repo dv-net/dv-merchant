@@ -4,15 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
-	"time"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/processing_request"
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
-	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/service/receipts"
 	"github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/service/transactions"
@@ -47,7 +44,6 @@ type Service struct {
 	storeService                   store.IStore
 	currConvService                currconv.ICurrencyConvertor
 	receiptsService                receipts.IReceiptService
-	notificationService            notify.INotificationService
 }
 
 func New(
@@ -59,7 +55,6 @@ func New(
 	storeService store.IStore,
 	currConvService currconv.ICurrencyConvertor,
 	receiptsService receipts.IReceiptService,
-	notificationService notify.INotificationService,
 ) ICallback {
 	return &Service{
 		log:                            logger,
@@ -70,7 +65,6 @@ func New(
 		storeService:                   storeService,
 		currConvService:                currConvService,
 		receiptsService:                receiptsService,
-		notificationService:            notificationService,
 	}
 }
 
@@ -86,7 +80,7 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 		}
 
 		if amount.IsZero() {
-			s.log.Info("amount is zero tx_hash: %s", dto.Amount)
+			s.log.Infof("amount is zero tx_hash: %s", dto.Amount)
 			return nil
 		}
 
@@ -163,7 +157,7 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 				return nil
 			}
 
-			err = s.eventListener.Fire(store.DepositUnconfirmedEvent{
+			err = s.eventListener.Fire(transactions.DepositUnconfirmedEvent{
 				Tx:              *uTransaction,
 				Store:           *storeData,
 				Currency:        *dto.Currency,
@@ -191,32 +185,6 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 				return fmt.Errorf("receipt creation: %w", err)
 			}
 			receiptID = uuid.NullUUID{UUID: receipt.ID, Valid: true}
-
-			if userEmail != "" {
-				go s.notificationService.SendSystemEmail(ctx, models.NotificationTypeUserCryptoReceipt, userEmail, &notify.UserCryptoReceiptNotificationData{
-					Email:                userEmail,
-					Language:             wallet.Locale,
-					PaymentStatus:        notify.PaymentStatusCompleted.String(),
-					PaymentType:          notify.PaymentTypeDeposit.String(),
-					ReceiptId:            receiptID.UUID.String(),
-					PaymentDate:          receipt.CreatedAt.Time.Format(time.DateTime),
-					UsdAmount:            usdAmount.RoundDown(2).String(),
-					TokenAmount:          dto.Amount,
-					TokenSymbol:          dto.Currency.Code,
-					TransactionHash:      dto.Hash,
-					BlockchainCurrencyID: dto.Currency.ID,
-					BlockchainName:       strings.ToUpper(dto.Blockchain.String()),
-					ExchangeRate:         exchangeRate.String(),
-					NetworkFeeAmount:     dto.Fee,
-					NetworkFeeUSD:        usdFee.String(),
-					NetworkFeeCurrency:   dto.Currency.Code,
-					PlatformFeeAmount:    decimal.Zero.String(),
-					PlatformFeeUSD:       decimal.Zero.String(),
-					PlatformFeeCurrency:  dto.Currency.Code,
-				}, &models.NotificationArgs{
-					StoreID: util.Pointer(storeData.ID),
-				})
-			}
 		}
 
 		createPrams := repo_transactions.CreateParams{
@@ -259,7 +227,7 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			return nil
 		}
 		// event for webhook
-		err = s.eventListener.Fire(store.DepositReceivedEvent{
+		err = s.eventListener.Fire(transactions.DepositReceivedEvent{
 			Tx:              *transaction,
 			Store:           *storeData,
 			Currency:        *dto.Currency,
@@ -267,10 +235,25 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			WebhookEvent:    models.WebhookEventPaymentReceived,
 			DBTx:            tx,
 		})
+
+		if !dto.IsSystem {
+			err = s.eventListener.Fire(transactions.DepositReceiptSentEvent{
+				Tx:              *transaction,
+				Store:           *storeData,
+				Currency:        *dto.Currency,
+				StoreExternalID: wallet.StoreExternalID,
+				DBTx:            tx,
+				WalletEmail:     userEmail,
+				WalletLocale:    wallet.Locale,
+				ExchangeRate:    exchangeRate,
+				UsdFee:          usdFee,
+			})
+		}
 		if err != nil {
 			s.log.Error("eventListener fire error", err)
 			return fmt.Errorf("eventListener fire error: %w", err)
 		}
+
 		return nil
 	})
 }
@@ -354,7 +337,7 @@ func (s *Service) HandleTransferCallback(ctx context.Context, dto TransferWebhoo
 			if err != nil {
 				return fmt.Errorf("transaction creation: %w", err)
 			}
-			return s.eventListener.Fire(store.WithdrawalFromProcessingReceivedEvent{
+			return s.eventListener.Fire(transactions.WithdrawalFromProcessingReceivedEvent{
 				WithdrawalID: withdrawalData.WithdrawalFromProcessingWallet.ID.String(),
 				Tx:           *createdTx,
 				Store:        *storeData,

@@ -161,7 +161,6 @@ func NewServices(
 	}
 
 	eProxyService := eproxy.New(eprClient)
-	transactionService := transactions.New(logger, storage, eProxyService, currConvService)
 	receiptService := receipts.New(storage, currencyService)
 
 	processingMetrics, err := metrics.New()
@@ -196,8 +195,9 @@ func NewServices(
 
 	externalNotificationSender := external_sender.New(adminSvc, settingService)
 	notificationSender := notification_sender.New(logger, notificationDrivers, settingService, externalNotificationSender)
-	notificationService := notify.New(logger, storage, eventListener, settingService, notificationSender, permissionService)
+	notificationService := notify.New(logger, storage, settingService, notificationSender, permissionService)
 
+	transactionService := transactions.New(logger, storage, eProxyService, currConvService, eventListener, notificationService)
 	addressesService := address.New(conf, storage, logger, processingService)
 	withdrawalWalletService := withdrawal_wallet.New(storage, logger, currencyService, currConvService, processingService)
 	addressBookService := address_book.New(storage, logger, currencyService, withdrawalWalletService, processingService)
@@ -222,7 +222,7 @@ func NewServices(
 	systemService := system.New(settingService, permissionService, adminSvc, logger, appVersion, commitHash, conf, analyticsService)
 
 	dictionaryService := dictionary.New(storage, exrateService, systemService)
-	callbackService := callback.New(logger, eventListener, storage, transactionService, transactionService, storeService, currConvService, receiptService, notificationService)
+	callbackService := callback.New(logger, eventListener, storage, transactionService, transactionService, storeService, currConvService, receiptService)
 
 	exchangeManager := exchange_manager.NewManager(logger, storage, currConvService)
 	exchangeRulesService := exchange_rules.NewService(logger, storage, exchangeManager)
