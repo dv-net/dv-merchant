@@ -7,6 +7,7 @@ package repo_log_types
 
 import (
 	"context"
+
 	"github.com/dv-net/dv-merchant/internal/models"
 )
 

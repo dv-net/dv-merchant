@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/dv-net/dv-merchant/internal/delivery/http/request/user_request"
+	"github.com/dv-net/dv-merchant/internal/dto"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_personal_access_tokens"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_users"
 	"github.com/dv-net/dv-merchant/internal/tools"
 	"github.com/google/uuid"
@@ -20,9 +21,9 @@ type IUserCredentials interface {
 	InitPasswordReset(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, dto ResetPasswordDto) error
 	ChangeUserPassword(ctx context.Context, userID uuid.UUID, newPassword string) error
-	ChangePassword(ctx context.Context, user *models.User, dto *user_request.ChangePasswordInternalRequestBody, opts ...repos.Option) error
+	ChangePassword(ctx context.Context, user *models.User, d dto.ChangePasswordDTO, currentToken string, opts ...repos.Option) error
 	InitEmailConfirmation(ctx context.Context, usr *models.User) error
-	ConfirmEmail(ctx context.Context, user models.User, confirmationCode int) error
+	ConfirmEmail(ctx context.Context, user *models.User, confirmationCode int) error
 	InitEmailChange(ctx context.Context, usr *models.User) error
 	ConfirmEmailChange(ctx context.Context, user *models.User, dto ChangeEmailConfirmationDto) error
 }
@@ -102,16 +103,16 @@ func (s *Service) changeUserEmail(ctx context.Context, usr *models.User, newEmai
 	return nil
 }
 
-func (s *Service) ChangePassword(ctx context.Context, user *models.User, dto *user_request.ChangePasswordInternalRequestBody, opts ...repos.Option) error {
+func (s *Service) ChangePassword(ctx context.Context, user *models.User, d dto.ChangePasswordDTO, currentToken string, opts ...repos.Option) error {
 	if !user.EmailVerifiedAt.Valid {
 		return errors.New("email verificatino is required for password change")
 	}
 
-	if !tools.CheckPasswordHash(dto.PasswordOld, user.Password) {
+	if !tools.CheckPasswordHash(d.OldPassword, user.Password) {
 		return errors.New("invalid credentials")
 	}
 
-	hashPassword, err := tools.HashPassword(dto.PasswordNew)
+	hashPassword, err := tools.HashPassword(d.NewPassword)
 	if err != nil {
 		return errors.New("can't hash password")
 	}
@@ -127,6 +128,14 @@ func (s *Service) ChangePassword(ctx context.Context, user *models.User, dto *us
 
 	payload := &notify.UserPasswordChanged{
 		Language: user.Language,
+	}
+
+	err = s.storage.PersonalAccessToken(opts...).ClearAllByUser(ctx, repo_personal_access_tokens.ClearAllByUserParams{
+		TokenableID: user.ID,
+		Token:       currentToken,
+	})
+	if err != nil {
+		return err
 	}
 
 	go s.notificationService.SendUser(ctx, models.NotificationTypeUserPasswordChanged, user, payload, &models.NotificationArgs{UserID: &user.ID})
@@ -222,7 +231,7 @@ func (s *Service) InitEmailConfirmation(ctx context.Context, usr *models.User) e
 	return nil
 }
 
-func (s *Service) ConfirmEmail(ctx context.Context, user models.User, confirmationCode int) error {
+func (s *Service) ConfirmEmail(ctx context.Context, user *models.User, confirmationCode int) error {
 	if err := s.otpSvc.VerifyCode(ctx, confirmationCode, "", user.Email); err != nil {
 		return fmt.Errorf("incorrect confirmation code or email")
 	}

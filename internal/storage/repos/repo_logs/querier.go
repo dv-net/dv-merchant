@@ -6,8 +6,8 @@ package repo_logs
 
 import (
 	"context"
-	"github.com/dv-net/dv-merchant/internal/models"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 )
 

@@ -6,8 +6,8 @@ package repo_notification_send_history
 
 import (
 	"context"
-	"github.com/dv-net/dv-merchant/internal/models"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 )
 

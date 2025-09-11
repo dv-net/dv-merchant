@@ -7,8 +7,8 @@ package repo_transactions
 
 import (
 	"context"
-	"github.com/dv-net/dv-merchant/internal/models"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"

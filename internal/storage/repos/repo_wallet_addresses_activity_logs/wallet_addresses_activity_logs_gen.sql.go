@@ -7,8 +7,8 @@ package repo_wallet_addresses_activity_logs
 
 import (
 	"context"
-	"github.com/dv-net/dv-merchant/internal/models"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 )
 
