@@ -7,8 +7,8 @@ package repo_withdrawal_from_processing_wallets
 
 import (
 	"context"
-	"github.com/dv-net/dv-merchant/internal/models"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )

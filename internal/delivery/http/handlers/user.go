@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/user_response"
+	"github.com/dv-net/dv-merchant/internal/dto"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/service/user"
 
@@ -28,22 +29,22 @@ import (
 //	@Router			/v1/dv-admin/user [get]
 //	@Security		BearerAuth
 func (h *Handler) authUser(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
 
-	roles, err := h.services.PermissionService.UserRoles(user.ID.String())
+	roles, err := h.services.PermissionService.UserRoles(usr.ID.String())
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	quickStartGuideStatus, err := h.services.SettingService.GetModelSetting(c.Context(), setting.QuickStartGuideStatus, user)
+	quickStartGuideStatus, err := h.services.SettingService.GetModelSetting(c.Context(), setting.QuickStartGuideStatus, usr)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	return c.JSON(response.OkByData(converters.FromUserModelToInfoResponse(user, quickStartGuideStatus.Value, roles...)))
+	return c.JSON(response.OkByData(converters.FromUserModelToInfoResponse(usr, quickStartGuideStatus.Value, roles...)))
 }
 
 // confirmEmail is a function to confirm user email
@@ -61,17 +62,17 @@ func (h *Handler) authUser(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/user/email-confirmation [post]
 //	@Security		BearerAuth
 func (h *Handler) confirmEmail(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
 
-	dto := &user_request.ConfirmEmailRequest{}
-	if err = c.Bind().Body(dto); err != nil {
+	req := &user_request.ConfirmEmailRequest{}
+	if err = c.Bind().Body(req); err != nil {
 		return err
 	}
 
-	if err = h.services.UserCredentialsService.ConfirmEmail(c.Context(), *user, dto.Code); err != nil {
+	if err = h.services.UserCredentialsService.ConfirmEmail(c.Context(), usr, req.Code); err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
@@ -103,9 +104,9 @@ func (h *Handler) updateUser(c fiber.Ctx) error {
 	if err := c.Bind().Body(req); err != nil {
 		return err
 	}
-	dto := user.RequestToUpdateUserDTO(req, authUser.ID)
+	d := user.RequestToUpdateUserDTO(req, authUser.ID)
 
-	usr, err := h.services.UserService.UpdateUser(c.Context(), authUser, dto)
+	usr, err := h.services.UserService.UpdateUser(c.Context(), authUser, d)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -130,7 +131,7 @@ func (h *Handler) updateUser(c fiber.Ctx) error {
 //	@Tags			User
 //	@Accept			json
 //	@Produce		json
-//	@Param			register	body		user_request.ChangePasswordInternalRequestBody	true	"Update user password"
+//	@Param			register	body		user_request.ChangePasswordInternalRequest	true	"Update user password"
 //	@Success		200			{object}	response.Result[string]
 //	@Failure		400			{object}	apierror.Errors
 //	@Failure		401			{object}	apierror.Errors
@@ -138,15 +139,22 @@ func (h *Handler) updateUser(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/user/change-password [post]
 //	@Security		BearerAuth
 func (h *Handler) changePassword(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
-	dto := &user_request.ChangePasswordInternalRequestBody{}
-	if err := c.Bind().Body(dto); err != nil {
+	req := &user_request.ChangePasswordInternalRequest{}
+	if err := c.Bind().Body(req); err != nil {
 		return err
 	}
-	if err = h.services.UserCredentialsService.ChangePassword(c.Context(), user, dto); err != nil {
+
+	d := dto.RequestToChangePasswordDTO(req)
+	tokenHash, ok := c.Locals("token_hash").(string)
+	if !ok {
+		return apierror.New().AddError(fiber.ErrUnauthorized).SetHttpCode(fiber.StatusUnauthorized)
+	}
+
+	if err = h.services.UserCredentialsService.ChangePassword(c.Context(), usr, d, tokenHash); err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 

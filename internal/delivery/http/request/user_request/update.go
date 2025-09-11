@@ -6,7 +6,7 @@ type UpdateRequest struct {
 	RateSource string `db:"rate_source" json:"rate_source" validate:"required,oneof=okx htx binance bitget bybit gate dv-min dv-max dv-avg"`
 } // @name UpdateUserRequest
 
-type ChangePasswordInternalRequestBody struct {
+type ChangePasswordInternalRequest struct {
 	PasswordOld string `json:"password_old" validate:"required,min=8,max=32" format:"password"`
 	PasswordNew string `json:"password_new" validate:"required,min=8,max=32" format:"password"`
 } // @name ChangePasswordInternalRequest
@@ -14,11 +14,6 @@ type ChangePasswordInternalRequestBody struct {
 type ChangePasswordExternalRequestBody struct {
 	PasswordNew string `json:"password_new" validate:"required,min=8,max=32" format:"password"`
 } // @name ChangePasswordExternalRequest
-
-type ChangePasswordRequestQuery struct {
-	Token string `json:"token" query:"token" validate:"required,uuid" format:"uuid"`
-	Email string `json:"email" query:"email" validate:"required,email" format:"email"`
-} // @name ChangeUserPasswordQuery
 
 type ForgotPasswordRequest struct {
 	Email string `json:"email" query:"email" validate:"required,email" format:"email"`
