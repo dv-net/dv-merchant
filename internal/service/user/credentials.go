@@ -244,7 +244,7 @@ func (s *Service) ConfirmEmail(ctx context.Context, user *models.User, confirmat
 		Language: user.Language,
 	}
 
-	go s.notificationService.SendUser(ctx, models.NotificationTypeUserRegistration, &user, payload, &models.NotificationArgs{UserID: &user.ID})
+	go s.notificationService.SendUser(ctx, models.NotificationTypeUserRegistration, user, payload, &models.NotificationArgs{UserID: &user.ID})
 
 	return nil
 }
