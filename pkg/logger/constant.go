@@ -11,3 +11,5 @@ const (
 func (s LogStatus) String() string {
 	return string(s)
 }
+
+const LogBufferSize = 1000
