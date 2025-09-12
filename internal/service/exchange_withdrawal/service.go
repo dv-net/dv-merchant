@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/exchange_request"
+	"github.com/dv-net/dv-merchant/internal/dto"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/exchange_manager"
@@ -33,6 +34,7 @@ import (
 	kucoinmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/kucoin/models"
 	okxmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/okx/models"
 	"github.com/dv-net/dv-merchant/pkg/logger"
+	"github.com/dv-net/dv-processing/pkg/avalidator"
 
 	"github.com/go-mods/excel"
 	"github.com/gocarina/gocsv"
@@ -46,7 +48,7 @@ import (
 type IExchangeWithdrawalService interface {
 	RunWithdrawalQueue(ctx context.Context)
 	RunWithdrawalUpdater(ctx context.Context)
-	CreateWithdrawalSetting(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug, request *exchange_request.CreateWithdrawalSettingRequest) (*models.ExchangeWithdrawalSetting, error)
+	CreateWithdrawalSetting(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug, d *dto.CreateWithdrawalSettingDTO) (*models.ExchangeWithdrawalSetting, error)
 	UpdateWithdrawalSetting(ctx context.Context, userID uuid.UUID, settingID uuid.UUID, isEnabled bool) (*models.ExchangeWithdrawalSetting, error)
 	DeleteWithdrawalSetting(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug, settingID uuid.UUID) error
 	GetWithdrawalSettings(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug) ([]*models.ExchangeWithdrawalSetting, error)
@@ -326,61 +328,64 @@ func NewService(
 	}
 }
 
-func (s *Service) CreateWithdrawalSetting(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug, req *exchange_request.CreateWithdrawalSettingRequest) (*models.ExchangeWithdrawalSetting, error) {
-	var setting *models.ExchangeWithdrawalSetting
+func (s *Service) CreateWithdrawalSetting(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug, d *dto.CreateWithdrawalSettingDTO) (*models.ExchangeWithdrawalSetting, error) {
+	var withdrawalSetting *models.ExchangeWithdrawalSetting
 
 	_, err := s.st.ExchangeChains().GetCurrencyIDBySlugAndChain(ctx, repo_exchange_chains.GetCurrencyIDBySlugAndChainParams{
 		Slug:  slug,
-		Chain: req.Chain,
+		Chain: d.Chain,
 	})
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		return nil, fmt.Errorf("chain %s not found", req.Chain)
+		return nil, fmt.Errorf("chain %s not found", d.Chain)
 	}
 
-	wdRule, err := s.exRulesSvc.GetWithdrawalRule(ctx, slug, userID.String(), req.CurrencyID)
+	wdRule, err := s.exRulesSvc.GetWithdrawalRule(ctx, slug, userID.String(), d.CurrencyID)
 	if err != nil {
 		return nil, fmt.Errorf("get withdrawal rule: %w", err)
 	}
 
-	if ok, err := s.checkMinWithdrawalRequirement(wdRule, req); !ok {
+	if ok, err := s.checkMinWithdrawalRequirement(wdRule, d); !ok {
 		return nil, fmt.Errorf("min withdrawal requirement not met: %w", err)
 	}
 
 	err = repos.BeginTxFunc(ctx, s.st.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
-		exID, err := s.st.Exchanges().GetExchangeBySlug(ctx, slug)
+		exID, err := s.st.Exchanges(repos.WithTx(tx)).GetExchangeBySlug(ctx, slug)
 		if err != nil {
 			return fmt.Errorf("fetch exchange: %w", err)
 		}
 
-		enabledCurrencies, err := s.st.ExchangeChains().GetEnabledCurrencies(ctx, slug)
+		enabledCurrencies, err := s.st.ExchangeChains(repos.WithTx(tx)).GetEnabledCurrencies(ctx, slug)
 		if err != nil {
 			return fmt.Errorf("fetch enabled currencies: %w", err)
 		}
 		if !slices.ContainsFunc(enabledCurrencies, func(c *repo_exchange_chains.GetEnabledCurrenciesRow) bool {
-			return c.ID.String == req.CurrencyID
+			return c.ID.String == d.CurrencyID
 		}) {
-			return fmt.Errorf("currency not enabled: %s", req.CurrencyID)
+			return fmt.Errorf("currency not enabled: %s", d.CurrencyID)
 		}
 
 		existingSetting, err := s.st.ExchangeWithdrawalSettings(repos.WithTx(tx)).GetExisting(ctx, repo_exchange_withdrawal_settings.GetExistingParams{
 			UserID:     userID,
 			ExchangeID: exID.ID,
-			Currency:   req.CurrencyID,
-			Chain:      req.Chain,
+			Currency:   d.CurrencyID,
+			Chain:      d.Chain,
 		})
 		if err == nil {
-			return fmt.Errorf("user %s already has %s setting setup", existingSetting.UserID, existingSetting.Currency)
+			return fmt.Errorf("user %s already has %s withdrawalSetting setup", existingSetting.UserID, existingSetting.Currency)
 		}
 		if err != nil && errors.Is(err, pgx.ErrNoRows) {
-			newSetting, err := s.createWithdrawalSetting(ctx, exID.ID, userID, req, repos.WithTx(tx))
+			newSetting, err := s.createWithdrawalSetting(ctx, exID.ID, userID, d, repos.WithTx(tx))
 			if err != nil {
-				return fmt.Errorf("create withdrawal setting: %w", err)
+				if errors.Is(err, ErrInvalidAddress) {
+					return err
+				}
+				return fmt.Errorf("create withdrawal withdrawalSetting: %w", err)
 			}
-			setting = newSetting
+			withdrawalSetting = newSetting
 			return nil
 		}
 		if err != nil {
-			return fmt.Errorf("fetch latest setting: %w", err)
+			return fmt.Errorf("fetch latest withdrawalSetting: %w", err)
 		}
 		return nil
 	})
@@ -388,21 +393,28 @@ func (s *Service) CreateWithdrawalSetting(ctx context.Context, userID uuid.UUID,
 		return nil, err
 	}
 
-	return setting, nil
+	return withdrawalSetting, nil
 }
 
-func (s *Service) createWithdrawalSetting(ctx context.Context, exchangeID uuid.UUID, userID uuid.UUID, req *exchange_request.CreateWithdrawalSettingRequest, opts ...repos.Option) (*models.ExchangeWithdrawalSetting, error) {
-	minAmt, err := decimal.NewFromString(req.MinAmount)
+func (s *Service) createWithdrawalSetting(ctx context.Context, exchangeID uuid.UUID, userID uuid.UUID, d *dto.CreateWithdrawalSettingDTO, opts ...repos.Option) (*models.ExchangeWithdrawalSetting, error) {
+	minAmt, err := decimal.NewFromString(d.MinAmount)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert min amount: %w", err)
 	}
 	createParams := repo_exchange_withdrawal_settings.CreateParams{
 		UserID:     userID,
 		ExchangeID: exchangeID,
-		Currency:   req.CurrencyID,
-		Chain:      req.Chain,
-		Address:    req.Address,
+		Currency:   d.CurrencyID,
+		Chain:      d.Chain,
+		Address:    d.Address,
 		MinAmount:  minAmt,
+	}
+	cur, err := s.st.Currencies().GetByID(ctx, d.CurrencyID)
+	if err != nil {
+		return nil, fmt.Errorf("get currency by id: %w", err)
+	}
+	if !avalidator.ValidateAddressByBlockchain(d.Address, cur.Blockchain.String()) {
+		return nil, ErrInvalidAddress
 	}
 	record, err := s.st.ExchangeWithdrawalSettings(opts...).Create(ctx, createParams)
 	if err != nil {
@@ -435,12 +447,12 @@ func (s *Service) updateWithdrawalSettingMinAmount(ctx context.Context, settingI
 	return nil
 }
 
-func (s *Service) checkMinWithdrawalRequirement(rule *models.WithdrawalRulesDTO, req *exchange_request.CreateWithdrawalSettingRequest) (bool, error) {
+func (s *Service) checkMinWithdrawalRequirement(rule *models.WithdrawalRulesDTO, d *dto.CreateWithdrawalSettingDTO) (bool, error) {
 	minWdAmount, err := decimal.NewFromString(rule.MinWithdrawAmount)
 	if err != nil {
 		return false, fmt.Errorf("parse min withdrawal amount: %w", err)
 	}
-	minAmount, err := decimal.NewFromString(req.MinAmount)
+	minAmount, err := decimal.NewFromString(d.MinAmount)
 	if err != nil {
 		return false, fmt.Errorf("parse request withdrawal amount: %w", err)
 	}
@@ -994,8 +1006,8 @@ func (s *Service) processNewWithdrawals(ctx context.Context) {
 	}
 
 	userSettings := make(map[uuid.UUID][]*models.ExchangeWithdrawalSetting)
-	for _, setting := range settings {
-		userSettings[setting.UserID] = append(userSettings[setting.UserID], setting)
+	for _, set := range settings {
+		userSettings[set.UserID] = append(userSettings[set.UserID], set)
 	}
 
 	for userID, sets := range userSettings {

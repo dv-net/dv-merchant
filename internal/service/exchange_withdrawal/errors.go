@@ -9,4 +9,5 @@ var (
 	ErrWithdrawalBalanceLocked        = errors.New("withdrawal balance locked")
 	ErrSoftLockByUserSecurityAction   = errors.New("temporary locked because of user security action")
 	ErrWithdrawalAddessNotWhitelisted = errors.New("withdrawal address not whitelisted")
+	ErrInvalidAddress                 = errors.New("invalid address")
 )
