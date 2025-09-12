@@ -70,6 +70,8 @@ definitions:
         type: string
       tag:
         type: string
+      withdrawal_rule_exists:
+        type: boolean
     type: object
   AddressBookEntryResponseShort:
     properties:
@@ -77,6 +79,8 @@ definitions:
         type: string
       id:
         type: string
+      withdrawal_rule_exists:
+        type: boolean
     type: object
   AddressBookListResponse:
     properties:
@@ -112,9 +116,9 @@ definitions:
       service_id:
         type: string
       service_slug:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.AMLSlug'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug'
       status:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.AMLCheckStatus'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus'
       updated_at:
         type: string
       user_id:
@@ -208,7 +212,7 @@ definitions:
   BlockchainAdditionalData:
     properties:
       evm_data:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_service_wallet.EVMData'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_service_wallet.EVMData'
       tron_data:
         $ref: '#/definitions/TronData'
     type: object
@@ -541,7 +545,7 @@ definitions:
       address:
         type: string
       address_type:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.AddressType'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AddressType'
       chain:
         type: string
       currency:
@@ -822,7 +826,7 @@ definitions:
         type: string
       exchanges:
         items:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeData'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeData'
         type: array
       swap_state:
         type: string
@@ -940,7 +944,7 @@ definitions:
     properties:
       available_aml_providers:
         items:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.AMLSlug'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug'
         type: array
       available_currencies:
         items:
@@ -992,7 +996,7 @@ definitions:
     properties:
       items:
         items:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_responses_log_response.LogData'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.LogData'
         type: array
     type: object
   GetPrefetchDataResponse:
@@ -1573,12 +1577,12 @@ definitions:
       message:
         type: string
     type: object
-  JSONResponse-ResponseWithFullPagination-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_FindRow:
+  JSONResponse-ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow:
     properties:
       code:
         type: integer
       data:
-        $ref: '#/definitions/ResponseWithFullPagination-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_FindRow'
+        $ref: '#/definitions/ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow'
       message:
         type: string
     type: object
@@ -2012,37 +2016,37 @@ definitions:
       message:
         type: string
     type: object
-  JSONResponse-array_array_github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse:
-    properties:
+  ? JSONResponse-array_array_github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse
+  : properties:
       code:
         type: integer
       data:
         items:
           items:
-            $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeWithdrawalRulesResponse'
+            $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeWithdrawalRulesResponse'
           type: array
         type: array
       message:
         type: string
     type: object
-  JSONResponse-array_github.com/dv-net/dv-merchant_internal_models_ExchangeSymbolDTO:
+  JSONResponse-array_github_com_dv-net_dv-merchant_internal_models_ExchangeSymbolDTO:
     properties:
       code:
         type: integer
       data:
         items:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.ExchangeSymbolDTO'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.ExchangeSymbolDTO'
         type: array
       message:
         type: string
     type: object
-  JSONResponse-array_github.com/dv-net/dv-merchant_internal_service_setting_Dto:
+  JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto:
     properties:
       code:
         type: integer
       data:
         items:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_service_setting.Dto'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_service_setting.Dto'
         type: array
       message:
         type: string
@@ -2058,30 +2062,30 @@ definitions:
       message:
         type: string
     type: object
-  JSONResponse-github.com/dv-net/dv-merchant_internal_delivery_http_responses_mnemonic_response_MnemonicResponse:
+  JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response_MnemonicResponse:
     properties:
       code:
         type: integer
       data:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse'
       message:
         type: string
     type: object
-  JSONResponse-github.com/dv-net/dv-merchant_internal_delivery_http_responses_processing_response_OwnerProcessingResponse:
+  JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response_OwnerProcessingResponse:
     properties:
       code:
         type: integer
       data:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_responses_processing_response.OwnerProcessingResponse'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response.OwnerProcessingResponse'
       message:
         type: string
     type: object
-  JSONResponse-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_StatisticsRow:
+  JSONResponse-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_StatisticsRow:
     properties:
       code:
         type: integer
       data:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.StatisticsRow'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.StatisticsRow'
       message:
         type: string
     type: object
@@ -2108,7 +2112,7 @@ definitions:
       manual_address:
         type: string
       mode:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.MultiWithdrawalMode'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.MultiWithdrawalMode'
     type: object
   ManualMultipleWithdrawRequest:
     properties:
@@ -2152,7 +2156,7 @@ definitions:
         type: string
       mode:
         allOf:
-        - $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.MultiWithdrawalMode'
+        - $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.MultiWithdrawalMode'
         enum:
         - random
         - disabled
@@ -2314,7 +2318,7 @@ definitions:
       tx_uniq_key:
         type: string
       wallet_type:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.WalletType'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.WalletType'
     type: object
   ProcessingWithdrawalResponse:
     properties:
@@ -2517,7 +2521,7 @@ definitions:
       token:
         type: string
       user_info:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_service_user.RegisterUserDTO'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_service_user.RegisterUserDTO'
     type: object
   ResponseWithFullPagination-AmlHistoryResponse:
     properties:
@@ -2582,11 +2586,11 @@ definitions:
       pagination:
         $ref: '#/definitions/FullPagingData'
     type: object
-  ResponseWithFullPagination-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_FindRow:
+  ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow:
     properties:
       items:
         items:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.FindRow'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.FindRow'
         type: array
       pagination:
         $ref: '#/definitions/FullPagingData'
@@ -2603,7 +2607,7 @@ definitions:
       output_address:
         type: string
       provider_slug:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.AMLSlug'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug'
       tx_id:
         type: string
     required:
@@ -2681,7 +2685,7 @@ definitions:
         type: string
       details_by_currency:
         additionalProperties:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_service_transactions.CurrencyDetailsDTO'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_service_transactions.CurrencyDetailsDTO'
         type: object
       sum_usd:
         type: string
@@ -2834,7 +2838,7 @@ definitions:
   SystemInfoResponse:
     properties:
       app_profile:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.AppProfile'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AppProfile'
       initialized:
         type: boolean
       is_captcha_enabled:
@@ -3174,7 +3178,6 @@ definitions:
         - htx
         - binance
         - bitget
-        - coingate
         - bybit
         - gate
         - dv-min
@@ -3220,7 +3223,7 @@ definitions:
     properties:
       name:
         allOf:
-        - $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.AmlKeyType'
+        - $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AmlKeyType'
         enum:
         - access_key_id
         - access_key
@@ -3259,9 +3262,9 @@ definitions:
   VersionResponse:
     properties:
       new_backend_version:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_service_updater.VersionInfo'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_service_updater.VersionInfo'
       new_processing_version:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_service_updater.VersionInfo'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_service_updater.VersionInfo'
     type: object
   WalletAddress:
     properties:
@@ -3526,7 +3529,7 @@ definitions:
     properties:
       addressees:
         items:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.WithdrawalWalletAddress'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.WithdrawalWalletAddress'
         type: array
       currency:
         $ref: '#/definitions/CurrencyShort'
@@ -3607,26 +3610,26 @@ definitions:
     required:
     - stages
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest:
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest:
     properties:
       rate_scale:
         type: number
       rate_source:
         enum:
-        - okx htx binance bitget coingate bybit gate dv-min dv-max dv-avg
+        - okx htx binance bitget bybit gate dv-min dv-max dv-avg
         type: string
     required:
     - rate_scale
     - rate_source
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_request_processing_request.MnemonicRequest:
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_processing_request.MnemonicRequest:
     properties:
       mnemonic:
         type: string
     required:
     - mnemonic
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_request_processing_request.UpdateProcessingCallbackDomain:
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_processing_request.UpdateProcessingCallbackDomain:
     properties:
       domain:
         maxLength: 255
@@ -3635,7 +3638,7 @@ definitions:
     required:
     - domain
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_request_wallet_request.AddressConverterRequest:
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_wallet_request.AddressConverterRequest:
     properties:
       address:
         maxLength: 255
@@ -3647,7 +3650,7 @@ definitions:
     - address
     - blockchain
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.AddWithdrawalRuleRequest:
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.AddWithdrawalRuleRequest:
     properties:
       address:
         type: string
@@ -3664,7 +3667,7 @@ definitions:
     required:
     - totp
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.CreateAddressBookRequest:
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.CreateAddressBookRequest:
     properties:
       address:
         type: string
@@ -3688,7 +3691,7 @@ definitions:
     - address
     - totp
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.DeleteAddressBookRequest:
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.DeleteAddressBookRequest:
     properties:
       address:
         type: string
@@ -3707,7 +3710,7 @@ definitions:
     required:
     - totp
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.UpdateAddressBookRequest:
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.UpdateAddressBookRequest:
     properties:
       name:
         type: string
@@ -3718,7 +3721,7 @@ definitions:
     required:
     - totp
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeData:
+  github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeData:
     properties:
       exchange:
         type: string
@@ -3731,7 +3734,7 @@ definitions:
       slug:
         type: string
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeWithdrawalRulesResponse:
+  github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeWithdrawalRulesResponse:
     properties:
       chain:
         type: string
@@ -3754,7 +3757,7 @@ definitions:
       withdraw_quota_per_day:
         type: string
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_responses_log_response.LogData:
+  github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.LogData:
     properties:
       created_at:
         type: string
@@ -3768,17 +3771,17 @@ definitions:
       process_id:
         type: string
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse:
+  github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse:
     properties:
       mnemonic:
         type: string
     type: object
-  github.com/dv-net/dv-merchant_internal_delivery_http_responses_processing_response.OwnerProcessingResponse:
+  github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response.OwnerProcessingResponse:
     properties:
       owner_id:
         type: string
     type: object
-  github.com/dv-net/dv-merchant_internal_models.AMLCheckStatus:
+  github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus:
     enum:
     - pending
     - success
@@ -3788,7 +3791,7 @@ definitions:
     - AmlCheckStatusPending
     - AmlCheckStatusSuccess
     - AmlCheckStatusFailed
-  github.com/dv-net/dv-merchant_internal_models.AMLSlug:
+  github_com_dv-net_dv-merchant_internal_models.AMLSlug:
     enum:
     - aml_bot
     - bit_ok
@@ -3796,7 +3799,7 @@ definitions:
     x-enum-varnames:
     - AMLSlugAMLBot
     - AMLSlugBitOK
-  github.com/dv-net/dv-merchant_internal_models.AddressType:
+  github_com_dv-net_dv-merchant_internal_models.AddressType:
     enum:
     - deposit
     - withdraw
@@ -3804,7 +3807,7 @@ definitions:
     x-enum-varnames:
     - DepositAddress
     - WithdrawAddress
-  github.com/dv-net/dv-merchant_internal_models.AmlKeyType:
+  github_com_dv-net_dv-merchant_internal_models.AmlKeyType:
     enum:
     - access_key_id
     - secret_key
@@ -3816,7 +3819,7 @@ definitions:
     - AmlKeyTypeSecret
     - AmlKeyTypeAccessKey
     - AmlKeyTypeAccessID
-  github.com/dv-net/dv-merchant_internal_models.AppProfile:
+  github_com_dv-net_dv-merchant_internal_models.AppProfile:
     enum:
     - dev
     - prod
@@ -3826,7 +3829,7 @@ definitions:
     - AppProfileDev
     - AppProfileProd
     - AppProfileDemo
-  github.com/dv-net/dv-merchant_internal_models.ExchangeSymbolDTO:
+  github_com_dv-net_dv-merchant_internal_models.ExchangeSymbolDTO:
     properties:
       base_symbol:
         type: string
@@ -3839,7 +3842,7 @@ definitions:
       type:
         type: string
     type: object
-  github.com/dv-net/dv-merchant_internal_models.MultiWithdrawalMode:
+  github_com_dv-net_dv-merchant_internal_models.MultiWithdrawalMode:
     enum:
     - random
     - disabled
@@ -3851,13 +3854,12 @@ definitions:
     - MultiWithdrawalModeDisabled
     - MultiWithdrawalModeProcessing
     - MultiWithdrawalModeManual
-  github.com/dv-net/dv-merchant_internal_models.RateSource:
+  github_com_dv-net_dv-merchant_internal_models.RateSource:
     enum:
     - okx
     - htx
     - binance
     - bitget
-    - coingate
     - dv-min
     - dv-max
     - dv-avg
@@ -3870,14 +3872,13 @@ definitions:
     - RateSourceHTX
     - RateSourceBinance
     - RateSourceBitGet
-    - RateSourceCoingate
     - RateSourceDVMin
     - RateSourceDVMax
     - RateSourceDVAvg
     - RateSourceKucoin
     - RateSourceBybit
     - RateSourceGateio
-  github.com/dv-net/dv-merchant_internal_models.User:
+  github_com_dv-net_dv-merchant_internal_models.User:
     properties:
       banned:
         $ref: '#/definitions/pgtype.Bool'
@@ -3908,7 +3909,7 @@ definitions:
       rate_scale:
         type: number
       rate_source:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.RateSource'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.RateSource'
       remember_token:
         type: string
       updated_at:
@@ -3918,7 +3919,7 @@ definitions:
     - location
     - password
     type: object
-  github.com/dv-net/dv-merchant_internal_models.WalletType:
+  github_com_dv-net_dv-merchant_internal_models.WalletType:
     enum:
     - cold
     - hot
@@ -3928,7 +3929,7 @@ definitions:
     - WalletTypeCold
     - WalletTypeHot
     - WalletTypeProcessing
-  github.com/dv-net/dv-merchant_internal_models.WithdrawalWalletAddress:
+  github_com_dv-net_dv-merchant_internal_models.WithdrawalWalletAddress:
     properties:
       address:
         type: string
@@ -3945,7 +3946,7 @@ definitions:
       withdrawal_wallet_id:
         type: string
     type: object
-  github.com/dv-net/dv-merchant_internal_service_setting.Dto:
+  github_com_dv-net_dv-merchant_internal_service_setting.Dto:
     properties:
       available_values:
         items:
@@ -3960,14 +3961,14 @@ definitions:
       value:
         type: string
     type: object
-  github.com/dv-net/dv-merchant_internal_service_transactions.CurrencyDetailsDTO:
+  github_com_dv-net_dv-merchant_internal_service_transactions.CurrencyDetailsDTO:
     properties:
       sum_usd:
         type: number
       tx_count:
         type: integer
     type: object
-  github.com/dv-net/dv-merchant_internal_service_updater.VersionInfo:
+  github_com_dv-net_dv-merchant_internal_service_updater.VersionInfo:
     properties:
       available_version:
         type: string
@@ -3978,14 +3979,14 @@ definitions:
       need_for_update:
         type: boolean
     type: object
-  github.com/dv-net/dv-merchant_internal_service_user.RegisterUserDTO:
+  github_com_dv-net_dv-merchant_internal_service_user.RegisterUserDTO:
     properties:
       owner_info:
         $ref: '#/definitions/RegisterOwnerInfo'
       user:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_models.User'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.User'
     type: object
-  github.com/dv-net/dv-merchant_internal_service_wallet.EVMData:
+  github_com_dv-net_dv-merchant_internal_service_wallet.EVMData:
     properties:
       cost_per_erc20:
         description: Cost in Wei for single ERC20 transfer
@@ -4006,7 +4007,7 @@ definitions:
       suggested_gas_price:
         type: string
     type: object
-  github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.FindRow:
+  github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.FindRow:
     properties:
       amount:
         type: number
@@ -4066,7 +4067,7 @@ definitions:
       withdrawal_is_manual:
         type: boolean
     type: object
-  github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.Resolution:
+  github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.Resolution:
     enum:
     - hour
     - day
@@ -4074,7 +4075,7 @@ definitions:
     x-enum-varnames:
     - ResolutionHour
     - ResolutionDay
-  github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.StatisticsRow:
+  github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.StatisticsRow:
     properties:
       amount_usd:
         type: number
@@ -4085,7 +4086,7 @@ definitions:
       date:
         type: string
       resolution:
-        $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.Resolution'
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.Resolution'
     type: object
   map_string_CombinedStats:
     additionalProperties:
@@ -4841,7 +4842,7 @@ paths:
         name: register
         required: true
         schema:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest'
       produces:
       - application/json
       responses:
@@ -4868,7 +4869,7 @@ paths:
       - application/json
       description: Get Currency rate
       parameters:
-      - description: Currency Source example binance or coingate
+      - description: Currency Source example binance
         in: path
         name: source
         required: true
@@ -5470,7 +5471,7 @@ paths:
         name: register
         required: true
         schema:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_processing_request.UpdateProcessingCallbackDomain'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_processing_request.UpdateProcessingCallbackDomain'
       produces:
       - application/json
       responses:
@@ -5571,14 +5572,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_processing_request.MnemonicRequest'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_processing_request.MnemonicRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-github.com/dv-net/dv-merchant_internal_delivery_http_responses_processing_response_OwnerProcessingResponse'
+            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response_OwnerProcessingResponse'
         "400":
           description: Bad Request
           schema:
@@ -5775,7 +5776,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-array_github.com/dv-net/dv-merchant_internal_service_setting_Dto'
+            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
         "401":
           description: Unauthorized
           schema:
@@ -6783,7 +6784,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-ResponseWithFullPagination-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_FindRow'
+            $ref: '#/definitions/JSONResponse-ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow'
         "401":
           description: Unauthorized
           schema:
@@ -7038,7 +7039,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_StatisticsRow'
+            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_StatisticsRow'
         "401":
           description: Unauthorized
           schema:
@@ -7766,7 +7767,7 @@ paths:
         name: json
         required: true
         schema:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_wallet_request.AddressConverterRequest'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_wallet_request.AddressConverterRequest'
       responses:
         "200":
           description: Successful operation
@@ -8248,7 +8249,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.DeleteAddressBookRequest'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.DeleteAddressBookRequest'
       produces:
       - application/json
       responses:
@@ -8316,7 +8317,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.CreateAddressBookRequest'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.CreateAddressBookRequest'
       produces:
       - application/json
       responses:
@@ -8361,7 +8362,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.UpdateAddressBookRequest'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.UpdateAddressBookRequest'
       produces:
       - application/json
       responses:
@@ -8402,7 +8403,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.AddWithdrawalRuleRequest'
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.AddWithdrawalRuleRequest'
       produces:
       - application/json
       responses:
@@ -8714,7 +8715,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-array_github.com/dv-net/dv-merchant_internal_models_ExchangeSymbolDTO'
+            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_models_ExchangeSymbolDTO'
         "422":
           description: Unprocessable Entity
           schema:
@@ -8737,7 +8738,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-array_array_github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse'
+            $ref: '#/definitions/JSONResponse-array_array_github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse'
         "422":
           description: Unprocessable Entity
           schema:
@@ -9695,7 +9696,7 @@ paths:
       - application/json
       description: Get Currency rate
       parameters:
-      - description: Currency Source example binance or coingate
+      - description: Currency Source example binance
         in: path
         name: source
         required: true
@@ -9733,7 +9734,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-github.com/dv-net/dv-merchant_internal_delivery_http_responses_mnemonic_response_MnemonicResponse'
+            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response_MnemonicResponse'
       summary: Generate random mnemonic
       tags:
       - Mnemonic
@@ -9868,6 +9869,10 @@ paths:
         name: id
         required: true
         type: string
+      - description: Locale
+        in: query
+        name: locale
+        type: string
       produces:
       - application/json
       responses:
@@ -9888,6 +9893,44 @@ paths:
           schema:
             $ref: '#/definitions/APIErrors'
       summary: Get wallet full data
+      tags:
+      - Wallet
+      - Public
+  /v1/public/wallet/{id}/confirm:
+    get:
+      consumes:
+      - application/json
+      description: Notify wallet email
+      parameters:
+      - description: Wallet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Currency ID
+        in: query
+        name: currency_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Notify wallet email
       tags:
       - Wallet
       - Public
@@ -9985,7 +10028,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-array_github.com/dv-net/dv-merchant_internal_service_setting_Dto'
+            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
         "401":
           description: Unauthorized
           schema:

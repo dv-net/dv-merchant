@@ -38,7 +38,8 @@ type WalletAddressDto struct {
 } // @name PublicWalletAddress
 
 type GetWalletRequest struct {
-	Locale *string `json:"locale,omitempty" query:"locale" validate:"omitempty"`
+	Locale     *string `json:"locale,omitempty" query:"locale" validate:"omitempty"`
+	CurrencyID *string `json:"currency_id,omitempty" query:"currency_id" validate:"omitempty"`
 } // @name GetWalletRequest
 
 type GetWalletDto struct {
