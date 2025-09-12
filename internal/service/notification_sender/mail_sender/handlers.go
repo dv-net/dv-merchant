@@ -141,6 +141,7 @@ func (svc *Service) handleUserExternalWalletRequested(_ context.Context, email s
 			ShowBlockchain:       v.ShowBlockchain,
 			WalletCurrencyName:   v.CurrencyName,
 			WalletBlockchainName: v.BlockchainName,
+			WalletIsFirst:        v.IsFirst,
 		})
 	}
 	emailParams := &templater.UserExternalWallet{

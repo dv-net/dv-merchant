@@ -86,7 +86,7 @@ type Services struct {
 	WalletRestorer                transactions.TxRestorer
 	WalletService                 wallet.IWalletService
 	WalletConverter               wallet.IWalletAddressConverter
-	BalanceService                wallet.IWalletBalances
+	WalletBalanceService          wallet.IWalletBalances
 	BalanceUpdater                wallet.BalanceUpdater
 	AddressesService              address.IWalletAddressService
 	AddressBookService            address_book.IAddressBookService
@@ -261,7 +261,7 @@ func NewServices(
 		UnconfirmedTransactionService: transactionService,
 		WalletRestorer:                transactionService,
 		WalletService:                 walletService,
-		BalanceService:                walletService,
+		WalletBalanceService:          walletService,
 		BalanceUpdater:                walletService,
 		WalletConverter:               walletService,
 		AddressesService:              addressesService,

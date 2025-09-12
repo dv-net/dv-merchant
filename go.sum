@@ -193,8 +193,10 @@ github.com/dv-net/dv-processing v0.9.1 h1:HE7mrwAVXlL2Zjt06C4ng3Q8V4fvC2xOETUrRn
 github.com/dv-net/dv-processing v0.9.1/go.mod h1:8OJneosaUZW5G5/ov51biZfr5369RAx45I/91cOgke4=
 github.com/dv-net/dv-proto v0.5.1 h1:SUmKb2ja7qyMz6g4z0Jw/y+US7F0zq4qUYq1kFoSv2M=
 github.com/dv-net/dv-proto v0.5.1/go.mod h1:X8D+6FZu/YX0hL+Tb2LhozNUdVcQgcLMsmTW9MrZl5o=
-github.com/dv-net/email-template v0.1.2 h1:6l+UAO+T5j3m52EpCrrks8cuqCmF038+qY7bjaW5Y0A=
-github.com/dv-net/email-template v0.1.2/go.mod h1:Qbt8pjxHwdOb1XUWDhLjtEPIODWDOYdt6Y10SOAdTBw=
+github.com/dv-net/email-template v0.1.3 h1:TVd5/l1iPY1Fzv6VaPn1iykKCYTPzdzqGbQxXI+Y+Xg=
+github.com/dv-net/email-template v0.1.3/go.mod h1:Qbt8pjxHwdOb1XUWDhLjtEPIODWDOYdt6Y10SOAdTBw=
+github.com/dv-net/email-template v0.1.4 h1:LjHE8lYHqrk9WuumNCH/QfDVCC7YDr/qBwHO7IfbmDc=
+github.com/dv-net/email-template v0.1.4/go.mod h1:Qbt8pjxHwdOb1XUWDhLjtEPIODWDOYdt6Y10SOAdTBw=
 github.com/dv-net/go-bip39 v1.1.1 h1:KRJwVNjgJPipMfwVN0qbAJG17fMu4BvjDD/tnP35ers=
 github.com/dv-net/go-bip39 v1.1.1/go.mod h1:zbcC/5LED0EfiNZdvDoLgcyl+9mfMH/bEQdxTn4hj/Q=
 github.com/dv-net/mx v0.1.0 h1:L1ZHc8cs/IDAqfao6HcY9m115a/DwKyjrQ07QgWXbZQ=

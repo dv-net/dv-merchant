@@ -55,8 +55,8 @@ func initTickers(ctx context.Context, services *service.Services, conf *config.C
 		go services.BalanceUpdater.Run(ctx, conf.Wallets.UpdateBalancesInterval)
 	}
 
-	if services.WalletService != nil {
-		go services.WalletService.ProcessingBalanceStatsInBackground(ctx, conf.Wallets.UpdateTronResourcesInterval)
+	if services.WalletBalanceService != nil {
+		go services.WalletBalanceService.ProcessingBalanceStatsInBackground(ctx, conf.Wallets.UpdateTronResourcesInterval)
 	}
 
 	if services.AMLStatusChecker != nil {
