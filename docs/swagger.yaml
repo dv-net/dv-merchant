@@ -650,8 +650,11 @@ definitions:
       date_to:
         type: string
       page:
+        minimum: 1
         type: integer
       page_size:
+        maximum: 100
+        minimum: 1
         type: integer
       slug:
         type: string
@@ -2059,6 +2062,15 @@ definitions:
         items:
           type: string
         type: array
+      message:
+        type: string
+    type: object
+  JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response_GetLastLogsResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.GetLastLogsResponse'
       message:
         type: string
     type: object
@@ -3757,6 +3769,13 @@ definitions:
       withdraw_quota_per_day:
         type: string
     type: object
+  github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.GetLastLogsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_pkg_logger.MemoryLogDTO'
+        type: array
+    type: object
   github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.LogData:
     properties:
       created_at:
@@ -4087,6 +4106,15 @@ definitions:
         type: string
       resolution:
         $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.Resolution'
+    type: object
+  github_com_dv-net_dv-merchant_pkg_logger.MemoryLogDTO:
+    properties:
+      level:
+        type: string
+      message:
+        type: string
+      time:
+        type: string
     type: object
   map_string_CombinedStats:
     additionalProperties:
@@ -5277,6 +5305,34 @@ paths:
       security:
       - Bearer: []
       summary: Get logs by slug
+      tags:
+      - Logs
+  /v1/dv-admin/logs/last:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response_GetLastLogsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - Bearer: []
+      summary: Get last logs
       tags:
       - Logs
   /v1/dv-admin/notifications/history:

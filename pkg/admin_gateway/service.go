@@ -20,14 +20,16 @@ type Service struct {
 	log        logger.Logger
 	appVersion string
 	baseURL    string
+	logStatus  bool
 }
 
-func New(baseURL string, appVersion string, log logger.Logger) *Service {
+func New(baseURL string, appVersion string, log logger.Logger, logStatus bool) *Service {
 	return &Service{
 		cl:         http.DefaultClient,
 		log:        log,
 		appVersion: appVersion,
 		baseURL:    strings.TrimSuffix(baseURL, "/"),
+		logStatus:  logStatus,
 	}
 }
 
@@ -58,6 +60,14 @@ func (s *Service) sendRequest(
 			req.Header.Set(k, v)
 		}
 	}
+	if s.logStatus {
+		s.log.Info("[DV-Admin]: Sending request",
+			"method", httpMethod,
+			"url", s.baseURL+apiMethod,
+			"headers", req.Header,
+			"body", string(body),
+		)
+	}
 
 	resp, err := s.cl.Do(req)
 	if err != nil {
@@ -73,6 +83,12 @@ func (s *Service) sendRequest(
 	parsedBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
+	}
+	if s.logStatus {
+		s.log.Info("[DV-Admin]: Received response",
+			"status", resp.StatusCode,
+			"body", string(parsedBody),
+		)
 	}
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
@@ -105,6 +121,14 @@ func (s *Service) sendPublicRequest(
 			req.Header.Set(k, v)
 		}
 	}
+	if s.logStatus {
+		s.log.Info("[DV-Admin]: Sending public request ",
+			"method", httpMethod,
+			"url", s.baseURL+apiMethod,
+			"headers", req.Header,
+			"body", string(body),
+		)
+	}
 
 	resp, err := s.cl.Do(req)
 	if err != nil {
@@ -120,6 +144,12 @@ func (s *Service) sendPublicRequest(
 	parsedBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
+	}
+	if s.logStatus {
+		s.log.Info("[DV-Admin]: Received public response ",
+			"status", resp.StatusCode,
+			"body", string(parsedBody),
+		)
 	}
 
 	if resp.StatusCode != http.StatusOK {
