@@ -67,6 +67,7 @@ type (
 	AdminConfig struct {
 		BaseURL             string        `yaml:"base_url" default:"https://api.dv.net/"`
 		PingVersionInterval time.Duration `yaml:"ping_version_interval" default:"1h"`
+		LogStatus           bool          `yaml:"log_status" default:"false"`
 	}
 
 	NotifyConfig struct {

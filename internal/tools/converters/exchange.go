@@ -56,9 +56,18 @@ func NewExchangeKeysResponseFromDto(keys []exchange.KeysExchangeDTO) []exchange_
 }
 
 func NewExchangeKeyResponseByDto(dto exchange.KeysExchangeDTO) exchange_response.ExchangeKey {
+	var maskedValue *string
+	if dto.Value != nil && len(*dto.Value) > 4 {
+		maskedLength := len(*dto.Value) - 4
+		mask := strings.Repeat("*", maskedLength)
+		suffix := (*dto.Value)[len(*dto.Value)-4:]
+		maskedValue = lo.ToPtr(mask + suffix)
+	} else {
+		maskedValue = dto.Value
+	}
 	return exchange_response.ExchangeKey{
 		Name:  dto.Name,
-		Value: dto.Value,
+		Value: maskedValue,
 	}
 }
 

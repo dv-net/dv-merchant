@@ -238,6 +238,7 @@ type ExternalWallet struct {
 	WalletBlockchain     string `json:"wallet_blockchain"`
 	WalletBlockchainName string `json:"wallet_blockchain_name"`
 	WalletAddress        string `json:"wallet_address"`
+	WalletIsFirst        bool   `json:"wallet_is_first"`
 	ShowBlockchain       bool   `json:"show_blockchain"`
 }
 
@@ -246,6 +247,7 @@ type UserExternalWallet struct {
 	EmailTitle                         string           `json:"external_wallet_requested_email_title"`
 	EmailSubject                       string           `json:"external_wallet_requested_email_subject"`
 	ExternalWalletRequestedMessageText string           `json:"external_wallet_requested_message_text"`
+	ExternalWalletOtherWallet          string           `json:"external_wallet_other_wallet"`
 	Wallets                            []ExternalWallet `json:"wallets"`
 	NotificationHash                   string           `json:"notification_hash"`
 }

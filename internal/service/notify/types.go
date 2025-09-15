@@ -83,6 +83,7 @@ type WalletDTO struct {
 	BlockchainName string `json:"blockchain_name"`
 	ShowBlockchain bool   `json:"show_blockchain"`
 	Address        string `json:"address"`
+	IsFirst        bool   `json:"is_first"`
 }
 
 func (d *ExternalWalletRequestedData) Encode() ([]byte, error) {

@@ -52,7 +52,7 @@ func (h *Handler) getExternalProcessingWalletBalances(c fiber.Ctx) error {
 		Currencies:  req.Currencies,
 	}
 
-	assets, err := h.services.WalletService.GetProcessingBalances(c.Context(), dto)
+	assets, err := h.services.WalletBalanceService.GetProcessingBalances(c.Context(), dto)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}

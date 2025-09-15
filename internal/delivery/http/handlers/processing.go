@@ -450,7 +450,7 @@ func (h *Handler) processingWallets(c fiber.Ctx) error {
 	}
 
 	// Fetch wallets with assets using params
-	wassets, err := h.services.WalletService.GetProcessingBalances(c.Context(), dto)
+	wassets, err := h.services.WalletBalanceService.GetProcessingBalances(c.Context(), dto)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}

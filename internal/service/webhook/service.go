@@ -3,7 +3,6 @@ package webhook
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -11,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/goccy/go-json"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dv-net/dv-merchant/internal/config"

@@ -6,6 +6,7 @@ package repo_aml_supported_assets
 
 import (
 	"context"
+
 	"github.com/dv-net/dv-merchant/internal/models"
 )
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dv-net/dv-merchant/internal/service/transactions"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_currencies"
 	"github.com/dv-net/dv-merchant/internal/util"
 
@@ -89,7 +90,7 @@ func (s *Service) DeleteStoreWebhooks(ctx context.Context, id uuid.UUID, opts ..
 }
 
 func (s *Service) handleDepositReceived(ev event.IEvent) error {
-	convertedEv, ok := ev.(TransactionEvent)
+	convertedEv, ok := ev.(transactions.TransactionEvent)
 	if !ok {
 		return fmt.Errorf("invalid event type %s", ev.Type())
 	}
@@ -118,11 +119,11 @@ func (s *Service) handleDepositReceived(ev event.IEvent) error {
 		return nil
 	}
 
-	return s.processWebhooksByTransactionEvent(ev, DepositReceivedEventType, payload)
+	return s.processWebhooksByTransactionEvent(ev, transactions.DepositReceivedEventType, payload)
 }
 
 func (s *Service) handleWithdrawalReceived(ev event.IEvent) error {
-	convertedEv, ok := ev.(WithdrawalFromProcessingReceivedEvent)
+	convertedEv, ok := ev.(transactions.WithdrawalFromProcessingReceivedEvent)
 	if !ok {
 		return fmt.Errorf("invalid event type %s", ev.Type())
 	}
@@ -151,7 +152,7 @@ func (s *Service) handleWithdrawalReceived(ev event.IEvent) error {
 		return fmt.Errorf("prepare withdrawal hook payload: %w", err)
 	}
 
-	return s.processWebhooksByTransactionEvent(ev, WithdrawalFromProcessingReceivedEventType, preparedPayload)
+	return s.processWebhooksByTransactionEvent(ev, transactions.WithdrawalFromProcessingReceivedEventType, preparedPayload)
 }
 
 func (s *Service) SendWebhookManual(ctx context.Context, txID, userID uuid.UUID) error {
@@ -270,7 +271,7 @@ func (s *Service) processWebhooksByTransactionEvent(
 	eventType string,
 	hookPayload []byte,
 ) error {
-	txCreatedEvent, ok := ev.(TransactionEvent)
+	txCreatedEvent, ok := ev.(transactions.TransactionEvent)
 	if !ok || txCreatedEvent.EventType() != eventType {
 		return nil
 	}

@@ -7,17 +7,22 @@ package repo_personal_access_tokens
 
 import (
 	"context"
-	"github.com/dv-net/dv-merchant/internal/models"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 )
 
 const clearAllByUser = `-- name: ClearAllByUser :exec
-DELETE FROM personal_access_tokens WHERE (tokenable_type = 'user' and tokenable_id = $1 and name = 'AuthToken')
+DELETE FROM personal_access_tokens WHERE (tokenable_type = 'user' and tokenable_id = $1 and name = 'AuthToken' and token != $2)
 `
 
-func (q *Queries) ClearAllByUser(ctx context.Context, tokenableID uuid.UUID) error {
-	_, err := q.db.Exec(ctx, clearAllByUser, tokenableID)
+type ClearAllByUserParams struct {
+	TokenableID uuid.UUID `db:"tokenable_id" json:"tokenable_id"`
+	Token       string    `db:"token" json:"token"`
+}
+
+func (q *Queries) ClearAllByUser(ctx context.Context, arg ClearAllByUserParams) error {
+	_, err := q.db.Exec(ctx, clearAllByUser, arg.TokenableID, arg.Token)
 	return err
 }
 

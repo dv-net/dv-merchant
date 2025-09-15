@@ -22,7 +22,6 @@ require (
 	github.com/cbroglie/mustache v1.4.0
 	github.com/dv-net/dv-processing v0.9.1
 	github.com/dv-net/dv-proto v0.5.1
-	github.com/dv-net/email-template v0.1.2
 	github.com/dv-net/go-bip39 v1.1.1
 	github.com/dv-net/mx v0.1.0
 	github.com/dv-net/xconfig v0.1.0
@@ -43,7 +42,6 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.3.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pckhoi/casbin-pgx-adapter/v3 v3.2.0
-	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/puzpuzpuz/xsync/v3 v3.5.1
 	github.com/redis/go-redis/v9 v9.9.0
@@ -129,6 +127,7 @@ require (
 	github.com/dromara/carbon/v2 v2.5.4 // indirect
 	github.com/dv-net/dv-merchant/pkg/linters/dbtxcheck v0.0.0-00010101000000-000000000000 // indirect
 	github.com/dv-net/dv-merchant/pkg/linters/structinit v0.0.0-00010101000000-000000000000 // indirect
+	github.com/dv-net/email-template v0.1.4 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/ethereum/go-ethereum v1.15.8 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
@@ -232,6 +231,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/polyfloyd/go-errorlint v1.8.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect

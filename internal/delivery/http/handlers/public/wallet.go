@@ -28,14 +28,14 @@ import (
 //	@Tags			Wallet,Public
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		string	true	"Wallet ID"
+//	@Param			id		path		string	true	"Wallet ID"
 //	@Param			locale	query		string	false	"Locale"
-//	@Success		200	{object}	response.Result[public_request.GetWalletDto]
-//	@Failure		401	{object}	apierror.Errors
-//	@Failure		410	{object}	apierror.Errors
-//	@Failure		500	{object}	apierror.Errors
+//	@Success		200		{object}	response.Result[public_request.GetWalletDto]
+//	@Failure		401		{object}	apierror.Errors
+//	@Failure		410		{object}	apierror.Errors
+//	@Failure		500		{object}	apierror.Errors
 //	@Router			/v1/public/wallet/{id} [get]
-func (h Handler) getWalletData(c fiber.Ctx) error {
+func (h *Handler) getWalletData(c fiber.Ctx) error {
 	walletID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return apierror.New().AddError(fmt.Errorf("bad wallet id")).SetHttpCode(fiber.StatusBadRequest)
@@ -59,18 +59,18 @@ func (h Handler) getWalletData(c fiber.Ctx) error {
 		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	// get wallet data
-	data, err := h.services.WalletService.GetFullDataByID(c.Context(), walletID)
-	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
-	}
-
 	// update wallet locale if provided
 	if req.Locale != nil && *req.Locale != "" {
 		err = h.services.WalletService.UpdateLocale(c.Context(), walletID, *req.Locale)
 		if err != nil {
 			return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
 		}
+	}
+
+	// get wallet data
+	data, err := h.services.WalletService.GetFullDataByID(c.Context(), walletID)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	// convert addresses to dto
@@ -129,7 +129,7 @@ func (h Handler) getWalletData(c fiber.Ctx) error {
 //	@Failure		401	{object}	apierror.Errors
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/public/wallet/{id}/tx-find [get]
-func (h Handler) findTransactionsByWallet(c fiber.Ctx) error {
+func (h *Handler) findTransactionsByWallet(c fiber.Ctx) error {
 	walletID, err := uuid.Parse(c.Params("id"))
 	if err != nil {
 		return apierror.New().AddError(fmt.Errorf("bad wallet id")).SetHttpCode(fiber.StatusBadRequest)
@@ -143,8 +143,53 @@ func (h Handler) findTransactionsByWallet(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(converters.NewShortTransactionsListInfoFromDto(res)))
 }
 
+// notifyWalletEmail is a function to notify wallet email
+//
+//	@Summary		Notify wallet email
+//	@Description	Notify wallet email
+//	@Tags			Wallet,Public
+//	@Accept			json
+//	@Produce		json
+//	@Param			id			path		string	true	"Wallet ID"
+//	@Param			currency_id	query		string	false	"Currency ID"
+//	@Success		200			{object}	response.Result[string]
+//	@Failure		401			{object}	apierror.Errors
+//	@Failure		404			{object}	apierror.Errors
+//	@Failure		500			{object}	apierror.Errors
+//	@Router			/v1/public/wallet/{id}/confirm [get]
+func (h *Handler) notifyWalletEmail(c fiber.Ctx) error {
+	walletID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return apierror.New().AddError(fmt.Errorf("bad wallet id")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	// bind query parameters
+	req := &public_request.GetWalletRequest{}
+	if err := c.Bind().Query(req); err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	_, err = h.services.StoreService.GetStoreByWalletID(c.Context(), walletID)
+	if err != nil {
+		if strings.Contains(err.Error(), "store not found") {
+			return apierror.New().AddError(errors.New("store not found")).SetHttpCode(fiber.StatusNotFound)
+		}
+		if strings.Contains(err.Error(), "store is disabled") {
+			return apierror.New().AddError(errors.New("store is disabled")).SetHttpCode(fiber.StatusGone)
+		}
+		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	err = h.services.WalletService.SendUserWalletNotification(c.Context(), walletID, req.CurrencyID)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+	return c.JSON(response.OkByMessage("wallet confirmed successfully"))
+}
+
 func (h *Handler) initWalletRoutes(v1 fiber.Router) {
 	wallet := v1.Group("/wallet")
 	wallet.Get("/:id", h.getWalletData)
 	wallet.Get("/:id/tx-find", h.findTransactionsByWallet)
+	wallet.Get("/:id/confirm", h.notifyWalletEmail)
 }

@@ -8,8 +8,8 @@ package repo_transfer_transactions
 import (
 	"context"
 	"errors"
-	"github.com/dv-net/dv-merchant/internal/models"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"

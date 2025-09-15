@@ -6,6 +6,7 @@ package repo_user_exchange_pairs
 
 import (
 	"context"
+
 	"github.com/dv-net/dv-merchant/internal/models"
 )
 

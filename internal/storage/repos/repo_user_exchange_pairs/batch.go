@@ -8,8 +8,8 @@ package repo_user_exchange_pairs
 import (
 	"context"
 	"errors"
-	"github.com/dv-net/dv-merchant/internal/models"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )

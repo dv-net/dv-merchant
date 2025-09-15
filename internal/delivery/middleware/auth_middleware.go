@@ -31,6 +31,7 @@ func AuthMiddleware(auth auth.IAuth) fiber.Handler {
 		}
 
 		c.Locals("user", user)
+		c.Locals("token_hash", hashedToken)
 		return c.Next()
 	}
 }

@@ -6,8 +6,8 @@ package repo_user_address_book
 
 import (
 	"context"
-	"github.com/dv-net/dv-merchant/internal/models"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 )
 
