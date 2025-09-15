@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.9.5] - 2025-09-15
+- Fix walidation withdrawal exchnage [DV-3362]
+
 ## [0.9.4] - 2025-09-15
 - Added behavior handling for handling store being disabled [DV-3117]
 - Accept browser locale from frontend and send emails to payers based on specific locale with fallback to user language or English [DV-3086]
