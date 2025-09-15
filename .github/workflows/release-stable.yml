@@ -76,8 +76,8 @@ jobs:
           GPG_FINGERPRINT: ${{ secrets.GPG_FINGERPRINT }}
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           GORELEASER_KEY: ${{ secrets.GORELEASER_KEY }}
-          FURY_ACCOUNT: ${{ secrets.FURY_ACCOUNT_RC }}
-          FURY_TOKEN: ${{ secrets.FURY_TOKEN_RC }}
+          FURY_ACCOUNT: ${{ secrets.FURY_ACCOUNT_STABLE }}
+          FURY_TOKEN: ${{ secrets.FURY_TOKEN_STABLE }}
 
       - name: Remove GPG keys
         run: |
