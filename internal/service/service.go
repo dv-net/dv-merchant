@@ -135,7 +135,7 @@ func NewServices(
 	currencyService := currency.New(conf, storage)
 	eventListener := event.New()
 
-	adminSvc := admin_gateway.New(conf.Admin.BaseURL, appVersion, logger)
+	adminSvc := admin_gateway.New(conf.Admin.BaseURL, appVersion, logger, conf.Admin.LogStatus)
 	exrateService, err := exrate.New(conf, currencyService, logger, storage, adminSvc)
 	if err != nil {
 		logger.Error("init currency exchange rate service failed", err)
