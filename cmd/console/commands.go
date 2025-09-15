@@ -332,7 +332,7 @@ func prepareTransactionsCommands(currentAppVersion string) []*cli.Command {
 					return fmt.Errorf("storage init: %w", err)
 				}
 
-				dvAdmin := admin_gateway.New(conf.Admin.BaseURL, currentAppVersion, lg)
+				dvAdmin := admin_gateway.New(conf.Admin.BaseURL, currentAppVersion, lg, conf.Admin.LogStatus)
 				currService := currency.New(conf, st)
 				exrateService, err := exrate.New(conf, currService, lg, st, dvAdmin)
 				if err != nil {
