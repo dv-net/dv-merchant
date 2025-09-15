@@ -34,7 +34,7 @@ type UpdateWithdrawalSetting struct {
 type GetWithdrawalsRequest struct {
 	CurrencyID *string `json:"currency_id,omitempty" query:"currency_id" validate:"omitempty"`
 	DateFrom   *string `json:"date_from" query:"date_from" validate:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
-	DateTo     *string `json:"date_to" query:"date_to" validate:"omitempty,datetime=2006-01-02T15:04:05Z07:00,gtfield=DateFrom"`
+	DateTo     *string `json:"date_to" query:"date_to" validate:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
 	Slug       *string `json:"slug,omitempty" query:"slug" validate:"omitempty,alphanum"`
 	Page       *uint32 `json:"page,omitempty" query:"page" validate:"omitempty,min=1"`
 	PageSize   *uint32 `json:"page_size,omitempty" query:"page_size" validate:"omitempty,min=1,max=100"`
