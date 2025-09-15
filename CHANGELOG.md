@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Handler for confirm selected wallet currency[DV-3354]
 - Add validation for withdrawal exchange wallet by blockchain [DV-3326]
 - Add log memory buffer [DV-3359]
+- Added per store settings API [DV-3278]
 
 ## [0.6.1] - 2025-08-11
 - Internal/External API withdrawal route now takes a random store ID related to the user for internal requests, and uses the store ID from the XApiKey header for external requests. [DV-2704]

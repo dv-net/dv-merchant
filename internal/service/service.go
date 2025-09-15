@@ -208,7 +208,7 @@ func NewServices(
 		rate.WithDuration(conf.ExternalStoreLimits.RateLimitInterval),
 	)
 
-	storeService := store.New(storage, currencyService, logger, webhookService, eventListener, exrateService, walletService, notificationService, storeRateLimiter, conf.ExternalStoreLimits.Enabled, processingService)
+	storeService := store.New(storage, currencyService, logger, webhookService, eventListener, exrateService, walletService, notificationService, storeRateLimiter, conf.ExternalStoreLimits.Enabled, processingService, settingService)
 	otpSvc := otp.New(&otp.Config{TTL: time.Minute * 10}, tools.RandomCodeGenerator, storage.KeyValue())
 	userService := user.New(conf, storage, storeService, permissionService, processingService, notificationService, logger, settingService, adminSvc, otpSvc)
 

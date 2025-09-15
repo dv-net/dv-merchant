@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 
+	"github.com/dv-net/dv-merchant/internal/delivery/http/errors"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/setting_request"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
@@ -10,6 +11,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 	"github.com/dv-net/dv-merchant/internal/tools/converters"
 	"github.com/dv-net/dv-merchant/internal/tools/response"
+	"github.com/google/uuid"
 
 	// Blank import for swaggen
 	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/settings_response"
@@ -195,6 +197,148 @@ func (h Handler) getUserSettingList(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(availableSettings))
 }
 
+// getStoreSettingList is a function to get all available store settings
+//
+//	@Summary		List available store settings
+//	@Description	List available store settings
+//	@Tags			Setting
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	response.Result[[]setting.Dto]
+//	@Failure		401	{object}	apierror.Errors
+//	@Router			/v1/store-setting/list/{store_id} [get]
+//	@Security		BearerAuth
+func (h Handler) getStoreSettingList(c fiber.Ctx) error {
+	user, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	storeIDParam := c.Params("store_id")
+	if storeIDParam == "" {
+		return apierror.New().AddError(fmt.Errorf("store_id parameter is required")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	storeID, err := uuid.Parse(storeIDParam)
+	if err != nil {
+		return apierror.New().AddError(fmt.Errorf("invalid store_id format")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	store, err := h.services.StoreService.GetStoreByID(c.Context(), storeID)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	if user.ID != store.UserID {
+		return apierror.New().AddError(errors.ErrStoreOwnerMismatch).SetHttpCode(fiber.StatusForbidden)
+	}
+
+	availableSettings, err := h.services.SettingService.GetAvailableStoreModelSettings(c.Context(), setting.IModelSetting(store))
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+	return c.JSON(response.OkByData(availableSettings))
+}
+
+// createOrUpdateStoreSetting is a function to create or update store settings
+//
+//	@Summary		Create or update store settings
+//	@Description	Create or update store settings
+//	@Tags			Setting
+//	@Accept			json
+//	@Produce		json
+//	@Param			register	body		setting_request.CreateRequest	true	"Create or update store setting"
+//	@Success		200			{object}	response.Result[string]
+//	@Success		202			{object}	response.Result[string]
+//	@Failure		401			{object}	apierror.Errors
+//	@Failure		404			{object}	apierror.Errors
+//	@Failure		422			{object}	apierror.Errors
+//	@Router			/v1/store-setting/ [post]
+//	@Security		BearerAuth
+func (h Handler) createOrUpdateStoreSetting(c fiber.Ctx) error {
+	user, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	request := &setting_request.CreateRequest{}
+	if err := c.Bind().Body(request); err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	storeIDParam := c.Query("store_id")
+	if storeIDParam == "" {
+		return apierror.New().AddError(fmt.Errorf("store_id parameter is required")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	storeID, err := uuid.Parse(storeIDParam)
+	if err != nil {
+		return apierror.New().AddError(fmt.Errorf("invalid store_id format")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	store, err := h.services.StoreService.GetStoreByID(c.Context(), storeID)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	if user.ID != store.UserID {
+		return apierror.New().AddError(errors.ErrStoreOwnerMismatch).SetHttpCode(fiber.StatusForbidden)
+	}
+
+	if err = h.services.SettingService.SetStoreModelSetting(c.Context(), setting.UpdateDTO{
+		Name:  request.Name,
+		Value: *request.Value,
+		Model: setting.IModelSetting(store),
+	}); err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByMessage("success"))
+}
+
+// getStoreSettingByName is a function to get concrete store setting
+//
+//	@Summary		Get store setting value
+//	@Description	Get store setting value
+//	@Tags			Setting
+//	@Produce		json
+//	@Success		200	{object}	response.Result[settings_response.SettingResponse]
+//	@Failure		401	{object}	apierror.Errors
+//	@Router			/v1/store-setting/{setting_name} [get]
+//	@Security		BearerAuth
+func (h Handler) getStoreSettingByName(c fiber.Ctx) error {
+	user, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	storeIDParam := c.Query("store_id")
+	if storeIDParam == "" {
+		return apierror.New().AddError(fmt.Errorf("store_id parameter is required")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	storeID, err := uuid.Parse(storeIDParam)
+	if err != nil {
+		return apierror.New().AddError(fmt.Errorf("invalid store_id format")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	store, err := h.services.StoreService.GetStoreByID(c.Context(), storeID)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	if user.ID != store.UserID {
+		return apierror.New().AddError(errors.ErrStoreOwnerMismatch).SetHttpCode(fiber.StatusUnauthorized)
+	}
+
+	res, err := h.services.SettingService.GetStoreModelSetting(c.Context(), c.Params("setting_name"), setting.IModelSetting(store))
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(converters.FromSettingModelToResponse(res)))
+}
+
 func (h Handler) initSettingRoutes(v1 fiber.Router) {
 	rootSettings := v1.Group("/root-setting", h.services.PermissionService.FiberMiddleware(models.UserRoleRoot))
 	rootSettings.Post("/", h.createOrUpdateRootSetting)
@@ -210,4 +354,14 @@ func (h Handler) initSettingRoutes(v1 fiber.Router) {
 	userSettings.Get("/list", h.getUserSettingList)
 	userSettings.Post("/", h.createOrUpdateUserSetting)
 	userSettings.Get("/:setting_name", h.getSettingByName)
+
+	storeSettings := v1.Group("/store-setting", h.services.PermissionService.FiberMiddleware(
+		[]models.UserRole{
+			models.UserRoleRoot,
+			models.UserRoleDefault,
+		}...,
+	))
+	storeSettings.Get("/list/:store_id", h.getStoreSettingList)
+	storeSettings.Post("/", h.createOrUpdateStoreSetting)
+	storeSettings.Get("/:setting_name", h.getStoreSettingByName)
 }
