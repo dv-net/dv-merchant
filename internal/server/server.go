@@ -37,7 +37,9 @@ func NewServer(cfg config.HTTPConfig, services *service.Services, logger logger.
 }
 
 func (s *Server) Run() error {
-	return s.app.Listen(":" + s.cfg.Port)
+	return s.app.Listen(":"+s.cfg.Port, fiber.ListenConfig{
+		DisableStartupMessage: true,
+	})
 }
 
 func (s *Server) Stop() error {

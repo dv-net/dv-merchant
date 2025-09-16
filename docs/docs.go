@@ -1792,7 +1792,52 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response_GetLastLogsResponse"
+                            "$ref": "#/definitions/JSONResponse-GetLastLogsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/logs/last-processing": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Logs"
+                ],
+                "summary": "Get last processing logs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-GetLastLogsResponse"
                         }
                     },
                     "404": {
@@ -2332,7 +2377,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response_OwnerProcessingResponse"
+                            "$ref": "#/definitions/JSONResponse-OwnerProcessingResponse"
                         }
                     },
                     "400": {
@@ -10772,6 +10817,17 @@ const docTemplate = `{
                 }
             }
         },
+        "GetLastLogsResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_dto.LogDTO"
+                    }
+                }
+            }
+        },
         "GetMonitorTypesResponse": {
             "type": "object",
             "properties": {
@@ -11392,6 +11448,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-GetLastLogsResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/GetLastLogsResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-GetMonitorTypesResponse": {
             "type": "object",
             "properties": {
@@ -11470,6 +11540,20 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/OwnerData"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-OwnerProcessingResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/OwnerProcessingResponse"
                 },
                 "message": {
                     "type": "string"
@@ -12409,20 +12493,6 @@ const docTemplate = `{
                 }
             }
         },
-        "JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response_GetLastLogsResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "data": {
-                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.GetLastLogsResponse"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
         "JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response_MnemonicResponse": {
             "type": "object",
             "properties": {
@@ -12431,20 +12501,6 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response_OwnerProcessingResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "data": {
-                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response.OwnerProcessingResponse"
                 },
                 "message": {
                     "type": "string"
@@ -12706,6 +12762,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "telegram": {
+                    "type": "string"
+                }
+            }
+        },
+        "OwnerProcessingResponse": {
+            "type": "object",
+            "properties": {
+                "owner_id": {
                     "type": "string"
                 }
             }
@@ -14922,17 +14986,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.GetLastLogsResponse": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_pkg_logger.MemoryLogDTO"
-                    }
-                }
-            }
-        },
         "github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.LogData": {
             "type": "object",
             "properties": {
@@ -14962,10 +15015,16 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response.OwnerProcessingResponse": {
+        "github_com_dv-net_dv-merchant_internal_dto.LogDTO": {
             "type": "object",
             "properties": {
-                "owner_id": {
+                "level": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "time": {
                     "type": "string"
                 }
             }
@@ -15405,20 +15464,6 @@ const docTemplate = `{
                 },
                 "resolution": {
                     "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.Resolution"
-                }
-            }
-        },
-        "github_com_dv-net_dv-merchant_pkg_logger.MemoryLogDTO": {
-            "type": "object",
-            "properties": {
-                "level": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "time": {
-                    "type": "string"
                 }
             }
         },
