@@ -49,7 +49,7 @@ func InitCommands(currentAppVersion, commitHash string) []*cli.Command {
 				if err != nil {
 					return fmt.Errorf("failed to load config: %w", err)
 				}
-
+				PrintBanner(currentAppVersion)
 				l := logger.New(currentAppVersion, conf.Log)
 				l.Info("Logger Init")
 				return app.Run(ctx.Context, conf, l, currentAppVersion, commitHash)

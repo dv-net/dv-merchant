@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.5] - 2025-09-15
 - Fix walidation withdrawal exchnage [DV-3362]
+- Add last processing logs endpoint and update log response structure [DV-3379]
 
 ## [0.9.4] - 2025-09-15
 - Added behavior handling for handling store being disabled [DV-3117]
