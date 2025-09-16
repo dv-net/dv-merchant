@@ -12,7 +12,5 @@ func PrintBanner(version string) {
 ╚═════╝░░░░╚═╝░░░╚═╝╚═╝░░╚══╝╚══════╝░░░╚═╝░░░
 `
 	fmt.Println(banner)
-	fmt.Printf("           DV merchant %s\n", version)
-	fmt.Println("\n")
-
+	fmt.Printf("           DV merchant %s\n\n", version)
 }
