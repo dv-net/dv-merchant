@@ -10,6 +10,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 	"github.com/dv-net/dv-merchant/internal/tools/converters"
 	"github.com/dv-net/dv-merchant/internal/tools/response"
+
 	// Blank import for swaggen
 	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/settings_response"
 	_ "github.com/dv-net/dv-merchant/internal/service/processing"
