@@ -1,0 +1,1 @@
+DELETE FROM settings WHERE name IN ('external_wallet_email_notification', 'user_crypto_receipt_email_notification');

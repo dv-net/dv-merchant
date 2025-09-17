@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add validation for withdrawal exchange wallet by blockchain [DV-3326]
 - Add log memory buffer [DV-3359]
 - Fixed bug with withdrawals rules not being created on clean install via address book [DV-3339]
+- Added per store settings API [DV-3278]
 
 ## [0.9.5] - 2025-09-15
 - Fix walidation withdrawal exchnage [DV-3362]
