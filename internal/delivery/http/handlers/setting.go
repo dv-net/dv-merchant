@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 
-	"github.com/dv-net/dv-merchant/internal/delivery/http/errors"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/setting_request"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
@@ -11,8 +10,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 	"github.com/dv-net/dv-merchant/internal/tools/converters"
 	"github.com/dv-net/dv-merchant/internal/tools/response"
-	"github.com/google/uuid"
-
 	// Blank import for swaggen
 	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/settings_response"
 	_ "github.com/dv-net/dv-merchant/internal/service/processing"
@@ -158,15 +155,15 @@ func (h Handler) listRootSettings(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[settings_response.SettingResponse]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/user-setting/{setting_name} [get]
+//	@Router			/v1/dv-admin/user-setting/{setting_name} [get]
 //	@Security		BearerAuth
 func (h *Handler) getSettingByName(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
 
-	res, err := h.services.SettingService.GetModelSetting(c.Context(), c.Params("setting_name"), user)
+	res, err := h.services.SettingService.GetModelSetting(c.Context(), c.Params("setting_name"), usr)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -183,7 +180,7 @@ func (h *Handler) getSettingByName(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[[]setting.Dto]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/user-setting/list [get]
+//	@Router			/v1/dv-admin/user-setting/list [get]
 //	@Security		BearerAuth
 func (h Handler) getUserSettingList(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
@@ -206,34 +203,15 @@ func (h Handler) getUserSettingList(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[[]setting.Dto]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/store-setting/list/{store_id} [get]
+//	@Router			/v1/dv-admin/store-setting/list/{id} [get]
 //	@Security		BearerAuth
 func (h Handler) getStoreSettingList(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
 	}
 
-	storeIDParam := c.Params("store_id")
-	if storeIDParam == "" {
-		return apierror.New().AddError(fmt.Errorf("store_id parameter is required")).SetHttpCode(fiber.StatusBadRequest)
-	}
-
-	storeID, err := uuid.Parse(storeIDParam)
-	if err != nil {
-		return apierror.New().AddError(fmt.Errorf("invalid store_id format")).SetHttpCode(fiber.StatusBadRequest)
-	}
-
-	store, err := h.services.StoreService.GetStoreByID(c.Context(), storeID)
-	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
-	}
-
-	if user.ID != store.UserID {
-		return apierror.New().AddError(errors.ErrStoreOwnerMismatch).SetHttpCode(fiber.StatusForbidden)
-	}
-
-	availableSettings, err := h.services.SettingService.GetAvailableStoreModelSettings(c.Context(), setting.IModelSetting(store))
+	availableSettings, err := h.services.SettingService.GetAvailableStoreModelSettings(c.Context(), setting.IModelSetting(targetStore))
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -253,10 +231,10 @@ func (h Handler) getStoreSettingList(c fiber.Ctx) error {
 //	@Failure		401			{object}	apierror.Errors
 //	@Failure		404			{object}	apierror.Errors
 //	@Failure		422			{object}	apierror.Errors
-//	@Router			/v1/store-setting/ [post]
+//	@Router			/v1/dv-admin/store-setting/{id} [post]
 //	@Security		BearerAuth
 func (h Handler) createOrUpdateStoreSetting(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
 	}
@@ -266,29 +244,10 @@ func (h Handler) createOrUpdateStoreSetting(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	storeIDParam := c.Query("store_id")
-	if storeIDParam == "" {
-		return apierror.New().AddError(fmt.Errorf("store_id parameter is required")).SetHttpCode(fiber.StatusBadRequest)
-	}
-
-	storeID, err := uuid.Parse(storeIDParam)
-	if err != nil {
-		return apierror.New().AddError(fmt.Errorf("invalid store_id format")).SetHttpCode(fiber.StatusBadRequest)
-	}
-
-	store, err := h.services.StoreService.GetStoreByID(c.Context(), storeID)
-	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
-	}
-
-	if user.ID != store.UserID {
-		return apierror.New().AddError(errors.ErrStoreOwnerMismatch).SetHttpCode(fiber.StatusForbidden)
-	}
-
 	if err = h.services.SettingService.SetStoreModelSetting(c.Context(), setting.UpdateDTO{
 		Name:  request.Name,
 		Value: *request.Value,
-		Model: setting.IModelSetting(store),
+		Model: setting.IModelSetting(targetStore),
 	}); err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -304,34 +263,15 @@ func (h Handler) createOrUpdateStoreSetting(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[settings_response.SettingResponse]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/store-setting/{setting_name} [get]
+//	@Router			/v1/dv-admin/store-setting/{id}/{setting_name} [get]
 //	@Security		BearerAuth
 func (h Handler) getStoreSettingByName(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
 	}
 
-	storeIDParam := c.Query("store_id")
-	if storeIDParam == "" {
-		return apierror.New().AddError(fmt.Errorf("store_id parameter is required")).SetHttpCode(fiber.StatusBadRequest)
-	}
-
-	storeID, err := uuid.Parse(storeIDParam)
-	if err != nil {
-		return apierror.New().AddError(fmt.Errorf("invalid store_id format")).SetHttpCode(fiber.StatusBadRequest)
-	}
-
-	store, err := h.services.StoreService.GetStoreByID(c.Context(), storeID)
-	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
-	}
-
-	if user.ID != store.UserID {
-		return apierror.New().AddError(errors.ErrStoreOwnerMismatch).SetHttpCode(fiber.StatusUnauthorized)
-	}
-
-	res, err := h.services.SettingService.GetStoreModelSetting(c.Context(), c.Params("setting_name"), setting.IModelSetting(store))
+	res, err := h.services.SettingService.GetStoreModelSetting(c.Context(), c.Params("setting_name"), setting.IModelSetting(targetStore))
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -361,7 +301,7 @@ func (h Handler) initSettingRoutes(v1 fiber.Router) {
 			models.UserRoleDefault,
 		}...,
 	))
-	storeSettings.Get("/list/:store_id", h.getStoreSettingList)
-	storeSettings.Post("/", h.createOrUpdateStoreSetting)
-	storeSettings.Get("/:setting_name", h.getStoreSettingByName)
+	storeSettings.Get("/list/:id", h.getStoreSettingList)
+	storeSettings.Post("/:id", h.createOrUpdateStoreSetting)
+	storeSettings.Get("/:id/:setting_name", h.getStoreSettingByName)
 }

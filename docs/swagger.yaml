@@ -5842,6 +5842,86 @@ paths:
       summary: List available root settings
       tags:
       - Setting
+  /v1/dv-admin/store-setting/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Create or update store settings
+      parameters:
+      - description: Create or update store setting
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/CreateSettingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Create or update store settings
+      tags:
+      - Setting
+  /v1/dv-admin/store-setting/{id}/{setting_name}:
+    get:
+      description: Get store setting value
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-SettingResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Get store setting value
+      tags:
+      - Setting
+  /v1/dv-admin/store-setting/list/{id}:
+    get:
+      consumes:
+      - application/json
+      description: List available store settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: List available store settings
+      tags:
+      - Setting
   /v1/dv-admin/store/:
     get:
       consumes:
@@ -7481,6 +7561,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Create or update root settings
+      tags:
+      - Setting
+  /v1/dv-admin/user-setting/{setting_name}:
+    get:
+      description: Get setting value
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-SettingResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Get setting value
+      tags:
+      - Setting
+  /v1/dv-admin/user-setting/list:
+    get:
+      consumes:
+      - application/json
+      description: List available user settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: List available user settings
       tags:
       - Setting
   /v1/dv-admin/user/change-email:
@@ -10018,86 +10138,6 @@ paths:
       tags:
       - Wallet
       - Public
-  /v1/store-setting/:
-    post:
-      consumes:
-      - application/json
-      description: Create or update store settings
-      parameters:
-      - description: Create or update store setting
-        in: body
-        name: register
-        required: true
-        schema:
-          $ref: '#/definitions/CreateSettingRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-string'
-        "202":
-          description: Accepted
-          schema:
-            $ref: '#/definitions/JSONResponse-string'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Create or update store settings
-      tags:
-      - Setting
-  /v1/store-setting/{setting_name}:
-    get:
-      description: Get store setting value
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-SettingResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Get store setting value
-      tags:
-      - Setting
-  /v1/store-setting/list/{store_id}:
-    get:
-      consumes:
-      - application/json
-      description: List available store settings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: List available store settings
-      tags:
-      - Setting
   /v1/store/{id}/whitelists/{ip}:
     delete:
       consumes:
@@ -10134,46 +10174,6 @@ paths:
       summary: Delete store whitelist
       tags:
       - Store
-  /v1/user-setting/{setting_name}:
-    get:
-      description: Get setting value
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-SettingResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Get setting value
-      tags:
-      - Setting
-  /v1/user-setting/list:
-    get:
-      consumes:
-      - application/json
-      description: List available user settings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: List available user settings
-      tags:
-      - Setting
 securityDefinitions:
   BearerAuth:
     in: header
