@@ -3,7 +3,7 @@ package log_response
 import (
 	"time"
 
-	"github.com/dv-net/dv-merchant/pkg/logger"
+	"github.com/dv-net/dv-merchant/internal/dto"
 	"github.com/google/uuid"
 )
 
@@ -30,5 +30,5 @@ type GetLogsResponse struct {
 } // @name GetMonitorTypesResponse
 
 type GetLastLogsResponse struct {
-	Items []logger.MemoryLogDTO `json:"items"`
-}
+	Items []dto.LogDTO `json:"items"`
+} // @name GetLastLogsResponse

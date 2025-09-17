@@ -20,10 +20,11 @@ require (
 	connectrpc.com/connect v1.18.1
 	github.com/casbin/casbin/v2 v2.120.0
 	github.com/cbroglie/mustache v1.4.0
-	github.com/dv-net/dv-processing v0.9.1
+	github.com/dv-net/dv-processing v0.9.5-RC01
 	github.com/dv-net/dv-proto v0.5.1
+	github.com/dv-net/email-template v0.1.4
 	github.com/dv-net/go-bip39 v1.1.1
-	github.com/dv-net/mx v0.1.0
+	github.com/dv-net/mx v0.1.1
 	github.com/dv-net/xconfig v0.1.0
 	github.com/dv-net/xconfig/decoders/xconfigyaml v0.0.0-20250828100326-2c7d793ffc71
 	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21
@@ -127,7 +128,6 @@ require (
 	github.com/dromara/carbon/v2 v2.5.4 // indirect
 	github.com/dv-net/dv-merchant/pkg/linters/dbtxcheck v0.0.0-00010101000000-000000000000 // indirect
 	github.com/dv-net/dv-merchant/pkg/linters/structinit v0.0.0-00010101000000-000000000000 // indirect
-	github.com/dv-net/email-template v0.1.4 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
 	github.com/ethereum/go-ethereum v1.15.8 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
