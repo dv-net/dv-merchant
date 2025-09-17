@@ -114,7 +114,7 @@ func (s *Service) deleteEVMAddress(ctx context.Context, userID uuid.UUID, addres
 }
 
 func (s *Service) cleanupWithdrawalRule(ctx context.Context, addressEntry *models.UserAddressBook, tx pgx.Tx) error {
-	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, addressEntry.UserID, addressEntry.CurrencyID)
+	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, addressEntry.UserID, addressEntry.CurrencyID, repos.WithTx(tx))
 	if err != nil {
 		s.logger.Warn("Withdrawal wallet not found for cleanup",
 			"currency", addressEntry.CurrencyID,

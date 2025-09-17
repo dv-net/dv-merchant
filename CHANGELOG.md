@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- Add validation for withdrawal exchange wallet by blockchain [DV-3326]
+- Add log memory buffer [DV-3359]
+- Fixed bug with withdrawals rules not being created on clean install via address book [DV-3339]
 
 ## [0.9.5] - 2025-09-15
 - Fix walidation withdrawal exchnage [DV-3362]
@@ -33,8 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sort wallet addresses by blockchain and native token in email notification [DV-3174]
 - Mask response with CEX API keys [DV-3332]
 - Add Handler for confirm selected wallet currency[DV-3354]
-- Add validation for withdrawal exchange wallet by blockchain [DV-3326]
-- Add log memory buffer [DV-3359]
 
 ## [0.6.1] - 2025-08-11
 - Internal/External API withdrawal route now takes a random store ID related to the user for internal requests, and uses the store ID from the XApiKey header for external requests. [DV-2704]
