@@ -2,6 +2,7 @@ package processing
 
 import (
 	"fmt"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/dv-net/dv-merchant/internal/dto"
@@ -59,7 +60,7 @@ func (s *Service) GetProcessingLogs(ctx context.Context) ([]dto.LogDTO, error) {
 		logs = append(logs, dto.LogDTO{
 			Level:   l.Level,
 			Message: l.Message,
-			Time:    l.Time.AsTime(),
+			Time:    l.Time.AsTime().Format(time.RFC3339),
 		})
 	}
 
