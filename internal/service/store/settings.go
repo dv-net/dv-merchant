@@ -3,18 +3,12 @@ package store
 import (
 	"context"
 
-	"github.com/google/uuid"
-
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 )
 
-func (s *Service) CreateStoreSettings(ctx context.Context, storeID uuid.UUID, opts ...repos.Option) error {
-	store, err := s.GetStoreByID(ctx, storeID)
-	if err != nil {
-		return err
-	}
-
+func (s *Service) CreateStoreSettings(ctx context.Context, store *models.Store, opts ...repos.Option) error {
 	settings := []setting.UpdateDTO{
 		{
 			Name:  setting.ExternalWalletsListNotification,

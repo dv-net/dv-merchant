@@ -187,7 +187,7 @@ func (s *Service) CreateStore(ctx context.Context, dto CreateStore, user *models
 			return err
 		}
 		// create store settings
-		err = s.CreateStoreSettings(ctx, st.ID, repos.WithTx(tx))
+		err = s.CreateStoreSettings(ctx, st, repos.WithTx(tx))
 		if err != nil {
 			return err
 		}
