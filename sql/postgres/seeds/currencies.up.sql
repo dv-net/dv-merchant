@@ -1,7 +1,7 @@
 insert into currencies (id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, created_at, updated_at, status, sort_order, min_confirmation, is_stablecoin, currency_label, token_label)
 values
     ('BTC.Bitcoin', 'BTC', 'BTC', 8, false, 'bitcoin', 'btc', 0.00000000, true, 'now()', 'now()', true, 1, 1, false, 'Bitcoin', null),
-    ('ETH.Ethereum', 'ETH', 'ETH', 6, false, 'ethereum', 'eth', 10.00000000, false, 'now()', 'now()',true, 1, 1, false, null, null),
+    ('ETH.Ethereum', 'ETH', 'ETH', 6, false, 'ethereum', 'eth', 10.00000000, false, 'now()', 'now()',true, 1, 1, false, 'Ethereum', null),
     ('TRX.Tron', 'TRX', 'TRX', 6, false, 'tron', 'trx', 10.00000000, false, 'now()', 'now()', true, 1, 19, false, 'Tron', null),
     ('USD', 'USD', 'USD', 2, true, null, null, null, false, 'now()', 'now()', false, 1, null, false, null, null),
     ('USDT.Ethereum', 'USDT', 'USDT', 2, false, 'ethereum', '0xdac17f958d2ee523a2206206994597c13d831ec7', 10.00000000, false, 'now()', 'now()', true, 1, 1, true, 'Tether', 'ERC-20'),
@@ -19,7 +19,7 @@ values
     ('USDC.Polygon', 'USDC', 'USDC', 8, false, 'polygon', '0x3c499c542cef5e3811e1192ce70d8cc03d5c3359', 0.00000000, true, 'now()', 'now()', true, 1, 1, true, 'Circle USD', null),
     ('DAI.Polygon', 'DAI', 'DAI', 8, false, 'polygon', '0x8f3cf7ad23cd3cadbd9735aff958023239c6a063', 0.00000000, true, 'now()', 'now()', true, 1, 1, true, null, null),
     ('DOGE.Dogecoin', 'DOGE', 'DOGE', 8, false, 'dogecoin', 'doge', 0.00000000, true, 'now()', 'now()', true, 1, 1, false, 'Dogecoin', null),
-    ('ETH.Arbitrum', 'ETH', 'ETH', 8, false, 'arbitrum', 'eth', 0.00000000, true, 'now()', 'now()', true, 1, 19, false, null, null),
+    ('ETH.Arbitrum', 'ETH', 'ETH', 8, false, 'arbitrum', 'eth', 0.00000000, true, 'now()', 'now()', true, 1, 19, false, 'Ethereum', null),
     ('USDT.Arbitrum', 'USDT', 'USDT', 2, false, 'arbitrum', '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9', 0.00000000, true, 'now()', 'now()', true, 1, 19, true, 'Tether', null),
     ('USDC.Arbitrum', 'USDC', 'USDC', 2, false, 'arbitrum', '0xaf88d065e77c8cc2239327c5edb3a432268e5831', 0.00000000, true, 'now()', 'now()', true, 1, 19, true, 'Circle USD', null),
     ('DAI.Arbitrum', 'DAI', 'DAI', 2, false, 'arbitrum', '0xda10009cbd5d07dd0cecc66161fc93d7c9000da1', 0.00000000, true, 'now()', 'now()', true, 1, 19, true, null, null)
