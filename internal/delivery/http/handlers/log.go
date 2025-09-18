@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"time"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/log_response"
 	"github.com/dv-net/dv-merchant/internal/delivery/middleware"
@@ -92,7 +93,7 @@ func (h *Handler) getLogs(c fiber.Ctx) error {
 		logs = append(logs, dto.LogDTO{
 			Level:   l.Level,
 			Message: l.Message,
-			Time:    l.Time,
+			Time:    l.Time.UTC().Format(time.RFC3339),
 		})
 	}
 
