@@ -93,7 +93,7 @@ func (h *Handler) getLogs(c fiber.Ctx) error {
 		logs = append(logs, dto.LogDTO{
 			Level:   l.Level,
 			Message: l.Message,
-			Time:    l.Time.UTC().Format(time.RFC3339),
+			Time:    l.Time.UTC().Format(time.RFC3339Nano),
 		})
 	}
 

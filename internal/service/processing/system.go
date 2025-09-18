@@ -60,7 +60,7 @@ func (s *Service) GetProcessingLogs(ctx context.Context) ([]dto.LogDTO, error) {
 		logs = append(logs, dto.LogDTO{
 			Level:   l.Level,
 			Message: l.Message,
-			Time:    l.Time.AsTime().Format(time.RFC3339),
+			Time:    l.Time.AsTime().Format(time.RFC3339Nano),
 		})
 	}
 
