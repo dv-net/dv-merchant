@@ -1,8 +1,8 @@
 postgres:
   addr: "127.0.0.1:5433"
-  user: "github.com/dv-net/dv-merchant"
+  user: "dv-merchant"
   password: ""
-  db_name: "github.com/dv-net/dv-merchant"
+  db_name: "dv-merchant"
 redis:
   addr: "127.0.0.1:6380"
   user: ""

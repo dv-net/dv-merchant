@@ -2,6 +2,7 @@ package address_book
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -64,25 +65,25 @@ func (s *Service) createSingleAddress(ctx context.Context, params CreateAddressD
 			}
 
 			// If address exists but is soft-deleted, restore it
-			address, err = s.restoreAddressEntry(ctx, params, tx)
+			address, err = s.restoreAddressEntry(ctx, params, repos.WithTx(tx))
 			if err != nil {
 				return err
 			}
 
 			// Check if we need to create/restore a withdrawal rule
 			if params.CreateWithdrawalRule {
-				if err := s.restoreWithdrawalRule(ctx, address, user, params.TOTP, tx); err != nil {
+				if err := s.restoreWithdrawalRule(ctx, address, user, params.TOTP, repos.WithTx(tx)); err != nil {
 					return fmt.Errorf("failed to create withdrawal rule: %w", err)
 				}
 			}
 		} else {
-			address, err = s.createNewAddressEntry(ctx, params, blockchain, tx)
+			address, err = s.createNewAddressEntry(ctx, params, blockchain, repos.WithTx(tx))
 			if err != nil {
 				return err
 			}
 			// Check if we need to create/restore a withdrawal rule
 			if params.CreateWithdrawalRule {
-				if err := s.restoreWithdrawalRule(ctx, address, user, params.TOTP, tx); err != nil {
+				if err := s.restoreWithdrawalRule(ctx, address, user, params.TOTP, repos.WithTx(tx)); err != nil {
 					return fmt.Errorf("failed to create withdrawal rule: %w", err)
 				}
 			}
@@ -137,8 +138,8 @@ func (s *Service) createUniversalAddress(ctx context.Context, params CreateAddre
 				params.Blockchain,
 				user,
 				params.TOTP,
-				tx,
 				params.CreateWithdrawalRule,
+				repos.WithTx(tx),
 			)
 			if err != nil {
 				return err
@@ -212,8 +213,8 @@ func (s *Service) createEVMAddress(ctx context.Context, params CreateAddressDTO)
 					&blockchain,
 					user,
 					params.TOTP,
-					tx,
 					params.CreateWithdrawalRule,
+					repos.WithTx(tx),
 				)
 				if err != nil {
 					return err
@@ -246,7 +247,7 @@ func (s *Service) createEVMAddress(ctx context.Context, params CreateAddressDTO)
 	return firstAddress, nil
 }
 
-func (s *Service) restoreAddressEntry(ctx context.Context, params CreateAddressDTO, tx pgx.Tx) (*models.UserAddressBook, error) {
+func (s *Service) restoreAddressEntry(ctx context.Context, params CreateAddressDTO, opts ...repos.Option) (*models.UserAddressBook, error) {
 	restoreParams := repo_user_address_book.RestoreFromTrashParams{
 		UserID:     params.UserID,
 		Address:    params.Address,
@@ -270,7 +271,7 @@ func (s *Service) restoreAddressEntry(ctx context.Context, params CreateAddressD
 		restoreParams.Tag = pgtype.Text{String: *params.Tag, Valid: true}
 	}
 
-	address, err := s.storage.UserAddressBook(repos.WithTx(tx)).RestoreFromTrash(ctx, restoreParams)
+	address, err := s.storage.UserAddressBook(opts...).RestoreFromTrash(ctx, restoreParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to restore address from trash: %w", err)
 	}
@@ -283,7 +284,7 @@ func (s *Service) restoreAddressEntry(ctx context.Context, params CreateAddressD
 	return address, nil
 }
 
-func (s *Service) createNewAddressEntry(ctx context.Context, params CreateAddressDTO, blockchain *models.Blockchain, tx pgx.Tx) (*models.UserAddressBook, error) {
+func (s *Service) createNewAddressEntry(ctx context.Context, params CreateAddressDTO, blockchain *models.Blockchain, opts ...repos.Option) (*models.UserAddressBook, error) {
 	createParams := repo_user_address_book.CreateParams{
 		UserID:     params.UserID,
 		Address:    params.Address,
@@ -309,7 +310,7 @@ func (s *Service) createNewAddressEntry(ctx context.Context, params CreateAddres
 		createParams.Tag = pgtype.Text{String: *params.Tag, Valid: true}
 	}
 
-	address, err := s.storage.UserAddressBook(repos.WithTx(tx)).Create(ctx, createParams)
+	address, err := s.storage.UserAddressBook(opts...).Create(ctx, createParams)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create address: %w", err)
 	}
@@ -317,10 +318,14 @@ func (s *Service) createNewAddressEntry(ctx context.Context, params CreateAddres
 	return address, nil
 }
 
-func (s *Service) createWithdrawalRule(ctx context.Context, addressEntry *models.UserAddressBook, user *models.User, totp string, tx pgx.Tx) error {
-	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, addressEntry.UserID, addressEntry.CurrencyID)
+func (s *Service) createWithdrawalRule(ctx context.Context, addressEntry *models.UserAddressBook, user *models.User, totp string, opts ...repos.Option) error {
+	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, addressEntry.UserID, addressEntry.CurrencyID, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to get withdrawal wallet: %w", err)
+	}
+
+	if withdrawalWallet == nil {
+		return fmt.Errorf("withdrawal wallet is nil for user %s and currency %s", addressEntry.UserID, addressEntry.CurrencyID)
 	}
 
 	createParams := repo_withdrawal_wallet_addresses.CreateParams{
@@ -333,13 +338,13 @@ func (s *Service) createWithdrawalRule(ctx context.Context, addressEntry *models
 	}
 
 	// Create the withdrawal wallet address within our transaction
-	_, err = s.storage.WithdrawalWalletAddresses(repos.WithTx(tx)).Create(ctx, createParams)
+	_, err = s.storage.WithdrawalWalletAddresses(opts...).Create(ctx, createParams)
 	if err != nil {
-		return fmt.Errorf("failed to create withdrawal wallet address: %w", err)
+		return fmt.Errorf("failed to create withdrawal wallet address with address book (withdrawal_wallet_id=%s): %w", withdrawalWallet.ID, err)
 	}
 
 	// Update processing whitelist with the new address
-	if err := s.updateProcessingWhitelist(ctx, withdrawalWallet.ID, user, totp, tx); err != nil {
+	if err := s.updateProcessingWhitelist(ctx, withdrawalWallet.ID, withdrawalWallet.Currency.Blockchain, user, totp, opts...); err != nil {
 		return fmt.Errorf("failed to update processing whitelist: %w", err)
 	}
 
@@ -351,13 +356,17 @@ func (s *Service) createWithdrawalRule(ctx context.Context, addressEntry *models
 	return nil
 }
 
-func (s *Service) restoreWithdrawalRule(ctx context.Context, addressEntry *models.UserAddressBook, user *models.User, totp string, tx pgx.Tx) error {
-	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, addressEntry.UserID, addressEntry.CurrencyID)
+func (s *Service) restoreWithdrawalRule(ctx context.Context, addressEntry *models.UserAddressBook, user *models.User, totp string, opts ...repos.Option) error {
+	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, addressEntry.UserID, addressEntry.CurrencyID, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to get withdrawal wallet: %w", err)
 	}
 
-	withdrawalAddress, err := s.storage.WithdrawalWalletAddresses().GetByAddressWithTrashed(ctx, repo_withdrawal_wallet_addresses.GetByAddressWithTrashedParams{
+	if withdrawalWallet == nil {
+		return fmt.Errorf("withdrawal wallet is nil for user %s and currency %s", addressEntry.UserID, addressEntry.CurrencyID)
+	}
+
+	withdrawalAddress, err := s.storage.WithdrawalWalletAddresses(opts...).GetByAddressWithTrashed(ctx, repo_withdrawal_wallet_addresses.GetByAddressWithTrashedParams{
 		WithdrawalWalletID: withdrawalWallet.ID,
 		Address:            addressEntry.Address,
 	})
@@ -366,7 +375,7 @@ func (s *Service) restoreWithdrawalRule(ctx context.Context, addressEntry *model
 			"address", addressEntry.Address,
 			"currency", addressEntry.CurrencyID,
 			"user_id", addressEntry.UserID)
-		return s.createWithdrawalRule(ctx, addressEntry, user, totp, tx)
+		return s.createWithdrawalRule(ctx, addressEntry, user, totp, opts...)
 	}
 
 	if withdrawalAddress.DeletedAt.Valid {
@@ -375,7 +384,7 @@ func (s *Service) restoreWithdrawalRule(ctx context.Context, addressEntry *model
 			name = &addressEntry.Name.String
 		}
 
-		_, err = s.storage.WithdrawalWalletAddresses(repos.WithTx(tx)).UpdateDeletedAddress(ctx, repo_withdrawal_wallet_addresses.UpdateDeletedAddressParams{
+		_, err = s.storage.WithdrawalWalletAddresses(opts...).UpdateDeletedAddress(ctx, repo_withdrawal_wallet_addresses.UpdateDeletedAddressParams{
 			ID:   withdrawalAddress.ID,
 			Name: name,
 		})
@@ -384,7 +393,7 @@ func (s *Service) restoreWithdrawalRule(ctx context.Context, addressEntry *model
 		}
 
 		// Update processing whitelist after restoration
-		if err := s.updateProcessingWhitelist(ctx, withdrawalWallet.ID, user, totp, tx); err != nil {
+		if err := s.updateProcessingWhitelist(ctx, withdrawalWallet.ID, withdrawalWallet.Currency.Blockchain, user, totp, opts...); err != nil {
 			return fmt.Errorf("failed to update processing whitelist: %w", err)
 		}
 
@@ -413,7 +422,7 @@ func (s *Service) addWithdrawalRuleForSimpleAddress(ctx context.Context, userID 
 	}
 
 	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
-		return s.restoreWithdrawalRule(ctx, addressEntry, user, totp, tx)
+		return s.restoreWithdrawalRule(ctx, addressEntry, user, totp, repos.WithTx(tx))
 	})
 }
 
@@ -435,7 +444,7 @@ func (s *Service) addWithdrawalRulesForUniversalAddress(ctx context.Context, use
 
 	err = repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		for _, entry := range entries {
-			if err := s.restoreWithdrawalRule(ctx, entry, user, totp, tx); err != nil {
+			if err := s.restoreWithdrawalRule(ctx, entry, user, totp, repos.WithTx(tx)); err != nil {
 				return fmt.Errorf("failed to restore/create withdrawal rule for currency %s: %w", entry.CurrencyID, err)
 			}
 
@@ -489,7 +498,7 @@ func (s *Service) addWithdrawalRulesForEVMAddress(ctx context.Context, userID uu
 
 	err = repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		for _, entry := range evmEntries {
-			if err := s.restoreWithdrawalRule(ctx, entry, user, totp, tx); err != nil {
+			if err := s.restoreWithdrawalRule(ctx, entry, user, totp, repos.WithTx(tx)); err != nil {
 				return fmt.Errorf("failed to restore/create withdrawal rule for currency %s: %w", entry.CurrencyID, err)
 			}
 
@@ -526,10 +535,10 @@ func (s *Service) handleAddressCreation(
 	blockchain *models.Blockchain,
 	user *models.User,
 	totp string,
-	tx pgx.Tx,
 	createWithdrawalRule bool,
+	opts ...repos.Option,
 ) (*models.UserAddressBook, error) {
-	exists, err := s.storage.UserAddressBook(repos.WithTx(tx)).CheckExists(ctx, repo_user_address_book.CheckExistsParams{
+	exists, err := s.storage.UserAddressBook(opts...).CheckExists(ctx, repo_user_address_book.CheckExistsParams{
 		UserID:     params.UserID,
 		Address:    params.Address,
 		CurrencyID: params.CurrencyID,
@@ -542,12 +551,12 @@ func (s *Service) handleAddressCreation(
 	var address *models.UserAddressBook
 
 	if exists {
-		address, err = s.handleExistingAddress(ctx, params, addressBookType, user, totp, tx, createWithdrawalRule)
+		address, err = s.handleExistingAddress(ctx, params, addressBookType, user, totp, createWithdrawalRule, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to handle existing address: %w", err)
 		}
 	} else {
-		address, err = s.handleNewAddress(ctx, params, blockchain, user, totp, tx, createWithdrawalRule)
+		address, err = s.handleNewAddress(ctx, params, blockchain, user, totp, createWithdrawalRule, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to handle new address: %w", err)
 		}
@@ -556,8 +565,8 @@ func (s *Service) handleAddressCreation(
 	return address, nil
 }
 
-func (s *Service) handleExistingAddress(ctx context.Context, params CreateAddressDTO, addressBookType models.AddressBookType, user *models.User, totp string, tx pgx.Tx, createWithdrawalRule bool) (*models.UserAddressBook, error) {
-	address, err := s.storage.UserAddressBook(repos.WithTx(tx)).GetByUserAndAddress(ctx, repo_user_address_book.GetByUserAndAddressParams{
+func (s *Service) handleExistingAddress(ctx context.Context, params CreateAddressDTO, addressBookType models.AddressBookType, user *models.User, totp string, createWithdrawalRule bool, opts ...repos.Option) (*models.UserAddressBook, error) {
+	address, err := s.storage.UserAddressBook(opts...).GetByUserAndAddress(ctx, repo_user_address_book.GetByUserAndAddressParams{
 		UserID:     params.UserID,
 		Address:    params.Address,
 		CurrencyID: params.CurrencyID,
@@ -571,49 +580,53 @@ func (s *Service) handleExistingAddress(ctx context.Context, params CreateAddres
 		return nil, fmt.Errorf("address book entry already exists and is active")
 	}
 
-	address, err = s.restoreAddressEntry(ctx, params, tx)
+	address, err = s.restoreAddressEntry(ctx, params, opts...)
 	if err != nil {
 		return nil, err
 	}
 
 	if createWithdrawalRule {
-		if err := s.restoreWithdrawalRule(ctx, address, user, totp, tx); err != nil {
+		if err := s.restoreWithdrawalRule(ctx, address, user, totp, opts...); err != nil {
 			return nil, fmt.Errorf("failed to create withdrawal rule for old entry: %w", err)
 		}
 	}
 	return address, nil
 }
 
-func (s *Service) handleNewAddress(ctx context.Context, params CreateAddressDTO, blockchain *models.Blockchain, user *models.User, totp string, tx pgx.Tx, createWithdrawalRule bool) (*models.UserAddressBook, error) {
-	address, err := s.createNewAddressEntry(ctx, params, blockchain, tx)
+func (s *Service) handleNewAddress(ctx context.Context, params CreateAddressDTO, blockchain *models.Blockchain, user *models.User, totp string, createWithdrawalRule bool, opts ...repos.Option) (*models.UserAddressBook, error) {
+	address, err := s.createNewAddressEntry(ctx, params, blockchain, opts...)
 	if err != nil {
 		return nil, err
 	}
 	if createWithdrawalRule {
-		if err := s.restoreWithdrawalRule(ctx, address, user, totp, tx); err != nil {
+		if err := s.restoreWithdrawalRule(ctx, address, user, totp, opts...); err != nil {
 			return nil, fmt.Errorf("failed to create withdrawal rule for new entry: %w", err)
 		}
 	}
 	return address, nil
 }
 
-func (s *Service) updateProcessingWhitelist(ctx context.Context, withdrawalWalletID uuid.UUID, user *models.User, totp string, tx pgx.Tx) error {
-	wallet, err := s.withdrawalWalletService.GetWalletByID(ctx, withdrawalWalletID)
-	if err != nil {
-		return err
+func (s *Service) updateProcessingWhitelist(ctx context.Context, walletID uuid.UUID, blockchain *models.Blockchain, user *models.User, totp string, opts ...repos.Option) error {
+	addresses, err := s.storage.WithdrawalWalletAddresses(opts...).GetWithdrawalWalletsByBlockchain(ctx, repo_withdrawal_wallet_addresses.GetWithdrawalWalletsByBlockchainParams{
+		Blockchain: *blockchain,
+		UserID:     user.ID,
+	})
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("failed to get withdrawal wallet addresses: %w", err)
 	}
 
-	addresses, err := s.storage.WithdrawalWalletAddresses(repos.WithTx(tx)).GetWithdrawalWalletsByBlockchain(ctx, repo_withdrawal_wallet_addresses.GetWithdrawalWalletsByBlockchainParams{
-		Blockchain: wallet.Blockchain,
-		UserID:     wallet.UserID,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to get withdrawal wallet addresses: %w", err)
+	// If no addresses exist yet, there's nothing to update in the processing whitelist
+	if errors.Is(err, pgx.ErrNoRows) || len(addresses) == 0 {
+		s.logger.Info("No withdrawal wallet addresses found, skipping processing whitelist update",
+			"wallet_id", walletID,
+			"user_id", user.ID,
+			"blockchain", blockchain)
+		return nil
 	}
 
 	params := processing.AttachOwnerColdWalletsParams{
 		OwnerID:    user.ProcessingOwnerID.UUID,
-		Blockchain: wallet.Blockchain,
+		Blockchain: *blockchain,
 		Addresses:  addresses,
 		TOTP:       totp,
 	}

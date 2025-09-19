@@ -24,6 +24,7 @@ type IModelSetting interface {
 type ISettingService interface {
 	IUserSettings
 	IRootSettings
+	IStoreSettings
 
 	Is2faRequired(name string) bool
 }

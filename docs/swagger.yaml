@@ -995,6 +995,13 @@ definitions:
     - file_type
     - totp
     type: object
+  GetLastLogsResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_dto.LogDTO'
+        type: array
+    type: object
   GetMonitorTypesResponse:
     properties:
       items:
@@ -1409,6 +1416,15 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-GetLastLogsResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/GetLastLogsResponse'
+      message:
+        type: string
+    type: object
   JSONResponse-GetMonitorTypesResponse:
     properties:
       code:
@@ -1460,6 +1476,15 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/OwnerData'
+      message:
+        type: string
+    type: object
+  JSONResponse-OwnerProcessingResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/OwnerProcessingResponse'
       message:
         type: string
     type: object
@@ -2065,30 +2090,12 @@ definitions:
       message:
         type: string
     type: object
-  JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response_GetLastLogsResponse:
-    properties:
-      code:
-        type: integer
-      data:
-        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.GetLastLogsResponse'
-      message:
-        type: string
-    type: object
   JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response_MnemonicResponse:
     properties:
       code:
         type: integer
       data:
         $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse'
-      message:
-        type: string
-    type: object
-  JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response_OwnerProcessingResponse:
-    properties:
-      code:
-        type: integer
-      data:
-        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response.OwnerProcessingResponse'
       message:
         type: string
     type: object
@@ -2268,6 +2275,11 @@ definitions:
       owner_id:
         type: string
       telegram:
+        type: string
+    type: object
+  OwnerProcessingResponse:
+    properties:
+      owner_id:
         type: string
     type: object
   PatchWhitelistRequest:
@@ -3769,13 +3781,6 @@ definitions:
       withdraw_quota_per_day:
         type: string
     type: object
-  github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.GetLastLogsResponse:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/github_com_dv-net_dv-merchant_pkg_logger.MemoryLogDTO'
-        type: array
-    type: object
   github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.LogData:
     properties:
       created_at:
@@ -3795,9 +3800,13 @@ definitions:
       mnemonic:
         type: string
     type: object
-  github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response.OwnerProcessingResponse:
+  github_com_dv-net_dv-merchant_internal_dto.LogDTO:
     properties:
-      owner_id:
+      level:
+        type: string
+      message:
+        type: string
+      time:
         type: string
     type: object
   github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus:
@@ -4106,15 +4115,6 @@ definitions:
         type: string
       resolution:
         $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.Resolution'
-    type: object
-  github_com_dv-net_dv-merchant_pkg_logger.MemoryLogDTO:
-    properties:
-      level:
-        type: string
-      message:
-        type: string
-      time:
-        type: string
     type: object
   map_string_CombinedStats:
     additionalProperties:
@@ -5317,7 +5317,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response_GetLastLogsResponse'
+            $ref: '#/definitions/JSONResponse-GetLastLogsResponse'
         "404":
           description: Not Found
           schema:
@@ -5333,6 +5333,34 @@ paths:
       security:
       - Bearer: []
       summary: Get last logs
+      tags:
+      - Logs
+  /v1/dv-admin/logs/last-processing:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-GetLastLogsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - Bearer: []
+      summary: Get last processing logs
       tags:
       - Logs
   /v1/dv-admin/notifications/history:
@@ -5635,7 +5663,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_processing_response_OwnerProcessingResponse'
+            $ref: '#/definitions/JSONResponse-OwnerProcessingResponse'
         "400":
           description: Bad Request
           schema:
@@ -5840,6 +5868,86 @@ paths:
       security:
       - BearerAuth: []
       summary: List available root settings
+      tags:
+      - Setting
+  /v1/dv-admin/store-setting/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Create or update store settings
+      parameters:
+      - description: Create or update store setting
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/CreateSettingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Create or update store settings
+      tags:
+      - Setting
+  /v1/dv-admin/store-setting/{id}/{setting_name}:
+    get:
+      description: Get store setting value
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-SettingResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Get store setting value
+      tags:
+      - Setting
+  /v1/dv-admin/store-setting/list/{id}:
+    get:
+      consumes:
+      - application/json
+      description: List available store settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: List available store settings
       tags:
       - Setting
   /v1/dv-admin/store/:
@@ -7481,6 +7589,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Create or update root settings
+      tags:
+      - Setting
+  /v1/dv-admin/user-setting/{setting_name}:
+    get:
+      description: Get setting value
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-SettingResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Get setting value
+      tags:
+      - Setting
+  /v1/dv-admin/user-setting/list:
+    get:
+      consumes:
+      - application/json
+      description: List available user settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: List available user settings
       tags:
       - Setting
   /v1/dv-admin/user/change-email:
@@ -10054,46 +10202,6 @@ paths:
       summary: Delete store whitelist
       tags:
       - Store
-  /v1/user-setting/{setting_name}:
-    get:
-      description: Get setting value
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-SettingResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Get setting value
-      tags:
-      - Setting
-  /v1/user-setting/list:
-    get:
-      consumes:
-      - application/json
-      description: List available user settings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: List available user settings
-      tags:
-      - Setting
 securityDefinitions:
   BearerAuth:
     in: header

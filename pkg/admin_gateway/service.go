@@ -61,7 +61,7 @@ func (s *Service) sendRequest(
 		}
 	}
 	if s.logStatus {
-		s.log.Info("[DV-Admin]: Sending request",
+		s.log.Infoln("[DV-API]: Sending request",
 			"method", httpMethod,
 			"url", s.baseURL+apiMethod,
 			"headers", req.Header,
@@ -85,7 +85,7 @@ func (s *Service) sendRequest(
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
 	if s.logStatus {
-		s.log.Info("[DV-Admin]: Received response",
+		s.log.Infoln("[DV-API]: Received response",
 			"status", resp.StatusCode,
 			"body", string(parsedBody),
 		)
@@ -122,7 +122,7 @@ func (s *Service) sendPublicRequest(
 		}
 	}
 	if s.logStatus {
-		s.log.Info("[DV-Admin]: Sending public request ",
+		s.log.Infoln("[DV-API]: Sending public request ",
 			"method", httpMethod,
 			"url", s.baseURL+apiMethod,
 			"headers", req.Header,
@@ -146,7 +146,7 @@ func (s *Service) sendPublicRequest(
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
 	if s.logStatus {
-		s.log.Info("[DV-Admin]: Received public response ",
+		s.log.Infoln("[DV-API]: Received public response ",
 			"status", resp.StatusCode,
 			"body", string(parsedBody),
 		)
