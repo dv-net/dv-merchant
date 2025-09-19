@@ -23,6 +23,8 @@ RUN go build -o ./.bin/dv-merchant ./cmd/app/
 
 FROM alpine:latest
 
+RUN apk add --no-cache tzdata
+
 WORKDIR /app
 
 RUN mkdir -p /app/configs
