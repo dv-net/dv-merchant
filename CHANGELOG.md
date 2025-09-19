@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [0.9.6] - 2025-09-19
 - Add validation for withdrawal exchange wallet by blockchain [DV-3326]
 - Add log memory buffer [DV-3359]
 - Fixed bug with withdrawals rules not being created on clean install via address book [DV-3339]
