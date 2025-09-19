@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed bug with withdrawals rules not being created on clean install via address book [DV-3339]
 - Added per store settings API [DV-3278]
 - Fix create store on registration user [DV-3392]
+- Add Dockerfile [DV-3387]
 
 ## [0.9.5] - 2025-09-15
 - Fix walidation withdrawal exchnage [DV-3362]
