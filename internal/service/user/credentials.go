@@ -157,8 +157,8 @@ func (s *Service) InitPasswordReset(ctx context.Context, email string) error {
 	}
 
 	payload := &notify.UserForgotPassword{
-		Language:          user.Language,
-		ResetPasswordCode: strconv.Itoa(code),
+		Language: user.Language,
+		Code:     strconv.Itoa(code),
 	}
 
 	go s.notificationService.SendUser(ctx, models.NotificationTypeUserForgotPassword, user, payload, &models.NotificationArgs{UserID: &user.ID})
