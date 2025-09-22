@@ -4,11 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dv-net/dv-merchant/pkg/admin_gateway"
-
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
-
+	"github.com/dv-net/dv-merchant/pkg/admin_gateway"
 	"golang.org/x/net/context"
 )
 

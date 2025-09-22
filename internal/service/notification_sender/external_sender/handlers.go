@@ -69,7 +69,7 @@ func (svc *Service) handleUserForgotPassword(ctx context.Context, encodedVariabl
 		BackendDomain:   domain,
 		Locale:          pBody.Language,
 		Identity:        svc.prepareIdentityByType(dest, channel),
-		Code:            strconv.Itoa(pBody.Code),
+		Code:            pBody.Code,
 	}
 	return svc.adminNotifications.SendUserForgotPassword(ctx, req)
 }

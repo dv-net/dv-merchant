@@ -47,11 +47,11 @@ func (svc *Service) Send(ctx context.Context, queue models.NotificationSendQueue
 		return svc.sendInternal(ctx, queue)
 	case setting.NotificationSenderDVNet:
 		if err = svc.externalSender.Send(ctx, queue); err != nil {
-			svc.logger.Error("send external notification failed", err)
+			svc.logger.Error("send external notification failed ", err)
 		}
 		return notify.SendResult{IsExternal: true}
 	default:
-		svc.logger.Warn("unsupported notification sender setting", "value", sender)
+		svc.logger.Warn("unsupported notification sender setting ", "value", sender)
 		return notify.SendResult{}
 	}
 }
