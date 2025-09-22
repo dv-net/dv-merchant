@@ -1,13 +1,17 @@
 package handlers
 
 import (
+	"context"
 	"errors"
-
+	"fmt"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/withdrawal_requests"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/withdrawal_wallets_request"
+	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/withdraw"
 	"github.com/dv-net/dv-merchant/internal/service/withdrawal_wallet"
 	"github.com/dv-net/dv-merchant/internal/tools"
+	"github.com/dv-net/dv-merchant/pkg/currutils"
 
 	// Blank import for swagger
 	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/withdrawal_response"
@@ -18,6 +22,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 // getWithdrawalWallets get withdrawal wallets
@@ -112,6 +117,22 @@ func (h Handler) updateWithdrawalRule(c fiber.Ctx) error {
 	curr, err := h.services.CurrencyService.GetCurrencyByID(c.Context(), currencyID)
 	if err != nil {
 		return apierror.New().AddError(errors.New("invalid currency")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	if req.MinBalance.Valid {
+		if curr.WithdrawalMinBalance != nil && req.MinBalance.Decimal.LessThan(*curr.WithdrawalMinBalance) {
+			return apierror.New().AddError(errors.New("withdrawal amount is below the minimum required balance")).SetHttpCode(fiber.StatusBadRequest)
+		}
+		if !currutils.ValidateDecimalPrecision(req.MinBalance.Decimal, curr.Precision) {
+			return apierror.New().AddError(errors.New("withdrawal amount exceeds the allowed precision")).SetHttpCode(fiber.StatusBadRequest)
+		}
+	}
+
+	if req.MinBalanceUSD.Valid {
+		// Convert USD amount to native token and validate against minimum balance
+		if err := h.validateUSDAmountAgainstMinBalance(c.Context(), req.MinBalanceUSD.Decimal, curr); err != nil {
+			return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		}
 	}
 
 	var multiRulesDTO *withdrawal_wallet.MultiWithdrawalRuleDTO
@@ -621,49 +642,46 @@ func (h Handler) addWithdrawalRule(c fiber.Ctx) error {
 	return c.JSON(response.OkByMessage("Withdrawal rules added successfully"))
 }
 
-// deleteWithdrawalRule adds withdrawal rules (individual, universal, or EVM)
-//
-//	@Summary		Delete withdrawal rules
-//	@Description	Delete withdrawal rules based on type (individual, universal, or EVM). Requires 2FA verification.
-//	@Tags			Address Book
-//	@Accept			json
-//	@Produce		json
-//	@Param			request	body		withdrawal_requests.DeleteWithdrawalRuleRequest	true	"Withdrawal rule request with type flags"
-//	@Success		200		{object}	response.Result[string]
-//	@Failure		400		{object}	apierror.Errors
-//	@Failure		401		{object}	apierror.Errors
-//	@Failure		404		{object}	apierror.Errors
-//	@Router			/v1/dv-admin/withdrawal/address-book/withdrawal-rule [delete]
-//	@Security		BearerAuth
-// func (h Handler) deleteWithdrawalRule(c fiber.Ctx) error {
-// 	user, err := loadAuthUser(c)
-// 	if err != nil {
-// 		return err
-// 	}
+func (h Handler) validateUSDAmountAgainstMinBalance(ctx context.Context, usdAmount decimal.Decimal, curr *models.Currency) error {
+	// Skip validation if currency has no minimum balance requirement
+	if curr.WithdrawalMinBalance == nil {
+		return nil
+	}
 
-// 	req := &withdrawal_requests.DeleteWithdrawalRuleRequest{}
-// 	if err := c.Bind().Body(req); err != nil {
-// 		return err
-// 	}
+	// Get the conversion rate from USDT to the native currency
+	// Note: We use USDT as the reference USD currency for conversion
+	nativeAmount, err := h.services.CurrConvService.Convert(ctx, currconv.ConvertDTO{
+		Source:     models.RateSourceDVAvg.String(),
+		From:       models.CurrencyCodeUSDT,
+		To:         curr.Code,
+		Amount:     usdAmount.String(),
+		StableCoin: false,
+	})
+	if err != nil {
+		return errors.New("failed to convert USD amount to native currency for validation")
+	}
 
-// 	// Validate request structure and business rules
-// 	if err := req.Validate(); err != nil {
-// 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
-// 	}
+	// Check if converted native amount meets minimum balance requirement
+	if nativeAmount.LessThan(*curr.WithdrawalMinBalance) {
+		minUSDAmount, convertErr := h.services.CurrConvService.Convert(ctx, currconv.ConvertDTO{
+			Source:     models.RateSourceDVAvg.String(),
+			From:       curr.Code,
+			To:         models.CurrencyCodeUSDT,
+			Amount:     curr.WithdrawalMinBalance.String(),
+			StableCoin: false,
+		})
 
-// 	// Validate 2FA token
-// 	if err := h.services.ProcessingOwnerService.ValidateTwoFactorToken(c.Context(), user.ProcessingOwnerID.UUID, req.TOTP); err != nil {
-// 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
-// 	}
+		if convertErr == nil {
+			return fmt.Errorf("USD withdrawal amount converts to %s %s, which is below the minimum required balance of %s %s (approximately $%s USD)",
+				nativeAmount.String(), curr.Code,
+				curr.WithdrawalMinBalance.String(), curr.Code,
+				minUSDAmount.StringFixed(2))
+		}
 
-// 	// Convert request to service DTO
-// 	dto := converters.FromAddWithdrawalRuleRequest(*req, user.ID)
+		return fmt.Errorf("USD withdrawal amount converts to %s %s, which is below the minimum required balance of %s %s",
+			nativeAmount.String(), curr.Code,
+			curr.WithdrawalMinBalance.String(), curr.Code)
+	}
 
-// 	// Add withdrawal rule
-// 	err = h.services.AddressBookService.AddWithdrawalRule(c.Context(), dto)
-// 	if err != nil {
-// 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
-// 	}
-
-// 	return c.JSON(response.OkByMessage("Withdrawal rules added successfully"))
-// }
+	return nil
+}
