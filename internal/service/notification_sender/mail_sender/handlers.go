@@ -45,7 +45,7 @@ func (svc *Service) handleUserForgotPassword(_ context.Context, email string, en
 			UserEmail: email,
 			Language:  pBody.Language,
 		},
-		UserForgotPasswordCode: pBody.ResetPasswordCode,
+		UserForgotPasswordCode: pBody.Code,
 	}
 
 	body, err := svc.templateSvc.AssembleEmail(emailParams)

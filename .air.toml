@@ -8,7 +8,7 @@ send_interrupt = true
 # Just plain old shell command. You could use `make` as well.
 cmd = "make build"
 # Binary file yields from `cmd`.
-bin = ".bin/github.com/dv-net/dv-merchant"
+bin = ".bin/dv-merchant"
 args_bin = ["start", "-c", "configs/config.yaml"]
 # This log file places in your tmp_dir.
 log = "air_errors.log"

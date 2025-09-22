@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [0.9.7] - 2025-09-22
+- Fix rename ResetPasswordCode to Code for consistency in user notifications [DV-3403]
+
+## [0.9.6] - 2025-09-19
 - Add validation for withdrawal exchange wallet by blockchain [DV-3326]
 - Add log memory buffer [DV-3359]
 - Fixed bug with withdrawals rules not being created on clean install via address book [DV-3339]
@@ -14,10 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Dockerfile [DV-3387]
 
 ## [0.9.5] - 2025-09-15
-- Fix walidation withdrawal exchnage [DV-3362]
+- Fix validation withdrawal exchange [DV-3362]
 - Add last processing logs endpoint and update log response structure [DV-3379]
 
 ## [0.9.4] - 2025-09-15
+### Note
+This is the first public release of the project.  
+All previous versions were private/internal and were never published.
+
 - Added behavior handling for handling store being disabled [DV-3117]
 - Accept browser locale from frontend and send emails to payers based on specific locale with fallback to user language or English [DV-3086]
 - Added single column sorting in transaction history [DV-2480]
