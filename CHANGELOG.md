@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.7] - 2025-09-22
 - Fix rename ResetPasswordCode to Code for consistency in user notifications [DV-3403]
+- enhance locale handling in wallet creation and update logging for system email [DV-3426]
 
 ## [0.9.6] - 2025-09-19
 - Add validation for withdrawal exchange wallet by blockchain [DV-3326]

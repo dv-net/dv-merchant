@@ -92,7 +92,7 @@ type IWalletService interface {
 	GetWalletsInfo(ctx context.Context, userID uuid.UUID, address string) ([]*WithBlockchains, error)
 	LoadPrivateAddresses(ctx context.Context, dto LoadPrivateKeyDTO) (*bytes.Buffer, error)
 	FetchTronResourceStatistics(ctx context.Context, user *models.User, dto FetchTronStatisticsParams) (map[string]CombinedStats, error)
-	UpdateLocale(ctx context.Context, walletID uuid.UUID, locale string) error
+	UpdateLocale(ctx context.Context, walletID uuid.UUID, locale string, opts ...repos.Option) error
 	SendUserWalletNotification(ctx context.Context, walletID uuid.UUID, selectCurrency *string) error
 }
 
@@ -149,8 +149,8 @@ func (s *Service) GetWallet(ctx context.Context, id uuid.UUID) (*models.Wallet, 
 	return wallet, nil
 }
 
-func (s *Service) UpdateLocale(ctx context.Context, walletID uuid.UUID, locale string) error {
-	return s.storage.Wallets().UpdateUserLocale(ctx, repo_wallets.UpdateUserLocaleParams{
+func (s *Service) UpdateLocale(ctx context.Context, walletID uuid.UUID, locale string, opts ...repos.Option) error {
+	return s.storage.Wallets(opts...).UpdateUserLocale(ctx, repo_wallets.UpdateUserLocaleParams{
 		Locale: locale,
 		ID:     walletID,
 	})
@@ -820,9 +820,10 @@ func (s *Service) SendUserWalletNotification(ctx context.Context, walletID uuid.
 		return fmt.Errorf("failed to get store by wallet id: %w", err)
 	}
 	hash := s.calculateAddressHash(addresses)
+
 	var targetEmail *string
 	if walletData.Wallet.UntrustedEmail.Valid && walletData.Wallet.UntrustedEmail.String != "" {
-		targetEmail = &walletData.Wallet.Email.String
+		targetEmail = &walletData.Wallet.UntrustedEmail.String
 	}
 	if walletData.Wallet.Email.Valid && walletData.Wallet.Email.String != "" {
 		targetEmail = &walletData.Wallet.Email.String
@@ -1016,7 +1017,7 @@ func (s *Service) notifyStoreOwnerWalletsList(ctx context.Context, params notify
 		NotificationHash: params.Hash,
 	}
 
-	s.logger.Info("External wallets request payload", "payload", payload)
+	s.logger.Debugw("External wallets request payload", "payload", payload)
 
 	go s.notification.SendSystemEmail(ctx, models.NotificationTypeExternalWalletRequested, params.WalletEmail, payload, &models.NotificationArgs{UserID: &params.User.ID, StoreID: &params.StoreID})
 }
@@ -1101,6 +1102,12 @@ func (s *Service) updateWalletMeta(ctx context.Context, wallet *models.Wallet, p
 			IpAddress: params.IpAddress,
 			ID:        wallet.ID,
 		}); err != nil {
+			return err
+		}
+	}
+	if params.Locale != "" {
+		err := s.UpdateLocale(ctx, wallet.ID, params.Locale, tx...)
+		if err != nil {
 			return err
 		}
 	}

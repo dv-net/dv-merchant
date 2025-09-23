@@ -76,11 +76,16 @@ type CreateStoreWalletWithAddressDTO struct {
 }
 
 func (dto *CreateStoreWalletWithAddressDTO) ToCreateParams() repo_wallets.CreateParams {
-	return repo_wallets.CreateParams{
+	params := repo_wallets.CreateParams{
 		StoreID:         dto.StoreID,
 		StoreExternalID: dto.StoreExternalID,
 		Email:           pgtypeutils.EncodeText(dto.Email),
 		IpAddress:       pgtypeutils.EncodeText(dto.IP),
 		UntrustedEmail:  pgtypeutils.EncodeText(dto.UntrustedEmail),
 	}
+
+	if dto.Locale != nil && *dto.Locale != "" {
+		params.Locale = *dto.Locale
+	}
+	return params
 }
