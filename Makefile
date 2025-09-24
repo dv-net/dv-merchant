@@ -97,6 +97,9 @@ genenvs:
 builds:
 	$(BUILD_ENV) && go build $(GO_OPT_BASE) -o $(OUT_BIN) ./cmd/app
 
+update-frontend:
+	./scripts/load-frontend.sh
+
 # Empty goals trap
 %:
 	@:
