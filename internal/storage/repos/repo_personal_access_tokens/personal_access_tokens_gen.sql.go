@@ -7,9 +7,9 @@ package repo_personal_access_tokens
 
 import (
 	"context"
-	"github.com/dv-net/dv-merchant/internal/models"
 	"time"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )

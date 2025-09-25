@@ -156,15 +156,15 @@ func (h Handler) listRootSettings(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[settings_response.SettingResponse]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/user-setting/{setting_name} [get]
+//	@Router			/v1/dv-admin/user-setting/{setting_name} [get]
 //	@Security		BearerAuth
 func (h *Handler) getSettingByName(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
 
-	res, err := h.services.SettingService.GetModelSetting(c.Context(), c.Params("setting_name"), user)
+	res, err := h.services.SettingService.GetModelSetting(c.Context(), c.Params("setting_name"), usr)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -181,7 +181,7 @@ func (h *Handler) getSettingByName(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[[]setting.Dto]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/user-setting/list [get]
+//	@Router			/v1/dv-admin/user-setting/list [get]
 //	@Security		BearerAuth
 func (h Handler) getUserSettingList(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
@@ -193,6 +193,91 @@ func (h Handler) getUserSettingList(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	return c.JSON(response.OkByData(availableSettings))
+}
+
+// getStoreSettingList is a function to get all available store settings
+//
+//	@Summary		List available store settings
+//	@Description	List available store settings
+//	@Tags			Setting
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	response.Result[[]setting.Dto]
+//	@Failure		401	{object}	apierror.Errors
+//	@Router			/v1/dv-admin/store-setting/list/{id} [get]
+//	@Security		BearerAuth
+func (h Handler) getStoreSettingList(c fiber.Ctx) error {
+	targetStore, err := h.validateAndLoadStore(c)
+	if err != nil {
+		return err
+	}
+
+	availableSettings, err := h.services.SettingService.GetAvailableStoreModelSettings(c.Context(), setting.IModelSetting(targetStore))
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+	return c.JSON(response.OkByData(availableSettings))
+}
+
+// createOrUpdateStoreSetting is a function to create or update store settings
+//
+//	@Summary		Create or update store settings
+//	@Description	Create or update store settings
+//	@Tags			Setting
+//	@Accept			json
+//	@Produce		json
+//	@Param			register	body		setting_request.CreateRequest	true	"Create or update store setting"
+//	@Success		200			{object}	response.Result[string]
+//	@Success		202			{object}	response.Result[string]
+//	@Failure		401			{object}	apierror.Errors
+//	@Failure		404			{object}	apierror.Errors
+//	@Failure		422			{object}	apierror.Errors
+//	@Router			/v1/dv-admin/store-setting/{id} [post]
+//	@Security		BearerAuth
+func (h Handler) createOrUpdateStoreSetting(c fiber.Ctx) error {
+	targetStore, err := h.validateAndLoadStore(c)
+	if err != nil {
+		return err
+	}
+
+	request := &setting_request.CreateRequest{}
+	if err := c.Bind().Body(request); err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	if err = h.services.SettingService.SetStoreModelSetting(c.Context(), setting.UpdateDTO{
+		Name:  request.Name,
+		Value: *request.Value,
+		Model: setting.IModelSetting(targetStore),
+	}); err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByMessage("success"))
+}
+
+// getStoreSettingByName is a function to get concrete store setting
+//
+//	@Summary		Get store setting value
+//	@Description	Get store setting value
+//	@Tags			Setting
+//	@Produce		json
+//	@Success		200	{object}	response.Result[settings_response.SettingResponse]
+//	@Failure		401	{object}	apierror.Errors
+//	@Router			/v1/dv-admin/store-setting/{id}/{setting_name} [get]
+//	@Security		BearerAuth
+func (h Handler) getStoreSettingByName(c fiber.Ctx) error {
+	targetStore, err := h.validateAndLoadStore(c)
+	if err != nil {
+		return err
+	}
+
+	res, err := h.services.SettingService.GetStoreModelSetting(c.Context(), c.Params("setting_name"), setting.IModelSetting(targetStore))
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(converters.FromSettingModelToResponse(res)))
 }
 
 func (h Handler) initSettingRoutes(v1 fiber.Router) {
@@ -210,4 +295,14 @@ func (h Handler) initSettingRoutes(v1 fiber.Router) {
 	userSettings.Get("/list", h.getUserSettingList)
 	userSettings.Post("/", h.createOrUpdateUserSetting)
 	userSettings.Get("/:setting_name", h.getSettingByName)
+
+	storeSettings := v1.Group("/store-setting", h.services.PermissionService.FiberMiddleware(
+		[]models.UserRole{
+			models.UserRoleRoot,
+			models.UserRoleDefault,
+		}...,
+	))
+	storeSettings.Get("/list/:id", h.getStoreSettingList)
+	storeSettings.Post("/:id", h.createOrUpdateStoreSetting)
+	storeSettings.Get("/:id/:setting_name", h.getStoreSettingByName)
 }

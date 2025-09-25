@@ -58,7 +58,7 @@ type PasswordForgotData struct {
 	Language string `json:"language"`
 	LinkText string `json:"link_text"`
 	Link     string `json:"link"`
-	Code     int    `json:"code"`
+	Code     string `json:"code"`
 }
 
 func (d *PasswordForgotData) Encode() ([]byte, error) {
@@ -83,6 +83,7 @@ type WalletDTO struct {
 	BlockchainName string `json:"blockchain_name"`
 	ShowBlockchain bool   `json:"show_blockchain"`
 	Address        string `json:"address"`
+	IsFirst        bool   `json:"is_first"`
 }
 
 func (d *ExternalWalletRequestedData) Encode() ([]byte, error) {
@@ -108,8 +109,8 @@ func (d *UserPasswordChanged) Encode() ([]byte, error) {
 }
 
 type UserForgotPassword struct {
-	Language          string `json:"language"`
-	ResetPasswordCode string `json:"reset_password_code"`
+	Language string `json:"language"`
+	Code     string `json:"code"`
 }
 
 func (d *UserForgotPassword) Encode() ([]byte, error) {
@@ -122,8 +123,8 @@ func (d *UserForgotPassword) Encode() ([]byte, error) {
 }
 
 type UserPasswordReset struct {
-	Language          string `json:"language"`
-	ResetPasswordCode string `json:"reset_password_code"`
+	Language string `json:"language"`
+	Code     string `json:"code"`
 }
 
 func (d *UserPasswordReset) Encode() ([]byte, error) {

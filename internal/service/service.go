@@ -86,7 +86,7 @@ type Services struct {
 	WalletRestorer                transactions.TxRestorer
 	WalletService                 wallet.IWalletService
 	WalletConverter               wallet.IWalletAddressConverter
-	BalanceService                wallet.IWalletBalances
+	WalletBalanceService          wallet.IWalletBalances
 	BalanceUpdater                wallet.BalanceUpdater
 	AddressesService              address.IWalletAddressService
 	AddressBookService            address_book.IAddressBookService
@@ -135,7 +135,7 @@ func NewServices(
 	currencyService := currency.New(conf, storage)
 	eventListener := event.New()
 
-	adminSvc := admin_gateway.New(conf.Admin.BaseURL, appVersion, logger)
+	adminSvc := admin_gateway.New(conf.Admin.BaseURL, appVersion, logger, conf.Admin.LogStatus)
 	exrateService, err := exrate.New(conf, currencyService, logger, storage, adminSvc)
 	if err != nil {
 		logger.Error("init currency exchange rate service failed", err)
@@ -161,7 +161,6 @@ func NewServices(
 	}
 
 	eProxyService := eproxy.New(eprClient)
-	transactionService := transactions.New(logger, storage, eProxyService, currConvService)
 	receiptService := receipts.New(storage, currencyService)
 
 	processingMetrics, err := metrics.New()
@@ -196,8 +195,9 @@ func NewServices(
 
 	externalNotificationSender := external_sender.New(adminSvc, settingService)
 	notificationSender := notification_sender.New(logger, notificationDrivers, settingService, externalNotificationSender)
-	notificationService := notify.New(logger, storage, eventListener, settingService, notificationSender, permissionService)
+	notificationService := notify.New(logger, storage, settingService, notificationSender, permissionService)
 
+	transactionService := transactions.New(logger, storage, eProxyService, currConvService, eventListener, notificationService)
 	addressesService := address.New(conf, storage, logger, processingService)
 	withdrawalWalletService := withdrawal_wallet.New(storage, logger, currencyService, currConvService, processingService)
 	addressBookService := address_book.New(storage, logger, currencyService, withdrawalWalletService, processingService)
@@ -208,7 +208,7 @@ func NewServices(
 		rate.WithDuration(conf.ExternalStoreLimits.RateLimitInterval),
 	)
 
-	storeService := store.New(storage, currencyService, logger, webhookService, eventListener, exrateService, walletService, notificationService, storeRateLimiter, conf.ExternalStoreLimits.Enabled, processingService)
+	storeService := store.New(storage, currencyService, logger, webhookService, eventListener, exrateService, walletService, notificationService, storeRateLimiter, conf.ExternalStoreLimits.Enabled, processingService, settingService)
 	otpSvc := otp.New(&otp.Config{TTL: time.Minute * 10}, tools.RandomCodeGenerator, storage.KeyValue())
 	userService := user.New(conf, storage, storeService, permissionService, processingService, notificationService, logger, settingService, adminSvc, otpSvc)
 
@@ -222,7 +222,7 @@ func NewServices(
 	systemService := system.New(settingService, permissionService, adminSvc, logger, appVersion, commitHash, conf, analyticsService)
 
 	dictionaryService := dictionary.New(storage, exrateService, systemService)
-	callbackService := callback.New(logger, eventListener, storage, transactionService, transactionService, storeService, currConvService, receiptService, notificationService)
+	callbackService := callback.New(logger, eventListener, storage, transactionService, transactionService, storeService, currConvService, receiptService)
 
 	exchangeManager := exchange_manager.NewManager(logger, storage, currConvService)
 	exchangeRulesService := exchange_rules.NewService(logger, storage, exchangeManager)
@@ -261,7 +261,7 @@ func NewServices(
 		UnconfirmedTransactionService: transactionService,
 		WalletRestorer:                transactionService,
 		WalletService:                 walletService,
-		BalanceService:                walletService,
+		WalletBalanceService:          walletService,
 		BalanceUpdater:                walletService,
 		WalletConverter:               walletService,
 		AddressesService:              addressesService,

@@ -6,6 +6,9 @@ import (
 )
 
 func RandomNumber(low, hi int) int {
+	if hi <= low {
+		return low
+	}
 	nBig, _ := rand.Int(rand.Reader, big.NewInt(int64(hi-low)))
 	return low + int(nBig.Int64())
 }

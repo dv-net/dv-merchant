@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/currency"
 	"github.com/dv-net/dv-merchant/internal/service/eproxy"
@@ -48,7 +49,7 @@ func InitCommands(currentAppVersion, commitHash string) []*cli.Command {
 				if err != nil {
 					return fmt.Errorf("failed to load config: %w", err)
 				}
-
+				PrintBanner(currentAppVersion)
 				l := logger.New(currentAppVersion, conf.Log)
 				l.Info("Logger Init")
 				return app.Run(ctx.Context, conf, l, currentAppVersion, commitHash)
@@ -331,7 +332,7 @@ func prepareTransactionsCommands(currentAppVersion string) []*cli.Command {
 					return fmt.Errorf("storage init: %w", err)
 				}
 
-				dvAdmin := admin_gateway.New(conf.Admin.BaseURL, currentAppVersion, lg)
+				dvAdmin := admin_gateway.New(conf.Admin.BaseURL, currentAppVersion, lg, conf.Admin.LogStatus)
 				currService := currency.New(conf, st)
 				exrateService, err := exrate.New(conf, currService, lg, st, dvAdmin)
 				if err != nil {
@@ -347,7 +348,9 @@ func prepareTransactionsCommands(currentAppVersion string) []*cli.Command {
 				}
 
 				eProxyService := eproxy.New(eprCl)
-				transactionService := transactions.New(lg, st, eProxyService, currConvService)
+				eventListener := event.New()
+
+				transactionService := transactions.New(lg, st, eProxyService, currConvService, eventListener, nil)
 
 				blockchains := ctx.StringSlice("blockchains")
 

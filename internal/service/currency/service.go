@@ -2,6 +2,8 @@ package currency
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/dv-net/dv-merchant/internal/config"
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -10,7 +12,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/pkg/errors"
 )
 
 type ICurrency interface {
@@ -86,7 +87,7 @@ func (s Service) GetCurrenciesEnabled(ctx context.Context) ([]*models.Currency, 
 	currencies, err := s.storage.Currencies().GetCurrenciesEnabled(ctx)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			err = errors.Wrap(err, "no currencies enabled")
+			err = fmt.Errorf("no currencies enabled: %w", err)
 		}
 		return nil, err
 	}

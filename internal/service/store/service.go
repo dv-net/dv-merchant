@@ -12,6 +12,8 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/exrate"
 	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/service/processing"
+	"github.com/dv-net/dv-merchant/internal/service/setting"
+	"github.com/dv-net/dv-merchant/internal/service/transactions"
 	"github.com/dv-net/dv-merchant/internal/service/wallet"
 	"github.com/dv-net/dv-merchant/internal/service/webhook"
 	"github.com/dv-net/dv-merchant/internal/storage"
@@ -53,6 +55,7 @@ type Service struct {
 	wallets             wallet.IWalletService
 	notificationService notify.INotificationService
 	processingSvc       processing.IProcessingOwner
+	settingSvc          setting.ISettingService
 }
 
 var _ IStore = (*Service)(nil)
@@ -71,6 +74,7 @@ func New(
 	rateLimit rate.Limiter,
 	rateLimitEnabled bool,
 	processingSvc processing.IProcessingOwner,
+	settingSvc setting.ISettingService,
 ) *Service {
 	srv := &Service{
 		storage:             storage,
@@ -84,11 +88,12 @@ func New(
 		rateLimitEnabled:    rateLimitEnabled,
 		notificationService: notificationService,
 		processingSvc:       processingSvc,
+		settingSvc:          settingSvc,
 	}
 	// register event
-	srv.eventListener.Register(DepositReceivedEventType, srv.handleDepositReceived)
-	srv.eventListener.Register(DepositUnconfirmedEventType, srv.handleDepositReceived)
-	srv.eventListener.Register(WithdrawalFromProcessingReceivedEventType, srv.handleWithdrawalReceived)
+	srv.eventListener.Register(transactions.DepositReceivedEventType, srv.handleDepositReceived)
+	srv.eventListener.Register(transactions.DepositUnconfirmedEventType, srv.handleDepositReceived)
+	srv.eventListener.Register(transactions.WithdrawalFromProcessingReceivedEventType, srv.handleWithdrawalReceived)
 
 	return srv
 }
@@ -178,6 +183,11 @@ func (s *Service) CreateStore(ctx context.Context, dto CreateStore, user *models
 		}
 		// create store secret
 		_, err = s.GenerateSecret(ctx, st.ID, repos.WithTx(tx))
+		if err != nil {
+			return err
+		}
+		// create store settings
+		err = s.CreateStoreSettings(ctx, st, repos.WithTx(tx))
 		if err != nil {
 			return err
 		}

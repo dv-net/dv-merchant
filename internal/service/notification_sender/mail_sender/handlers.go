@@ -45,7 +45,7 @@ func (svc *Service) handleUserForgotPassword(_ context.Context, email string, en
 			UserEmail: email,
 			Language:  pBody.Language,
 		},
-		UserForgotPasswordCode: pBody.ResetPasswordCode,
+		UserForgotPasswordCode: pBody.Code,
 	}
 
 	body, err := svc.templateSvc.AssembleEmail(emailParams)
@@ -141,6 +141,7 @@ func (svc *Service) handleUserExternalWalletRequested(_ context.Context, email s
 			ShowBlockchain:       v.ShowBlockchain,
 			WalletCurrencyName:   v.CurrencyName,
 			WalletBlockchainName: v.BlockchainName,
+			WalletIsFirst:        v.IsFirst,
 		})
 	}
 	emailParams := &templater.UserExternalWallet{

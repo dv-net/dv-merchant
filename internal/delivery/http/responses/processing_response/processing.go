@@ -16,4 +16,4 @@ type CallbackURLResponse struct {
 
 type OwnerProcessingResponse struct {
 	OwnerID string `json:"owner_id"`
-}
+} // @name OwnerProcessingResponse

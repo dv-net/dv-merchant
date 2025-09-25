@@ -223,7 +223,7 @@ func (h Handler) getWallets(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	wallets, err := h.services.BalanceService.GetWalletBalance(c.Context(), *request, rates)
+	wallets, err := h.services.WalletBalanceService.GetWalletBalance(c.Context(), *request, rates)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -288,7 +288,7 @@ func (h *Handler) getHotWalletBalances(c fiber.Ctx) error {
 		return err
 	}
 
-	balances, err := h.services.BalanceService.GetHotWalletsTotalBalance(c.Context(), usr)
+	balances, err := h.services.WalletBalanceService.GetHotWalletsTotalBalance(c.Context(), usr)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -316,7 +316,7 @@ func (h *Handler) getColdWalletBalances(c fiber.Ctx) error {
 		return err
 	}
 
-	balances, err := h.services.BalanceService.GetColdWalletsTotalBalance(c.Context(), usr)
+	balances, err := h.services.WalletBalanceService.GetColdWalletsTotalBalance(c.Context(), usr)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -343,7 +343,7 @@ func (h *Handler) getWithdrawalWalletBalances(c fiber.Ctx) error {
 		return err
 	}
 
-	balances, err := h.services.BalanceService.GetExchangeWalletsTotalBalance(c.Context(), usr)
+	balances, err := h.services.WalletBalanceService.GetExchangeWalletsTotalBalance(c.Context(), usr)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}

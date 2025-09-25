@@ -3,10 +3,11 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"net/http"
 
 	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/exchange_response" // Blank import for swaggen
-	_ "github.com/dv-net/dv-merchant/internal/storage/storecmn"                          // Blank import for swaggen
+	"github.com/dv-net/dv-merchant/internal/dto"
+	"github.com/dv-net/dv-merchant/internal/service/exchange_withdrawal"
+	_ "github.com/dv-net/dv-merchant/internal/storage/storecmn" // Blank import for swaggen
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/exchange_request"
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -36,7 +37,7 @@ func (h *Handler) exchangesList(c fiber.Ctx) error {
 
 	res, err := h.services.ExchangeService.GetAvailableExchangesList(c.Context(), usr.ID)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(converters.NewExchangeListResponseFromDto(res)))
@@ -60,12 +61,12 @@ func (h *Handler) setExchange(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	err = h.services.ExchangeService.SetCurrentExchange(c.Context(), usr.ID, slug)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	return c.JSON(response.OkByMessage("Current exchange successfully set"))
 }
@@ -94,12 +95,12 @@ func (h *Handler) updateKeys(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	err = h.services.ExchangeService.SetExchangeKeys(c.Context(), usr.ID, slug, req.ToMap())
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByMessage("Exchange keys successfully updated"))
@@ -123,12 +124,12 @@ func (h *Handler) deleteKeys(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	err = h.services.ExchangeService.DeleteExchangeKeys(c.Context(), usr.ID, slug)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByMessage("Exchange keys successfully deleted"))
@@ -150,12 +151,12 @@ func (h *Handler) testConnection(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	err = h.services.ExchangeService.TestConnection(c.Context(), *usr, slug)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByMessage("ok"))
@@ -184,12 +185,12 @@ func (h *Handler) testConnectionExternal(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(req.Slug)
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	err := h.services.ExchangeService.TestConnectionRaw(c.Context(), slug, req.Credentials.Key, req.Credentials.Secret, req.Credentials.Passphrase)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByMessage("ok"))
@@ -211,12 +212,12 @@ func (h *Handler) getBalance(c fiber.Ctx) error {
 	}
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	balances, err := h.services.ExchangeService.GetExchangeBalance(c.Context(), slug, *usr)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	return c.JSON(response.OkByData(converters.FromExchangeBalanceModelToResponse(balances)))
 }
@@ -246,12 +247,12 @@ func (h *Handler) updateUserExchangePairs(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	err = h.services.ExchangeService.UpdateUserExchangePairs(c.Context(), usr.ID, slug, req)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByMessage("Exchange pairs successfully updated"))
@@ -274,12 +275,12 @@ func (h *Handler) getUserExchangePairs(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	pairs, err := h.services.ExchangeService.GetUserExchangePairs(c.Context(), usr.ID, slug)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(converters.GetUserExchangePairsResponse(pairs)))
@@ -302,12 +303,12 @@ func (h *Handler) getExchangePairs(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	pairs, err := h.services.ExchangeService.GetExchangePairs(c.Context(), usr.ID, slug)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(pairs))
@@ -330,17 +331,17 @@ func (h *Handler) updateDepositAddresses(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	addr, err := h.services.ExchangeService.UpdateDepositAddresses(c.Context(), usr.ID, slug)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	rules, err := h.services.ExchangeRulesService.GetWithdrawalRules(c.Context(), slug, usr.ID.String())
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(converters.UpdateDepositAddressesResponse(addr, rules)))
@@ -363,12 +364,12 @@ func (h *Handler) getExchangeWithdrawalRules(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	rules, err := h.services.ExchangeService.GetExchangeWithdrawalRules(c.Context(), usr.ID, slug)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	return c.JSON(response.OkByData(converters.GetWithdrawalRulesResponse(rules)))
 }
@@ -390,12 +391,12 @@ func (h *Handler) getExchangeDepositAddress(c fiber.Ctx) error {
 
 	address, err := h.services.ExchangeService.GetDepositExchangeAddresses(c.Context(), usr.ID)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	rules, err := h.services.ExchangeRulesService.GetAllWithdrawalRules(c.Context(), usr.ID)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(converters.GetDepositAddressesResponse(address, rules)))
@@ -419,16 +420,20 @@ func (h *Handler) createWithdrawalSetting(c fiber.Ctx) error {
 	}
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 	req := &exchange_request.CreateWithdrawalSettingRequest{}
 	if err := c.Bind().Body(req); err != nil {
 		return err
 	}
 
-	setting, err := h.services.ExchangeWithdrawalService.CreateWithdrawalSetting(c.Context(), usr.ID, slug, req)
+	d := dto.RequestToCreateWithdrawalSettingDTO(req)
+	setting, err := h.services.ExchangeWithdrawalService.CreateWithdrawalSetting(c.Context(), usr.ID, slug, d)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		if errors.Is(err, exchange_withdrawal.ErrInvalidAddress) {
+			return apierror.New().AddError(errors.New("invalid address")).SetHttpCode(fiber.StatusUnprocessableEntity)
+		}
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	return c.JSON(response.OkByData(converters.GetWithdrawalSettingResponse(setting)))
 }
@@ -450,12 +455,12 @@ func (h *Handler) getWithdrawalSettings(c fiber.Ctx) error {
 	}
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	settings, err := h.services.ExchangeWithdrawalService.GetWithdrawalSettings(c.Context(), usr.ID, slug)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	return c.JSON(response.OkByData(converters.GetWithdrawalSettingsResponse(settings)))
 }
@@ -478,17 +483,17 @@ func (h *Handler) getWithdrawalSetting(c fiber.Ctx) error {
 	}
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 	id := c.Params("id")
 	settingID, err := uuid.Parse(id)
 	if err != nil {
-		return apierror.New().AddError(errors.New("invalid setting uuid")).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(errors.New("invalid setting uuid")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	setting, err := h.services.ExchangeWithdrawalService.GetWithdrawalSetting(c.Context(), usr.ID, slug, settingID)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	return c.JSON(response.OkByData(converters.GetWithdrawalSettingResponse(setting)))
 }
@@ -513,13 +518,13 @@ func (h *Handler) updateWithdrawalSetting(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	id := c.Params("id")
 	settingID, err := uuid.Parse(id)
 	if err != nil {
-		return apierror.New().AddError(errors.New("invalid setting uuid")).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(errors.New("invalid setting uuid")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	req := &exchange_request.UpdateWithdrawalSetting{}
@@ -529,7 +534,7 @@ func (h *Handler) updateWithdrawalSetting(c fiber.Ctx) error {
 
 	setting, err := h.services.ExchangeWithdrawalService.UpdateWithdrawalSetting(c.Context(), usr.ID, settingID, req.Enabled)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(converters.GetWithdrawalSettingResponse(setting)))
@@ -553,17 +558,17 @@ func (h *Handler) deleteWithdrawalSetting(c fiber.Ctx) error {
 	}
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 	id := c.Params("id")
 	settingID, err := uuid.Parse(id)
 	if err != nil {
-		return apierror.New().AddError(errors.New("invalid setting uuid")).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(errors.New("invalid setting uuid")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	err = h.services.ExchangeWithdrawalService.DeleteWithdrawalSetting(c.Context(), usr.ID, slug, settingID)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	return c.JSON(response.OkByMessage("Withdrawal setting successfully deleted"))
 }
@@ -585,19 +590,19 @@ func (h *Handler) getWithdrawals(c fiber.Ctx) error {
 	}
 	req := &exchange_request.GetWithdrawalsRequest{}
 	if err := c.Bind().Query(req); err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return err
 	}
 	if req.Slug != nil {
 		slug := models.ExchangeSlug(*req.Slug)
 		if !slug.Valid() {
-			return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+			return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 		}
 	}
-	dto, err := h.services.ExchangeWithdrawalService.GetWithdrawalHistory(c.Context(), usr.ID, req)
+	res, err := h.services.ExchangeWithdrawalService.GetWithdrawalHistory(c.Context(), usr.ID, req)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
-	return c.JSON(response.OkByData(converters.GetWithdrawalsHistoryResponse(dto)))
+	return c.JSON(response.OkByData(converters.GetWithdrawalsHistoryResponse(res)))
 }
 
 // @Summary		Download withdrawals
@@ -616,17 +621,17 @@ func (h *Handler) downloadWithdrawals(c fiber.Ctx) error {
 	}
 	req := &exchange_request.GetWithdrawalsExportedRequest{}
 	if err := c.Bind().Query(req); err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	if req.Slug != nil {
 		slug := models.ExchangeSlug(*req.Slug)
 		if !slug.Valid() {
-			return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+			return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 		}
 	}
 	history, err := h.services.ExchangeWithdrawalService.DownloadWithdrawalHistory(c.Context(), usr.ID, req)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	c.Response().Header.Set("Content-Type", "application/octet-stream")
@@ -651,18 +656,18 @@ func (h *Handler) getWithdrawalByID(c fiber.Ctx) error {
 	}
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 	id := c.Params("id")
 	orderID, err := uuid.Parse(id)
 	if err != nil {
-		return apierror.New().AddError(errors.New("invalid order uuid")).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(errors.New("invalid order uuid")).SetHttpCode(fiber.StatusBadRequest)
 	}
-	dto, err := h.services.ExchangeWithdrawalService.GetWithdrawalByID(c.Context(), usr.ID, slug, orderID)
+	res, err := h.services.ExchangeWithdrawalService.GetWithdrawalByID(c.Context(), usr.ID, slug, orderID)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
-	return c.JSON(response.OkByData(converters.GetWithdrawalHistoryResponse(dto)))
+	return c.JSON(response.OkByData(converters.GetWithdrawalHistoryResponse(res)))
 }
 
 // @Summary		Get exchange chains
@@ -681,12 +686,12 @@ func (h *Handler) getExchangeChains(c fiber.Ctx) error {
 
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
 	chains, err := h.services.ExchangeService.GetExchangeChains(c.Context(), slug)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(chains))
@@ -709,18 +714,18 @@ func (h *Handler) getUserOrderHistory(c fiber.Ctx) error {
 
 	request := &exchange_request.GetExchangeOrdersHistoryRequest{}
 	if err := c.Bind().Query(request); err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	if request.Slug != nil {
 		slug := models.ExchangeSlug(*request.Slug)
 		if !slug.Valid() {
-			return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+			return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 		}
 	}
 
 	history, err := h.services.ExchangeService.GetExchangeOrdersHistory(c.Context(), usr.ID, *request)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(converters.GetOrdersHistoryResponse(history)))
@@ -743,17 +748,17 @@ func (h *Handler) downloadUserOrderHistory(c fiber.Ctx) error {
 
 	request := &exchange_request.GetExchangeOrdersHistoryExportedRequest{}
 	if err := c.Bind().Query(request); err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 	if request.Slug != nil {
 		slug := models.ExchangeSlug(*request.Slug)
 		if !slug.Valid() {
-			return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+			return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 		}
 	}
 	history, err := h.services.ExchangeService.DownloadExchangeOrdersHistory(c.Context(), usr.ID, *request)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	c.Set("Content-Type", "application/octet-stream")
@@ -780,7 +785,7 @@ func (h *Handler) toggleExchangeWithdrawals(c fiber.Ctx) error {
 	}
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 	req := &exchange_request.ToggleExchangeWithdrawalsRequest{}
 	if err := c.Bind().Body(req); err != nil {
@@ -789,7 +794,7 @@ func (h *Handler) toggleExchangeWithdrawals(c fiber.Ctx) error {
 
 	state, err := h.services.ExchangeService.ChangeExchangeWithdrawalState(c.Context(), slug, usr.ID, models.ExchangeWithdrawalState(req.NewState))
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(state.WithdrawalState))
@@ -813,7 +818,7 @@ func (h *Handler) toggleExchangeSwaps(c fiber.Ctx) error {
 	}
 	slug := models.ExchangeSlug(c.Params("exchange_slug"))
 	if !slug.Valid() {
-		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(http.StatusNotFound)
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 	req := &exchange_request.ToggleExchangeSwapsRequest{}
 	if err := c.Bind().Body(req); err != nil {
@@ -822,7 +827,7 @@ func (h *Handler) toggleExchangeSwaps(c fiber.Ctx) error {
 
 	state, err := h.services.ExchangeService.ChangeExchangeSwapsState(c.Context(), slug, usr.ID, models.ExchangeSwapState(req.NewState))
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(state.WithdrawalState))

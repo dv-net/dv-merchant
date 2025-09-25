@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/notification_request"
-	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/permission"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
@@ -55,7 +54,6 @@ type SendResult struct {
 type Service struct {
 	logger            logger.Logger
 	storage           storage.IStorage
-	eventListener     event.IListener
 	settingsSvc       setting.ISettingService
 	permissionService permission.IPermission
 
@@ -68,7 +66,6 @@ type Service struct {
 func New(
 	logger logger.Logger,
 	storage storage.IStorage,
-	eventListener event.IListener,
 	settingsSvc setting.ISettingService,
 	sender INotificationSender,
 	permSvc permission.IPermission,
@@ -77,7 +74,6 @@ func New(
 		logger:            logger,
 		storage:           storage,
 		settingsSvc:       settingsSvc,
-		eventListener:     eventListener,
 		permissionService: permSvc,
 		maxRetries:        DefaultMaxRetries,
 		sender:            sender,
@@ -198,6 +194,11 @@ func (svc *Service) SendSystemEmail(
 		return
 	}
 
+	if svc.isNotificationDisabledForStore(ctx, notificationType, args) {
+		svc.logger.Infow("notification is disabled for store", "destination", email, "notification_type", notificationType)
+		return
+	}
+
 	params := repo_notification_send_queue.CreateParams{
 		Destination: email,
 		Type:        notificationType,
@@ -208,7 +209,7 @@ func (svc *Service) SendSystemEmail(
 	_, err = svc.storage.NotificationSendQueue().Create(ctx, params)
 
 	if err != nil {
-		svc.logger.Error("failed to enqueue system email", err, "destination", email, "notification_type", notificationType)
+		svc.logger.Error("failed to enqueue system email ", err, "destination ", email, "notification_type ", notificationType)
 	}
 }
 
@@ -372,4 +373,34 @@ func (svc *Service) GetTypesList(ctx context.Context) ([]NotificationType, error
 	}
 
 	return result, nil
+}
+
+func (svc *Service) isNotificationDisabledForStore(ctx context.Context, notificationType models.NotificationType, args *models.NotificationArgs) bool {
+	if args == nil || args.StoreID == nil {
+		return false
+	}
+
+	var settingName string
+	switch notificationType {
+	case models.NotificationTypeExternalWalletRequested:
+		settingName = setting.ExternalWalletsListNotification
+	case models.NotificationTypeUserCryptoReceipt:
+		settingName = setting.UserCryptoReceiptNotification
+	default:
+		return false
+	}
+
+	store, err := svc.storage.Stores().GetByID(ctx, *args.StoreID)
+	if err != nil {
+		svc.logger.Error("failed to get store for notification settings check", err, "store_id", *args.StoreID)
+		return false
+	}
+
+	storeSetting, err := svc.settingsSvc.GetStoreModelSetting(ctx, settingName, store)
+	if err != nil {
+		svc.logger.Error("failed to get store notification setting", err, "setting_name", settingName, "store_id", *args.StoreID)
+		return false
+	}
+
+	return storeSetting != nil && storeSetting.Value == setting.FlagValueDisabled
 }

@@ -1100,7 +1100,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest"
                         }
                     }
                 ],
@@ -1147,7 +1147,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Currency Source example binance or coingate",
+                        "description": "Currency Source example binance",
                         "name": "source",
                         "in": "path",
                         "required": true
@@ -1771,6 +1771,96 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/logs/last": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Logs"
+                ],
+                "summary": "Get last logs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-GetLastLogsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/logs/last-processing": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Logs"
+                ],
+                "summary": "Get last processing logs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-GetLastLogsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/logs/{slug}": {
             "get": {
                 "security": [
@@ -2121,7 +2211,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_processing_request.UpdateProcessingCallbackDomain"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_processing_request.UpdateProcessingCallbackDomain"
                         }
                     }
                 ],
@@ -2279,7 +2369,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_processing_request.MnemonicRequest"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_processing_request.MnemonicRequest"
                         }
                     }
                 ],
@@ -2287,7 +2377,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-github.com/dv-net/dv-merchant_internal_delivery_http_responses_processing_response_OwnerProcessingResponse"
+                            "$ref": "#/definitions/JSONResponse-OwnerProcessingResponse"
                         }
                     },
                     "400": {
@@ -2601,7 +2691,135 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_github.com/dv-net/dv-merchant_internal_service_setting_Dto"
+                            "$ref": "#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/store-setting/list/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List available store settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Setting"
+                ],
+                "summary": "List available store settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/store-setting/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create or update store settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Setting"
+                ],
+                "summary": "Create or update store settings",
+                "parameters": [
+                    {
+                        "description": "Create or update store setting",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateSettingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/store-setting/{id}/{setting_name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get store setting value",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Setting"
+                ],
+                "summary": "Get store setting value",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-SettingResponse"
                         }
                     },
                     "401": {
@@ -4169,7 +4387,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-ResponseWithFullPagination-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_FindRow"
+                            "$ref": "#/definitions/JSONResponse-ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow"
                         }
                     },
                     "401": {
@@ -4457,7 +4675,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_StatisticsRow"
+                            "$ref": "#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_StatisticsRow"
                         }
                     },
                     "401": {
@@ -5150,6 +5368,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/user-setting/list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List available user settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Setting"
+                ],
+                "summary": "List available user settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/user-setting/{setting_name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get setting value",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Setting"
+                ],
+                "summary": "Get setting value",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-SettingResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/user/change-email": {
             "post": {
                 "security": [
@@ -5658,7 +5941,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_wallet_request.AddressConverterRequest"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_wallet_request.AddressConverterRequest"
                         }
                     }
                 ],
@@ -6395,7 +6678,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.CreateAddressBookRequest"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.CreateAddressBookRequest"
                         }
                     }
                 ],
@@ -6456,7 +6739,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.DeleteAddressBookRequest"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.DeleteAddressBookRequest"
                         }
                     }
                 ],
@@ -6519,7 +6802,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.AddWithdrawalRuleRequest"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.AddWithdrawalRuleRequest"
                         }
                     }
                 ],
@@ -6583,7 +6866,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.UpdateAddressBookRequest"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.UpdateAddressBookRequest"
                         }
                     }
                 ],
@@ -7189,7 +7472,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_github.com/dv-net/dv-merchant_internal_models_ExchangeSymbolDTO"
+                            "$ref": "#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_models_ExchangeSymbolDTO"
                         }
                     },
                     "422": {
@@ -7226,7 +7509,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_array_github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse"
+                            "$ref": "#/definitions/JSONResponse-array_array_github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse"
                         }
                     },
                     "422": {
@@ -8689,7 +8972,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Currency Source example binance or coingate",
+                        "description": "Currency Source example binance",
                         "name": "source",
                         "in": "path",
                         "required": true
@@ -8787,7 +9070,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-github.com/dv-net/dv-merchant_internal_delivery_http_responses_mnemonic_response_MnemonicResponse"
+                            "$ref": "#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response_MnemonicResponse"
                         }
                     }
                 }
@@ -8994,6 +9277,12 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Locale",
+                        "name": "locale",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -9011,6 +9300,63 @@ const docTemplate = `{
                     },
                     "410": {
                         "description": "Gone",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/public/wallet/{id}/confirm": {
+            "get": {
+                "description": "Notify wallet email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wallet",
+                    "Public"
+                ],
+                "summary": "Notify wallet email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Wallet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Currency ID",
+                        "name": "currency_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -9111,71 +9457,6 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/user-setting/list": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "List available user settings",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Setting"
-                ],
-                "summary": "List available user settings",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_github.com/dv-net/dv-merchant_internal_service_setting_Dto"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/user-setting/{setting_name}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get setting value",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Setting"
-                ],
-                "summary": "Get setting value",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-SettingResponse"
                         }
                     },
                     "401": {
@@ -9295,6 +9576,9 @@ const docTemplate = `{
                 },
                 "tag": {
                     "type": "string"
+                },
+                "withdrawal_rule_exists": {
+                    "type": "boolean"
                 }
             }
         },
@@ -9306,6 +9590,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "withdrawal_rule_exists": {
+                    "type": "boolean"
                 }
             }
         },
@@ -9360,10 +9647,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "service_slug": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.AMLSlug"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
                 },
                 "status": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.AMLCheckStatus"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus"
                 },
                 "updated_at": {
                     "type": "string"
@@ -9498,7 +9785,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "evm_data": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_service_wallet.EVMData"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_service_wallet.EVMData"
                 },
                 "tron_data": {
                     "$ref": "#/definitions/TronData"
@@ -9987,7 +10274,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "address_type": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.AddressType"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AddressType"
                 },
                 "chain": {
                     "type": "string"
@@ -10146,10 +10433,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "page": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 1
                 },
                 "page_size": {
-                    "type": "integer"
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 1
                 },
                 "slug": {
                     "type": "string"
@@ -10404,7 +10694,7 @@ const docTemplate = `{
                 "exchanges": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeData"
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeData"
                     }
                 },
                 "swap_state": {
@@ -10584,7 +10874,7 @@ const docTemplate = `{
                 "available_aml_providers": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.AMLSlug"
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
                     }
                 },
                 "available_currencies": {
@@ -10655,13 +10945,24 @@ const docTemplate = `{
                 }
             }
         },
+        "GetLastLogsResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_dto.LogDTO"
+                    }
+                }
+            }
+        },
         "GetMonitorTypesResponse": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_responses_log_response.LogData"
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.LogData"
                     }
                 }
             }
@@ -11275,6 +11576,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-GetLastLogsResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/GetLastLogsResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-GetMonitorTypesResponse": {
             "type": "object",
             "properties": {
@@ -11353,6 +11668,20 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/OwnerData"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-OwnerProcessingResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/OwnerProcessingResponse"
                 },
                 "message": {
                     "type": "string"
@@ -11541,14 +11870,14 @@ const docTemplate = `{
                 }
             }
         },
-        "JSONResponse-ResponseWithFullPagination-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_FindRow": {
+        "JSONResponse-ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "integer"
                 },
                 "data": {
-                    "$ref": "#/definitions/ResponseWithFullPagination-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_FindRow"
+                    "$ref": "#/definitions/ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow"
                 },
                 "message": {
                     "type": "string"
@@ -12221,7 +12550,7 @@ const docTemplate = `{
                 }
             }
         },
-        "JSONResponse-array_array_github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse": {
+        "JSONResponse-array_array_github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse": {
             "type": "object",
             "properties": {
                 "code": {
@@ -12232,7 +12561,7 @@ const docTemplate = `{
                     "items": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeWithdrawalRulesResponse"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeWithdrawalRulesResponse"
                         }
                     }
                 },
@@ -12241,7 +12570,7 @@ const docTemplate = `{
                 }
             }
         },
-        "JSONResponse-array_github.com/dv-net/dv-merchant_internal_models_ExchangeSymbolDTO": {
+        "JSONResponse-array_github_com_dv-net_dv-merchant_internal_models_ExchangeSymbolDTO": {
             "type": "object",
             "properties": {
                 "code": {
@@ -12250,7 +12579,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.ExchangeSymbolDTO"
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.ExchangeSymbolDTO"
                     }
                 },
                 "message": {
@@ -12258,7 +12587,7 @@ const docTemplate = `{
                 }
             }
         },
-        "JSONResponse-array_github.com/dv-net/dv-merchant_internal_service_setting_Dto": {
+        "JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto": {
             "type": "object",
             "properties": {
                 "code": {
@@ -12267,7 +12596,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_service_setting.Dto"
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_service_setting.Dto"
                     }
                 },
                 "message": {
@@ -12292,42 +12621,28 @@ const docTemplate = `{
                 }
             }
         },
-        "JSONResponse-github.com/dv-net/dv-merchant_internal_delivery_http_responses_mnemonic_response_MnemonicResponse": {
+        "JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response_MnemonicResponse": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "integer"
                 },
                 "data": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse"
                 },
                 "message": {
                     "type": "string"
                 }
             }
         },
-        "JSONResponse-github.com/dv-net/dv-merchant_internal_delivery_http_responses_processing_response_OwnerProcessingResponse": {
+        "JSONResponse-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_StatisticsRow": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "integer"
                 },
                 "data": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_delivery_http_responses_processing_response.OwnerProcessingResponse"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "JSONResponse-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_StatisticsRow": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "data": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.StatisticsRow"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.StatisticsRow"
                 },
                 "message": {
                     "type": "string"
@@ -12369,7 +12684,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "mode": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.MultiWithdrawalMode"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.MultiWithdrawalMode"
                 }
             }
         },
@@ -12445,7 +12760,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.MultiWithdrawalMode"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.MultiWithdrawalMode"
                         }
                     ]
                 }
@@ -12579,6 +12894,14 @@ const docTemplate = `{
                 }
             }
         },
+        "OwnerProcessingResponse": {
+            "type": "object",
+            "properties": {
+                "owner_id": {
+                    "type": "string"
+                }
+            }
+        },
         "PatchWhitelistRequest": {
             "type": "object",
             "required": [
@@ -12669,7 +12992,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "wallet_type": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.WalletType"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.WalletType"
                 }
             }
         },
@@ -12962,7 +13285,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_info": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_service_user.RegisterUserDTO"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_service_user.RegisterUserDTO"
                 }
             }
         },
@@ -13064,13 +13387,13 @@ const docTemplate = `{
                 }
             }
         },
-        "ResponseWithFullPagination-github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions_FindRow": {
+        "ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.FindRow"
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.FindRow"
                     }
                 },
                 "pagination": {
@@ -13102,7 +13425,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "provider_slug": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.AMLSlug"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
                 },
                 "tx_id": {
                     "type": "string"
@@ -13213,7 +13536,7 @@ const docTemplate = `{
                 "details_by_currency": {
                     "type": "object",
                     "additionalProperties": {
-                        "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_service_transactions.CurrencyDetailsDTO"
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_service_transactions.CurrencyDetailsDTO"
                     }
                 },
                 "sum_usd": {
@@ -13432,7 +13755,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "app_profile": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.AppProfile"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AppProfile"
                 },
                 "initialized": {
                     "type": "boolean"
@@ -13935,7 +14258,6 @@ const docTemplate = `{
                         "htx",
                         "binance",
                         "bitget",
-                        "coingate",
                         "bybit",
                         "gate",
                         "dv-min",
@@ -14006,7 +14328,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.AmlKeyType"
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AmlKeyType"
                         }
                     ]
                 },
@@ -14054,10 +14376,10 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "new_backend_version": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_service_updater.VersionInfo"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_service_updater.VersionInfo"
                 },
                 "new_processing_version": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_service_updater.VersionInfo"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_service_updater.VersionInfo"
                 }
             }
         },
@@ -14449,7 +14771,7 @@ const docTemplate = `{
                 "addressees": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.WithdrawalWalletAddress"
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.WithdrawalWalletAddress"
                     }
                 },
                 "currency": {
@@ -14570,7 +14892,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest": {
             "type": "object",
             "required": [
                 "rate_scale",
@@ -14583,12 +14905,12 @@ const docTemplate = `{
                 "rate_source": {
                     "type": "string",
                     "enum": [
-                        "okx htx binance bitget coingate bybit gate dv-min dv-max dv-avg"
+                        "okx htx binance bitget bybit gate dv-min dv-max dv-avg"
                     ]
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_request_processing_request.MnemonicRequest": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_processing_request.MnemonicRequest": {
             "type": "object",
             "required": [
                 "mnemonic"
@@ -14599,7 +14921,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_request_processing_request.UpdateProcessingCallbackDomain": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_processing_request.UpdateProcessingCallbackDomain": {
             "type": "object",
             "required": [
                 "domain"
@@ -14612,7 +14934,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_request_wallet_request.AddressConverterRequest": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_wallet_request.AddressConverterRequest": {
             "type": "object",
             "required": [
                 "address",
@@ -14629,7 +14951,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.AddWithdrawalRuleRequest": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.AddWithdrawalRuleRequest": {
             "type": "object",
             "required": [
                 "totp"
@@ -14655,7 +14977,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.CreateAddressBookRequest": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.CreateAddressBookRequest": {
             "type": "object",
             "required": [
                 "address",
@@ -14691,7 +15013,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.DeleteAddressBookRequest": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.DeleteAddressBookRequest": {
             "type": "object",
             "required": [
                 "totp"
@@ -14720,7 +15042,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_request_withdrawal_requests.UpdateAddressBookRequest": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_withdrawal_requests.UpdateAddressBookRequest": {
             "type": "object",
             "required": [
                 "totp"
@@ -14737,7 +15059,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeData": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeData": {
             "type": "object",
             "properties": {
                 "exchange": {
@@ -14757,7 +15079,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeWithdrawalRulesResponse": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response.ExchangeWithdrawalRulesResponse": {
             "type": "object",
             "properties": {
                 "chain": {
@@ -14792,7 +15114,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_responses_log_response.LogData": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.LogData": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -14813,7 +15135,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse": {
+        "github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse": {
             "type": "object",
             "properties": {
                 "mnemonic": {
@@ -14821,15 +15143,21 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_delivery_http_responses_processing_response.OwnerProcessingResponse": {
+        "github_com_dv-net_dv-merchant_internal_dto.LogDTO": {
             "type": "object",
             "properties": {
-                "owner_id": {
+                "level": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "time": {
                     "type": "string"
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_models.AMLCheckStatus": {
+        "github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus": {
             "type": "string",
             "enum": [
                 "pending",
@@ -14842,7 +15170,7 @@ const docTemplate = `{
                 "AmlCheckStatusFailed"
             ]
         },
-        "github.com/dv-net/dv-merchant_internal_models.AMLSlug": {
+        "github_com_dv-net_dv-merchant_internal_models.AMLSlug": {
             "type": "string",
             "enum": [
                 "aml_bot",
@@ -14853,7 +15181,7 @@ const docTemplate = `{
                 "AMLSlugBitOK"
             ]
         },
-        "github.com/dv-net/dv-merchant_internal_models.AddressType": {
+        "github_com_dv-net_dv-merchant_internal_models.AddressType": {
             "type": "string",
             "enum": [
                 "deposit",
@@ -14864,7 +15192,7 @@ const docTemplate = `{
                 "WithdrawAddress"
             ]
         },
-        "github.com/dv-net/dv-merchant_internal_models.AmlKeyType": {
+        "github_com_dv-net_dv-merchant_internal_models.AmlKeyType": {
             "type": "string",
             "enum": [
                 "access_key_id",
@@ -14879,7 +15207,7 @@ const docTemplate = `{
                 "AmlKeyTypeAccessID"
             ]
         },
-        "github.com/dv-net/dv-merchant_internal_models.AppProfile": {
+        "github_com_dv-net_dv-merchant_internal_models.AppProfile": {
             "type": "string",
             "enum": [
                 "dev",
@@ -14892,7 +15220,7 @@ const docTemplate = `{
                 "AppProfileDemo"
             ]
         },
-        "github.com/dv-net/dv-merchant_internal_models.ExchangeSymbolDTO": {
+        "github_com_dv-net_dv-merchant_internal_models.ExchangeSymbolDTO": {
             "type": "object",
             "properties": {
                 "base_symbol": {
@@ -14912,7 +15240,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_models.MultiWithdrawalMode": {
+        "github_com_dv-net_dv-merchant_internal_models.MultiWithdrawalMode": {
             "type": "string",
             "enum": [
                 "random",
@@ -14927,14 +15255,13 @@ const docTemplate = `{
                 "MultiWithdrawalModeManual"
             ]
         },
-        "github.com/dv-net/dv-merchant_internal_models.RateSource": {
+        "github_com_dv-net_dv-merchant_internal_models.RateSource": {
             "type": "string",
             "enum": [
                 "okx",
                 "htx",
                 "binance",
                 "bitget",
-                "coingate",
                 "dv-min",
                 "dv-max",
                 "dv-avg",
@@ -14947,7 +15274,6 @@ const docTemplate = `{
                 "RateSourceHTX",
                 "RateSourceBinance",
                 "RateSourceBitGet",
-                "RateSourceCoingate",
                 "RateSourceDVMin",
                 "RateSourceDVMax",
                 "RateSourceDVAvg",
@@ -14956,7 +15282,7 @@ const docTemplate = `{
                 "RateSourceGateio"
             ]
         },
-        "github.com/dv-net/dv-merchant_internal_models.User": {
+        "github_com_dv-net_dv-merchant_internal_models.User": {
             "type": "object",
             "required": [
                 "email",
@@ -15006,7 +15332,7 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "rate_source": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.RateSource"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.RateSource"
                 },
                 "remember_token": {
                     "type": "string"
@@ -15016,7 +15342,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_models.WalletType": {
+        "github_com_dv-net_dv-merchant_internal_models.WalletType": {
             "type": "string",
             "enum": [
                 "cold",
@@ -15029,7 +15355,7 @@ const docTemplate = `{
                 "WalletTypeProcessing"
             ]
         },
-        "github.com/dv-net/dv-merchant_internal_models.WithdrawalWalletAddress": {
+        "github_com_dv-net_dv-merchant_internal_models.WithdrawalWalletAddress": {
             "type": "object",
             "properties": {
                 "address": {
@@ -15055,7 +15381,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_service_setting.Dto": {
+        "github_com_dv-net_dv-merchant_internal_service_setting.Dto": {
             "type": "object",
             "properties": {
                 "available_values": {
@@ -15078,7 +15404,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_service_transactions.CurrencyDetailsDTO": {
+        "github_com_dv-net_dv-merchant_internal_service_transactions.CurrencyDetailsDTO": {
             "type": "object",
             "properties": {
                 "sum_usd": {
@@ -15089,7 +15415,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_service_updater.VersionInfo": {
+        "github_com_dv-net_dv-merchant_internal_service_updater.VersionInfo": {
             "type": "object",
             "properties": {
                 "available_version": {
@@ -15106,18 +15432,18 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_service_user.RegisterUserDTO": {
+        "github_com_dv-net_dv-merchant_internal_service_user.RegisterUserDTO": {
             "type": "object",
             "properties": {
                 "owner_info": {
                     "$ref": "#/definitions/RegisterOwnerInfo"
                 },
                 "user": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_models.User"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.User"
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_service_wallet.EVMData": {
+        "github_com_dv-net_dv-merchant_internal_service_wallet.EVMData": {
             "type": "object",
             "properties": {
                 "cost_per_erc20": {
@@ -15147,7 +15473,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.FindRow": {
+        "github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.FindRow": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -15238,7 +15564,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.Resolution": {
+        "github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.Resolution": {
             "type": "string",
             "enum": [
                 "hour",
@@ -15249,7 +15575,7 @@ const docTemplate = `{
                 "ResolutionDay"
             ]
         },
-        "github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.StatisticsRow": {
+        "github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.StatisticsRow": {
             "type": "object",
             "properties": {
                 "amount_usd": {
@@ -15265,7 +15591,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "resolution": {
-                    "$ref": "#/definitions/github.com/dv-net/dv-merchant_internal_storage_repos_repo_transactions.Resolution"
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions.Resolution"
                 }
             }
         },

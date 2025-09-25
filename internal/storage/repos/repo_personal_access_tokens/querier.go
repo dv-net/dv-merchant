@@ -6,13 +6,13 @@ package repo_personal_access_tokens
 
 import (
 	"context"
-	"github.com/dv-net/dv-merchant/internal/models"
 
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 )
 
 type Querier interface {
-	ClearAllByUser(ctx context.Context, tokenableID uuid.UUID) error
+	ClearAllByUser(ctx context.Context, arg ClearAllByUserParams) error
 	Create(ctx context.Context, arg CreateParams) (*models.PersonalAccessToken, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	GetByToken(ctx context.Context, token string) (*models.PersonalAccessToken, error)

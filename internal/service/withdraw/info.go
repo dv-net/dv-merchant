@@ -189,6 +189,9 @@ func (s *service) prepareWalletToByMultipleRules(
 
 		return res.Address, nil
 	case models.MultiWithdrawalModeRandom:
+		if len(withdrawalAddresses) == 0 {
+			return "", errors.New("withdrawal addresses list is empty")
+		}
 		return tools.RandomSliceElement(withdrawalAddresses), nil
 	default:
 		return "", fmt.Errorf("mode '%s' is not supported", rule.Mode)
