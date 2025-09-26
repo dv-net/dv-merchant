@@ -190,5 +190,18 @@ values
     ('gate', 'BNB.BNBSmartChain', 'BNB', 'BSC'),
     ('gate', 'DAI.Ethereum', 'DAI', 'ETH'),
     ('gate', 'DAI.Polygon', 'DAI', 'MATIC'),
-    ('gate', 'POL.Polygon', 'POL', 'MATIC')
+    ('gate', 'POL.Polygon', 'POL', 'MATIC'),
+    ('gate', 'ENA.Ethereum', 'ENA', 'ETH'),
+    ('gate', 'WLD.Ethereum', 'WLD', 'ETH'),
+    ('gate', 'SHIB.Ethereum', 'SHIB', 'ETH'),
+    ('gate', 'USD1.Ethereum', 'USD1', 'ETH'),
+    ('gate', 'USD1.BNBSmartChain', 'USD1', 'BSC'),
+    ('gate', 'USD1.Tron', 'USD1', 'TRX'),
+    ('gate', 'USDE.Ethereum', 'USD1', 'ETH'),
+    ('gate', 'PEPE.Ethereum', 'PEPE', 'ETH'),
+    ('gate', 'CAKE.BNBSmartChain', 'CAKE', 'BSC'),
+    ('gate', 'WLFI.Ethereum', 'WLFI', 'ETH'),
+    ('gate', 'WLFI.BNBSmartChain', 'WLFI', 'BSC'),
+    ('gate', 'SAND.Ethereum', 'SAND', 'ETH'),
+    ('gate', 'XAUT.Ethereum', 'XAUT', 'ETH')
 ON CONFLICT DO NOTHING;
