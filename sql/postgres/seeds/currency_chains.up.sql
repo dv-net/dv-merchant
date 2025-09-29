@@ -65,7 +65,6 @@ values
     ('binance', 'USDT.Polygon', 'USDT', 'MATIC'),
     ('binance', 'SAND.Ethereum', 'SAND', 'ETH'),
     ('binance', 'SAND.Polygon', 'SAND', 'MATIC'),
-    ('binance', 'SAND.BNBSmartChain', 'SAND', 'BSC'),
     ('binance', 'WLD.Ethereum', 'WLD', 'ETH'),
     ('binance', 'USD1.Ethereum', 'USD1', 'ETH'),
     ('binance', 'USD1.BNBSmartChain', 'USD1', 'BSC'),
