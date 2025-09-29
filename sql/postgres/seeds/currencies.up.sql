@@ -47,8 +47,7 @@ values
     ('PYUSD.Arbitrum', 'PYUSD', 'PYUSD', 6, false, 'arbitrum', '0x46850ad61c2b7d64d08c9c754f45254596696984', 0.000001, true, 'now()', 'now()', true, 1, 1, true, 'PayPal USD', 'ERC-20'),
     ('XAUT.Ethereum', 'XAUT', 'XAUT', 6, false, 'ethereum', '0x68749665ff8d2d112fa859aa293f07a622782f38', 0.000001, true, 'now()', 'now()', true, 1, 1, false, 'Tether Gold', 'ERC-20'),
     ('SAND.Ethereum', 'SAND', 'SAND', 18, false, 'ethereum', '0x3845badade8e6dff049820680d1f14bd3903a5d0', 0.000000000000000001, true, 'now()', 'now()', true, 1, 1, false, 'The Sandbox', 'ERC-20'),
-    ('SAND.Polygon', 'SAND', 'SAND', 18, false, 'polygon', '0xbbba073c31bf03b8acf7c28ef0738decf3695683', 0.000000000000000001, true, 'now()', 'now()', true, 1, 1, false, 'The Sandbox', 'ERC-20'),
-    ('SAND.BNBSmartChain', 'SAND', 'SAND', 18, false, 'bsc', '0x67b725d7e342d7b611fa85e859df9697d9378b2e', 0.000000000000000001, false, 'now()', 'now()', false, 1, 1, false, 'The Sandbox', 'BEP-20')
+    ('SAND.Polygon', 'SAND', 'SAND', 18, false, 'polygon', '0xbbba073c31bf03b8acf7c28ef0738decf3695683', 0.000000000000000001, true, 'now()', 'now()', true, 1, 1, false, 'The Sandbox', 'ERC-20')
 ON CONFLICT (id) DO UPDATE SET
     currency_label = EXCLUDED.currency_label,
     token_label = EXCLUDED.token_label;
