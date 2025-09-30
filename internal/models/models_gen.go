@@ -95,6 +95,8 @@ type Currency struct {
 	CurrencyLabel        pgtype.Text      `db:"currency_label" json:"currency_label"`
 	TokenLabel           pgtype.Text      `db:"token_label" json:"token_label"`
 	IsNative             bool             `db:"is_native" json:"is_native"`
+	IsNewStoreDefault    bool             `db:"is_new_store_default" json:"is_new_store_default"`
+	OrderIdx             int64            `db:"order_idx" json:"order_idx"`
 }
 
 type Exchange struct {

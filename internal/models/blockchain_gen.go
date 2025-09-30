@@ -47,23 +47,23 @@ func (o Blockchain) Valid() error {
 func (o Blockchain) Tokens() ([]string, error) {
 	switch o {
 	case BlockchainArbitrum:
-		return []string{"USDT.Arbitrum", "USDC.Arbitrum", "DAI.Arbitrum"}, nil
+		return []string{"USDT.Arbitrum", "USDC.Arbitrum", "DAI.Arbitrum", "ARB.Arbitrum", "CAKE.Arbitrum", "PYUSD.Arbitrum"}, nil
 	case BlockchainBitcoin:
 		return []string{}, nil
 	case BlockchainBitcoinCash:
 		return []string{}, nil
 	case BlockchainBinanceSmartChain:
-		return []string{"USDT.BNBSmartChain", "USDC.BNBSmartChain", "DAI.BNBSmartChain"}, nil
+		return []string{"USDT.BNBSmartChain", "USDC.BNBSmartChain", "DAI.BNBSmartChain", "USDD.BNBSmartChain", "USDE.BNBSmartChain", "CAKE.BNBSmartChain", "SHIB.BNBSmartChain", "WLFI.BNBSmartChain", "USD1.BNBSmartChain"}, nil
 	case BlockchainDogecoin:
 		return []string{}, nil
 	case BlockchainEthereum:
-		return []string{"USDT.Ethereum", "USDC.Ethereum", "DAI.Ethereum"}, nil
+		return []string{"USDT.Ethereum", "USDC.Ethereum", "DAI.Ethereum", "USDD.Ethereum", "USDE.Ethereum", "ARB.Ethereum", "CAKE.Ethereum", "SHIB.Ethereum", "PEPE.Ethereum", "ENA.Ethereum", "WLFI.Ethereum", "USD1.Ethereum", "WLD.Ethereum", "PYUSD.Ethereum", "XAUT.Ethereum", "SAND.Ethereum"}, nil
 	case BlockchainLitecoin:
 		return []string{}, nil
 	case BlockchainPolygon:
-		return []string{"USDT.Polygon", "USDC.Polygon", "DAI.Polygon"}, nil
+		return []string{"USDT.Polygon", "USDC.Polygon", "DAI.Polygon", "SAND.Polygon"}, nil
 	case BlockchainTron:
-		return []string{"USDT.Tron"}, nil
+		return []string{"USDT.Tron", "USDD.Tron", "USD1.Tron"}, nil
 
 	}
 	return nil, errors.New("invalid blockchain: " + string(o))

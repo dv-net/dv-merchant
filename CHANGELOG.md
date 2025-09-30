@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 - fix: add error handling for empty withdrawal addresses and improve logging format [DV-3437]
 - Added currency reference data about it being native, and contract address [DV-3456]
+- Added new currencies to the supported currency pool (disabled by default for new stores) [DV-3319]
 
 ## [0.9.7] - 2025-09-22
 - Fix rename ResetPasswordCode to Code for consistency in user notifications [DV-3403]

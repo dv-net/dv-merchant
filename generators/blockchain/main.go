@@ -74,14 +74,12 @@ func main() {
 }
 
 func parseCurrencies(sql string) []Currency {
-	valuesRe := regexp.MustCompile(`\((?:'[^']*'|[^,)]+?)(?:, *(?:'[^']*'|[^,)]+?)){17}\)`)
+	valuesRe := regexp.MustCompile(`\((?:'[^']*'|[^,)]+?)(?:, *(?:'[^']*'|[^,)]+?)){18}\)`)
 	valuesMatch := valuesRe.FindAllStringSubmatch(sql, -1)
-	if len(valuesMatch) < 2 {
+	if len(valuesMatch) < 1 {
 		return []Currency{}
 	}
 
-	// Remove the first match being VALUES
-	valuesMatch = valuesMatch[1:]
 	currencies := make([]Currency, 0, len(valuesMatch))
 
 	records := make([][]string, 0, len(valuesMatch))
