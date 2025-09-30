@@ -12,7 +12,7 @@ import (
 )
 
 const getQueuedWithCurrency = `-- name: GetQueuedWithCurrency :many
-SELECT ubq.id, ubq.currency_id, ubq.address, ubq.native_token_balance_update, ubq.created_at, ubq.updated_at, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label
+SELECT ubq.id, ubq.currency_id, ubq.address, ubq.native_token_balance_update, ubq.created_at, ubq.updated_at, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_new_store_default, c.order_idx
 FROM update_balance_queue ubq
          INNER JOIN currencies c ON ubq.currency_id = c.id
 ORDER BY ubq.created_at
@@ -56,6 +56,8 @@ func (q *Queries) GetQueuedWithCurrency(ctx context.Context) ([]*GetQueuedWithCu
 			&i.Currency.IsStablecoin,
 			&i.Currency.CurrencyLabel,
 			&i.Currency.TokenLabel,
+			&i.Currency.IsNewStoreDefault,
+			&i.Currency.OrderIdx,
 		); err != nil {
 			return nil, err
 		}

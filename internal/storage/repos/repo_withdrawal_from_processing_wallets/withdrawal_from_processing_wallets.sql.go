@@ -118,7 +118,7 @@ func (q *Queries) GetByID(ctx context.Context, arg GetByIDParams) (*models.Withd
 }
 
 const getPrefetchHistoryByUserID = `-- name: GetPrefetchHistoryByUserID :many
-SELECT wfpw.id, wfpw.currency_id, wfpw.store_id, wfpw.transfer_id, wfpw.address_from, wfpw.address_to, wfpw.amount, wfpw.amount_usd, wfpw.created_at, wfpw.updated_at, wfpw.request_id, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, (wfpw.amount * rate.exchange_rate) ::decimal as amount_usd
+SELECT wfpw.id, wfpw.currency_id, wfpw.store_id, wfpw.transfer_id, wfpw.address_from, wfpw.address_to, wfpw.amount, wfpw.amount_usd, wfpw.created_at, wfpw.updated_at, wfpw.request_id, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_new_store_default, c.order_idx, (wfpw.amount * rate.exchange_rate) ::decimal as amount_usd
 FROM withdrawal_from_processing_wallets wfpw
          INNER JOIN currencies c on c.id = wfpw.currency_id
          INNER JOIN stores s on s.id = wfpw.store_id
@@ -179,6 +179,8 @@ func (q *Queries) GetPrefetchHistoryByUserID(ctx context.Context, arg GetPrefetc
 			&i.Currency.IsStablecoin,
 			&i.Currency.CurrencyLabel,
 			&i.Currency.TokenLabel,
+			&i.Currency.IsNewStoreDefault,
+			&i.Currency.OrderIdx,
 			&i.AmountUsd,
 		); err != nil {
 			return nil, err
@@ -192,7 +194,7 @@ func (q *Queries) GetPrefetchHistoryByUserID(ctx context.Context, arg GetPrefetc
 }
 
 const getQueuedWithdrawalsWithCurrencyAndUser = `-- name: GetQueuedWithdrawalsWithCurrencyAndUser :many
-SELECT wfpw.id, wfpw.currency_id, wfpw.store_id, wfpw.transfer_id, wfpw.address_from, wfpw.address_to, wfpw.amount, wfpw.amount_usd, wfpw.created_at, wfpw.updated_at, wfpw.request_id, u.id, u.email, u.email_verified_at, u.password, u.remember_token, u.processing_owner_id, u.location, u.language, u.rate_source, u.created_at, u.updated_at, u.deleted_at, u.banned, u.exchange_slug, u.rate_scale, u.dvnet_token, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label
+SELECT wfpw.id, wfpw.currency_id, wfpw.store_id, wfpw.transfer_id, wfpw.address_from, wfpw.address_to, wfpw.amount, wfpw.amount_usd, wfpw.created_at, wfpw.updated_at, wfpw.request_id, u.id, u.email, u.email_verified_at, u.password, u.remember_token, u.processing_owner_id, u.location, u.language, u.rate_source, u.created_at, u.updated_at, u.deleted_at, u.banned, u.exchange_slug, u.rate_scale, u.dvnet_token, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_new_store_default, c.order_idx
 FROM withdrawal_from_processing_wallets wfpw
          INNER JOIN currencies c on c.id = wfpw.currency_id
          INNER JOIN stores s on s.id = wfpw.store_id
@@ -260,6 +262,8 @@ func (q *Queries) GetQueuedWithdrawalsWithCurrencyAndUser(ctx context.Context) (
 			&i.Currency.IsStablecoin,
 			&i.Currency.CurrencyLabel,
 			&i.Currency.TokenLabel,
+			&i.Currency.IsNewStoreDefault,
+			&i.Currency.OrderIdx,
 		); err != nil {
 			return nil, err
 		}
