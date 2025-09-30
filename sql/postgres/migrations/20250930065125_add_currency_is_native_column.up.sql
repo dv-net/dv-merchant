@@ -1,0 +1,2 @@
+ALTER TABLE currencies 
+    ADD COLUMN is_native BOOLEAN NOT NULL DEFAULT FALSE;

@@ -94,6 +94,7 @@ type Currency struct {
 	IsStablecoin         bool             `db:"is_stablecoin" json:"is_stablecoin"`
 	CurrencyLabel        pgtype.Text      `db:"currency_label" json:"currency_label"`
 	TokenLabel           pgtype.Text      `db:"token_label" json:"token_label"`
+	IsNative             bool             `db:"is_native" json:"is_native"`
 }
 
 type Exchange struct {

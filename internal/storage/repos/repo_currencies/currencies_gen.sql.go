@@ -14,9 +14,9 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO currencies (id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, is_stablecoin, currency_label, token_label)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-	RETURNING id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label
+INSERT INTO currencies (id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, is_stablecoin, currency_label, token_label, is_native)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+	RETURNING id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native
 `
 
 type CreateParams struct {
@@ -36,6 +36,7 @@ type CreateParams struct {
 	IsStablecoin         bool               `db:"is_stablecoin" json:"is_stablecoin"`
 	CurrencyLabel        pgtype.Text        `db:"currency_label" json:"currency_label"`
 	TokenLabel           pgtype.Text        `db:"token_label" json:"token_label"`
+	IsNative             bool               `db:"is_native" json:"is_native"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Currency, error) {
@@ -56,6 +57,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Currenc
 		arg.IsStablecoin,
 		arg.CurrencyLabel,
 		arg.TokenLabel,
+		arg.IsNative,
 	)
 	var i models.Currency
 	err := row.Scan(
@@ -76,12 +78,13 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Currenc
 		&i.IsStablecoin,
 		&i.CurrencyLabel,
 		&i.TokenLabel,
+		&i.IsNative,
 	)
 	return &i, err
 }
 
 const getAll = `-- name: GetAll :many
-SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label FROM currencies
+SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native FROM currencies
 `
 
 func (q *Queries) GetAll(ctx context.Context) ([]*models.Currency, error) {
@@ -111,6 +114,7 @@ func (q *Queries) GetAll(ctx context.Context) ([]*models.Currency, error) {
 			&i.IsStablecoin,
 			&i.CurrencyLabel,
 			&i.TokenLabel,
+			&i.IsNative,
 		); err != nil {
 			return nil, err
 		}
@@ -123,7 +127,7 @@ func (q *Queries) GetAll(ctx context.Context) ([]*models.Currency, error) {
 }
 
 const getByID = `-- name: GetByID :one
-SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label FROM currencies WHERE id=$1 LIMIT 1
+SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native FROM currencies WHERE id=$1 LIMIT 1
 `
 
 func (q *Queries) GetByID(ctx context.Context, id string) (*models.Currency, error) {
@@ -147,6 +151,7 @@ func (q *Queries) GetByID(ctx context.Context, id string) (*models.Currency, err
 		&i.IsStablecoin,
 		&i.CurrencyLabel,
 		&i.TokenLabel,
+		&i.IsNative,
 	)
 	return &i, err
 }
