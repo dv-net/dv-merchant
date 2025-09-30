@@ -84,7 +84,7 @@ func (q *Queries) FindByStoreID(ctx context.Context, arg FindByStoreIDParams) (*
 }
 
 const getAllByStoreID = `-- name: GetAllByStoreID :many
-SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_new_store_default FROM currencies
+SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_new_store_default, order_idx FROM currencies
 WHERE id IN (
     SELECT currency_id FROM store_currencies
     WHERE store_id = $1
@@ -119,6 +119,7 @@ func (q *Queries) GetAllByStoreID(ctx context.Context, storeID uuid.UUID) ([]*mo
 			&i.CurrencyLabel,
 			&i.TokenLabel,
 			&i.IsNewStoreDefault,
+			&i.OrderIdx,
 		); err != nil {
 			return nil, err
 		}

@@ -134,7 +134,7 @@ func (q *Queries) GetAddressForMultiWithdrawal(ctx context.Context, arg GetAddre
 }
 
 const getAddressForWithdrawal = `-- name: GetAddressForWithdrawal :one
-select wallet_addresses.id, wallet_addresses.wallet_id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty, currencies.id, currencies.code, currencies.name, currencies.precision, currencies.is_fiat, currencies.blockchain, currencies.contract_address, currencies.withdrawal_min_balance, currencies.has_balance, currencies.status, currencies.sort_order, currencies.min_confirmation, currencies.created_at, currencies.updated_at, currencies.is_stablecoin, currencies.currency_label, currencies.token_label, currencies.is_new_store_default, (amount * exchange_rate)::decimal as amount_usd
+select wallet_addresses.id, wallet_addresses.wallet_id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty, currencies.id, currencies.code, currencies.name, currencies.precision, currencies.is_fiat, currencies.blockchain, currencies.contract_address, currencies.withdrawal_min_balance, currencies.has_balance, currencies.status, currencies.sort_order, currencies.min_confirmation, currencies.created_at, currencies.updated_at, currencies.is_stablecoin, currencies.currency_label, currencies.token_label, currencies.is_new_store_default, currencies.order_idx, (amount * exchange_rate)::decimal as amount_usd
 from wallet_addresses
          left join currencies
                    on wallet_addresses.currency_id = currencies.id
@@ -204,6 +204,7 @@ type GetAddressForWithdrawalRow struct {
 	CurrencyLabel        pgtype.Text        `db:"currency_label" json:"currency_label"`
 	TokenLabel           pgtype.Text        `db:"token_label" json:"token_label"`
 	IsNewStoreDefault    pgtype.Bool        `db:"is_new_store_default" json:"is_new_store_default"`
+	OrderIdx             pgtype.Int8        `db:"order_idx" json:"order_idx"`
 	AmountUsd            decimal.Decimal    `db:"amount_usd" json:"amount_usd"`
 }
 
@@ -248,6 +249,7 @@ func (q *Queries) GetAddressForWithdrawal(ctx context.Context, arg GetAddressFor
 		&i.CurrencyLabel,
 		&i.TokenLabel,
 		&i.IsNewStoreDefault,
+		&i.OrderIdx,
 		&i.AmountUsd,
 	)
 	return &i, err
@@ -324,7 +326,7 @@ func (q *Queries) GetByWalletIDAndCurrencyID(ctx context.Context, walletID uuid.
 }
 
 const getListByCurrencyWithAmount = `-- name: GetListByCurrencyWithAmount :one
-select c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_new_store_default, array_agg(address)::varchar[] as addresses, sum(amount)::numeric as amount
+select c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_new_store_default, c.order_idx, array_agg(address)::varchar[] as addresses, sum(amount)::numeric as amount
 from wallet_addresses wa
          inner join currencies c on c.id = wa.currency_id
 WHERE wa.currency_id = $1
@@ -375,6 +377,7 @@ func (q *Queries) GetListByCurrencyWithAmount(ctx context.Context, arg GetListBy
 		&i.Currency.CurrencyLabel,
 		&i.Currency.TokenLabel,
 		&i.Currency.IsNewStoreDefault,
+		&i.Currency.OrderIdx,
 		&i.Addresses,
 		&i.Amount,
 	)
@@ -384,7 +387,7 @@ func (q *Queries) GetListByCurrencyWithAmount(ctx context.Context, arg GetListBy
 const getPrefetchWalletAddressByUserID = `-- name: GetPrefetchWalletAddressByUserID :many
 select withdrawal_wallets.id             as withdrawal_wallet_id,
        wallet_addresses.id, wallet_addresses.wallet_id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty,
-       currencies.id, currencies.code, currencies.name, currencies.precision, currencies.is_fiat, currencies.blockchain, currencies.contract_address, currencies.withdrawal_min_balance, currencies.has_balance, currencies.status, currencies.sort_order, currencies.min_confirmation, currencies.created_at, currencies.updated_at, currencies.is_stablecoin, currencies.currency_label, currencies.token_label, currencies.is_new_store_default,
+       currencies.id, currencies.code, currencies.name, currencies.precision, currencies.is_fiat, currencies.blockchain, currencies.contract_address, currencies.withdrawal_min_balance, currencies.has_balance, currencies.status, currencies.sort_order, currencies.min_confirmation, currencies.created_at, currencies.updated_at, currencies.is_stablecoin, currencies.currency_label, currencies.token_label, currencies.is_new_store_default, currencies.order_idx,
        (amount * exchange_rate)::decimal as amount_usd
 from wallet_addresses
          left join currencies
@@ -468,6 +471,7 @@ func (q *Queries) GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetP
 			&i.Currency.CurrencyLabel,
 			&i.Currency.TokenLabel,
 			&i.Currency.IsNewStoreDefault,
+			&i.Currency.OrderIdx,
 			&i.AmountUsd,
 		); err != nil {
 			return nil, err
@@ -628,7 +632,7 @@ func (q *Queries) GetWalletAddressesTotalWithCurrencyID(ctx context.Context, use
 }
 
 const getWalletsDataForRestoreByBlockchains = `-- name: GetWalletsDataForRestoreByBlockchains :many
-SELECT wa.id, wa.wallet_id, wa.user_id, wa.currency_id, wa.blockchain, wa.address, wa.amount, wa.created_at, wa.updated_at, wa.deleted_at, wa.dirty, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_new_store_default, s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
+SELECT wa.id, wa.wallet_id, wa.user_id, wa.currency_id, wa.blockchain, wa.address, wa.amount, wa.created_at, wa.updated_at, wa.deleted_at, wa.dirty, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_new_store_default, c.order_idx, s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
 FROM wallet_addresses wa
          JOIN currencies c ON wa.currency_id = c.id
          JOIN wallets w ON wa.wallet_id = w.id
@@ -681,6 +685,7 @@ func (q *Queries) GetWalletsDataForRestoreByBlockchains(ctx context.Context, blo
 			&i.Currency.CurrencyLabel,
 			&i.Currency.TokenLabel,
 			&i.Currency.IsNewStoreDefault,
+			&i.Currency.OrderIdx,
 			&i.Store.ID,
 			&i.Store.UserID,
 			&i.Store.Name,

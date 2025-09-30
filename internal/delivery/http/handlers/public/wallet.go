@@ -99,6 +99,31 @@ func (h *Handler) getWalletData(c fiber.Ctx) error {
 		addresses[idx] = wa
 	}
 
+	// sort addresses by currency order_idx
+	slices.SortFunc(addresses, func(a, b public_request.WalletAddressDto) int {
+		aCurrencyIdx := slices.IndexFunc(data.AvailableCurrencies, func(item *models.Currency) bool {
+			return item.ID == a.Currency.ID
+		})
+		bCurrencyIdx := slices.IndexFunc(data.AvailableCurrencies, func(item *models.Currency) bool {
+			return item.ID == b.Currency.ID
+		})
+
+		if aCurrencyIdx == -1 || bCurrencyIdx == -1 {
+			return 0
+		}
+
+		aOrderIdx := data.AvailableCurrencies[aCurrencyIdx].OrderIdx
+		bOrderIdx := data.AvailableCurrencies[bCurrencyIdx].OrderIdx
+
+		if aOrderIdx < bOrderIdx {
+			return -1
+		}
+		if aOrderIdx > bOrderIdx {
+			return 1
+		}
+		return 0
+	})
+
 	result := public_request.GetWalletDto{
 		Store: public_request.StoreDto{
 			ID:             data.Store.ID,
