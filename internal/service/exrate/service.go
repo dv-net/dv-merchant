@@ -352,6 +352,11 @@ func (srv *service) LoadRatesList(ctx context.Context, rateSource string) (*Rate
 
 	var rates Rates
 	for _, curr := range currencies {
+		if curr.IsStablecoin {
+			rates.CurrencyIDs = append(rates.CurrencyIDs, curr.ID)
+			rates.Rate = append(rates.Rate, decimal.NewFromInt(1))
+			continue
+		}
 		rate, err := srv.GetCurrencyRate(ctx, rateSource, curr.Code, "USDT")
 		if err != nil {
 			return nil, fmt.Errorf("failed to get currency rate: %w", err)
@@ -407,6 +412,10 @@ func (srv *service) GetStoreCurrencyRate(ctx context.Context, currencies []*mode
 	}
 
 	for _, cur := range currencies {
+		if cur.IsStablecoin {
+			rates[cur.ID] = "1"
+			continue
+		}
 		rate, err := srv.GetCurrencyRate(ctx, source, cur.Code, "USDT", valScale)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get currency rate: %w", err)
