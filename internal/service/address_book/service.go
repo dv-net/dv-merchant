@@ -29,12 +29,12 @@ type IAddressBookService interface {
 	GetUserAddressesByBlockchain(ctx context.Context, userID uuid.UUID, blockchain models.Blockchain) ([]*models.UserAddressBook, error)
 	CreateAddress(ctx context.Context, params CreateAddressDTO) (*models.UserAddressBook, error)
 	UpdateAddress(ctx context.Context, userID uuid.UUID, id uuid.UUID, params UpdateAddressDTO) (*models.UserAddressBook, error)
-	DeleteAddress(ctx context.Context, dto DeleteAddressDTO) error
+	DeleteAddress(ctx context.Context, dto DeleteAddressDTO, usr *models.User) error
 	CheckAddressExists(ctx context.Context, userID uuid.UUID, address string, currencyID string) (bool, error)
 	IsUniversalAddress(ctx context.Context, userID uuid.UUID, address string, blockchain models.Blockchain) (bool, int, error)
 	GetUniversalAddressGroup(ctx context.Context, userID uuid.UUID, address string, blockchain models.Blockchain) ([]*models.UserAddressBook, error)
 	AddWithdrawalRule(ctx context.Context, dto AddWithdrawalRuleDTO) error
-	CheckWithdrawalRuleExists(ctx context.Context, entry *models.UserAddressBook) (bool, error)
+	CheckWithdrawalRuleExists(ctx context.Context, entry *models.UserAddressBook, usr *models.User) (bool, error)
 }
 
 type CreateAddressDTO struct {
@@ -94,9 +94,9 @@ func (s *Service) CreateAddress(ctx context.Context, dto CreateAddressDTO) (*mod
 }
 
 // CheckWithdrawalRuleExists checks if a withdrawal rule exists and is active for a given address book entry
-func (s *Service) CheckWithdrawalRuleExists(ctx context.Context, entry *models.UserAddressBook) (bool, error) {
+func (s *Service) CheckWithdrawalRuleExists(ctx context.Context, entry *models.UserAddressBook, usr *models.User) (bool, error) {
 	// Get withdrawal wallet for this user and currency
-	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, entry.UserID, entry.CurrencyID)
+	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, usr, entry.CurrencyID)
 	if err != nil {
 		// If withdrawal wallet doesn't exist, rule doesn't exist
 		return false, nil //nolint:nilerr
@@ -127,7 +127,7 @@ func (s *Service) toUniversalAddressGroupResponse(ctx context.Context, entries [
 	currencies := make([]*withdrawal_response.AddressBookEntryResponseShort, len(entries))
 	for i, entry := range entries {
 		withdrawalRuleExists := false
-		if ruleExists, err := s.CheckWithdrawalRuleExists(ctx, entry); err == nil {
+		if ruleExists, err := s.CheckWithdrawalRuleExists(ctx, entry, nil); err == nil {
 			withdrawalRuleExists = ruleExists
 		}
 		currencies[i] = &withdrawal_response.AddressBookEntryResponseShort{
@@ -172,7 +172,7 @@ func (s *Service) toEVMAddressGroupResponse(ctx context.Context, entries []*mode
 	currencies := make([]*withdrawal_response.AddressBookEntryResponseShort, len(entries))
 	for i, entry := range entries {
 		withdrawalRuleExists := false
-		if ruleExists, err := s.CheckWithdrawalRuleExists(ctx, entry); err == nil {
+		if ruleExists, err := s.CheckWithdrawalRuleExists(ctx, entry, nil); err == nil {
 			withdrawalRuleExists = ruleExists
 		}
 
@@ -248,7 +248,7 @@ func (s *Service) UpdateAddress(ctx context.Context, userID, addressBookEntryID 
 	return address, nil
 }
 
-func (s *Service) deleteSimpleAddress(ctx context.Context, id uuid.UUID, deleteWithdrawalRule bool) error {
+func (s *Service) deleteSimpleAddress(ctx context.Context, usr *models.User, id uuid.UUID, deleteWithdrawalRule bool) error {
 	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		// Get the address entry before deleting it
 		addressEntry, err := s.storage.UserAddressBook().GetByID(ctx, id)
@@ -267,7 +267,7 @@ func (s *Service) deleteSimpleAddress(ctx context.Context, id uuid.UUID, deleteW
 
 		// Conditionally clean up withdrawal rule
 		if deleteWithdrawalRule {
-			if err := s.cleanupWithdrawalRule(ctx, addressEntry, tx); err != nil {
+			if err := s.cleanupWithdrawalRule(ctx, usr, addressEntry, tx); err != nil {
 				return fmt.Errorf("failed to cleanup withdrawal rule: %w", err)
 			}
 		}
@@ -297,13 +297,13 @@ func (s *Service) AddWithdrawalRule(ctx context.Context, dto AddWithdrawalRuleDT
 }
 
 // DeleteAddress handles all types of address deletions based on DTO
-func (s *Service) DeleteAddress(ctx context.Context, dto DeleteAddressDTO) error {
+func (s *Service) DeleteAddress(ctx context.Context, dto DeleteAddressDTO, usr *models.User) error {
 	if dto.IsEVM {
-		return s.deleteEVMAddress(ctx, dto.UserID, *dto.Address, dto.DeleteWithdrawalRule)
+		return s.deleteEVMAddress(ctx, usr, *dto.Address, dto.DeleteWithdrawalRule)
 	}
 	if dto.IsUniversal {
-		return s.deleteUniversalAddress(ctx, dto.UserID, *dto.Address, *dto.Blockchain, dto.DeleteWithdrawalRule)
+		return s.deleteUniversalAddress(ctx, usr, *dto.Address, *dto.Blockchain, dto.DeleteWithdrawalRule)
 	}
 	// Default to simple address deletion by ID
-	return s.deleteSimpleAddress(ctx, *dto.ID, dto.DeleteWithdrawalRule)
+	return s.deleteSimpleAddress(ctx, usr, *dto.ID, dto.DeleteWithdrawalRule)
 }

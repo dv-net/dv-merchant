@@ -145,8 +145,11 @@ func (s *service) Run(ctx context.Context, blockchains []models.Blockchain) {
 	}
 }
 
-func (s *service) currencyRate(ctx context.Context, rateSource, currCode string) (decimal.Decimal, error) {
-	rate, err := s.exRateService.GetCurrencyRate(ctx, rateSource, currCode, models.CurrencyCodeUSD)
+func (s *service) currencyRate(ctx context.Context, rateSource string, cur *models.Currency) (decimal.Decimal, error) {
+	if cur.IsStablecoin {
+		return decimal.NewFromInt(1), nil
+	}
+	rate, err := s.exRateService.GetCurrencyRate(ctx, rateSource, cur.Code, models.CurrencyCodeUSD)
 	if err != nil {
 		return decimal.Zero, fmt.Errorf("laod rate: %w", err)
 	}
@@ -204,7 +207,7 @@ func (s *service) processWithdrawalTransfers(ctx context.Context, blockchain mod
 		transfer, err := s.processTransferByWallet(ctx, *wallet)
 		if err != nil {
 			if !isIgnoredLogError(err) {
-				s.logger.Error("failed to process wallet", err)
+				s.logger.Error("failed to process wallet: ", err)
 			}
 			continue
 		}

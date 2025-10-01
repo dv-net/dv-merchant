@@ -145,11 +145,12 @@ func (s *Service) GetSupportedCurrencies(ctx context.Context, slug models.AMLSlu
 	preparedCurrs := make([]*models.CurrencyShort, 0, len(res))
 	for _, data := range res {
 		preparedCurrs = append(preparedCurrs, &models.CurrencyShort{
-			ID:         data.Currency.ID,
-			Code:       data.Currency.Code,
-			Precision:  data.Currency.Precision,
-			Name:       data.Currency.Name,
-			Blockchain: data.Currency.Blockchain,
+			ID:           data.Currency.ID,
+			Code:         data.Currency.Code,
+			Precision:    data.Currency.Precision,
+			Name:         data.Currency.Name,
+			Blockchain:   data.Currency.Blockchain,
+			IsStableCoin: data.Currency.IsStablecoin,
 		})
 	}
 

@@ -64,7 +64,7 @@ func (s *service) WithdrawFromAddress(
 		return fmt.Errorf("wallet for withdrawal not found")
 	}
 
-	decRate, err := s.currencyRate(ctx, user.RateSource.String(), curr.Code)
+	decRate, err := s.currencyRate(ctx, user.RateSource.String(), curr)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func (s *service) WithdrawFromAddresses(ctx context.Context, user *models.User, 
 		return ErrTransferFromMultipleAddressNotSupported
 	}
 
-	decRate, err := s.currencyRate(ctx, user.RateSource.String(), walletList.Currency.Code)
+	decRate, err := s.currencyRate(ctx, user.RateSource.String(), &walletList.Currency)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (s *service) WithdrawToProcessingWallet(ctx context.Context, user *models.U
 		return fmt.Errorf("fetch wallet from processing: %w", processingErr)
 	}
 
-	decRate, err := s.currencyRate(ctx, user.RateSource.String(), walletsList.Currency.Code)
+	decRate, err := s.currencyRate(ctx, user.RateSource.String(), &walletsList.Currency)
 	if err != nil {
 		return fmt.Errorf("fetch currency rate: %w", err)
 	}
