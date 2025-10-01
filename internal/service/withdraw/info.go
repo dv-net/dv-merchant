@@ -100,6 +100,7 @@ func (s *service) GetPrefetchWithdrawalAddress(ctx context.Context, user *models
 				Blockchain:    multiWithdrawalWallet.Currency.Blockchain,
 				IsBitcoinLike: multiWithdrawalWallet.Currency.Blockchain.IsBitcoinLike(),
 				IsEVMLike:     multiWithdrawalWallet.Currency.Blockchain.IsEVMLike(),
+				IsStableCoin:  multiWithdrawalWallet.Currency.IsStablecoin,
 			},
 			Amount:      addrs.TotalAmount,
 			AmountUsd:   addrs.AmountUsd,

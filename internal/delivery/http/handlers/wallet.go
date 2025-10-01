@@ -399,7 +399,7 @@ func (h *Handler) getWalletInfo(c fiber.Ctx) error {
 		return err
 	}
 
-	wallets, err := h.services.WalletService.GetWalletsInfo(c.Context(), usr.ID, c.Params("searchParam"))
+	wallets, err := h.services.WalletService.GetWalletsInfo(c.Context(), usr, c.Params("searchParam"))
 	if err != nil {
 		if errors.Is(err, wallet.ErrServiceWalletNotFound) {
 			return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)

@@ -54,7 +54,7 @@ func (s *Service) GetUserAddresses(ctx context.Context, userID uuid.UUID) (*with
 		}
 
 		// Check withdrawal rule status
-		if withdrawalRuleExists, err := s.CheckWithdrawalRuleExists(ctx, entry); err == nil {
+		if withdrawalRuleExists, err := s.CheckWithdrawalRuleExists(ctx, entry, nil); err == nil {
 			resp.WithdrawalRuleExists = withdrawalRuleExists
 		}
 

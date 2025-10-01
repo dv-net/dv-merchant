@@ -29,8 +29,8 @@ import (
 
 type IWithdrawalWalletService interface {
 	GetWalletByID(ctx context.Context, id uuid.UUID) (*models.WithdrawalWallet, error)
-	GetWithdrawalWallets(ctx context.Context, userID uuid.UUID) ([]*WithdrawalWithAddress, error)
-	GetWithdrawalWalletsByCurrencyID(ctx context.Context, userID uuid.UUID, currencyID string, opts ...repos.Option) (*WithdrawalWithAddress, error)
+	GetWithdrawalWallets(ctx context.Context, usr *models.User) ([]*WithdrawalWithAddress, error)
+	GetWithdrawalWalletsByCurrencyID(ctx context.Context, usr *models.User, currencyID string, opts ...repos.Option) (*WithdrawalWithAddress, error)
 	UpdateWithdrawalRules(ctx context.Context, dto UpdateRulesDTO) error
 
 	GetAddressByID(ctx context.Context, id uuid.UUID) (*models.WithdrawalWalletAddress, error)
@@ -65,8 +65,8 @@ func New(
 	}
 }
 
-func (s Service) GetWithdrawalWallets(ctx context.Context, userID uuid.UUID) ([]*WithdrawalWithAddress, error) {
-	wallets, err := s.storage.WithdrawalWallets().GetWithdrawalWallets(ctx, userID)
+func (s Service) GetWithdrawalWallets(ctx context.Context, usr *models.User) ([]*WithdrawalWithAddress, error) {
+	wallets, err := s.storage.WithdrawalWallets().GetWithdrawalWallets(ctx, usr.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get withdrawal wallets: %w", err)
 	}
@@ -92,17 +92,18 @@ func (s Service) GetWithdrawalWallets(ctx context.Context, userID uuid.UUID) ([]
 			Blockchain:    c.Blockchain,
 			IsBitcoinLike: c.Blockchain.IsBitcoinLike(),
 			IsEVMLike:     c.Blockchain.IsEVMLike(),
+			IsStableCoin:  c.IsStablecoin,
 		}
 
 		wallet, exists := walletMap[c.ID]
 		if !exists {
-			wallet, err = s.createWithdrawalWallet(ctx, c, userID)
+			wallet, err = s.createWithdrawalWallet(ctx, c, usr)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create withdrawal wallet for currency %s: %w", c.ID, err)
 			}
 		}
 
-		withdrawalWithAddress, err := s.buildWithdrawalWithAddress(ctx, wallet, &mCurrency)
+		withdrawalWithAddress, err := s.buildWithdrawalWithAddress(ctx, wallet, usr, &mCurrency)
 		if err != nil {
 			return nil, err
 		}
@@ -113,14 +114,14 @@ func (s Service) GetWithdrawalWallets(ctx context.Context, userID uuid.UUID) ([]
 	return data, nil
 }
 
-func (s Service) GetWithdrawalWalletsByCurrencyID(ctx context.Context, userID uuid.UUID, currencyID string, opts ...repos.Option) (*WithdrawalWithAddress, error) {
+func (s Service) GetWithdrawalWalletsByCurrencyID(ctx context.Context, usr *models.User, currencyID string, opts ...repos.Option) (*WithdrawalWithAddress, error) {
 	c, err := s.currencyService.GetCurrencyByID(ctx, currencyID)
 	if err != nil {
 		return nil, fmt.Errorf("currency not found: %s: %w", currencyID, err)
 	}
 
 	wallet, err := s.storage.WithdrawalWallets(opts...).GetWithdrawalWalletByCurrency(ctx, repo_withdrawal_wallets.GetWithdrawalWalletByCurrencyParams{
-		UserID:     userID,
+		UserID:     usr.ID,
 		CurrencyID: currencyID,
 	})
 
@@ -129,7 +130,7 @@ func (s Service) GetWithdrawalWalletsByCurrencyID(ctx context.Context, userID uu
 	}
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		wallet, err = s.createWithdrawalWallet(ctx, c, userID, opts...)
+		wallet, err = s.createWithdrawalWallet(ctx, c, usr, opts...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create withdrawal wallet for currency %s: %w", currencyID, err)
 		}
@@ -143,9 +144,10 @@ func (s Service) GetWithdrawalWalletsByCurrencyID(ctx context.Context, userID uu
 		Blockchain:    c.Blockchain,
 		IsBitcoinLike: c.Blockchain.IsBitcoinLike(),
 		IsEVMLike:     c.Blockchain.IsEVMLike(),
+		IsStableCoin:  c.IsStablecoin,
 	}
 
-	return s.buildWithdrawalWithAddress(ctx, wallet, &mCurrency, opts...)
+	return s.buildWithdrawalWithAddress(ctx, wallet, usr, &mCurrency, opts...)
 }
 
 func (s Service) UpdateWithdrawalRules(ctx context.Context, dto UpdateRulesDTO) error {
@@ -395,20 +397,25 @@ func (s Service) updateProcessingWithdrawalWalletWhitelist(ctx context.Context, 
 	return nil
 }
 
-func (s Service) createWithdrawalWallet(ctx context.Context, c *models.Currency, userID uuid.UUID, opts ...repos.Option) (newWallet *models.WithdrawalWallet, err error) {
-	withdrawalMinBalance, err := s.currConvService.Convert(ctx, currconv.ConvertDTO{
-		Source:     models.RateSourceBinance.String(),
-		From:       models.CurrencyCodeUSDT,
-		To:         c.Code,
-		Amount:     "1",
-		StableCoin: false,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert min balance: %w", err)
+func (s Service) createWithdrawalWallet(ctx context.Context, c *models.Currency, usr *models.User, opts ...repos.Option) (newWallet *models.WithdrawalWallet, err error) {
+	var withdrawalMinBalance decimal.Decimal
+	if c.IsStablecoin {
+		withdrawalMinBalance = decimal.NewFromInt(1)
+	} else {
+		withdrawalMinBalance, err = s.currConvService.Convert(ctx, currconv.ConvertDTO{
+			Source:     usr.RateSource.String(),
+			From:       models.CurrencyCodeUSDT,
+			To:         c.Code,
+			Amount:     "1",
+			StableCoin: false,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert min balance: %w", err)
+		}
 	}
 
 	params := repo_withdrawal_wallets.CreateParams{
-		UserID:                  userID,
+		UserID:                  usr.ID,
 		CurrencyID:              c.ID,
 		Blockchain:              *c.Blockchain,
 		WithdrawalEnabled:       models.WithdrawalStatusEnabled.String(),
@@ -420,7 +427,7 @@ func (s Service) createWithdrawalWallet(ctx context.Context, c *models.Currency,
 	newWallet, err = s.storage.WithdrawalWallets(opts...).Create(ctx, params)
 	if err != nil {
 		s.logger.Error("Failed to create withdrawal wallet",
-			"user_id", userID,
+			"user_id", usr.ID,
 			"currency_id", c.ID,
 			"error", err)
 		return nil, fmt.Errorf("failed to create withdrawal wallet for currency %s: %w", c.ID, err)
@@ -428,7 +435,7 @@ func (s Service) createWithdrawalWallet(ctx context.Context, c *models.Currency,
 	return newWallet, nil
 }
 
-func (s Service) buildWithdrawalWithAddress(ctx context.Context, wallet *models.WithdrawalWallet, currency *models.CurrencyShort, opts ...repos.Option) (*WithdrawalWithAddress, error) {
+func (s Service) buildWithdrawalWithAddress(ctx context.Context, wallet *models.WithdrawalWallet, usr *models.User, currency *models.CurrencyShort, opts ...repos.Option) (*WithdrawalWithAddress, error) {
 	addresses, err := s.storage.WithdrawalWalletAddresses(opts...).GetAddresses(ctx, wallet.ID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("failed to get withdrawal addresses: %w", err)
@@ -446,15 +453,20 @@ func (s Service) buildWithdrawalWithAddress(ctx context.Context, wallet *models.
 		multiRuleDTO.ManualAddress = &multiWithdrawalRules.ManualAddress.String
 	}
 
-	rate, err := s.currConvService.Convert(ctx, currconv.ConvertDTO{
-		Source:     models.RateSourceBinance.String(),
-		From:       currency.Code,
-		To:         models.CurrencyCodeUSDT,
-		Amount:     "1",
-		StableCoin: false,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert min balance: %w", err)
+	var rate decimal.Decimal
+	if currency.IsStableCoin {
+		rate = decimal.NewFromInt(1)
+	} else {
+		rate, err = s.currConvService.Convert(ctx, currconv.ConvertDTO{
+			Source:     usr.RateSource.String(),
+			From:       currency.Code,
+			To:         models.CurrencyCodeUSDT,
+			Amount:     "1",
+			StableCoin: false,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert min balance: %w", err)
+		}
 	}
 
 	return &WithdrawalWithAddress{
