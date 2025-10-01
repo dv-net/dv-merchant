@@ -1,7 +1,7 @@
-insert into currencies (id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, created_at, updated_at, status, sort_order, min_confirmation, is_stablecoin, currency_label, token_label, is_new_store_default, order_idx)
+insert into currencies (id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, created_at, updated_at, status, sort_order, min_confirmation, is_stablecoin, currency_label, token_label, is_native, is_new_store_default, order_idx)
 values
     ('BTC.Bitcoin', 'BTC', 'BTC', 8, false, 'bitcoin', 'btc', 0.00000001, true, 'now()', 'now()', true, 1, 1, false, 'Bitcoin', null, true, 2),
-    ('ETH.Ethereum', 'ETH', 'ETH', 18, false, 'ethereum', 'eth', 0.000000000000000001, false, 'now()', 'now()',true, 1, 1, false, null, null, true, 3),
+    ('ETH.Ethereum', 'ETH', 'ETH', 18, false, 'ethereum', 'eth', 0.000000000000000001, false, 'now()', 'now()', true, 1, 1, false, null, null, true, 3),
     ('TRX.Tron', 'TRX', 'TRX', 6, false, 'tron', 'trx', 0.000001, false, 'now()', 'now()', true, 1, 19, false, 'Tron', null, true, 7),
     ('USD', 'USD', 'USD', 2, true, null, null, null, false, 'now()', 'now()', false, 1, null, false, null, null, false, 1),
     ('USDT.Ethereum', 'USDT', 'USDT', 6, false, 'ethereum', '0xdac17f958d2ee523a2206206994597c13d831ec7', 0.000001, false, 'now()', 'now()', true, 1, 1, true, 'Tether', 'ERC-20', true, 1),
@@ -51,4 +51,5 @@ values
 ON CONFLICT (id) DO UPDATE SET
     currency_label = EXCLUDED.currency_label,
     token_label = EXCLUDED.token_label,
+    is_native = EXCLUDED.is_native,
     is_new_store_default = EXCLUDED.is_new_store_default;
