@@ -411,7 +411,7 @@ func (h Handler) getUserAddressBook(c fiber.Ctx) error {
 		return err
 	}
 
-	addressListResponse, err := h.services.AddressBookService.GetUserAddresses(c.Context(), user.ID)
+	addressListResponse, err := h.services.AddressBookService.GetUserAddresses(c.Context(), user)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}

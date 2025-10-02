@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func (s *Service) GetUserAddresses(ctx context.Context, userID uuid.UUID) (*withdrawal_response.AddressBookListResponse, error) {
-	addresses, err := s.storage.UserAddressBook().GetByUserID(ctx, userID)
+func (s *Service) GetUserAddresses(ctx context.Context, usr *models.User) (*withdrawal_response.AddressBookListResponse, error) {
+	addresses, err := s.storage.UserAddressBook().GetByUserID(ctx, usr.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user addresses: %w", err)
 	}
@@ -54,7 +54,7 @@ func (s *Service) GetUserAddresses(ctx context.Context, userID uuid.UUID) (*with
 		}
 
 		// Check withdrawal rule status
-		if withdrawalRuleExists, err := s.CheckWithdrawalRuleExists(ctx, entry, nil); err == nil {
+		if withdrawalRuleExists, err := s.CheckWithdrawalRuleExists(ctx, entry, usr); err == nil {
 			resp.WithdrawalRuleExists = withdrawalRuleExists
 		}
 
@@ -65,7 +65,7 @@ func (s *Service) GetUserAddresses(ctx context.Context, userID uuid.UUID) (*with
 	universalGroupResponses := make([]*withdrawal_response.UniversalAddressGroupResponse, 0, len(universalGroups))
 	for _, group := range universalGroups {
 		if len(group) > 0 {
-			resp := s.toUniversalAddressGroupResponse(ctx, group)
+			resp := s.toUniversalAddressGroupResponse(ctx, group, usr)
 			if resp != nil {
 				universalGroupResponses = append(universalGroupResponses, resp)
 			}
