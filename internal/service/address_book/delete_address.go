@@ -9,14 +9,13 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_address_book"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_wallet_addresses"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
-func (s *Service) deleteUniversalAddress(ctx context.Context, userID uuid.UUID, address string, blockchain models.Blockchain, deleteWithdrawalRule bool) error {
+func (s *Service) deleteUniversalAddress(ctx context.Context, usr *models.User, address string, blockchain models.Blockchain, deleteWithdrawalRule bool) error {
 	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		entries, err := s.storage.UserAddressBook().GetByUserAddressAndBlockchain(ctx, repo_user_address_book.GetByUserAddressAndBlockchainParams{
-			UserID:     userID,
+			UserID:     usr.ID,
 			Address:    address,
 			Blockchain: &blockchain,
 			Type:       models.AddressBookTypeUniversal,
@@ -36,13 +35,13 @@ func (s *Service) deleteUniversalAddress(ctx context.Context, userID uuid.UUID, 
 			}
 
 			if deleteWithdrawalRule {
-				if err := s.cleanupWithdrawalRule(ctx, entry, tx); err != nil {
+				if err := s.cleanupWithdrawalRule(ctx, usr, entry, tx); err != nil {
 					return fmt.Errorf("failed to cleanup withdrawal rule for entry %s: %w", entry.ID, err)
 				}
 			}
 
 			s.logger.Info("Deleted universal address entry",
-				"user_id", userID,
+				"user_id", usr.ID,
 				"address", address,
 				"currency", entry.CurrencyID,
 				"blockchain", blockchain.String())
@@ -52,12 +51,12 @@ func (s *Service) deleteUniversalAddress(ctx context.Context, userID uuid.UUID, 
 	})
 }
 
-func (s *Service) deleteEVMAddress(ctx context.Context, userID uuid.UUID, address string, deleteWithdrawalRule bool) error {
+func (s *Service) deleteEVMAddress(ctx context.Context, usr *models.User, address string, deleteWithdrawalRule bool) error {
 	var deletedCount int
 
 	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		entries, err := s.storage.UserAddressBook().GetByUserAndAddressAllCurrencies(ctx, repo_user_address_book.GetByUserAndAddressAllCurrenciesParams{
-			UserID:  userID,
+			UserID:  usr.ID,
 			Address: address,
 			Type:    models.AddressBookTypeEVM,
 		})
@@ -74,9 +73,9 @@ func (s *Service) deleteEVMAddress(ctx context.Context, userID uuid.UUID, addres
 
 		if len(evmEntries) == 0 {
 			s.logger.Warn("No EVM address entries found for deletion",
-				"user_id", userID,
+				"user_id", usr.ID,
 				"address", address)
-			return fmt.Errorf("no EVM address entries found for user %s, address %s", userID, address)
+			return fmt.Errorf("no EVM address entries found for user %s, address %s", usr.ID, address)
 		}
 
 		for _, entry := range evmEntries {
@@ -85,13 +84,13 @@ func (s *Service) deleteEVMAddress(ctx context.Context, userID uuid.UUID, addres
 			}
 
 			if deleteWithdrawalRule {
-				if err := s.cleanupWithdrawalRule(ctx, entry, tx); err != nil {
+				if err := s.cleanupWithdrawalRule(ctx, usr, entry, tx); err != nil {
 					return fmt.Errorf("failed to cleanup withdrawal rule for entry %s: %w", entry.ID, err)
 				}
 			}
 
-			s.logger.Info("Deleted EVM address entry",
-				"user_id", userID,
+			s.logger.Infow("Deleted EVM address entry",
+				"user_id", usr.ID,
 				"address", address,
 				"currency", entry.CurrencyID,
 				"blockchain", entry.Blockchain.String())
@@ -105,16 +104,16 @@ func (s *Service) deleteEVMAddress(ctx context.Context, userID uuid.UUID, addres
 		return err
 	}
 
-	s.logger.Info("Deleted EVM address and all associated entries",
-		"user_id", userID,
+	s.logger.Infow("Deleted EVM address and all associated entries",
+		"user_id", usr.ID,
 		"address", address,
 		"entries_count", deletedCount)
 
 	return nil
 }
 
-func (s *Service) cleanupWithdrawalRule(ctx context.Context, addressEntry *models.UserAddressBook, tx pgx.Tx) error {
-	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, addressEntry.UserID, addressEntry.CurrencyID, repos.WithTx(tx))
+func (s *Service) cleanupWithdrawalRule(ctx context.Context, usr *models.User, addressEntry *models.UserAddressBook, tx pgx.Tx) error {
+	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, usr, addressEntry.CurrencyID, repos.WithTx(tx))
 	if err != nil {
 		s.logger.Warn("Withdrawal wallet not found for cleanup",
 			"currency", addressEntry.CurrencyID,

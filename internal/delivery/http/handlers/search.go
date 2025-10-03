@@ -61,7 +61,7 @@ func (h *Handler) searchInfo(c fiber.Ctx) error {
 		searchRes = converters.NewTransactionInfoResponseFromDto(txInfo)
 
 	default:
-		walletsInfo, err := h.services.WalletService.GetWalletsInfo(c.Context(), usr.ID, criteria)
+		walletsInfo, err := h.services.WalletService.GetWalletsInfo(c.Context(), usr, criteria)
 		if err != nil {
 			if errors.Is(err, wallet.ErrServiceWalletNotFound) {
 				return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)

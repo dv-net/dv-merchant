@@ -89,7 +89,7 @@ type IWalletService interface {
 	StoreWalletWithAddress(ctx context.Context, dto CreateStoreWalletWithAddressDTO, amount string) (*WithAddressDto, error)
 	GetFullDataByID(ctx context.Context, ID uuid.UUID) (*GetAllByStoreIDResponse, error)
 	SummarizeUserWalletsByCurrency(ctx context.Context, userID uuid.UUID, rates *exrate.Rates, minBalance decimal.Decimal) ([]SummaryDTO, error)
-	GetWalletsInfo(ctx context.Context, userID uuid.UUID, address string) ([]*WithBlockchains, error)
+	GetWalletsInfo(ctx context.Context, usr *models.User, address string) ([]*WithBlockchains, error)
 	LoadPrivateAddresses(ctx context.Context, dto LoadPrivateKeyDTO) (*bytes.Buffer, error)
 	FetchTronResourceStatistics(ctx context.Context, user *models.User, dto FetchTronStatisticsParams) (map[string]CombinedStats, error)
 	UpdateLocale(ctx context.Context, walletID uuid.UUID, locale string, opts ...repos.Option) error
@@ -451,6 +451,7 @@ func (s *Service) buildProcessingWallet(ctx context.Context, wallet processing.W
 			Blockchain:    currency.Blockchain,
 			IsEVMLike:     currency.Blockchain.IsEVMLike(),
 			IsBitcoinLike: currency.Blockchain.IsBitcoinLike(),
+			IsStableCoin:  currency.IsStablecoin,
 		},
 	}
 
@@ -770,13 +771,13 @@ func (s *Service) processWalletBalance(
 	return totalAmount, nil
 }
 
-func (s *Service) GetWalletsInfo(ctx context.Context, userID uuid.UUID, searchCriteria string) ([]*WithBlockchains, error) {
+func (s *Service) GetWalletsInfo(ctx context.Context, usr *models.User, searchCriteria string) ([]*WithBlockchains, error) {
 	walletsData, err := s.storage.Wallets().SearchByParam(ctx, repo_wallets.SearchByParamParams{
 		Criteria: pgtype.Text{
 			String: searchCriteria,
 			Valid:  true,
 		},
-		UserID: userID,
+		UserID: usr.ID,
 	})
 	if errors.Is(err, pgx.ErrNoRows) || len(walletsData) == 0 {
 		return nil, ErrServiceWalletNotFound
@@ -785,7 +786,7 @@ func (s *Service) GetWalletsInfo(ctx context.Context, userID uuid.UUID, searchCr
 		return nil, err
 	}
 
-	wallets, err := s.groupWalletsData(ctx, walletsData)
+	wallets, err := s.groupWalletsData(ctx, walletsData, usr.RateSource.String())
 	if err != nil {
 		return nil, err
 	}
@@ -842,7 +843,7 @@ func (s *Service) SendUserWalletNotification(ctx context.Context, walletID uuid.
 	return nil
 }
 
-func (s *Service) groupWalletsData(ctx context.Context, rows []*repo_wallets.SearchByParamRow) ([]*WithBlockchains, error) {
+func (s *Service) groupWalletsData(ctx context.Context, rows []*repo_wallets.SearchByParamRow, rateSource string) ([]*WithBlockchains, error) {
 	walletMap := make(map[string]*WithBlockchains)
 
 	for _, row := range rows {
@@ -871,7 +872,7 @@ func (s *Service) groupWalletsData(ctx context.Context, rows []*repo_wallets.Sea
 		}
 
 		amountUsd, err := s.currConvService.Convert(ctx, currconv.ConvertDTO{
-			Source:     "binance",
+			Source:     rateSource,
 			From:       row.CurrencyCode,
 			To:         models.CurrencyCodeUSDT,
 			Amount:     row.Amount.String(),

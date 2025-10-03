@@ -33,12 +33,12 @@ import (
 //	@Router			/v1/dv-admin/withdrawal/rules [get]
 //	@Security		BearerAuth
 func (h Handler) getWithdrawalRule(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
 
-	wallets, err := h.services.WithdrawalWalletService.GetWithdrawalWallets(c.Context(), user.ID)
+	wallets, err := h.services.WithdrawalWalletService.GetWithdrawalWallets(c.Context(), usr)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -59,14 +59,14 @@ func (h Handler) getWithdrawalRule(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/withdrawal/{currencyID}/rules [get]
 //	@Security		BearerAuth
 func (h Handler) getWithdrawalCurrencyRule(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
 
 	currencyID := c.Params("currencyID")
 
-	wallets, err := h.services.WithdrawalWalletService.GetWithdrawalWalletsByCurrencyID(c.Context(), user.ID, currencyID)
+	wallets, err := h.services.WithdrawalWalletService.GetWithdrawalWalletsByCurrencyID(c.Context(), usr, currencyID)
 	if err != nil {
 		var httpErr *apierror.Errors
 		if errors.As(err, &httpErr) {
@@ -411,7 +411,7 @@ func (h Handler) getUserAddressBook(c fiber.Ctx) error {
 		return err
 	}
 
-	addressListResponse, err := h.services.AddressBookService.GetUserAddresses(c.Context(), user.ID)
+	addressListResponse, err := h.services.AddressBookService.GetUserAddresses(c.Context(), user)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -435,7 +435,7 @@ func (h Handler) getUserAddressBook(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/withdrawal/address-book [post]
 //	@Security		BearerAuth
 func (h Handler) createAddressBookEntry(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
@@ -451,12 +451,12 @@ func (h Handler) createAddressBookEntry(c fiber.Ctx) error {
 	}
 
 	// Validate 2FA token
-	if err := h.services.ProcessingOwnerService.ValidateTwoFactorToken(c.Context(), user.ProcessingOwnerID.UUID, req.TOTP); err != nil {
+	if err := h.services.ProcessingOwnerService.ValidateTwoFactorToken(c.Context(), usr.ProcessingOwnerID.UUID, req.TOTP); err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	// Convert request to service dto
-	dto := converters.FromCreateAddressBookRequest(*req, user.ID)
+	dto := converters.FromCreateAddressBookRequest(*req, usr.ID)
 
 	// Create the address entry
 	entry, err := h.services.AddressBookService.CreateAddress(c.Context(), dto)
@@ -466,7 +466,7 @@ func (h Handler) createAddressBookEntry(c fiber.Ctx) error {
 
 	// Convert to response with withdrawal rule status
 	entryResponse := converters.ToAddressBookEntryResponse(entry)
-	if withdrawalRuleExists, err := h.services.AddressBookService.CheckWithdrawalRuleExists(c.Context(), entry); err == nil {
+	if withdrawalRuleExists, err := h.services.AddressBookService.CheckWithdrawalRuleExists(c.Context(), entry, usr); err == nil {
 		entryResponse.WithdrawalRuleExists = withdrawalRuleExists
 	}
 	return c.Status(fiber.StatusCreated).JSON(response.OkByData(entryResponse))
@@ -489,7 +489,7 @@ func (h Handler) createAddressBookEntry(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/withdrawal/address-book/{id} [put]
 //	@Security		BearerAuth
 func (h Handler) updateAddressBookEntry(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
@@ -505,7 +505,7 @@ func (h Handler) updateAddressBookEntry(c fiber.Ctx) error {
 	}
 
 	// Validate 2FA token
-	if err := h.services.ProcessingOwnerService.ValidateTwoFactorToken(c.Context(), user.ProcessingOwnerID.UUID, req.TOTP); err != nil {
+	if err := h.services.ProcessingOwnerService.ValidateTwoFactorToken(c.Context(), usr.ProcessingOwnerID.UUID, req.TOTP); err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
@@ -513,14 +513,14 @@ func (h Handler) updateAddressBookEntry(c fiber.Ctx) error {
 	dto := converters.FromUpdateAddressBookRequest(*req)
 
 	// Update the address entry with permission check
-	entry, err := h.services.AddressBookService.UpdateAddress(c.Context(), user.ID, id, dto)
+	entry, err := h.services.AddressBookService.UpdateAddress(c.Context(), usr.ID, id, dto)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	// Convert to response with withdrawal rule status
 	entryResponse := converters.ToAddressBookEntryResponse(entry)
-	if withdrawalRuleExists, err := h.services.AddressBookService.CheckWithdrawalRuleExists(c.Context(), entry); err == nil {
+	if withdrawalRuleExists, err := h.services.AddressBookService.CheckWithdrawalRuleExists(c.Context(), entry, usr); err == nil {
 		entryResponse.WithdrawalRuleExists = withdrawalRuleExists
 	}
 	return c.JSON(response.OkByData(entryResponse))
@@ -566,7 +566,7 @@ func (h Handler) deleteAddressBookEntry(c fiber.Ctx) error {
 	dto := converters.FromDeleteAddressBookRequest(*req, user.ID)
 
 	// Delete the address entry
-	err = h.services.AddressBookService.DeleteAddress(c.Context(), dto)
+	err = h.services.AddressBookService.DeleteAddress(c.Context(), dto, user)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}

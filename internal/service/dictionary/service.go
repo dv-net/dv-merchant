@@ -93,6 +93,7 @@ func (s *Service) loadAvailableCurrencies(ctx context.Context) ([]*models.Curren
 			Blockchain:    currency.Blockchain,
 			IsBitcoinLike: currency.Blockchain.IsBitcoinLike(),
 			IsEVMLike:     currency.Blockchain.IsEVMLike(),
+			IsStableCoin:  currency.IsStablecoin,
 		})
 	}
 	return shortCurrencies, nil
