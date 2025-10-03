@@ -32,6 +32,7 @@ func ConvertTopUpDataToResponse(data *store.TopUpData) public_request.GetWalletD
 			wa.Currency.TokenLabel = pgtypeutils.DecodeText(currency.TokenLabel)
 			wa.Currency.ContractAddress = pgtypeutils.DecodeText(currency.ContractAddress)
 			wa.Currency.IsNative = currency.IsNative
+			wa.Currency.Order = currency.OrderIdx
 		}
 
 		addresses[idx] = wa

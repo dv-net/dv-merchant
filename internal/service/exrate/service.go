@@ -12,8 +12,6 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/util"
-	"github.com/dv-net/dv-merchant/pkg/admin_gateway"
-
 	"github.com/redis/go-redis/v9"
 	"github.com/shopspring/decimal"
 
@@ -22,40 +20,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/pkg/key_value"
 	"github.com/dv-net/dv-merchant/pkg/logger"
-)
-
-type ExchangeRateSource string
-
-func (o ExchangeRateSource) String() string { return string(o) }
-
-func (o ExchangeRateSource) Valid() bool {
-	switch o {
-	case SourceBinance:
-		return true
-	case SourceHtx:
-		return true
-	case SourceOkx:
-		return true
-	case SourceBitget:
-		return true
-	case SourceKucoin:
-		return true
-	case SourceGateio:
-		return true
-	case SourceBybit:
-		return true
-	}
-	return false
-}
-
-const (
-	SourceBinance ExchangeRateSource = "binance"
-	SourceHtx     ExchangeRateSource = "htx"
-	SourceOkx     ExchangeRateSource = "okx"
-	SourceBitget  ExchangeRateSource = "bitget"
-	SourceKucoin  ExchangeRateSource = "kucoin"
-	SourceBybit   ExchangeRateSource = "bybit"
-	SourceGateio  ExchangeRateSource = "gate"
 )
 
 type IExRateSource interface {
@@ -73,7 +37,6 @@ func New(
 	currencyService currency.ICurrency,
 	logger logger.Logger,
 	storage storage.IStorage,
-	dvRate admin_gateway.IRates,
 ) (IExRateSource, error) {
 	srv := &service{
 		storage:         storage,
@@ -119,26 +82,11 @@ func New(
 		cfChan:  make(chan CurrencyFilter),
 	}
 
-	f = NewDVFetcher(dvRate, logger)
-	srv.fetchers[models.RateSourceDVAvg.String()] = fetcherData{
-		fetcher: f,
-		cfChan:  make(chan CurrencyFilter),
-	}
-
 	f = NewBybitFetcher("https://api.bybit.com/v5/market/tickers?category=spot", http.DefaultClient, logger)
 	srv.fetchers[f.Source()] = fetcherData{
 		fetcher: f,
 		cfChan:  make(chan CurrencyFilter),
 	}
-
-	// hack: there is only one fetcher instance required for 3 dv sources
-	stub := fetcherData{
-		fetcher: &stubFetcher{source: models.RateSourceDVMin.String()},
-		cfChan:  make(chan CurrencyFilter),
-	}
-
-	srv.fetchers[models.RateSourceDVMin.String()] = stub
-	srv.fetchers[models.RateSourceDVMax.String()] = stub
 
 	return srv, nil
 }
@@ -212,15 +160,15 @@ func (srv *service) rateKeeper(ctx context.Context, in <-chan ExRate, wg *sync.W
 			return
 		case rate := <-in:
 			if err := srv.storage.CurrencyExchange().StoreRate(ctx, rate.Source, rate.From, rate.To, rate.Value, ttl); err != nil {
-				srv.logger.Error(
-					"save exchange rate", err,
+				srv.logger.Errorw(
+					"save exchange rate ", err,
 					"source", rate.Source,
 					"from", rate.From,
 					"to", rate.To,
 					"value", rate.Value,
 				)
 			} else {
-				srv.logger.Debug(
+				srv.logger.Debugw(
 					"exrate stored",
 					"source", rate.Source,
 					"from", rate.From,
