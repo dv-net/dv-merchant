@@ -7,9 +7,6 @@ const (
 	RateSourceHTX     RateSource = "htx"
 	RateSourceBinance RateSource = "binance"
 	RateSourceBitGet  RateSource = "bitget"
-	RateSourceDVMin   RateSource = "dv-min"
-	RateSourceDVMax   RateSource = "dv-max"
-	RateSourceDVAvg   RateSource = "dv-avg"
 	RateSourceKucoin  RateSource = "kucoin"
 	RateSourceBybit   RateSource = "bybit"
 	RateSourceGateio  RateSource = "gate"
@@ -28,12 +25,6 @@ func (rs RateSource) Valid() bool {
 	case RateSourceOKX:
 		return true
 	case RateSourceBitGet:
-		return true
-	case RateSourceDVMin:
-		return true
-	case RateSourceDVMax:
-		return true
-	case RateSourceDVAvg:
 		return true
 	case RateSourceKucoin:
 		return true
