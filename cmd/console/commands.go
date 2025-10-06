@@ -12,7 +12,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/eproxy"
 	"github.com/dv-net/dv-merchant/internal/service/exrate"
 	"github.com/dv-net/dv-merchant/internal/service/transactions"
-	"github.com/dv-net/dv-merchant/pkg/admin_gateway"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/dv-net/xconfig"
 	"github.com/goccy/go-yaml"
@@ -332,9 +331,8 @@ func prepareTransactionsCommands(currentAppVersion string) []*cli.Command {
 					return fmt.Errorf("storage init: %w", err)
 				}
 
-				dvAdmin := admin_gateway.New(conf.Admin.BaseURL, currentAppVersion, lg, conf.Admin.LogStatus)
 				currService := currency.New(conf, st)
-				exrateService, err := exrate.New(conf, currService, lg, st, dvAdmin)
+				exrateService, err := exrate.New(conf, currService, lg, st)
 				if err != nil {
 					return fmt.Errorf("init exrate service failed: %w", err)
 				}

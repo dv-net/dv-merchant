@@ -96,6 +96,7 @@ func (h *Handler) getWalletData(c fiber.Ctx) error {
 			wa.Currency.TokenLabel = pgtypeutils.DecodeText(currency.TokenLabel)
 			wa.Currency.ContractAddress = pgtypeutils.DecodeText(currency.ContractAddress)
 			wa.Currency.IsNative = currency.IsNative
+			wa.Currency.Order = currency.SortOrder
 		}
 
 		addresses[idx] = wa
@@ -114,8 +115,8 @@ func (h *Handler) getWalletData(c fiber.Ctx) error {
 			return 0
 		}
 
-		aOrderIdx := data.AvailableCurrencies[aCurrencyIdx].OrderIdx
-		bOrderIdx := data.AvailableCurrencies[bCurrencyIdx].OrderIdx
+		aOrderIdx := data.AvailableCurrencies[aCurrencyIdx].SortOrder
+		bOrderIdx := data.AvailableCurrencies[bCurrencyIdx].SortOrder
 
 		if aOrderIdx < bOrderIdx {
 			return -1

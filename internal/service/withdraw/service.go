@@ -594,7 +594,7 @@ func (s *service) checkTransferRequirementsByUser(ctx context.Context, u *models
 
 	// transfers disabled by user setting
 	if transfersStatusFlag != nil && transfersStatusFlag.Value != setting.FlagValueEnabled {
-		s.logger.Debug("transfers disabled", "user_id", u.ID.String())
+		s.logger.Debug("transfers disabled ", "user_id ", u.ID.String())
 		return ErrTransfersDisabled
 	}
 

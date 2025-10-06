@@ -470,11 +470,11 @@ func (s *Service) processExchangePairs(ctx context.Context) {
 		for exID, p := range pairs {
 			swapState, err := s.getSwapState(ctx, userID, exID)
 			if err != nil {
-				s.log.Error("failed to fetch exchange withdrawal state", err, "userID", userID)
+				s.log.Errorw("failed to fetch exchange withdrawal state", err, "userID", userID)
 				continue
 			}
 			if *swapState == models.ExchangeSwapStateDisabled {
-				s.log.Debug("skipping exchange swap", "userID", userID, "exchangeID", exID)
+				s.log.Debugw("skipping exchange swap", "userID", userID, "exchangeID", exID)
 				continue
 			}
 			go func(userID uuid.UUID, userPairs []*models.UserExchangePair) {
