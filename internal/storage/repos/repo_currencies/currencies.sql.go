@@ -13,7 +13,7 @@ import (
 )
 
 const getCurrenciesByBlockchain = `-- name: GetCurrenciesByBlockchain :many
-SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default, order_idx
+SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default
 FROM currencies
 WHERE blockchain = $1
 `
@@ -47,7 +47,6 @@ func (q *Queries) GetCurrenciesByBlockchain(ctx context.Context, blockchain *mod
 			&i.TokenLabel,
 			&i.IsNative,
 			&i.IsNewStoreDefault,
-			&i.OrderIdx,
 		); err != nil {
 			return nil, err
 		}
@@ -60,7 +59,7 @@ func (q *Queries) GetCurrenciesByBlockchain(ctx context.Context, blockchain *mod
 }
 
 const getCurrenciesEnabled = `-- name: GetCurrenciesEnabled :many
-SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default, order_idx
+SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default
 FROM currencies
 WHERE status = true
 ORDER BY blockchain, code
@@ -95,7 +94,6 @@ func (q *Queries) GetCurrenciesEnabled(ctx context.Context) ([]*models.Currency,
 			&i.TokenLabel,
 			&i.IsNative,
 			&i.IsNewStoreDefault,
-			&i.OrderIdx,
 		); err != nil {
 			return nil, err
 		}
@@ -108,7 +106,7 @@ func (q *Queries) GetCurrenciesEnabled(ctx context.Context) ([]*models.Currency,
 }
 
 const getCurrenciesHasBalance = `-- name: GetCurrenciesHasBalance :many
-SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default, order_idx
+SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default
 FROM currencies
 where status = true
   and has_balance = true
@@ -143,7 +141,6 @@ func (q *Queries) GetCurrenciesHasBalance(ctx context.Context) ([]*models.Curren
 			&i.TokenLabel,
 			&i.IsNative,
 			&i.IsNewStoreDefault,
-			&i.OrderIdx,
 		); err != nil {
 			return nil, err
 		}
@@ -156,7 +153,7 @@ func (q *Queries) GetCurrenciesHasBalance(ctx context.Context) ([]*models.Curren
 }
 
 const getCurrencyByBlockchainAndContract = `-- name: GetCurrencyByBlockchainAndContract :one
-SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default, order_idx
+SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default
 FROM currencies
 WHERE blockchain = $2
   AND (contract_address = $1 OR (contract_address IS NULL AND code = UPPER($1)))
@@ -192,13 +189,12 @@ func (q *Queries) GetCurrencyByBlockchainAndContract(ctx context.Context, arg Ge
 		&i.TokenLabel,
 		&i.IsNative,
 		&i.IsNewStoreDefault,
-		&i.OrderIdx,
 	)
 	return &i, err
 }
 
 const getCurrencyWithBalanceByBlockchain = `-- name: GetCurrencyWithBalanceByBlockchain :one
-SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default, order_idx
+SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default
 FROM currencies
 WHERE blockchain = $1
   AND has_balance = true
@@ -228,13 +224,12 @@ func (q *Queries) GetCurrencyWithBalanceByBlockchain(ctx context.Context, blockc
 		&i.TokenLabel,
 		&i.IsNative,
 		&i.IsNewStoreDefault,
-		&i.OrderIdx,
 	)
 	return &i, err
 }
 
 const getEnabledCurrencyByCode = `-- name: GetEnabledCurrencyByCode :one
-SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default, order_idx
+SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default
 FROM currencies
 WHERE code = $1
   AND status = true
@@ -270,13 +265,12 @@ func (q *Queries) GetEnabledCurrencyByCode(ctx context.Context, arg GetEnabledCu
 		&i.TokenLabel,
 		&i.IsNative,
 		&i.IsNewStoreDefault,
-		&i.OrderIdx,
 	)
 	return &i, err
 }
 
 const getEnabledCurrencyById = `-- name: GetEnabledCurrencyById :one
-SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default, order_idx
+SELECT id, code, name, precision, is_fiat, blockchain, contract_address, withdrawal_min_balance, has_balance, status, sort_order, min_confirmation, created_at, updated_at, is_stablecoin, currency_label, token_label, is_native, is_new_store_default
 FROM currencies
 where id = $1 and status = true
 limit 1
@@ -305,7 +299,6 @@ func (q *Queries) GetEnabledCurrencyById(ctx context.Context, id string) (*model
 		&i.TokenLabel,
 		&i.IsNative,
 		&i.IsNewStoreDefault,
-		&i.OrderIdx,
 	)
 	return &i, err
 }

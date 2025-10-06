@@ -114,8 +114,8 @@ func (h *Handler) getWalletData(c fiber.Ctx) error {
 			return 0
 		}
 
-		aOrderIdx := data.AvailableCurrencies[aCurrencyIdx].OrderIdx
-		bOrderIdx := data.AvailableCurrencies[bCurrencyIdx].OrderIdx
+		aOrderIdx := data.AvailableCurrencies[aCurrencyIdx].SortOrder
+		bOrderIdx := data.AvailableCurrencies[bCurrencyIdx].SortOrder
 
 		if aOrderIdx < bOrderIdx {
 			return -1
