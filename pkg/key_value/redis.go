@@ -77,6 +77,10 @@ func (rs *redisStorage) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
+func (rs *redisStorage) Keys(ctx context.Context, pattern string) ([]string, error) {
+	return rs.client.Keys(ctx, pattern).Result()
+}
+
 func (rs *redisStorage) Close() error {
 	return rs.client.Close()
 }
