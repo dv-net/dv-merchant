@@ -32,7 +32,7 @@ type CurrencyDto struct {
 	TokenLabel      *string           `json:"token_label"`
 	IsNative        bool              `json:"is_native"`
 	ContractAddress *string           `json:"contract_address"`
-	Order           int64             `json:"order"`
+	Order           int16             `json:"order"`
 } // @name PublicCurrency
 
 type WalletAddressDto struct {
