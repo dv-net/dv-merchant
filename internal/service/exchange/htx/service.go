@@ -524,7 +524,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 				strings.Contains(err.Error(), "dw-withdraw-unsafe-deposit-only") {
 				o.l.Error("insufficient funds, retrying with reduced amount",
 					ErrWithdrawalBalanceLocked,
-					"exchange", models.ExchangeSlugBitget.String(),
+					"exchange", models.ExchangeSlugHtx.String(),
 					"recordID", args.RecordID.String(),
 					"current_amount", amount.String(),
 				)
