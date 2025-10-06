@@ -936,7 +936,8 @@ func (s *Service) handleOrderStatusChanged(ctx context.Context, usr *models.User
 				if strings.Contains(updateFields.FailReason.String, "connection timed out") ||
 					strings.Contains(updateFields.FailReason.String, "connection reset by peer") ||
 					strings.Contains(updateFields.FailReason.String, "connection refused") ||
-					strings.Contains(updateFields.FailReason.String, "broken pipe") {
+					strings.Contains(updateFields.FailReason.String, "broken pipe") ||
+					strings.Contains(updateFields.FailReason.String, "rate limit") {
 					// If the transfer failed due to connection issues, we do not change the transfer status setting
 					return nil
 				}

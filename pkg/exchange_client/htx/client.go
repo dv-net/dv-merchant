@@ -13,6 +13,7 @@ import (
 	"time"
 
 	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
+	htxmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/htx/models"
 	htxresponses "github.com/dv-net/dv-merchant/pkg/exchange_client/htx/responses"
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/utils"
 
@@ -105,23 +106,35 @@ type Client struct {
 }
 
 func (o *Client) Do(ctx context.Context, method, endpoint string, private bool, dest interface{}, params ...map[string]string) error {
-	if l, exists := o.limiters[endpoint]; exists {
-		for {
-			r, err := l.Get(ctx, utils.HashLimiterKey(endpoint, o.accessKey, o.secretKey))
-			if err != nil {
-				return err
+	for {
+		if l, exists := o.limiters[endpoint]; exists {
+			for {
+				r, err := l.Get(ctx, utils.HashLimiterKey(endpoint, o.accessKey, o.secretKey))
+				if err != nil {
+					return err
+				}
+				if !r.Reached {
+					break
+				}
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(time.Until(time.Unix(r.Reset, 0).Add(time.Second))):
+				}
 			}
-			if !r.Reached {
-				break
-			}
+		}
+		err := o.DoPlain(ctx, method, endpoint, private, dest, params...)
+		if err != nil && errors.Is(err, htxmodels.ErrHtxRateLimitExceeded) {
+			// Server-side rate limit hit, wait and retry
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case <-time.After(time.Until(time.Unix(r.Reset, 0).Add(time.Second))):
+			case <-time.After(3 * time.Second):
+				continue
 			}
 		}
+		return err
 	}
-	return o.DoPlain(ctx, method, endpoint, private, dest, params...)
 }
 
 func (o *Client) DoPlain(ctx context.Context, method, path string, private bool, dest interface{}, params ...map[string]string) error {
@@ -223,6 +236,9 @@ func errorFromResponse(err any, version string) error {
 			}
 			if strings.Contains(errRes.ErrMsg, "Verification failure") {
 				return exchangeclient.ErrInvalidAPICredentials
+			}
+			if errRes.ErrCode == "rate-too-many-requests" {
+				return fmt.Errorf("htx error: %w", htxmodels.ErrHtxRateLimitExceeded)
 			}
 			return fmt.Errorf("htx error: %s", errRes.ErrCode)
 		}
