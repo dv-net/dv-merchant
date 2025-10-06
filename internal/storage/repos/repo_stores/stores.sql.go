@@ -239,7 +239,7 @@ func (q *Queries) GetStoreByWalletID(ctx context.Context, id uuid.UUID) (*models
 }
 
 const getStoreCurrencies = `-- name: GetStoreCurrencies :many
-SELECT c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_native, c.is_new_store_default, c.order_idx
+SELECT c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_native, c.is_new_store_default
 FROM store_currencies sc
          INNER JOIN currencies c on sc.currency_id = c.id
 WHERE sc.store_id = $1
@@ -274,7 +274,6 @@ func (q *Queries) GetStoreCurrencies(ctx context.Context, storeID uuid.UUID) ([]
 			&i.TokenLabel,
 			&i.IsNative,
 			&i.IsNewStoreDefault,
-			&i.OrderIdx,
 		); err != nil {
 			return nil, err
 		}

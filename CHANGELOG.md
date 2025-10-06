@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added new currency codes and enhance stablecoin handling in rate calculations [DV-3476]
 - feat: update user context handling in wallet and address services [DV-3480]
 - fix: handle htx rate limiting error [DV-3505]
+- fix: locale forwarding on external endpoint [DV-3277]
+- fix: removed duplicated ordering index [DV-3501]
 - get minimal rate for currency pairs if not found for source [DV-3500]
 
 ## [0.9.7] - 2025-09-22

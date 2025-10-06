@@ -340,8 +340,7 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 			walletEmail = &w.Email.String
 		}
 
-		wallet.ID = w.ID
-		err = s.updateWalletMeta(ctx, wallet, dto.ToCreateParams(), &walletEmail, repos.WithTx(tx))
+		err = s.updateWalletMeta(ctx, w, dto.ToCreateParams(), &walletEmail, repos.WithTx(tx))
 		if err != nil {
 			return err
 		}
@@ -1106,7 +1105,7 @@ func (s *Service) updateWalletMeta(ctx context.Context, wallet *models.Wallet, p
 			return err
 		}
 	}
-	if params.Locale != "" {
+	if params.Locale != "" && wallet.Locale != params.Locale {
 		err := s.UpdateLocale(ctx, wallet.ID, params.Locale, tx...)
 		if err != nil {
 			return err
