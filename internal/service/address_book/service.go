@@ -161,7 +161,7 @@ func (s *Service) toUniversalAddressGroupResponse(ctx context.Context, entries [
 	return response
 }
 
-func (s *Service) toEVMAddressGroupResponse(ctx context.Context, entries []*models.UserAddressBook) *withdrawal_response.EVMAddressGroupResponse {
+func (s *Service) toEVMAddressGroupResponse(ctx context.Context, entries []*models.UserAddressBook, usr *models.User) *withdrawal_response.EVMAddressGroupResponse {
 	if len(entries) == 0 {
 		return nil
 	}
@@ -172,7 +172,7 @@ func (s *Service) toEVMAddressGroupResponse(ctx context.Context, entries []*mode
 	currencies := make([]*withdrawal_response.AddressBookEntryResponseShort, len(entries))
 	for i, entry := range entries {
 		withdrawalRuleExists := false
-		if ruleExists, err := s.CheckWithdrawalRuleExists(ctx, entry, nil); err == nil {
+		if ruleExists, err := s.CheckWithdrawalRuleExists(ctx, entry, usr); err == nil {
 			withdrawalRuleExists = ruleExists
 		}
 
