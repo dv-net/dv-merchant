@@ -76,7 +76,7 @@ func (s *Service) GetUserAddresses(ctx context.Context, usr *models.User) (*with
 	evmGroupResponses := make([]*withdrawal_response.EVMAddressGroupResponse, 0, len(evmGroups))
 	for _, group := range evmGroups {
 		if len(group) > 0 {
-			resp := s.toEVMAddressGroupResponse(ctx, group)
+			resp := s.toEVMAddressGroupResponse(ctx, group, usr)
 			if resp != nil {
 				evmGroupResponses = append(evmGroupResponses, resp)
 			}
