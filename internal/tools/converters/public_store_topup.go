@@ -38,6 +38,16 @@ func ConvertTopUpDataToResponse(data *store.TopUpData) public_request.GetWalletD
 		addresses[idx] = wa
 	}
 
+	slices.SortStableFunc(addresses, func(a, b public_request.WalletAddressDto) int {
+		if a.Currency.Order < b.Currency.Order {
+			return -1
+		}
+		if a.Currency.Order > b.Currency.Order {
+			return 1
+		}
+		return 0
+	})
+
 	result := public_request.GetWalletDto{
 		Store: public_request.StoreDto{
 			ID:             data.Store.ID,
