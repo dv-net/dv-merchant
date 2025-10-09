@@ -846,8 +846,9 @@ func (s *Service) SetCurrentExchange(ctx context.Context, userID uuid.UUID, slug
 		if err != nil {
 			return fmt.Errorf("fetch exchange: %w", err)
 		}
-		if arg.ExchangeSlug == nil {
-			// If the exchange slug is nil, it means we are resetting the current exchange
+		if arg.ExchangeSlug == nil { //nolint:nestif
+			// If the exchange slug is nil, it means we are disabling this exchange
+			// Only disable the exchange states - withdrawal settings keep their is_enabled state
 			if _, err := s.st.UserExchanges(repos.WithTx(tx)).ChangeSwapState(ctx, repo_user_exchanges.ChangeSwapStateParams{
 				UserID:     userID,
 				ExchangeID: ex.ID,
@@ -855,7 +856,6 @@ func (s *Service) SetCurrentExchange(ctx context.Context, userID uuid.UUID, slug
 			}); err != nil {
 				return fmt.Errorf("disable exchange swap state for user: %w", err)
 			}
-			// Disable withdrawal state as well
 			if _, err := s.st.UserExchanges(repos.WithTx(tx)).ChangeWithdrawalState(ctx, repo_user_exchanges.ChangeWithdrawalStateParams{
 				UserID:     userID,
 				ExchangeID: ex.ID,
@@ -863,8 +863,25 @@ func (s *Service) SetCurrentExchange(ctx context.Context, userID uuid.UUID, slug
 			}); err != nil {
 				return fmt.Errorf("disable exchange withdrawal state for user: %w", err)
 			}
+		} else {
+			// Enable this exchange - only enable the exchange states
+			// Withdrawal settings will be restored automatically based on their saved is_enabled state
+			if _, err := s.st.UserExchanges(repos.WithTx(tx)).ChangeSwapState(ctx, repo_user_exchanges.ChangeSwapStateParams{
+				UserID:     userID,
+				ExchangeID: ex.ID,
+				State:      models.ExchangeSwapStateEnabled,
+			}); err != nil {
+				return fmt.Errorf("enable exchange swap state for user: %w", err)
+			}
+			if _, err := s.st.UserExchanges(repos.WithTx(tx)).ChangeWithdrawalState(ctx, repo_user_exchanges.ChangeWithdrawalStateParams{
+				UserID:     userID,
+				ExchangeID: ex.ID,
+				State:      models.ExchangeWithdrawalStateEnabled,
+			}); err != nil {
+				return fmt.Errorf("enable exchange withdrawal state for user: %w", err)
+			}
 		}
-		// Disable other exchanges for the user
+		// Disable other exchanges for the user (maintains single-exchange behavior)
 		if err := s.st.UserExchanges(repos.WithTx(tx)).DisableAllPerUserExceptExchange(ctx, userID, ex.ID); err != nil {
 			return fmt.Errorf("disable other exchanges: %w", err)
 		}

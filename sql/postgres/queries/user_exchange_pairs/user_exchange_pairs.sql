@@ -7,7 +7,9 @@ VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT DO NOTHING;
 
 -- name: GetAll :many
-SELECT * FROM user_exchange_pairs;
+SELECT uep.* FROM user_exchange_pairs uep
+INNER JOIN user_exchanges ue ON ue.user_id = uep.user_id AND ue.exchange_id = uep.exchange_id
+WHERE ue.swap_state = 'enabled';
 
 -- name: DeleteByUserAndExchangeID :exec
 DELETE FROM user_exchange_pairs WHERE user_id = $1 AND exchange_id = $2;
