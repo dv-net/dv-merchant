@@ -82,3 +82,6 @@ jobs:
       - name: Remove GPG keys
         run: |
           rm artifacts/.keys/private.asc
+      - name: Init e2e tests
+        run: |
+          curl --request POST  --url '${{ secrets.E2E_INIT_TRIGGER_URL }}'
