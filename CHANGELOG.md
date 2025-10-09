@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: locale forwarding on external endpoint [DV-3277]
 - fix: removed duplicated ordering index [DV-3501]
 - fix: fixed exchange withdrawal settings state restoration [DV-2945]
+- fix: fixed exchange keys deletion behaviour [DV-3343]
 
 ## [0.9.7] - 2025-09-22
 - Fix rename ResetPasswordCode to Code for consistency in user notifications [DV-3403]

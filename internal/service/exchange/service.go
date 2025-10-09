@@ -142,6 +142,22 @@ func (s *Service) DeleteExchangeKeys(ctx context.Context, userID uuid.UUID, slug
 		if err != nil {
 			return err
 		}
+
+		// Clear current_exchange if the deleted exchange was active
+		usr, err := s.st.Users(repos.WithTx(tx)).GetByID(ctx, userID)
+		if err != nil {
+			return fmt.Errorf("fetch user: %w", err)
+		}
+		if usr.ExchangeSlug != nil && usr.ExchangeSlug.Valid() && *usr.ExchangeSlug == slug {
+			_, err = s.st.Users(repos.WithTx(tx)).UpdateExchange(ctx, repo_users.UpdateExchangeParams{
+				ID:           userID,
+				ExchangeSlug: nil,
+			})
+			if err != nil {
+				return fmt.Errorf("clear current exchange: %w", err)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -978,27 +994,10 @@ func (s *Service) GetAvailableExchangesList(ctx context.Context, userID uuid.UUI
 		return nil, fmt.Errorf("fetch user: %w", err)
 	}
 
-	if usr.ExchangeSlug != nil && usr.ExchangeSlug.Valid() {
-		exchange, err := s.st.Exchanges().GetExchangeBySlug(ctx, *usr.ExchangeSlug)
-		if err != nil {
-			return nil, fmt.Errorf("fetch exchange by slug: %w", err)
-		}
-		r.CurrentExchange = util.Pointer(usr.ExchangeSlug.String())
-		exInfo, err := s.st.UserExchanges().GetByUserAndExchangeID(ctx, repo_user_exchanges.GetByUserAndExchangeIDParams{
-			UserID:     userID,
-			ExchangeID: exchange.ID,
-		})
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("fetch user exchange info: %w", err)
-		}
-		r.SwapState = util.Pointer(exInfo.SwapState.String())
-		r.WithdrawalState = util.Pointer(exInfo.WithdrawalState.String())
-	}
-
-	resMap := make(map[string]*WithExchangeKeysDTO)
+	resMap := make(map[models.ExchangeSlug]*WithExchangeKeysDTO)
 	for _, exchange := range exchangeData {
 		var exchangeKeysData []KeysExchangeDTO
-		existing, ok := resMap[exchange.Name]
+		existing, ok := resMap[exchange.Slug]
 		if !ok {
 			exchangeKeysData = make([]KeysExchangeDTO, 0)
 			existing = &WithExchangeKeysDTO{
@@ -1006,7 +1005,7 @@ func (s *Service) GetAvailableExchangesList(ctx context.Context, userID uuid.UUI
 				Slug:     exchange.Slug,
 				Keys:     exchangeKeysData,
 			}
-			resMap[exchange.Name] = existing
+			resMap[exchange.Slug] = existing
 		}
 
 		var keyVal *string
@@ -1026,6 +1025,29 @@ func (s *Service) GetAvailableExchangesList(ctx context.Context, userID uuid.UUI
 
 	for _, dto := range resMap {
 		r.Exchanges = append(r.Exchanges, *dto)
+	}
+
+	// Only set current_exchange if the exchange has valid keys
+	if usr.ExchangeSlug != nil && usr.ExchangeSlug.Valid() { //nolint:nestif
+		// Check if the current exchange has keys
+		if exchangeDTO, exists := resMap[*usr.ExchangeSlug]; exists && len(exchangeDTO.Keys) > 0 {
+			exchange, err := s.st.Exchanges().GetExchangeBySlug(ctx, *usr.ExchangeSlug)
+			if err != nil {
+				return nil, fmt.Errorf("fetch exchange by slug: %w", err)
+			}
+			r.CurrentExchange = util.Pointer(usr.ExchangeSlug.String())
+			exInfo, err := s.st.UserExchanges().GetByUserAndExchangeID(ctx, repo_user_exchanges.GetByUserAndExchangeIDParams{
+				UserID:     userID,
+				ExchangeID: exchange.ID,
+			})
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				return nil, fmt.Errorf("fetch user exchange info: %w", err)
+			}
+			if exInfo != nil {
+				r.SwapState = util.Pointer(exInfo.SwapState.String())
+				r.WithdrawalState = util.Pointer(exInfo.WithdrawalState.String())
+			}
+		}
 	}
 
 	return r, nil
