@@ -14,6 +14,7 @@ const (
 	ErrorCodeInvalidPassphrase   ErrorCode = 400004
 	ErrorCodeInvalidSignature    ErrorCode = 400005
 	ErrorCodeIPWhitelist         ErrorCode = 400006
+	ErrorWithdrawalTooFast       ErrorCode = 115004
 )
 
 type Basic struct {

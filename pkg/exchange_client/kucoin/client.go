@@ -238,7 +238,12 @@ func errorFromResponse(errRes *kucoinresponse.Basic) error {
 		if isWhitelistError(errRes.Code) {
 			return exchangeclient.ErrInvalidIPAddress
 		}
-		return fmt.Errorf("kucoin error: %s (%d)", errRes.Msg, errRes.Code)
+		if errRes.Code == kucoinresponse.ErrorWithdrawalTooFast {
+			return exchangeclient.ErrRateLimited
+		}
+		// Convert msg to string and wrap error
+		msgStr := fmt.Sprintf("%v", errRes.Msg)
+		return wrapKuCoinError(msgStr, errRes.Code)
 	}
 
 	return nil

@@ -14,6 +14,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchange_chains"
 	"github.com/dv-net/dv-merchant/internal/tools/hash"
+	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/okx"
 	okxmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/okx/models"
 	okxrequests "github.com/dv-net/dv-merchant/pkg/exchange_client/okx/requests"
@@ -24,11 +25,6 @@ import (
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
 	"github.com/ulule/limiter/v3"
-)
-
-var (
-	ErrMinWithdrawalBalance    = errors.New("withdrawal threshold not met")
-	ErrWithdrawalBalanceLocked = errors.New("withdrawal balance locked")
 )
 
 const (
@@ -363,7 +359,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, baseSymbol string, quoteS
 		fundingAmount = o.getFundingBalance(symbolData.QuoteCcy, fundingFiltered)
 		maxAmount = fundingAmount.Add(spotAmount)
 		if maxAmount.LessThan(orderMinimumQuote) {
-			return nil, ErrMinWithdrawalBalance
+			return nil, exchangeclient.ErrMinWithdrawalBalance
 		}
 	case okxmodels.OrderSideSell.String():
 		fundsTransferRequest.Ccy = symbolData.BaseCcy
@@ -371,7 +367,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, baseSymbol string, quoteS
 		fundingAmount = o.getFundingBalance(symbolData.BaseCcy, fundingFiltered)
 		maxAmount = spotAmount.Add(fundingAmount)
 		if maxAmount.LessThan(orderMinimumBase) {
-			return nil, ErrMinWithdrawalBalance
+			return nil, exchangeclient.ErrMinWithdrawalBalance
 		}
 	default:
 		return nil, fmt.Errorf("unsupported order type %s", spotOrderRequest.Side)
@@ -649,7 +645,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 				"exchange", models.ExchangeSlugOkx.String(),
 				"recordID", args.RecordID.String(),
 			)
-			return nil, ErrMinWithdrawalBalance
+			return nil, exchangeclient.ErrMinWithdrawalBalance
 		}
 
 		transferAmount := totalBalance.Sub(fundingBalance).RoundDown(precision)
@@ -704,7 +700,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 				"current_amount", amount.String(),
 				"min_withdrawal", minWithdrawal.String(),
 			)
-			return nil, ErrWithdrawalBalanceLocked
+			return nil, exchangeclient.ErrWithdrawalBalanceLocked
 		}
 
 		withdrawalStep, err := o.convSvc.Convert(ctx, currconv.ConvertDTO{
@@ -726,9 +722,9 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 			return dto, nil
 		}
 
-		if strings.EqualFold(err.Error(), "Insufficient balance") {
+		if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
 			o.l.Error("insufficient funds, retrying with reduced amount",
-				ErrWithdrawalBalanceLocked,
+				exchangeclient.ErrWithdrawalBalanceLocked,
 				"exchange", models.ExchangeSlugOkx.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
@@ -736,9 +732,9 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 			amount = amount.Sub(withdrawalStep)
 			if amount.LessThan(minWithdrawal) {
-				return nil, ErrMinWithdrawalBalance
+				return nil, exchangeclient.ErrMinWithdrawalBalance
 			}
-			dto.RetryReason = ErrWithdrawalBalanceLocked.Error()
+			dto.RetryReason = exchangeclient.ErrWithdrawalBalanceLocked.Error()
 			continue
 		}
 

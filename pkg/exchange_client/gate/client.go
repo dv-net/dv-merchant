@@ -180,10 +180,22 @@ func errorFromResponse(errRes *ErrorResponse) error {
 		if strings.Contains(strings.ToLower(errRes.Message), "ip") {
 			return exchangeclient.ErrInvalidIPAddress
 		}
-		return fmt.Errorf("gate.io error: %s - %s", errRes.Label, errRes.Message)
+		return wrapGateError(errRes.Label, errRes.Message)
 	default:
-		return fmt.Errorf("gate.io error: %s - %s", errRes.Label, errRes.Message)
+		return wrapGateError(errRes.Label, errRes.Message)
 	}
+}
+
+// wrapGateError wraps Gate.io errors with centralized errors when applicable
+func wrapGateError(label, message string) error {
+	msgLower := strings.ToLower(message)
+
+	// Check for balance-related errors
+	if strings.Contains(msgLower, "balance") {
+		return fmt.Errorf("gate.io error: %s - %s: %w", label, message, exchangeclient.ErrWithdrawalBalanceLocked)
+	}
+
+	return fmt.Errorf("gate.io error: %s - %s", label, message)
 }
 
 func S2M(i interface{}) map[string]string {

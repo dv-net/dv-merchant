@@ -240,7 +240,7 @@ func errorFromResponse(err any, version string) error {
 			if errRes.ErrCode == "rate-too-many-requests" {
 				return fmt.Errorf("htx error: %w", htxmodels.ErrHtxRateLimitExceeded)
 			}
-			return fmt.Errorf("htx error: %s", errRes.ErrCode)
+			return wrapHtxError(fmt.Sprintf("%v", errRes.ErrCode), fmt.Sprintf("%v", errRes.ErrMsg))
 		}
 	}
 	if version == "v2" {
@@ -248,8 +248,26 @@ func errorFromResponse(err any, version string) error {
 			if errRes.Code == 12005 {
 				return exchangeclient.ErrInvalidIPAddress
 			}
-			return fmt.Errorf("htx error: %s, %d", errRes.Message, errRes.Code)
+			return wrapHtxV2Error(errRes.Code, errRes.Message)
 		}
 	}
 	return errors.New("unknown htx error")
+}
+
+// wrapHtxError wraps HTX v1 errors with centralized errors when applicable
+func wrapHtxError(code, msg string) error {
+	msgLower := strings.ToLower(msg)
+
+	// Check for withdrawal confirmation limit or unsafe deposit errors
+	if strings.Contains(msgLower, "withdrawal confirmation limit") ||
+		strings.Contains(code, "dw-withdraw-unsafe-deposit-only") {
+		return fmt.Errorf("htx error: %s: %w", code, exchangeclient.ErrWithdrawalBalanceLocked)
+	}
+
+	return fmt.Errorf("htx error: %s", code)
+}
+
+// wrapHtxV2Error wraps HTX v2 errors with centralized errors when applicable
+func wrapHtxV2Error(code int, msg string) error {
+	return fmt.Errorf("htx error: %s, %d", msg, code)
 }

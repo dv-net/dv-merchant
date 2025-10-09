@@ -22,16 +22,14 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/ulule/limiter/v3"
 
+	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
 	gateio "github.com/dv-net/dv-merchant/pkg/exchange_client/gate"
 )
 
 var (
-	ErrInsufficientBalance            = errors.New("insufficient balance")
-	ErrUnprocessableCurrencyStatus    = errors.New("unprocessable currency status")
-	ErrMaxOrderValueReached           = errors.New("max order value reached")
-	ErrMinWithdrawalBalance           = errors.New("withdrawal threshold not met")
-	ErrWithdrawalBalanceLocked        = errors.New("withdrawal balance locked")
-	ErrWithdrawalAddessNotWhitelisted = errors.New("withdrawal address not whitelisted")
+	ErrInsufficientBalance         = errors.New("insufficient balance")
+	ErrUnprocessableCurrencyStatus = errors.New("unprocessable currency status")
+	ErrMaxOrderValueReached        = errors.New("max order value reached")
 )
 
 const (
@@ -492,13 +490,13 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 	}
 
 	if len(withdrawalWhitelist.Data) == 0 {
-		return nil, fmt.Errorf("no withdrawal whitelist found for %s: %w", args.Currency, ErrWithdrawalAddessNotWhitelisted)
+		return nil, fmt.Errorf("no withdrawal whitelist found for %s: %w", args.Currency, exchangeclient.ErrWithdrawalAddressNotWhitelisted)
 	}
 
 	if !lo.ContainsBy(withdrawalWhitelist.Data, func(item *gateio.SavedAddress) bool {
 		return strings.EqualFold(item.Address, args.Address) && strings.EqualFold(item.Chain, args.Chain) && item.Verified.IsVerified()
 	}) {
-		return nil, fmt.Errorf("withdrawal address %s on chain %s not whitelisted for %s: %w", args.Address, args.Chain, args.Currency, ErrWithdrawalAddessNotWhitelisted)
+		return nil, fmt.Errorf("withdrawal address %s on chain %s not whitelisted for %s: %w", args.Address, args.Chain, args.Currency, exchangeclient.ErrWithdrawalAddressNotWhitelisted)
 	}
 
 	req := &gateio.CreateWithdrawalRequest{
@@ -531,7 +529,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 				"current_amount", amount.String(),
 				"min_withdrawal", minWithdrawal.String(),
 			)
-			return nil, ErrWithdrawalBalanceLocked
+			return nil, exchangeclient.ErrWithdrawalBalanceLocked
 		}
 
 		withdrawalStep, err := o.convSvc.Convert(ctx, currconv.ConvertDTO{
@@ -555,9 +553,9 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 			return dto, nil
 		}
 
-		if strings.Contains(err.Error(), "balance") { // TODO: replace with actual error
+		if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
 			o.l.Error("insufficient funds, retrying with reduced amount",
-				ErrWithdrawalBalanceLocked,
+				exchangeclient.ErrWithdrawalBalanceLocked,
 				"exchange", models.ExchangeSlugGateio.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
@@ -565,9 +563,9 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 			amount = amount.Sub(withdrawalStep)
 			if amount.LessThan(minWithdrawal) {
-				return nil, ErrMinWithdrawalBalance
+				return nil, exchangeclient.ErrMinWithdrawalBalance
 			}
-			dto.RetryReason = ErrWithdrawalBalanceLocked.Error()
+			dto.RetryReason = exchangeclient.ErrWithdrawalBalanceLocked.Error()
 			continue
 		}
 

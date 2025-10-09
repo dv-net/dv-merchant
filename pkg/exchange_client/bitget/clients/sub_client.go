@@ -121,7 +121,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		return err
 	}
 
-	errRes := &bitget.ErrorResponse{}
+	errRes := &bitget.ResponseError{}
 	if err = json.Unmarshal(bb.Bytes(), &errRes); err != nil {
 		return err
 	}
@@ -144,7 +144,7 @@ func S2M(i any) map[string]string {
 	return m
 }
 
-func errorFromResponse(o *bitget.ErrorResponse) error {
+func errorFromResponse(o *bitget.ResponseError) error {
 	if o.Code == bitgetresponses.ResponseCodeOK {
 		return nil
 	}
