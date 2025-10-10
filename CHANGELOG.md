@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: locale forwarding on external endpoint [DV-3277]
 - fix: removed duplicated ordering index [DV-3501]
 - fix: fixed exchange withdrawal settings state restoration [DV-2945]
+- fix: changed exchange state SQL queries to correctly handle withdrawals/spot market orders [DV-2935]
 - fix: sort currency order for form without api key [DV-3529]
+- fix: exclude unconfirmed transactions for tx-find [DV-3528]
 
 ## [0.9.7] - 2025-09-22
 - Fix rename ResetPasswordCode to Code for consistency in user notifications [DV-3403]
