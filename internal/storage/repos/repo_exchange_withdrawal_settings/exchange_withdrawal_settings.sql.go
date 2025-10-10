@@ -78,7 +78,9 @@ func (q *Queries) DeleteByUserAndExchangeID(ctx context.Context, arg DeleteByUse
 }
 
 const getActive = `-- name: GetActive :many
-SELECT id, user_id, exchange_id, currency, chain, address, min_amount, created_at, updated_at, is_enabled FROM exchange_withdrawal_settings where is_enabled = true
+SELECT ews.id, ews.user_id, ews.exchange_id, ews.currency, ews.chain, ews.address, ews.min_amount, ews.created_at, ews.updated_at, ews.is_enabled FROM exchange_withdrawal_settings ews
+INNER JOIN user_exchanges ue ON ue.user_id = ews.user_id AND ue.exchange_id = ews.exchange_id
+WHERE ews.is_enabled = true AND ue.withdrawal_state = 'enabled'
 `
 
 func (q *Queries) GetActive(ctx context.Context) ([]*models.ExchangeWithdrawalSetting, error) {

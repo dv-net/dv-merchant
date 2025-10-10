@@ -15,49 +15,42 @@ import (
 )
 
 const calculateDepositStatistics = `-- name: CalculateDepositStatistics :many
-WITH tx_filtered AS (
-    SELECT
-        id,
-        amount_usd,
-        currency_id,
-        date_trunc($1::text, (created_at AT TIME ZONE 'UTC') AT TIME ZONE $2::text) AS truncated_date
-    FROM transactions
-    WHERE
-        type = 'deposit'
-      AND amount_usd >= 1
-      AND (created_at >= ($3::timestamp AT TIME ZONE $2::text AT TIME ZONE 'UTC')
-        AND created_at < ($4::timestamp AT TIME ZONE $2::text AT TIME ZONE 'UTC'))
-      AND ($5::uuid[] IS NULL OR store_id = ANY ($5::uuid[]))
-      AND ($6::varchar[] IS NULL OR currency_id = ANY ($6::varchar[]))
-      AND user_id = $7::uuid
-      AND is_system = false
-),
-     currency_stats AS (
-         SELECT
-             truncated_date,
-             currency_id,
-             COUNT(id) AS currency_tx_count,
-             SUM(amount_usd) AS currency_sum_usd
-         FROM tx_filtered
-         GROUP BY truncated_date, currency_id
-     ),
-     monthly_totals AS (
-         SELECT
-             truncated_date,
-             COUNT(id) AS total_tx_count,
-             SUM(amount_usd) AS total_sum_usd
-         FROM tx_filtered
-         GROUP BY truncated_date
-     )
-SELECT
-    mt.truncated_date::timestamp AS date,
-    mt.total_tx_count AS tx_count,
-    mt.total_sum_usd::numeric AS sum,
-    $1::varchar AS resolution,
-    jsonb_object_agg(
-            cs.currency_id,
-            jsonb_build_object('tx_count', cs.currency_tx_count, 'sum_usd', cs.currency_sum_usd::numeric)
-    ) AS currency_stats
+WITH tx_filtered AS (SELECT id,
+                            amount_usd,
+                            currency_id,
+                            date_trunc($1::text, (created_at AT TIME ZONE 'UTC') AT TIME ZONE
+                                                                   $2::text) AS truncated_date
+                     FROM transactions
+                     WHERE type = 'deposit'
+                       AND amount_usd >= 1
+                       AND (created_at >=
+                            ($3::timestamp AT TIME ZONE $2::text AT TIME ZONE 'UTC')
+                         AND created_at <
+                             ($4::timestamp AT TIME ZONE $2::text AT TIME ZONE 'UTC'))
+                       AND ($5::uuid[] IS NULL OR store_id = ANY ($5::uuid[]))
+                       AND ($6::varchar[] IS NULL OR
+                            currency_id = ANY ($6::varchar[]))
+                       AND user_id = $7::uuid
+                       AND is_system = false),
+     currency_stats AS (SELECT truncated_date,
+                               currency_id,
+                               COUNT(id)       AS currency_tx_count,
+                               SUM(amount_usd) AS currency_sum_usd
+                        FROM tx_filtered
+                        GROUP BY truncated_date, currency_id),
+     monthly_totals AS (SELECT truncated_date,
+                               COUNT(id)       AS total_tx_count,
+                               SUM(amount_usd) AS total_sum_usd
+                        FROM tx_filtered
+                        GROUP BY truncated_date)
+SELECT mt.truncated_date::timestamp  AS date,
+       mt.total_tx_count             AS tx_count,
+       mt.total_sum_usd::numeric     AS sum,
+       $1::varchar AS resolution,
+       jsonb_object_agg(
+               cs.currency_id,
+               jsonb_build_object('tx_count', cs.currency_tx_count, 'sum_usd', cs.currency_sum_usd::numeric)
+       )                             AS currency_stats
 FROM monthly_totals mt
          LEFT JOIN currency_stats cs ON mt.truncated_date = cs.truncated_date
 GROUP BY mt.truncated_date, mt.total_tx_count, mt.total_sum_usd
@@ -117,47 +110,43 @@ func (q *Queries) CalculateDepositStatistics(ctx context.Context, arg CalculateD
 }
 
 const calculateDepositStatisticsTotal = `-- name: CalculateDepositStatisticsTotal :one
-WITH currency_stats AS (
-    SELECT
-        currency_id,
-        COUNT(id) AS currency_tx_count,
-        SUM(amount_usd) AS currency_sum_usd
-    FROM transactions
-    WHERE
-        type = 'deposit'
-      AND amount_usd >= 1
-      AND created_at >= ($2::timestamp AT TIME ZONE $1::text AT TIME ZONE 'UTC')
-      AND created_at < ($3::timestamp AT TIME ZONE $1::text AT TIME ZONE 'UTC')
-      AND ($4::uuid[] IS NULL OR store_id = ANY ($4::uuid[]))
-      AND user_id = $5::uuid
-      AND is_system = false
-    GROUP BY currency_id
-),
-     overall_stats AS (
-         SELECT
-             COUNT(id) AS tx_count,
-             SUM(amount_usd) AS sum
-         FROM transactions
-         WHERE
-             type = 'deposit'
-           AND amount_usd >= 1
-           AND created_at >= ($2::timestamp AT TIME ZONE $1::text AT TIME ZONE 'UTC')
-           AND created_at < ($3::timestamp AT TIME ZONE $1::text AT TIME ZONE 'UTC')
-           AND ($4::uuid[] IS NULL OR store_id = ANY ($4::uuid[]))
-           AND user_id = $5::uuid
-           AND is_system = false
-     )
-SELECT
-    os.tx_count as tx_count,
-    os.sum::numeric as sum,
-    jsonb_object_agg(
-            cs.currency_id,
-            jsonb_build_object(
-                    'tx_count', cs.currency_tx_count,
-                    'sum_usd', cs.currency_sum_usd::numeric
-            )
-    ) AS currency_stats
-FROM overall_stats os, currency_stats cs
+WITH currency_stats AS (SELECT currency_id,
+                               COUNT(id)       AS currency_tx_count,
+                               SUM(amount_usd) AS currency_sum_usd
+                        FROM transactions
+                        WHERE type = 'deposit'
+                          AND amount_usd >= 1
+                          AND created_at >=
+                              ($2::timestamp AT TIME ZONE $1::text AT TIME ZONE 'UTC')
+                          AND created_at <
+                              ($3::timestamp AT TIME ZONE $1::text AT TIME ZONE 'UTC')
+                          AND ($4::uuid[] IS NULL OR store_id = ANY ($4::uuid[]))
+                          AND user_id = $5::uuid
+                          AND is_system = false
+                        GROUP BY currency_id),
+     overall_stats AS (SELECT COUNT(id)       AS tx_count,
+                              SUM(amount_usd) AS sum
+                       FROM transactions
+                       WHERE type = 'deposit'
+                         AND amount_usd >= 1
+                         AND created_at >=
+                             ($2::timestamp AT TIME ZONE $1::text AT TIME ZONE 'UTC')
+                         AND created_at <
+                             ($3::timestamp AT TIME ZONE $1::text AT TIME ZONE 'UTC')
+                         AND ($4::uuid[] IS NULL OR store_id = ANY ($4::uuid[]))
+                         AND user_id = $5::uuid
+                         AND is_system = false)
+SELECT os.tx_count     as tx_count,
+       os.sum::numeric as sum,
+       jsonb_object_agg(
+               cs.currency_id,
+               jsonb_build_object(
+                       'tx_count', cs.currency_tx_count,
+                       'sum_usd', cs.currency_sum_usd::numeric
+               )
+       )               AS currency_stats
+FROM overall_stats os,
+     currency_stats cs
 GROUP BY os.tx_count, os.sum
 `
 
@@ -216,6 +205,11 @@ WITH tx AS ((SELECT true as is_confirmed,
              WHERE ut.wallet_id = $1
                AND ut.type = $2
                AND ut.amount_usd >= 1
+               AND NOT EXISTS (SELECT 1
+                               FROM transactions t2
+                               WHERE t2.tx_hash = ut.tx_hash
+                                 AND t2.currency_id = ut.currency_id
+                                 AND t2.bc_uniq_key = ut.bc_uniq_key)
              ORDER BY created_at DESC
              LIMIT $3)
             LIMIT $3)

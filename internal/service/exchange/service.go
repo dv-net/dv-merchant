@@ -142,6 +142,22 @@ func (s *Service) DeleteExchangeKeys(ctx context.Context, userID uuid.UUID, slug
 		if err != nil {
 			return err
 		}
+
+		// Clear current_exchange if the deleted exchange was active
+		usr, err := s.st.Users(repos.WithTx(tx)).GetByID(ctx, userID)
+		if err != nil {
+			return fmt.Errorf("fetch user: %w", err)
+		}
+		if usr.ExchangeSlug != nil && usr.ExchangeSlug.Valid() && *usr.ExchangeSlug == slug {
+			_, err = s.st.Users(repos.WithTx(tx)).UpdateExchange(ctx, repo_users.UpdateExchangeParams{
+				ID:           userID,
+				ExchangeSlug: nil,
+			})
+			if err != nil {
+				return fmt.Errorf("clear current exchange: %w", err)
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -846,8 +862,9 @@ func (s *Service) SetCurrentExchange(ctx context.Context, userID uuid.UUID, slug
 		if err != nil {
 			return fmt.Errorf("fetch exchange: %w", err)
 		}
-		if arg.ExchangeSlug == nil {
-			// If the exchange slug is nil, it means we are resetting the current exchange
+		if arg.ExchangeSlug == nil { //nolint:nestif
+			// If the exchange slug is nil, it means we are disabling this exchange
+			// Only disable the exchange states - withdrawal settings keep their is_enabled state
 			if _, err := s.st.UserExchanges(repos.WithTx(tx)).ChangeSwapState(ctx, repo_user_exchanges.ChangeSwapStateParams{
 				UserID:     userID,
 				ExchangeID: ex.ID,
@@ -855,7 +872,6 @@ func (s *Service) SetCurrentExchange(ctx context.Context, userID uuid.UUID, slug
 			}); err != nil {
 				return fmt.Errorf("disable exchange swap state for user: %w", err)
 			}
-			// Disable withdrawal state as well
 			if _, err := s.st.UserExchanges(repos.WithTx(tx)).ChangeWithdrawalState(ctx, repo_user_exchanges.ChangeWithdrawalStateParams{
 				UserID:     userID,
 				ExchangeID: ex.ID,
@@ -863,8 +879,25 @@ func (s *Service) SetCurrentExchange(ctx context.Context, userID uuid.UUID, slug
 			}); err != nil {
 				return fmt.Errorf("disable exchange withdrawal state for user: %w", err)
 			}
+		} else {
+			// Enable this exchange - only enable the exchange states
+			// Withdrawal settings will be restored automatically based on their saved is_enabled state
+			if _, err := s.st.UserExchanges(repos.WithTx(tx)).ChangeSwapState(ctx, repo_user_exchanges.ChangeSwapStateParams{
+				UserID:     userID,
+				ExchangeID: ex.ID,
+				State:      models.ExchangeSwapStateEnabled,
+			}); err != nil {
+				return fmt.Errorf("enable exchange swap state for user: %w", err)
+			}
+			if _, err := s.st.UserExchanges(repos.WithTx(tx)).ChangeWithdrawalState(ctx, repo_user_exchanges.ChangeWithdrawalStateParams{
+				UserID:     userID,
+				ExchangeID: ex.ID,
+				State:      models.ExchangeWithdrawalStateEnabled,
+			}); err != nil {
+				return fmt.Errorf("enable exchange withdrawal state for user: %w", err)
+			}
 		}
-		// Disable other exchanges for the user
+		// Disable other exchanges for the user (maintains single-exchange behavior)
 		if err := s.st.UserExchanges(repos.WithTx(tx)).DisableAllPerUserExceptExchange(ctx, userID, ex.ID); err != nil {
 			return fmt.Errorf("disable other exchanges: %w", err)
 		}
@@ -961,27 +994,10 @@ func (s *Service) GetAvailableExchangesList(ctx context.Context, userID uuid.UUI
 		return nil, fmt.Errorf("fetch user: %w", err)
 	}
 
-	if usr.ExchangeSlug != nil && usr.ExchangeSlug.Valid() {
-		exchange, err := s.st.Exchanges().GetExchangeBySlug(ctx, *usr.ExchangeSlug)
-		if err != nil {
-			return nil, fmt.Errorf("fetch exchange by slug: %w", err)
-		}
-		r.CurrentExchange = util.Pointer(usr.ExchangeSlug.String())
-		exInfo, err := s.st.UserExchanges().GetByUserAndExchangeID(ctx, repo_user_exchanges.GetByUserAndExchangeIDParams{
-			UserID:     userID,
-			ExchangeID: exchange.ID,
-		})
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			return nil, fmt.Errorf("fetch user exchange info: %w", err)
-		}
-		r.SwapState = util.Pointer(exInfo.SwapState.String())
-		r.WithdrawalState = util.Pointer(exInfo.WithdrawalState.String())
-	}
-
-	resMap := make(map[string]*WithExchangeKeysDTO)
+	resMap := make(map[models.ExchangeSlug]*WithExchangeKeysDTO)
 	for _, exchange := range exchangeData {
 		var exchangeKeysData []KeysExchangeDTO
-		existing, ok := resMap[exchange.Name]
+		existing, ok := resMap[exchange.Slug]
 		if !ok {
 			exchangeKeysData = make([]KeysExchangeDTO, 0)
 			existing = &WithExchangeKeysDTO{
@@ -989,7 +1005,7 @@ func (s *Service) GetAvailableExchangesList(ctx context.Context, userID uuid.UUI
 				Slug:     exchange.Slug,
 				Keys:     exchangeKeysData,
 			}
-			resMap[exchange.Name] = existing
+			resMap[exchange.Slug] = existing
 		}
 
 		var keyVal *string
@@ -1009,6 +1025,29 @@ func (s *Service) GetAvailableExchangesList(ctx context.Context, userID uuid.UUI
 
 	for _, dto := range resMap {
 		r.Exchanges = append(r.Exchanges, *dto)
+	}
+
+	// Only set current_exchange if the exchange has valid keys
+	if usr.ExchangeSlug != nil && usr.ExchangeSlug.Valid() { //nolint:nestif
+		// Check if the current exchange has keys
+		if exchangeDTO, exists := resMap[*usr.ExchangeSlug]; exists && len(exchangeDTO.Keys) > 0 {
+			exchange, err := s.st.Exchanges().GetExchangeBySlug(ctx, *usr.ExchangeSlug)
+			if err != nil {
+				return nil, fmt.Errorf("fetch exchange by slug: %w", err)
+			}
+			r.CurrentExchange = util.Pointer(usr.ExchangeSlug.String())
+			exInfo, err := s.st.UserExchanges().GetByUserAndExchangeID(ctx, repo_user_exchanges.GetByUserAndExchangeIDParams{
+				UserID:     userID,
+				ExchangeID: exchange.ID,
+			})
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				return nil, fmt.Errorf("fetch user exchange info: %w", err)
+			}
+			if exInfo != nil {
+				r.SwapState = util.Pointer(exInfo.SwapState.String())
+				r.WithdrawalState = util.Pointer(exInfo.WithdrawalState.String())
+			}
+		}
 	}
 
 	return r, nil

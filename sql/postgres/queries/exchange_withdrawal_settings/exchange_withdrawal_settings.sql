@@ -24,7 +24,9 @@ WHERE user_id = $1 AND exchange_id = $2 AND id = $3;
 DELETE FROM exchange_withdrawal_settings WHERE id = $1 AND user_id = $2 AND exchange_id = $3;
 
 -- name: GetActive :many
-SELECT * FROM exchange_withdrawal_settings where is_enabled = true;
+SELECT ews.* FROM exchange_withdrawal_settings ews
+INNER JOIN user_exchanges ue ON ue.user_id = ews.user_id AND ue.exchange_id = ews.exchange_id
+WHERE ews.is_enabled = true AND ue.withdrawal_state = 'enabled';
 
 -- name: DeleteByUserAndExchangeID :exec
 DELETE FROM exchange_withdrawal_settings WHERE user_id = $1 AND exchange_id = $2;
