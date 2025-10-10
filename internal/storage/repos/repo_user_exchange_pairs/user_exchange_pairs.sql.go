@@ -41,7 +41,9 @@ func (q *Queries) DeleteByUserAndExchangeID(ctx context.Context, arg DeleteByUse
 }
 
 const getAll = `-- name: GetAll :many
-SELECT id, exchange_id, user_id, currency_from, currency_to, symbol, type FROM user_exchange_pairs
+SELECT uep.id, uep.exchange_id, uep.user_id, uep.currency_from, uep.currency_to, uep.symbol, uep.type FROM user_exchange_pairs uep
+INNER JOIN user_exchanges ue ON ue.user_id = uep.user_id AND ue.exchange_id = uep.exchange_id
+WHERE ue.swap_state = 'enabled'
 `
 
 func (q *Queries) GetAll(ctx context.Context) ([]*models.UserExchangePair, error) {
