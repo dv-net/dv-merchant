@@ -49,6 +49,7 @@ func (o *Account) initLimiters() {
 	// KuCoin private endpoints: VIP0 allows 4000 requests per 30 seconds for Management pool
 	// Conservative approach: 50 requests per 30 seconds for account operations
 	accountRate := limiter.Rate{Limit: 50, Period: 30 * time.Second}
+	withdrawalRate := limiter.Rate{Limit: 5, Period: 30 * time.Second} // TODO: Replace when determine actual rate-limits
 
 	o.client.limiters = map[string]*limiter.Limiter{
 		getAPIKeyInfo:        limiter.New(o.client.store, accountRate),
@@ -56,7 +57,7 @@ func (o *Account) initLimiters() {
 		getDepositAddress:    limiter.New(o.client.store, accountRate),
 		createDepositAddress: limiter.New(o.client.store, accountRate),
 		getWithdrawalHistory: limiter.New(o.client.store, accountRate),
-		createWithdrawal:     limiter.New(o.client.store, accountRate),
+		createWithdrawal:     limiter.New(o.client.store, withdrawalRate),
 		createFlexTransfer:   limiter.New(o.client.store, accountRate),
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 
 	// Blank import for swaggen
 	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/transaction_response"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/public_request"
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 	"github.com/dv-net/dv-merchant/internal/tools/converters"
 	"github.com/dv-net/dv-merchant/internal/tools/response"
@@ -50,10 +50,10 @@ func (h *Handler) getWalletData(c fiber.Ctx) error {
 	// get store by wallet ID
 	_, err = h.services.StoreService.GetStoreByWalletID(c.Context(), walletID)
 	if err != nil {
-		if strings.Contains(err.Error(), "store not found") {
+		if errors.Is(err, store.ErrStoreNotFound) {
 			return apierror.New().AddError(errors.New("store not found")).SetHttpCode(fiber.StatusNotFound)
 		}
-		if strings.Contains(err.Error(), "store is disabled") {
+		if errors.Is(err, store.ErrStoreDisabled) {
 			return apierror.New().AddError(errors.New("store is disabled")).SetHttpCode(fiber.StatusGone)
 		}
 		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
@@ -199,10 +199,10 @@ func (h *Handler) notifyWalletEmail(c fiber.Ctx) error {
 
 	_, err = h.services.StoreService.GetStoreByWalletID(c.Context(), walletID)
 	if err != nil {
-		if strings.Contains(err.Error(), "store not found") {
+		if errors.Is(err, store.ErrStoreNotFound) {
 			return apierror.New().AddError(errors.New("store not found")).SetHttpCode(fiber.StatusNotFound)
 		}
-		if strings.Contains(err.Error(), "store is disabled") {
+		if errors.Is(err, store.ErrStoreDisabled) {
 			return apierror.New().AddError(errors.New("store is disabled")).SetHttpCode(fiber.StatusGone)
 		}
 		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)

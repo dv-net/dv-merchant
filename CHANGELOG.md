@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: fixed exchange keys deletion behaviour [DV-3343]
 - fix: changed exchange state SQL queries to correctly handle withdrawals/spot market orders [DV-2935]
 - fix: sort currency order for form without api key [DV-3529]
+- chore: reuse errors across multiple exchange clients [DV-3544]
 - fix: exclude unconfirmed transactions for tx-find [DV-3528]
 
 ## [0.9.7] - 2025-09-22

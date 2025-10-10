@@ -21,6 +21,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchange_chains"
 	"github.com/dv-net/dv-merchant/internal/tools/hash"
+	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/bitget"
 	bitgetclients "github.com/dv-net/dv-merchant/pkg/exchange_client/bitget/clients"
 	bitgetmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/bitget/models"
@@ -32,8 +33,6 @@ var (
 	ErrInsufficientBalance         = errors.New("insufficient balance")
 	ErrUnprocessableCurrencyStatus = errors.New("unprocessable currency status")
 	ErrMaxOrderValueReached        = errors.New("max order value reached")
-	ErrMinWithdrawalBalance        = errors.New("withdrawal threshold not met")
-	ErrWithdrawalBalanceLocked     = errors.New("withdrawal balance locked")
 )
 
 const (
@@ -242,7 +241,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	req.ClientOID = clientOrderID.String()
 
-	o.l.Info("withdrawal request assembled",
+	o.l.Infow("withdrawal request assembled",
 		"exchange", models.ExchangeSlugBitget.String(),
 		"recordID", args.RecordID.String(),
 		"request", req,
@@ -259,13 +258,13 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	for {
 		if amount.LessThan(minWithdrawal) {
-			o.l.Info("withdrawal amount below minimum",
-				"exchange", models.ExchangeSlugOkx.String(),
+			o.l.Infow("withdrawal amount below minimum",
+				"exchange", models.ExchangeSlugBitget.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
 				"min_withdrawal", minWithdrawal.String(),
 			)
-			return nil, ErrWithdrawalBalanceLocked
+			return nil, exchangeclient.ErrWithdrawalBalanceLocked
 		}
 
 		withdrawalStep, err := o.convSvc.Convert(ctx, currconv.ConvertDTO{
@@ -287,9 +286,9 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 			return dto, nil
 		}
 
-		if strings.Contains(err.Error(), "temporarily frozen") {
-			o.l.Error("insufficient funds, retrying with reduced amount",
-				ErrWithdrawalBalanceLocked,
+		if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
+			o.l.Errorw("insufficient funds, retrying with reduced amount",
+				"error", exchangeclient.ErrWithdrawalBalanceLocked,
 				"exchange", models.ExchangeSlugBitget.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
@@ -297,9 +296,9 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 			amount = amount.Sub(withdrawalStep)
 			if amount.LessThan(minWithdrawal) {
-				return nil, ErrMinWithdrawalBalance
+				return nil, exchangeclient.ErrMinWithdrawalBalance
 			}
-			dto.RetryReason = ErrWithdrawalBalanceLocked.Error()
+			dto.RetryReason = exchangeclient.ErrWithdrawalBalanceLocked.Error()
 			continue
 		}
 

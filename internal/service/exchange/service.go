@@ -715,7 +715,7 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 
 	rule, err := exClient.GetOrderRule(ctx, pair.Symbol)
 	if err != nil {
-		if strings.Contains(err.Error(), "symbol trading is halted") {
+		if errors.Is(err, ErrSymbolTradingHalted) {
 			return ErrSymbolTradingHalted
 		}
 		return fmt.Errorf("fetch order rules: %w", err)
@@ -765,7 +765,7 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 		}
 
 		if err != nil {
-			if strings.Contains(err.Error(), "skip order") {
+			if errors.Is(err, ErrSkipOrder) {
 				s.log.Debug("skipping order due to custom error being thrown", "userID", userID, "symbol", pair.Symbol)
 				return ErrSkipOrder
 			}

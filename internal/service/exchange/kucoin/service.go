@@ -39,8 +39,6 @@ var (
 	ErrInsufficientBalance         = errors.New("insufficient balance")
 	ErrUnprocessableCurrencyStatus = errors.New("unprocessable currency status")
 	ErrMaxOrderValueReached        = errors.New("max order value reached")
-	ErrMinWithdrawalBalance        = errors.New("withdrawal threshold not met")
-	ErrWithdrawalBalanceLocked     = errors.New("withdrawal balance locked")
 	ErrSkipOrder                   = errors.New("skip order")
 )
 
@@ -346,7 +344,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 				"exchange", models.ExchangeSlugKucoin.String(),
 				"recordID", args.RecordID.String(),
 			)
-			return nil, ErrMinWithdrawalBalance
+			return nil, exchangeclient.ErrMinWithdrawalBalance
 		}
 
 		transferOID, err := uuid.NewUUID()
@@ -407,7 +405,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 				"current_amount", amount.String(),
 				"min_withdrawal", minWithdrawals.String(),
 			)
-			return nil, ErrMinWithdrawalBalance
+			return nil, exchangeclient.ErrMinWithdrawalBalance
 		}
 
 		withdrawalStep, err := o.convSvc.Convert(ctx, currconv.ConvertDTO{
@@ -428,7 +426,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 			return dto, nil
 		}
 
-		if strings.Contains(err.Error(), "locked from withdrawal") {
+		if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
 			o.l.Info("withdrawal balance locked",
 				"exchange", models.ExchangeSlugKucoin.String(),
 				"recordID", args.RecordID.String(),
@@ -437,9 +435,9 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 			amount = amount.Sub(withdrawalStep).RoundDown(precision)
 			if amount.LessThan(minWithdrawals) {
-				return nil, ErrMinWithdrawalBalance
+				return nil, exchangeclient.ErrMinWithdrawalBalance
 			}
-			dto.RetryReason = ErrWithdrawalBalanceLocked.Error()
+			dto.RetryReason = exchangeclient.ErrWithdrawalBalanceLocked.Error()
 			continue
 		}
 

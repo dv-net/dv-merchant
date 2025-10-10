@@ -26,6 +26,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_exchanges"
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	"github.com/dv-net/dv-merchant/internal/util"
+	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
 	binancemodels "github.com/dv-net/dv-merchant/pkg/exchange_client/binance/models"
 	bitgetmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/bitget/models"
 	bybitmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/bybit/models"
@@ -376,7 +377,7 @@ func (s *Service) CreateWithdrawalSetting(ctx context.Context, userID uuid.UUID,
 		if err != nil && errors.Is(err, pgx.ErrNoRows) {
 			newSetting, err := s.createWithdrawalSetting(ctx, exID.ID, userID, d, repos.WithTx(tx))
 			if err != nil {
-				if errors.Is(err, ErrInvalidAddress) {
+				if errors.Is(err, exchangeclient.ErrInvalidAddress) {
 					return err
 				}
 				return fmt.Errorf("create withdrawal withdrawalSetting: %w", err)
@@ -414,7 +415,7 @@ func (s *Service) createWithdrawalSetting(ctx context.Context, exchangeID uuid.U
 		return nil, fmt.Errorf("get currency by id: %w", err)
 	}
 	if !avalidator.ValidateAddressByBlockchain(d.Address, cur.Blockchain.String()) {
-		return nil, ErrInvalidAddress
+		return nil, exchangeclient.ErrInvalidAddress
 	}
 	record, err := s.st.ExchangeWithdrawalSettings(opts...).Create(ctx, createParams)
 	if err != nil {
@@ -520,7 +521,7 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 				return err
 			}
 			if lastOrder != nil {
-				return ErrWithdrawalPending
+				return exchangeclient.ErrWithdrawalPending
 			}
 			recordID, err := s.createWithdrawalHistoryRecord(ctx, userID, userExchange.ID, setting.Address, setting.Currency, setting.Chain, userExchangeClient.GetConnectionHash(), repos.WithTx(tx))
 			if err != nil {
@@ -560,7 +561,7 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 				return err
 			}
 			if tokenBalance.LessThan(setting.MinAmount) {
-				return ErrThresholdNotMet
+				return exchangeclient.ErrMinWithdrawalBalance
 			}
 			wdOrderParams.NativeAmount = *tokenBalance
 			// wdOrderParams.NativeAmount = wdOrderParams.NativeAmount.Sub(wdOrderParams.Fee) // fixme
@@ -613,9 +614,9 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 			var orderData *models.ExchangeWithdrawalDTO
 
 			orderData, err = userExchangeClient.CreateWithdrawalOrder(ctx, wdOrderParams)
-			if err != nil {
-				if strings.Contains(err.Error(), "withdrawal balance locked") {
-					s.logger.Info("insufficient balance due to withdrawal block count lock",
+			if err != nil { //nolint:nestif
+				if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
+					s.logger.Infow("insufficient balance due to withdrawal block count lock",
 						"userID", userID,
 						"recordID", recordID.String(),
 						"exchange", userExchange.Slug.String(),
@@ -625,10 +626,10 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 						"fiatWithdrawalAmount", wdOrderParams.FiatAmount.String(),
 						"withdrawalFee", wdOrderParams.Fee.String(),
 					)
-					return ErrWithdrawalBalanceLocked
+					return err
 				}
-				if strings.Contains(err.Error(), "withdrawal threshold not met") {
-					s.logger.Info("insufficient balance due to withdrawal minimum",
+				if errors.Is(err, exchangeclient.ErrMinWithdrawalBalance) {
+					s.logger.Infow("insufficient balance due to withdrawal minimum",
 						"userID", userID,
 						"recordID", recordID.String(),
 						"exchange", userExchange.Slug.String(),
@@ -638,10 +639,10 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 						"fiatWithdrawalAmount", wdOrderParams.FiatAmount.String(),
 						"withdrawalFee", wdOrderParams.Fee.String(),
 					)
-					return ErrThresholdNotMet
+					return err
 				}
-				if strings.Contains(err.Error(), "temporary disabled due to user security action") {
-					s.logger.Info("cannot withdrawal due to user recent security actions",
+				if errors.Is(err, exchangeclient.ErrSoftLockByUserSecurityAction) {
+					s.logger.Infow("cannot withdrawal due to user recent security actions",
 						"userID", userID,
 						"recordID", recordID.String(),
 						"exchange", userExchange.Slug.String(),
@@ -651,10 +652,10 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 						"fiatWithdrawalAmount", wdOrderParams.FiatAmount.String(),
 						"withdrawalFee", wdOrderParams.Fee.String(),
 					)
-					return ErrSoftLockByUserSecurityAction
+					return err
 				}
-				if strings.Contains(err.Error(), "withdrawal address not whitelisted") {
-					s.logger.Info("cannot withdrawal due to address not whitelisted",
+				if errors.Is(err, exchangeclient.ErrWithdrawalAddressNotWhitelisted) {
+					s.logger.Infow("cannot withdrawal due to address not whitelisted",
 						"userID", userID,
 						"recordID", recordID.String(),
 						"exchange", userExchange.Slug.String(),
@@ -664,7 +665,14 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 						"fiatWithdrawalAmount", wdOrderParams.FiatAmount.String(),
 						"withdrawalFee", wdOrderParams.Fee.String(),
 					)
-					return ErrWithdrawalAddessNotWhitelisted
+					return err
+				}
+				if errors.Is(err, exchangeclient.ErrRateLimited) {
+					s.logger.Infow("withdrawal rate limited",
+						"userID", userID,
+						"recordID", recordID.String(),
+						"exchange", models.ExchangeSlugKucoin.String(),
+					)
 				}
 				s.logger.Warn("failed to create withdrawal order",
 					"error", err.Error(),
@@ -696,11 +704,11 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 			return s.updateExchangeWithdrawal(ctx, userID, updateParams, tx)
 		})
 		if err != nil {
-			if errors.Is(err, ErrWithdrawalPending) ||
-				errors.Is(err, ErrWithdrawalBalanceLocked) ||
-				errors.Is(err, ErrThresholdNotMet) ||
-				errors.Is(err, ErrSoftLockByUserSecurityAction) ||
-				errors.Is(err, ErrWithdrawalAddessNotWhitelisted) {
+			if errors.Is(err, exchangeclient.ErrWithdrawalPending) ||
+				errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) ||
+				errors.Is(err, exchangeclient.ErrMinWithdrawalBalance) ||
+				errors.Is(err, exchangeclient.ErrSoftLockByUserSecurityAction) ||
+				errors.Is(err, exchangeclient.ErrWithdrawalAddressNotWhitelisted) {
 				continue
 			}
 			if errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.ETIMEDOUT) {
