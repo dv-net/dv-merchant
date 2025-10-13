@@ -507,30 +507,67 @@ func (o *Service) GetOrderRule(ctx context.Context, ticker string) (*models.Orde
 	// MinOrderAmount should reflect minimum base asset amount calculated from MinNotional converted to base asset.
 	// MinOrderValue should reflect minimum quote asset amount calculated from MinNotional converted to quote asset.
 	// Also add checks agains filters to not only apply to the volume rules, but min order qty filter as well.
-	basePriceData, err := o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
-		Symbol: symbolData.BaseAsset + "USDT",
-	})
-	if err != nil {
-		return nil, err
-	}
-	basePrice, err := decimal.NewFromString(basePriceData.Price)
-	if err != nil {
-		return nil, err
-	}
 
-	minOrderAmount = filters.NotionalFilter.MinNotional.Div(basePrice).RoundUp(int32(precision.IntPart()))
-	if symbolData.QuoteAsset != "USDT" {
-		quotePriceData, err := o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
-			Symbol: symbolData.QuoteAsset + "USDT",
+	// Get base asset price in USDT
+	if symbolData.BaseAsset != "USDT" {
+		basePriceData, err := o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
+			Symbol: symbolData.BaseAsset + "USDT",
 		})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get base asset price %s: %w", symbolData.BaseAsset, err)
 		}
-		quotePrice, err := decimal.NewFromString(quotePriceData.Price)
+		basePrice, err := decimal.NewFromString(basePriceData.Price)
 		if err != nil {
 			return nil, err
 		}
-		minOrderValue = filters.NotionalFilter.MinNotional.Div(quotePrice).RoundUp(int32(precision.IntPart()))
+		if basePrice.IsZero() {
+			return nil, fmt.Errorf("base asset %s price is zero", symbolData.BaseAsset)
+		}
+		minOrderAmount = filters.NotionalFilter.MinNotional.Div(basePrice).RoundUp(int32(precision.IntPart()))
+	} else {
+		// Base asset is USDT, use MinNotional directly
+		minOrderAmount = filters.NotionalFilter.MinNotional.RoundUp(int32(precision.IntPart()))
+	}
+
+	// Get quote asset price in USDT
+	if symbolData.QuoteAsset != "USDT" {
+		// Try QuoteAsset+USDT first
+		quoteSymbol := symbolData.QuoteAsset + "USDT"
+		quotePriceData, err := o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
+			Symbol: quoteSymbol,
+		})
+		if err != nil {
+			// If failed, try USDT+QuoteAsset
+			quoteSymbol = "USDT" + symbolData.QuoteAsset
+			quotePriceData, err = o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
+				Symbol: quoteSymbol,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to get quote asset price %s: %w", symbolData.QuoteAsset, err)
+			}
+			// For USDT+Quote pairs, we need to invert the price (1 Quote = 1/price USDT)
+			price, err := decimal.NewFromString(quotePriceData.Price)
+			if err != nil {
+				return nil, err
+			}
+			if price.IsZero() {
+				return nil, fmt.Errorf("quote asset %s price is zero", symbolData.QuoteAsset)
+			}
+			quotePrice := decimal.NewFromInt(1).Div(price)
+			minOrderValue = filters.NotionalFilter.MinNotional.Div(quotePrice).RoundUp(int32(precision.IntPart()))
+		} else {
+			quotePrice, err := decimal.NewFromString(quotePriceData.Price)
+			if err != nil {
+				return nil, err
+			}
+			if quotePrice.IsZero() {
+				return nil, fmt.Errorf("quote asset %s price is zero", symbolData.QuoteAsset)
+			}
+			minOrderValue = filters.NotionalFilter.MinNotional.Div(quotePrice).RoundUp(int32(precision.IntPart()))
+		}
+	} else {
+		// Quote asset is USDT, minOrderValue equals MinNotional
+		minOrderValue = filters.NotionalFilter.MinNotional
 	}
 
 	dto := &models.OrderRulesDTO{

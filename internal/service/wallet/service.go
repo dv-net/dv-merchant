@@ -13,11 +13,9 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"connectrpc.com/connect"
-	addressesv2 "github.com/dv-net/dv-proto/gen/go/eproxy/addresses/v2"
-	evmv2 "github.com/dv-net/dv-proto/gen/go/eproxy/evm/v2"
-
 	"github.com/dv-net/dv-merchant/internal/config"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
@@ -34,6 +32,9 @@ import (
 	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
+	addressesv2 "github.com/dv-net/dv-proto/gen/go/eproxy/addresses/v2"
+	evmv2 "github.com/dv-net/dv-proto/gen/go/eproxy/evm/v2"
+	"go.uber.org/zap"
 
 	"github.com/gocarina/gocsv"
 	"github.com/goccy/go-json"
@@ -85,6 +86,7 @@ var ChainConfigs = map[models.Blockchain]ChainConfig{
 }
 
 type IWalletService interface {
+	// TODO refactoring old wallet methods
 	GetWallet(ctx context.Context, ID uuid.UUID) (*models.Wallet, error)
 	StoreWalletWithAddress(ctx context.Context, dto CreateStoreWalletWithAddressDTO, amount string) (*WithAddressDto, error)
 	GetFullDataByID(ctx context.Context, ID uuid.UUID) (*GetAllByStoreIDResponse, error)
@@ -240,6 +242,8 @@ func (s *Service) getOrCreateWalletAddress(
 	wallet *models.Wallet,
 	c *models.Currency,
 ) (*models.WalletAddress, error) {
+	startAll := time.Now()
+
 	if c.IsFiat {
 		return nil, fmt.Errorf("failed to create address for fiat currency")
 	}
@@ -247,24 +251,38 @@ func (s *Service) getOrCreateWalletAddress(
 	if c.Blockchain == nil || *c.Blockchain == "" {
 		return nil, fmt.Errorf("blockchain is not set for currency %s", c.ID)
 	}
-
+	startGet := time.Now()
 	walletAddress, err := s.storage.WalletAddresses().GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
+	s.logger.Infow("GetByWalletIDAndCurrencyID", "duration", time.Since(startGet))
+
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("failed to get wallet address: %w", err)
 	}
 
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		return s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, nil)
+		startCreate := time.Now()
+		addr, err := s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, nil)
+		s.logger.Infow("createNewWalletAddress (no existing)", "duration", time.Since(startCreate))
+		if err != nil {
+			return nil, err
+		}
+		s.logger.Infow("completed", zap.Duration("total_duration", time.Since(startAll)))
+		return addr, nil
 	}
 
 	if err == nil && walletAddress.Dirty {
 		return s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, walletAddress)
 	}
+	startLog := time.Now()
 
 	err = s.logProcessingAddressReceived(ctx, walletAddress, pgtypeutils.DecodeText(wallet.IpAddress))
+	s.logger.Infow("logProcessingAddressReceived", "duration", time.Since(startLog))
+
 	if err != nil {
 		s.logger.Error("failed create log to process processing addresses", err)
 	}
+	s.logger.Infow("completed", "total_duration", time.Since(startAll))
+
 	return walletAddress, nil
 }
 
@@ -320,15 +338,25 @@ func (s *Service) createNewWalletAddress(
 
 // StoreWalletWithAddress creates/returns wallet with addresses
 func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWalletWithAddressDTO, amountUSD string) (*WithAddressDto, error) {
+	startAll := time.Now()
+	s.logger.Info("starting profile")
+
 	var storeOwner *models.User
 	var walletEmail *string
 	walletWithAddress := &WithAddressDto{}
 	wallet := &models.Wallet{}
+
+	startTx1 := time.Now()
+
 	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+		startGetWallet := time.Now()
+
 		w, err := s.storage.Wallets(repos.WithTx(tx)).GetByStore(ctx, repo_wallets.GetByStoreParams{
 			StoreID:         dto.StoreID,
 			StoreExternalID: dto.StoreExternalID,
 		})
+		s.logger.Infow("GetByStore", "duration", time.Since(startGetWallet))
+
 		if err != nil {
 			w, err = s.storage.Wallets(repos.WithTx(tx)).Create(ctx, dto.ToCreateParams())
 			if err != nil {
@@ -339,8 +367,9 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 		if w.Email.Valid {
 			walletEmail = &w.Email.String
 		}
-
+		startUpdate := time.Now()
 		err = s.updateWalletMeta(ctx, w, dto.ToCreateParams(), &walletEmail, repos.WithTx(tx))
+		s.logger.Infow("updateWalletMeta", "duration", time.Since(startUpdate))
 		if err != nil {
 			return err
 		}
@@ -348,26 +377,41 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 		wallet = w
 		return nil
 	})
+	s.logger.Infow("TX1 done", "duration", time.Since(startTx1))
+
 	if err != nil {
 		return nil, err
 	}
+	startTx2 := time.Now()
 
 	err = repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+		startSettings := time.Now()
+
 		feURL, err := s.settingService.GetRootSetting(ctx, setting.MerchantPayFormDomain)
+		s.logger.Infow("GetRootSetting", zap.Duration("duration", time.Since(startSettings)))
+
 		if err != nil {
 			return err
 		}
 
+		startEncode := time.Now()
 		if err := walletWithAddress.Encode(wallet, feURL.Value); err != nil {
 			return fmt.Errorf("failed to encode wallet: %w", err)
 		}
+		s.logger.Infow("EncodeWallet", "duration", time.Since(startEncode))
 
+		startStore := time.Now()
 		str, err := s.storage.Stores().GetByID(ctx, dto.StoreID)
+		s.logger.Infow("GetStoreByID", "duration", time.Since(startStore))
+
 		if err != nil {
 			return err
 		}
 
+		startUser := time.Now()
 		storeOwner, err = s.storage.Users().GetByID(ctx, str.UserID)
+		s.logger.Infow("GetUserByID", "duration", time.Since(startUser))
+
 		if err != nil {
 			return err
 		}
@@ -376,18 +420,27 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 			return errors.New("store owner processing uuid is not valid")
 		}
 
+		startCurrencies := time.Now()
 		currencies, err := s.storage.StoreCurrencies().GetAllByStoreID(ctx, str.ID)
+		s.logger.Infow("GetAllByStoreID", "duration", time.Since(startCurrencies))
+
 		if err != nil {
 			return err
 		}
 
+		startGenAddr := time.Now()
 		address, err := s.generateWalletAddresses(ctx, tx, storeOwner, wallet, str, currencies, amountUSD)
+		s.logger.Infow("generateWalletAddresses", "duration", time.Since(startGenAddr))
+
 		if err != nil {
 			return err
 		}
 		walletWithAddress.Address = address
 
+		startRates := time.Now()
 		rates, err := s.exrateService.GetStoreCurrencyRate(ctx, currencies, str.RateSource.String(), str.RateScale)
+		s.logger.Infow("GetStoreCurrencyRate", zap.Duration("duration", time.Since(startRates)))
+
 		if err != nil {
 			return fmt.Errorf("failed to get store currency rate: %w", err)
 		}
@@ -396,9 +449,12 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 
 		return nil
 	})
+	s.logger.Infow("TX2 done", "duration", time.Since(startTx2))
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to store wallet with address for store external id %s: %w", dto.StoreExternalID, err)
 	}
+	s.logger.Infow("completed", "total_duration", time.Since(startAll))
 
 	return walletWithAddress, nil
 }
