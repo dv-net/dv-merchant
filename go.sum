@@ -193,8 +193,8 @@ github.com/dv-net/dv-processing v0.9.5-RC01 h1:vw0YDcn8CYuhvk+vFqln3irMINgdqU6Ak
 github.com/dv-net/dv-processing v0.9.5-RC01/go.mod h1:8qz80xHkRHLeS9vWts/zagz6po3lRvHHLvuq1Ki97I8=
 github.com/dv-net/dv-proto v0.5.1 h1:SUmKb2ja7qyMz6g4z0Jw/y+US7F0zq4qUYq1kFoSv2M=
 github.com/dv-net/dv-proto v0.5.1/go.mod h1:X8D+6FZu/YX0hL+Tb2LhozNUdVcQgcLMsmTW9MrZl5o=
-github.com/dv-net/email-template v0.1.4 h1:LjHE8lYHqrk9WuumNCH/QfDVCC7YDr/qBwHO7IfbmDc=
-github.com/dv-net/email-template v0.1.4/go.mod h1:Qbt8pjxHwdOb1XUWDhLjtEPIODWDOYdt6Y10SOAdTBw=
+github.com/dv-net/email-template v0.1.5-0.20251010104137-d269cfd03a5f h1:DHSMVb05JLHqf0NJQjkmTExZXtUTAqOInQOUpxqoDow=
+github.com/dv-net/email-template v0.1.5-0.20251010104137-d269cfd03a5f/go.mod h1:Qbt8pjxHwdOb1XUWDhLjtEPIODWDOYdt6Y10SOAdTBw=
 github.com/dv-net/go-bip39 v1.1.1 h1:KRJwVNjgJPipMfwVN0qbAJG17fMu4BvjDD/tnP35ers=
 github.com/dv-net/go-bip39 v1.1.1/go.mod h1:zbcC/5LED0EfiNZdvDoLgcyl+9mfMH/bEQdxTn4hj/Q=
 github.com/dv-net/mx v0.1.1 h1:+Y02hBmGY2JRxUR/kHM+TPbs8863CVnxrYsukXDR8CI=

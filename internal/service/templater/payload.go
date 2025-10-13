@@ -424,6 +424,7 @@ type CryptoReceiptI18N struct {
 		Subject string `json:"subject"`
 	} `json:"email"`
 	TitleLabel    string `json:"title_label"`
+	TokenLabel    string `json:"token_label"`
 	PaymentStatus struct {
 		Pending   string `json:"pending"`
 		Completed string `json:"completed"`
@@ -439,6 +440,8 @@ type CryptoReceiptI18N struct {
 	PaymentTypeLabel       string `json:"payment_type_label"`
 	PaymentBlockchainLabel string `json:"payment_blockchain_label"`
 	TransactionHashLabel   string `json:"transaction_hash_label"`
+	StoreNameLabel         string `json:"store_name_label"`
+	StoreUserIdLabel       string `json:"store_user_id_label"` //nolint:revive
 	Payment                struct {
 		AmountLabel         string `json:"amount_label"`
 		NetworkLabelPrefix  string `json:"network_label_prefix"`
@@ -482,6 +485,8 @@ type UserCryptoReceiptPayload struct {
 	PlatformFeeAmount    string `json:"platform_fee_amount"`
 	PlatformFeeUSD       string `json:"platform_fee_usd"`
 	PlatformFeeCurrency  string `json:"platform_fee_currency"`
+	StoreName            string `json:"store_name"`
+	StoreUserID          string `json:"store_user_id"` //nolint:revive
 }
 
 // Simple methods for dynamic text resolution (called by mustache as simple methods)
