@@ -268,7 +268,6 @@ func (s *Service) getOrCreateWalletAddress(
 		}
 		s.logger.Infow("completed", zap.Duration("total_duration", time.Since(startAll)))
 		return addr, nil
-
 	}
 
 	if err == nil && walletAddress.Dirty {
@@ -339,7 +338,6 @@ func (s *Service) createNewWalletAddress(
 
 // StoreWalletWithAddress creates/returns wallet with addresses
 func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWalletWithAddressDTO, amountUSD string) (*WithAddressDto, error) {
-
 	startAll := time.Now()
 	s.logger.Info("starting profile")
 
