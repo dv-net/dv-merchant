@@ -45,7 +45,7 @@ func NewWalletClient(opt *ClientOptions, store limiter.Store, opts ...ClientOpti
 
 func (o *WalletClient) initLimiters() {
 	o.client.limiters = map[string]*limiter.Limiter{
-		postVirtualCurrencyWithdrawalEndpoint: limiter.New(o.client.store, limiter.Rate{Limit: 20, Period: 2 * time.Second}),
+		postVirtualCurrencyWithdrawalEndpoint: limiter.New(o.client.store, limiter.Rate{Limit: 5, Period: 2 * time.Second}),
 		getWithdrawalAddressEndpoint:          limiter.New(o.client.store, limiter.Rate{Limit: 20, Period: 2 * time.Second}),
 		getDepositAddressEndpoint:             limiter.New(o.client.store, limiter.Rate{Limit: 20, Period: 2 * time.Second}),
 		postCancelWithdrawalEndpoint:          limiter.New(o.client.store, limiter.Rate{Limit: 20, Period: 2 * time.Second}),

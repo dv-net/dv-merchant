@@ -33,8 +33,6 @@ var (
 	ErrTradingDisabled               = errors.New("trading is disabled")
 	ErrMaxOrderValueReached          = errors.New("max order value reached")
 	ErrGetAccountBalanceZeroAccounts = errors.New("zero accounts returned")
-	ErrWithdrawalBalanceLocked       = errors.New("withdrawal balance locked")
-	ErrMinWithdrawalBalance          = errors.New("withdrawal threshold not met")
 )
 
 const (
@@ -502,7 +500,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 				"current_amount", amount.String(),
 				"min_withdrawal", minWithdrawal.String(),
 			)
-			return nil, ErrMinWithdrawalBalance
+			return nil, exchangeclient.ErrMinWithdrawalBalance
 		}
 
 		withdrawalStep, err := o.convSvc.Convert(ctx, currconv.ConvertDTO{
@@ -520,20 +518,19 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 		res, err := o.exClient.Wallet().WithdrawVirtualCurrency(ctx, req)
 		if err != nil {
-			if strings.Contains(err.Error(), "withdrawal confirmation limit") ||
-				strings.Contains(err.Error(), "dw-withdraw-unsafe-deposit-only") {
+			if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
 				o.l.Error("insufficient funds, retrying with reduced amount",
-					ErrWithdrawalBalanceLocked,
-					"exchange", models.ExchangeSlugBitget.String(),
+					exchangeclient.ErrWithdrawalBalanceLocked,
+					"exchange", models.ExchangeSlugHtx.String(),
 					"recordID", args.RecordID.String(),
 					"current_amount", amount.String(),
 				)
 
 				amount = amount.Sub(withdrawalStep)
 				if amount.LessThan(minWithdrawal) {
-					return nil, ErrMinWithdrawalBalance
+					return nil, exchangeclient.ErrMinWithdrawalBalance
 				}
-				dto.RetryReason = ErrWithdrawalBalanceLocked.Error()
+				dto.RetryReason = exchangeclient.ErrWithdrawalBalanceLocked.Error()
 				continue
 			}
 			return nil, err

@@ -6,9 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- fix: add error handling for empty withdrawal addresses and improve logging format [DV-3437]
+- Added currency reference data about it being native, and contract address [DV-3456]
+- Added new currencies to the supported currency pool (disabled by default for new stores) [DV-3319]
+- Added new currency codes and enhance stablecoin handling in rate calculations [DV-3476]
+- feat: update user context handling in wallet and address services [DV-3480]
+- get minimal rate for currency pairs if not found for source [DV-3500]
+- fix: handle htx rate limiting error [DV-3505]
+- fix: locale forwarding on external endpoint [DV-3277]
+- fix: removed duplicated ordering index [DV-3501]
+- fix: fixed exchange withdrawal settings state restoration [DV-2945]
+- fix: fixed exchange keys deletion behaviour [DV-3343]
+- fix: changed exchange state SQL queries to correctly handle withdrawals/spot market orders [DV-2935]
+- fix: sort currency order for form without api key [DV-3529]
+- chore: reuse errors across multiple exchange clients [DV-3544]
+- fix: exclude unconfirmed transactions for tx-find [DV-3528]
+- fix: panic in Binance GetOrderRule when handling USDT pairs [DV-3558]
 
 ## [0.9.7] - 2025-09-22
 - Fix rename ResetPasswordCode to Code for consistency in user notifications [DV-3403]
+- enhance locale handling in wallet creation and update logging for system email [DV-3426]
 
 ## [0.9.6] - 2025-09-19
 - Add validation for withdrawal exchange wallet by blockchain [DV-3326]

@@ -145,8 +145,11 @@ func (s *service) Run(ctx context.Context, blockchains []models.Blockchain) {
 	}
 }
 
-func (s *service) currencyRate(ctx context.Context, rateSource, currCode string) (decimal.Decimal, error) {
-	rate, err := s.exRateService.GetCurrencyRate(ctx, rateSource, currCode, models.CurrencyCodeUSD)
+func (s *service) currencyRate(ctx context.Context, rateSource string, cur *models.Currency) (decimal.Decimal, error) {
+	if cur.IsStablecoin {
+		return decimal.NewFromInt(1), nil
+	}
+	rate, err := s.exRateService.GetCurrencyRate(ctx, rateSource, cur.Code, models.CurrencyCodeUSD)
 	if err != nil {
 		return decimal.Zero, fmt.Errorf("laod rate: %w", err)
 	}
@@ -204,15 +207,16 @@ func (s *service) processWithdrawalTransfers(ctx context.Context, blockchain mod
 		transfer, err := s.processTransferByWallet(ctx, *wallet)
 		if err != nil {
 			if !isIgnoredLogError(err) {
-				s.logger.Error("failed to process wallet", err)
+				s.logger.Error("failed to process wallet: ", err)
 			}
 			continue
 		}
 
 		if transfer != nil {
-			s.logger.Info(
+			s.logger.Infoln(
 				"transfer initialized",
-				"from", transfer.FromAddresses, "to", transfer.ToAddresses,
+				"from", transfer.FromAddresses,
+				"to", transfer.ToAddresses,
 			)
 		}
 	}
@@ -295,10 +299,12 @@ func (s *service) processTransferByWallet(ctx context.Context, wallet models.Wit
 		return nil, fmt.Errorf("preapre transfer: %w", err)
 	}
 
-	s.logger.Info(
+	s.logger.Infoln(
 		"send processing request to transfer",
-		"from", dto.FromAddresses, "to", dto.ToAddress,
-		"amount", dto.Amount.String(), "amount_usd", dto.AmountUsd.String(),
+		"from", dto.FromAddresses,
+		"to", dto.ToAddress,
+		"amount", dto.Amount.String(),
+		"amount_usd", dto.AmountUsd.String(),
 	)
 
 	return s.initializeTransfer(ctx, dto, user, nil)
@@ -386,17 +392,15 @@ func (s *service) initializeTransfer(
 	var errMessage *string
 
 	_, processingErr := s.processing.FundsWithdrawal(ctx, params)
+
 	if processingErr != nil {
 		if connect.CodeOf(processingErr) == connect.CodeUnavailable {
 			return nil, ErrProcessingUnavailable
 		}
-
-		s.logger.Debug("processing err", processingErr)
-
 		rpcCode, ok := processing.ErrorRPCCode(processingErr)
 		if connect.CodeOf(processingErr) == connect.CodeDeadlineExceeded ||
 			(ok && (rpcCode >= CodeStatusNotEnoughResources && rpcCode <= CodeStatusBlockchainIsDisabled)) {
-			s.logger.Debug(
+			s.logger.Debugln(
 				"processing code status",
 				"grpc_code", connect.CodeOf(processingErr).String(),
 				"rpc_code", rpcCode,
@@ -520,7 +524,7 @@ func (s *service) processMultiTransfers(ctx context.Context) {
 		}
 
 		if transfer != nil {
-			s.logger.Info(
+			s.logger.Infow(
 				"multi transfer initialized",
 				"from", transfer.FromAddresses, "to", transfer.ToAddresses,
 			)
@@ -568,6 +572,7 @@ func (s *service) prepareWalletToByMode(
 		if len(withdrawalAddresses) == 0 {
 			return "", errors.New("withdrawal addresses list is empty")
 		}
+		fmt.Println(withdrawalAddresses)
 		return tools.RandomSliceElement(withdrawalAddresses), nil
 	default:
 		return "", fmt.Errorf("mode '%s' is not supported", rule.Mode)
@@ -589,7 +594,7 @@ func (s *service) checkTransferRequirementsByUser(ctx context.Context, u *models
 
 	// transfers disabled by user setting
 	if transfersStatusFlag != nil && transfersStatusFlag.Value != setting.FlagValueEnabled {
-		s.logger.Debug("transfers disabled", "user_id", u.ID.String())
+		s.logger.Debug("transfers disabled ", "user_id ", u.ID.String())
 		return ErrTransfersDisabled
 	}
 

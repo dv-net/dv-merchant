@@ -21,6 +21,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchange_chains"
 	"github.com/dv-net/dv-merchant/internal/tools/hash"
+	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/bybit"
 	bybitmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/bybit/models"
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/bybit/requests"
@@ -30,12 +31,9 @@ import (
 )
 
 var (
-	ErrInsufficientBalance            = errors.New("insufficient balance")
-	ErrUnprocessableCurrencyStatus    = errors.New("unprocessable currency status")
-	ErrMaxOrderValueReached           = errors.New("max order value reached")
-	ErrMinWithdrawalBalance           = errors.New("withdrawal threshold not met")
-	ErrWithdrawalBalanceLocked        = errors.New("withdrawal balance locked")
-	ErrWithdrawalAddessNotWhitelisted = errors.New("withdrawal address not whitelisted")
+	ErrInsufficientBalance         = errors.New("insufficient balance")
+	ErrUnprocessableCurrencyStatus = errors.New("unprocessable currency status")
+	ErrMaxOrderValueReached        = errors.New("max order value reached")
 )
 
 const (
@@ -987,7 +985,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 				"exchange", models.ExchangeSlugBybit.String(),
 				"recordID", args.RecordID.String(),
 			)
-			return nil, ErrMinWithdrawalBalance
+			return nil, exchangeclient.ErrMinWithdrawalBalance
 		}
 
 		transferAmount := args.NativeAmount.Sub(fundingAmount).RoundDown(precision)
@@ -1048,7 +1046,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 				"current_amount", amount.String(),
 				"min_withdrawal", minWithdrawal.String(),
 			)
-			return nil, ErrWithdrawalBalanceLocked
+			return nil, exchangeclient.ErrWithdrawalBalanceLocked
 		}
 
 		withdrawalStep, err := o.convSvc.Convert(ctx, currconv.ConvertDTO{
@@ -1071,13 +1069,9 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		}
 
 		// Check for Bybit-specific insufficient balance errors
-		if strings.Contains(err.Error(), "insufficient") ||
-			strings.Contains(err.Error(), "balance") ||
-			strings.Contains(err.Error(), "110004") ||
-			strings.Contains(err.Error(), "110007") ||
-			strings.Contains(err.Error(), "110012") {
+		if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
 			o.l.Error("insufficient funds, retrying with reduced amount",
-				ErrWithdrawalBalanceLocked,
+				exchangeclient.ErrWithdrawalBalanceLocked,
 				"exchange", models.ExchangeSlugBybit.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
@@ -1085,9 +1079,9 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 			amount = amount.Sub(withdrawalStep)
 			if amount.LessThan(minWithdrawal) {
-				return nil, ErrMinWithdrawalBalance
+				return nil, exchangeclient.ErrMinWithdrawalBalance
 			}
-			dto.RetryReason = ErrWithdrawalBalanceLocked.Error()
+			dto.RetryReason = exchangeclient.ErrWithdrawalBalanceLocked.Error()
 			continue
 		}
 

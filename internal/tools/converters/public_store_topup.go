@@ -30,10 +30,23 @@ func ConvertTopUpDataToResponse(data *store.TopUpData) public_request.GetWalletD
 			wa.Currency.Code = currency.Code
 			wa.Currency.CurrencyLabel = pgtypeutils.DecodeText(currency.CurrencyLabel)
 			wa.Currency.TokenLabel = pgtypeutils.DecodeText(currency.TokenLabel)
+			wa.Currency.ContractAddress = pgtypeutils.DecodeText(currency.ContractAddress)
+			wa.Currency.IsNative = currency.IsNative
+			wa.Currency.Order = currency.SortOrder
 		}
 
 		addresses[idx] = wa
 	}
+
+	slices.SortStableFunc(addresses, func(a, b public_request.WalletAddressDto) int {
+		if a.Currency.Order < b.Currency.Order {
+			return -1
+		}
+		if a.Currency.Order > b.Currency.Order {
+			return 1
+		}
+		return 0
+	})
 
 	result := public_request.GetWalletDto{
 		Store: public_request.StoreDto{

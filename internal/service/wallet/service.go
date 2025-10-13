@@ -15,9 +15,6 @@ import (
 	"sync/atomic"
 
 	"connectrpc.com/connect"
-	addressesv2 "github.com/dv-net/dv-proto/gen/go/eproxy/addresses/v2"
-	evmv2 "github.com/dv-net/dv-proto/gen/go/eproxy/evm/v2"
-
 	"github.com/dv-net/dv-merchant/internal/config"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
@@ -34,7 +31,8 @@ import (
 	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
-
+	addressesv2 "github.com/dv-net/dv-proto/gen/go/eproxy/addresses/v2"
+	evmv2 "github.com/dv-net/dv-proto/gen/go/eproxy/evm/v2"
 	"github.com/gocarina/gocsv"
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
@@ -85,14 +83,15 @@ var ChainConfigs = map[models.Blockchain]ChainConfig{
 }
 
 type IWalletService interface {
+	// TODO refactoring old wallet methods
 	GetWallet(ctx context.Context, ID uuid.UUID) (*models.Wallet, error)
 	StoreWalletWithAddress(ctx context.Context, dto CreateStoreWalletWithAddressDTO, amount string) (*WithAddressDto, error)
 	GetFullDataByID(ctx context.Context, ID uuid.UUID) (*GetAllByStoreIDResponse, error)
 	SummarizeUserWalletsByCurrency(ctx context.Context, userID uuid.UUID, rates *exrate.Rates, minBalance decimal.Decimal) ([]SummaryDTO, error)
-	GetWalletsInfo(ctx context.Context, userID uuid.UUID, address string) ([]*WithBlockchains, error)
+	GetWalletsInfo(ctx context.Context, usr *models.User, address string) ([]*WithBlockchains, error)
 	LoadPrivateAddresses(ctx context.Context, dto LoadPrivateKeyDTO) (*bytes.Buffer, error)
 	FetchTronResourceStatistics(ctx context.Context, user *models.User, dto FetchTronStatisticsParams) (map[string]CombinedStats, error)
-	UpdateLocale(ctx context.Context, walletID uuid.UUID, locale string) error
+	UpdateLocale(ctx context.Context, walletID uuid.UUID, locale string, opts ...repos.Option) error
 	SendUserWalletNotification(ctx context.Context, walletID uuid.UUID, selectCurrency *string) error
 }
 
@@ -149,8 +148,8 @@ func (s *Service) GetWallet(ctx context.Context, id uuid.UUID) (*models.Wallet, 
 	return wallet, nil
 }
 
-func (s *Service) UpdateLocale(ctx context.Context, walletID uuid.UUID, locale string) error {
-	return s.storage.Wallets().UpdateUserLocale(ctx, repo_wallets.UpdateUserLocaleParams{
+func (s *Service) UpdateLocale(ctx context.Context, walletID uuid.UUID, locale string, opts ...repos.Option) error {
+	return s.storage.Wallets(opts...).UpdateUserLocale(ctx, repo_wallets.UpdateUserLocaleParams{
 		Locale: locale,
 		ID:     walletID,
 	})
@@ -247,14 +246,18 @@ func (s *Service) getOrCreateWalletAddress(
 	if c.Blockchain == nil || *c.Blockchain == "" {
 		return nil, fmt.Errorf("blockchain is not set for currency %s", c.ID)
 	}
-
 	walletAddress, err := s.storage.WalletAddresses().GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
+
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("failed to get wallet address: %w", err)
 	}
 
 	if err != nil && errors.Is(err, pgx.ErrNoRows) {
-		return s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, nil)
+		addr, err := s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, nil)
+		if err != nil {
+			return nil, err
+		}
+		return addr, nil
 	}
 
 	if err == nil && walletAddress.Dirty {
@@ -265,6 +268,7 @@ func (s *Service) getOrCreateWalletAddress(
 	if err != nil {
 		s.logger.Error("failed create log to process processing addresses", err)
 	}
+
 	return walletAddress, nil
 }
 
@@ -324,11 +328,13 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 	var walletEmail *string
 	walletWithAddress := &WithAddressDto{}
 	wallet := &models.Wallet{}
+
 	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		w, err := s.storage.Wallets(repos.WithTx(tx)).GetByStore(ctx, repo_wallets.GetByStoreParams{
 			StoreID:         dto.StoreID,
 			StoreExternalID: dto.StoreExternalID,
 		})
+
 		if err != nil {
 			w, err = s.storage.Wallets(repos.WithTx(tx)).Create(ctx, dto.ToCreateParams())
 			if err != nil {
@@ -339,9 +345,7 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 		if w.Email.Valid {
 			walletEmail = &w.Email.String
 		}
-
-		wallet.ID = w.ID
-		err = s.updateWalletMeta(ctx, wallet, dto.ToCreateParams(), &walletEmail, repos.WithTx(tx))
+		err = s.updateWalletMeta(ctx, w, dto.ToCreateParams(), &walletEmail, repos.WithTx(tx))
 		if err != nil {
 			return err
 		}
@@ -349,6 +353,7 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 		wallet = w
 		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -397,6 +402,7 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 
 		return nil
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to store wallet with address for store external id %s: %w", dto.StoreExternalID, err)
 	}
@@ -452,6 +458,7 @@ func (s *Service) buildProcessingWallet(ctx context.Context, wallet processing.W
 			Blockchain:    currency.Blockchain,
 			IsEVMLike:     currency.Blockchain.IsEVMLike(),
 			IsBitcoinLike: currency.Blockchain.IsBitcoinLike(),
+			IsStableCoin:  currency.IsStablecoin,
 		},
 	}
 
@@ -771,13 +778,13 @@ func (s *Service) processWalletBalance(
 	return totalAmount, nil
 }
 
-func (s *Service) GetWalletsInfo(ctx context.Context, userID uuid.UUID, searchCriteria string) ([]*WithBlockchains, error) {
+func (s *Service) GetWalletsInfo(ctx context.Context, usr *models.User, searchCriteria string) ([]*WithBlockchains, error) {
 	walletsData, err := s.storage.Wallets().SearchByParam(ctx, repo_wallets.SearchByParamParams{
 		Criteria: pgtype.Text{
 			String: searchCriteria,
 			Valid:  true,
 		},
-		UserID: userID,
+		UserID: usr.ID,
 	})
 	if errors.Is(err, pgx.ErrNoRows) || len(walletsData) == 0 {
 		return nil, ErrServiceWalletNotFound
@@ -786,7 +793,7 @@ func (s *Service) GetWalletsInfo(ctx context.Context, userID uuid.UUID, searchCr
 		return nil, err
 	}
 
-	wallets, err := s.groupWalletsData(ctx, walletsData)
+	wallets, err := s.groupWalletsData(ctx, walletsData, usr.RateSource.String())
 	if err != nil {
 		return nil, err
 	}
@@ -820,9 +827,10 @@ func (s *Service) SendUserWalletNotification(ctx context.Context, walletID uuid.
 		return fmt.Errorf("failed to get store by wallet id: %w", err)
 	}
 	hash := s.calculateAddressHash(addresses)
+
 	var targetEmail *string
 	if walletData.Wallet.UntrustedEmail.Valid && walletData.Wallet.UntrustedEmail.String != "" {
-		targetEmail = &walletData.Wallet.Email.String
+		targetEmail = &walletData.Wallet.UntrustedEmail.String
 	}
 	if walletData.Wallet.Email.Valid && walletData.Wallet.Email.String != "" {
 		targetEmail = &walletData.Wallet.Email.String
@@ -842,7 +850,7 @@ func (s *Service) SendUserWalletNotification(ctx context.Context, walletID uuid.
 	return nil
 }
 
-func (s *Service) groupWalletsData(ctx context.Context, rows []*repo_wallets.SearchByParamRow) ([]*WithBlockchains, error) {
+func (s *Service) groupWalletsData(ctx context.Context, rows []*repo_wallets.SearchByParamRow, rateSource string) ([]*WithBlockchains, error) {
 	walletMap := make(map[string]*WithBlockchains)
 
 	for _, row := range rows {
@@ -871,7 +879,7 @@ func (s *Service) groupWalletsData(ctx context.Context, rows []*repo_wallets.Sea
 		}
 
 		amountUsd, err := s.currConvService.Convert(ctx, currconv.ConvertDTO{
-			Source:     "binance",
+			Source:     rateSource,
 			From:       row.CurrencyCode,
 			To:         models.CurrencyCodeUSDT,
 			Amount:     row.Amount.String(),
@@ -1016,7 +1024,7 @@ func (s *Service) notifyStoreOwnerWalletsList(ctx context.Context, params notify
 		NotificationHash: params.Hash,
 	}
 
-	s.logger.Info("External wallets request payload", "payload", payload)
+	s.logger.Debugw("External wallets request payload", "payload", payload)
 
 	go s.notification.SendSystemEmail(ctx, models.NotificationTypeExternalWalletRequested, params.WalletEmail, payload, &models.NotificationArgs{UserID: &params.User.ID, StoreID: &params.StoreID})
 }
@@ -1101,6 +1109,12 @@ func (s *Service) updateWalletMeta(ctx context.Context, wallet *models.Wallet, p
 			IpAddress: params.IpAddress,
 			ID:        wallet.ID,
 		}); err != nil {
+			return err
+		}
+	}
+	if params.Locale != "" && wallet.Locale != params.Locale {
+		err := s.UpdateLocale(ctx, wallet.ID, params.Locale, tx...)
+		if err != nil {
 			return err
 		}
 	}

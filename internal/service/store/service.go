@@ -163,9 +163,11 @@ func (s *Service) CreateStore(ctx context.Context, dto CreateStore, user *models
 			return err
 		}
 		for _, value := range currencies {
-			err := s.CreateStoreCurrency(ctx, st, value, repos.WithTx(tx))
-			if err != nil {
-				return err
+			if value.IsNewStoreDefault {
+				err := s.CreateStoreCurrency(ctx, st, value, repos.WithTx(tx))
+				if err != nil {
+					return err
+				}
 			}
 		}
 		// set user stores

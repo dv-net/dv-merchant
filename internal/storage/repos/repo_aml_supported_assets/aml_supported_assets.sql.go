@@ -12,7 +12,7 @@ import (
 )
 
 const getAllBySlug = `-- name: GetAllBySlug :many
-SELECT c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label
+SELECT c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_native, c.is_new_store_default
 FROM aml_supported_assets ass
          INNER JOIN currencies c on c.id = ass.currency_id
 WHERE service_slug = $1
@@ -49,6 +49,8 @@ func (q *Queries) GetAllBySlug(ctx context.Context, serviceSlug models.AMLSlug) 
 			&i.Currency.IsStablecoin,
 			&i.Currency.CurrencyLabel,
 			&i.Currency.TokenLabel,
+			&i.Currency.IsNative,
+			&i.Currency.IsNewStoreDefault,
 		); err != nil {
 			return nil, err
 		}
@@ -61,7 +63,7 @@ func (q *Queries) GetAllBySlug(ctx context.Context, serviceSlug models.AMLSlug) 
 }
 
 const getBySlugAndCurrencyID = `-- name: GetBySlugAndCurrencyID :one
-SELECT c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, ass.service_slug, ass.currency_id, ass.asset_identity, ass.blockchain_name
+SELECT c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_native, c.is_new_store_default, ass.service_slug, ass.currency_id, ass.asset_identity, ass.blockchain_name
 FROM aml_supported_assets ass
          INNER JOIN currencies c on c.id = ass.currency_id
 WHERE currency_id = $1
@@ -95,6 +97,8 @@ func (q *Queries) GetBySlugAndCurrencyID(ctx context.Context, currencyID string,
 		&i.Currency.IsStablecoin,
 		&i.Currency.CurrencyLabel,
 		&i.Currency.TokenLabel,
+		&i.Currency.IsNative,
+		&i.Currency.IsNewStoreDefault,
 		&i.AmlSupportedAsset.ServiceSlug,
 		&i.AmlSupportedAsset.CurrencyID,
 		&i.AmlSupportedAsset.AssetIdentity,

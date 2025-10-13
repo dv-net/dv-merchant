@@ -20,6 +20,7 @@ type IKeyValue interface {
 	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error
 	Delete(ctx context.Context, key string) error
 	IncrementCounterWithLimit(ctx context.Context, key string, counterMax int64, ttl time.Duration) error
+	Keys(ctx context.Context, pattern string) ([]string, error)
 	Close() error
 }
 

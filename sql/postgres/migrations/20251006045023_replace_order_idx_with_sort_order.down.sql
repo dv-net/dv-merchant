@@ -1,0 +1,2 @@
+ALTER TABLE currencies
+    ADD COLUMN order_idx BIGSERIAL NOT NULL;

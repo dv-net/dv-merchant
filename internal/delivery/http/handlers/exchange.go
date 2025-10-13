@@ -6,8 +6,8 @@ import (
 
 	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/exchange_response" // Blank import for swaggen
 	"github.com/dv-net/dv-merchant/internal/dto"
-	"github.com/dv-net/dv-merchant/internal/service/exchange_withdrawal"
 	_ "github.com/dv-net/dv-merchant/internal/storage/storecmn" // Blank import for swaggen
+	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/exchange_request"
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -430,7 +430,7 @@ func (h *Handler) createWithdrawalSetting(c fiber.Ctx) error {
 	d := dto.RequestToCreateWithdrawalSettingDTO(req)
 	setting, err := h.services.ExchangeWithdrawalService.CreateWithdrawalSetting(c.Context(), usr.ID, slug, d)
 	if err != nil {
-		if errors.Is(err, exchange_withdrawal.ErrInvalidAddress) {
+		if errors.Is(err, exchangeclient.ErrInvalidAddress) {
 			return apierror.New().AddError(errors.New("invalid address")).SetHttpCode(fiber.StatusUnprocessableEntity)
 		}
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)

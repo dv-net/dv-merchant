@@ -79,4 +79,5 @@ var (
 	ErrHtxNotFound                                              = errors.New("not-found")
 	ErrHtxBaseNotFound                                          = errors.New("base-not-found")
 	ErrHtxAccountGetBalanceAccountInexistentError               = errors.New("account-get-balance-account-inexistent-error")
+	ErrHtxRateLimitExceeded                                     = errors.New("rate-too-many-requests")
 )

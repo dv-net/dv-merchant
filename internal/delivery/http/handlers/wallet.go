@@ -207,7 +207,7 @@ func (h Handler) getWalletSeeds(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/wallet [post]
 //	@Security		BearerAuth
 func (h Handler) getWallets(c fiber.Ctx) error {
-	_, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func (h Handler) getWallets(c fiber.Ctx) error {
 		return err
 	}
 
-	rates, err := h.services.ExRateService.LoadRatesList(c.Context(), "okx")
+	rates, err := h.services.ExRateService.LoadRatesList(c.Context(), usr.RateSource.String())
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -399,7 +399,7 @@ func (h *Handler) getWalletInfo(c fiber.Ctx) error {
 		return err
 	}
 
-	wallets, err := h.services.WalletService.GetWalletsInfo(c.Context(), usr.ID, c.Params("searchParam"))
+	wallets, err := h.services.WalletService.GetWalletsInfo(c.Context(), usr, c.Params("searchParam"))
 	if err != nil {
 		if errors.Is(err, wallet.ErrServiceWalletNotFound) {
 			return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)

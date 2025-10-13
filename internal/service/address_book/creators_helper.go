@@ -319,7 +319,7 @@ func (s *Service) createNewAddressEntry(ctx context.Context, params CreateAddres
 }
 
 func (s *Service) createWithdrawalRule(ctx context.Context, addressEntry *models.UserAddressBook, user *models.User, totp string, opts ...repos.Option) error {
-	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, addressEntry.UserID, addressEntry.CurrencyID, opts...)
+	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, user, addressEntry.CurrencyID, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to get withdrawal wallet: %w", err)
 	}
@@ -357,7 +357,7 @@ func (s *Service) createWithdrawalRule(ctx context.Context, addressEntry *models
 }
 
 func (s *Service) restoreWithdrawalRule(ctx context.Context, addressEntry *models.UserAddressBook, user *models.User, totp string, opts ...repos.Option) error {
-	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, addressEntry.UserID, addressEntry.CurrencyID, opts...)
+	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, user, addressEntry.CurrencyID, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to get withdrawal wallet: %w", err)
 	}

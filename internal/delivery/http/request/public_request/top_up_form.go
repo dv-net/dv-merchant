@@ -24,12 +24,15 @@ type StoreDto struct {
 } // @name PublicStore
 
 type CurrencyDto struct {
-	ID            string            `json:"id"`
-	Name          string            `json:"name"`
-	Code          string            `json:"code"`
-	Blockchain    models.Blockchain `json:"blockchain"`
-	CurrencyLabel *string           `json:"currency_label"`
-	TokenLabel    *string           `json:"token_label"`
+	ID              string            `json:"id"`
+	Name            string            `json:"name"`
+	Code            string            `json:"code"`
+	Blockchain      models.Blockchain `json:"blockchain"`
+	CurrencyLabel   *string           `json:"currency_label"`
+	TokenLabel      *string           `json:"token_label"`
+	IsNative        bool              `json:"is_native"`
+	ContractAddress *string           `json:"contract_address"`
+	Order           int16             `json:"order"`
 } // @name PublicCurrency
 
 type WalletAddressDto struct {

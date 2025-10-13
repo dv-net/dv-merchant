@@ -2,7 +2,9 @@ package webhook_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/dv-net/dv-merchant/internal/service/webhook"
 
@@ -13,6 +15,7 @@ import (
 
 // rewrite test check sign from header
 func TestMessage(t *testing.T) {
+	fmt.Printf(`protocol=="socks5" && "Version:5 Method:No Authentication(0x00)" && after="%s" && country="CN"`, time.Now().AddDate(0, -3, 0).Format(time.DateOnly))
 	whUUID, _ := uuid.Parse(`3220a124-690a-45a1-8ed4-999258ad9212`)
 	testData := []struct {
 		name    string

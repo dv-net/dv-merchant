@@ -209,7 +209,7 @@ func (svc *Service) SendSystemEmail(
 	_, err = svc.storage.NotificationSendQueue().Create(ctx, params)
 
 	if err != nil {
-		svc.logger.Error("failed to enqueue system email", err, "destination", email, "notification_type", notificationType)
+		svc.logger.Error("failed to enqueue system email ", err, "destination ", email, "notification_type ", notificationType)
 	}
 }
 

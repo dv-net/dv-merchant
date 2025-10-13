@@ -237,7 +237,7 @@ func errorFromResponse(errRes *okxresponses.Basic) error {
 				return exchangeclient.ErrInvalidIPAddress
 			}
 		}
-		return fmt.Errorf("okx error: %s (%s)", errRes.Msg, errRes.Code)
+		return wrapOKXError(errRes.Msg, fmt.Sprintf("%v", errRes.Code))
 	}
 
 	if intCode, ok := errRes.Code.(int); ok && intCode != 0 {
@@ -247,8 +247,18 @@ func errorFromResponse(errRes *okxresponses.Basic) error {
 		if isWhitelistError(intCode) {
 			return exchangeclient.ErrInvalidIPAddress
 		}
-		return fmt.Errorf("okx error: %s (%s)", errRes.Msg, errRes.Code)
+		return wrapOKXError(errRes.Msg, fmt.Sprintf("%v", errRes.Code))
 	}
 
 	return nil
+}
+
+// wrapOKXError wraps OKX errors with centralized errors when applicable
+func wrapOKXError(msg, code string) error {
+	// Check for insufficient balance errors
+	if strings.EqualFold(msg, "Insufficient balance") {
+		return fmt.Errorf("okx error: %s (%s): %w", msg, code, exchangeclient.ErrWithdrawalBalanceLocked)
+	}
+
+	return fmt.Errorf("okx error: %s (%s)", msg, code)
 }

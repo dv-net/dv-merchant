@@ -30,8 +30,6 @@ type Service struct {
 	storage storage.IStorage
 }
 
-type CreateParams = repo_currencies.CreateParams
-
 func New(cfg *config.Config, storage storage.IStorage) *Service {
 	return &Service{
 		cfg:     cfg,

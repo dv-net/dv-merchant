@@ -3,6 +3,7 @@ package key_value
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
@@ -64,6 +65,22 @@ func (im *inMemory) IncrementCounterWithLimit(_ context.Context, key string, cou
 
 	val.Add(1)
 	return nil
+}
+
+func (im *inMemory) Keys(_ context.Context, pattern string) ([]string, error) {
+	keys := make([]string, 0)
+
+	for key := range im.client.Items() {
+		matched, err := filepath.Match(pattern, key)
+		if err != nil {
+			return nil, fmt.Errorf("invalid pattern: %w", err)
+		}
+		if matched {
+			keys = append(keys, key)
+		}
+	}
+
+	return keys, nil
 }
 
 func (im *inMemory) Close() error {

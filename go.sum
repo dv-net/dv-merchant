@@ -189,8 +189,6 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/dromara/carbon/v2 v2.5.4 h1:BkftNHVCkEwzv6ZuFiB/R1rLHaw6ufbCVkyLDCf3GeY=
 github.com/dromara/carbon/v2 v2.5.4/go.mod h1:zyPlND2o27sKKkRmdgLbk/qYxkmmH6Z4eE8OoM0w3DM=
-github.com/dv-net/dv-processing v0.9.4 h1:rgCuVWBTnDrzBBApT7+mSJzC6RIgYrM4+zYUBAdGKxk=
-github.com/dv-net/dv-processing v0.9.4/go.mod h1:8OJneosaUZW5G5/ov51biZfr5369RAx45I/91cOgke4=
 github.com/dv-net/dv-processing v0.9.5-RC01 h1:vw0YDcn8CYuhvk+vFqln3irMINgdqU6AkWM+bB1juSI=
 github.com/dv-net/dv-processing v0.9.5-RC01/go.mod h1:8qz80xHkRHLeS9vWts/zagz6po3lRvHHLvuq1Ki97I8=
 github.com/dv-net/dv-proto v0.5.1 h1:SUmKb2ja7qyMz6g4z0Jw/y+US7F0zq4qUYq1kFoSv2M=
