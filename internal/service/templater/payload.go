@@ -486,7 +486,7 @@ type UserCryptoReceiptPayload struct {
 	PlatformFeeUSD       string `json:"platform_fee_usd"`
 	PlatformFeeCurrency  string `json:"platform_fee_currency"`
 	StoreName            string `json:"store_name"`
-	StoreUserID          string `json:"store_user_id"` //nolint:revive
+	StoreUserID          string `json:"store_user_id"`
 }
 
 // Simple methods for dynamic text resolution (called by mustache as simple methods)
