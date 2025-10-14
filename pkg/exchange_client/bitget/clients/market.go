@@ -26,9 +26,9 @@ type IBitgetMarket interface {
 	SymbolInformation(context.Context, *requests.SymbolInformationRequest) (*responses.SymbolInformationResponse, error)
 }
 
-func NewMarketClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner) *MarketClient {
+func NewMarketClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner, opts ...SubClientOption) *MarketClient {
 	market := &MarketClient{
-		client: NewClient(opt, store, signer),
+		client: NewClient(opt, store, signer, opts...),
 	}
 	market.initLimiters()
 	return market

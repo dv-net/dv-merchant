@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - chore: reuse errors across multiple exchange clients [DV-3544]
 - fix: exclude unconfirmed transactions for tx-find [DV-3528]
 - fix: panic in Binance GetOrderRule when handling USDT pairs [DV-3558]
+- feat: added proper logging for exchange clients and services [DV-3088]
 
 ## [0.9.7] - 2025-09-22
 - Fix rename ResetPasswordCode to Code for consistency in user notifications [DV-3403]

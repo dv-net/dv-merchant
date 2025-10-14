@@ -19,9 +19,14 @@ import (
 
 	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/utils"
+	"github.com/dv-net/dv-merchant/pkg/logger"
 )
 
 func NewBaseClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption) *BaseClient {
+	// Create a client with logging enabled by default
+	client := NewClient(opt, store, opts...)
+	client.logEnabled = true
+
 	c := &BaseClient{
 		account: NewAccount(opt, store, opts...),
 		market:  NewMarket(opt, store, opts...),
@@ -64,6 +69,8 @@ type Client struct {
 	httpClient *http.Client
 	store      limiter.Store
 	limiters   map[string]*limiter.Limiter
+	log        logger.Logger
+	logEnabled bool
 }
 
 func (o *Client) Do(ctx context.Context, method string, endpoint string, private bool, dest interface{}, params ...map[string]string) error {
@@ -86,7 +93,8 @@ func (o *Client) Do(ctx context.Context, method string, endpoint string, private
 	return o.DoPlain(ctx, method, endpoint, private, dest, params...)
 }
 
-func (o *Client) DoPlain(ctx context.Context, method, path string, private bool, dest interface{}, params ...map[string]string) error {
+func (o *Client) DoPlain(ctx context.Context, method, path string, private bool, dest interface{}, params ...map[string]string) error { //nolint:gocyclo
+	startTime := time.Now()
 	baseURL := o.baseURL.String() + path
 	var (
 		req  *http.Request
@@ -94,6 +102,15 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		j    []byte
 		body string
 	)
+
+	if o.logEnabled && o.log != nil {
+		o.log.Infoln("[EXCHANGE-API]: Preparing request",
+			"exchange", "bybit",
+			"method", method,
+			"endpoint", path,
+			"private", private,
+		)
+	}
 
 	switch method {
 	case http.MethodGet:
@@ -109,7 +126,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 			}
 			req.URL.RawQuery = q.Encode()
 			if len(params[0]) > 0 {
-				path += "?" + req.URL.RawQuery //nolint:ineffassign
+				path += "?" + req.URL.RawQuery
 			}
 		}
 	case http.MethodPost:
@@ -157,8 +174,27 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		req.Header.Set(SignatureKey, signature)
 	}
 
+	if o.logEnabled && o.log != nil {
+		o.log.Infoln("[EXCHANGE-API]: Sending request",
+			"exchange", "bybit",
+			"method", method,
+			"url", o.baseURL.String()+path,
+			"headers", sanitizeHeaders(req.Header),
+			"body", sanitizeBody(body),
+		)
+	}
+
 	res, err := o.httpClient.Do(req)
 	if err != nil {
+		if o.logEnabled && o.log != nil {
+			o.log.Errorln("[EXCHANGE-API]: Request failed",
+				"exchange", "bybit",
+				"method", method,
+				"endpoint", path,
+				"error", err.Error(),
+				"duration_ms", time.Since(startTime).Milliseconds(),
+			)
+		}
 		return err
 	}
 	defer res.Body.Close()
@@ -169,7 +205,19 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		return err
 	}
 
+	duration := time.Since(startTime)
+
 	if res.StatusCode >= http.StatusBadRequest {
+		if o.logEnabled && o.log != nil {
+			o.log.Errorln("[EXCHANGE-API]: API error response",
+				"exchange", "bybit",
+				"method", method,
+				"endpoint", path,
+				"status_code", res.StatusCode,
+				"error", exchangeclient.ErrInvalidAPICredentials.Error(),
+				"duration_ms", duration.Milliseconds(),
+			)
+		}
 		return exchangeclient.ErrInvalidAPICredentials
 	}
 
@@ -181,8 +229,28 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 
 	if apiErr.Code != 0 {
 		if err := errorFromResponse(&apiErr); err != nil {
+			if o.logEnabled && o.log != nil {
+				o.log.Errorln("[EXCHANGE-API]: API error response",
+					"exchange", "bybit",
+					"method", method,
+					"endpoint", path,
+					"status_code", res.StatusCode,
+					"error", err.Error(),
+					"duration_ms", duration.Milliseconds(),
+				)
+			}
 			return err
 		}
+	}
+
+	if o.logEnabled && o.log != nil {
+		o.log.Infoln("[EXCHANGE-API]: Request completed",
+			"exchange", "bybit",
+			"method", method,
+			"endpoint", path,
+			"status_code", res.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+		)
 	}
 
 	if err = json.Unmarshal(bb.Bytes(), &dest); err != nil {
@@ -197,6 +265,12 @@ type ClientOption func(*Client)
 func WithBaseURL(baseURL *url.URL) ClientOption {
 	return func(c *Client) {
 		c.baseURL = baseURL
+	}
+}
+
+func WithLogger(log logger.Logger) ClientOption {
+	return func(c *Client) {
+		c.log = log
 	}
 }
 
@@ -223,6 +297,32 @@ func S2M(i interface{}) map[string]string {
 	_ = json.Unmarshal(j, &m)
 
 	return m
+}
+
+// sanitizeHeaders removes sensitive headers for logging
+func sanitizeHeaders(headers http.Header) map[string]string {
+	sanitized := make(map[string]string)
+	for k, v := range headers {
+		if strings.Contains(strings.ToLower(k), "key") ||
+			strings.Contains(strings.ToLower(k), "sign") ||
+			strings.Contains(strings.ToLower(k), "signature") {
+			sanitized[k] = "***REDACTED***"
+		} else {
+			sanitized[k] = strings.Join(v, ",")
+		}
+	}
+	return sanitized
+}
+
+// sanitizeBody truncates long bodies and masks sensitive data for logging
+func sanitizeBody(body string) string {
+	if len(body) == 0 {
+		return "(empty)"
+	}
+	if len(body) > 500 {
+		return body[:500] + "... (truncated)"
+	}
+	return body
 }
 
 func errorFromResponse(errRes *APIError) error {

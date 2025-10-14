@@ -17,9 +17,10 @@ import (
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/bitget"
 	bitgetresponses "github.com/dv-net/dv-merchant/pkg/exchange_client/bitget/responses"
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/utils"
+	"github.com/dv-net/dv-merchant/pkg/logger"
 )
 
-func NewClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner) *Client {
+func NewClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner, opts ...SubClientOption) *Client {
 	c := &Client{
 		accessKey:  opt.AccessKey,
 		secretKey:  opt.SecretKey,
@@ -28,6 +29,9 @@ func NewClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner) *
 		httpClient: http.DefaultClient,
 		signer:     signer,
 		store:      store,
+	}
+	for _, o := range opts {
+		o(c)
 	}
 	return c
 }
@@ -41,6 +45,8 @@ type Client struct {
 	store      limiter.Store
 	limiters   map[string]*limiter.Limiter
 	signer     bitget.ISigner
+	log        logger.Logger
+	logEnabled bool
 }
 
 func (o *Client) Do(ctx context.Context, method, endpoint string, private bool, dest interface{}, params ...map[string]string) error {
@@ -64,6 +70,7 @@ func (o *Client) Do(ctx context.Context, method, endpoint string, private bool, 
 }
 
 func (o *Client) DoPlain(ctx context.Context, method, path string, private bool, dest interface{}, params ...map[string]string) error {
+	startTime := time.Now()
 	baseURL := o.baseURL.String() + path
 	var (
 		req  *http.Request
@@ -71,6 +78,16 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		j    []byte
 		body string
 	)
+
+	if o.logEnabled && o.log != nil {
+		o.log.Infoln("[EXCHANGE-API]: Preparing request",
+			"exchange", "bitget",
+			"method", method,
+			"endpoint", path,
+			"private", private,
+		)
+	}
+
 	switch method {
 	case http.MethodGet:
 		req, err = http.NewRequestWithContext(ctx, http.MethodGet, baseURL, nil)
@@ -84,7 +101,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 			}
 			req.URL.RawQuery = q.Encode()
 			if len(params[0]) > 0 {
-				path += "?" + req.URL.RawQuery //nolint:ineffassign
+				path += "?" + req.URL.RawQuery
 			}
 		}
 	case http.MethodPost:
@@ -94,7 +111,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		}
 		body = string(j)
 		if body == "{}" {
-			body = "" //nolint:ineffassign
+			body = ""
 		}
 		req, err = http.NewRequestWithContext(ctx, method, baseURL, bytes.NewBuffer(j))
 		if err != nil {
@@ -110,16 +127,39 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 			return err
 		}
 	}
+
+	if o.logEnabled && o.log != nil {
+		o.log.Infoln("[EXCHANGE-API]: Sending request",
+			"exchange", "bitget",
+			"method", method,
+			"url", o.baseURL.String()+path,
+			"headers", sanitizeHeaders(req.Header),
+			"body", sanitizeBody(body),
+		)
+	}
+
 	resp, err := o.httpClient.Do(req)
 	if err != nil {
+		if o.logEnabled && o.log != nil {
+			o.log.Errorln("[EXCHANGE-API]: Request failed",
+				"exchange", "bitget",
+				"method", method,
+				"endpoint", path,
+				"error", err.Error(),
+				"duration_ms", time.Since(startTime).Milliseconds(),
+			)
+		}
 		return err
 	}
 	defer resp.Body.Close()
+
 	bb := new(bytes.Buffer)
 	_, err = io.Copy(bb, resp.Body)
 	if err != nil {
 		return err
 	}
+
+	duration := time.Since(startTime)
 
 	errRes := &bitget.ResponseError{}
 	if err = json.Unmarshal(bb.Bytes(), &errRes); err != nil {
@@ -127,7 +167,27 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 	}
 
 	if errRes.Code != bitgetresponses.ResponseCodeOK && errRes.Msg != "" {
+		if o.logEnabled && o.log != nil {
+			o.log.Errorln("[EXCHANGE-API]: API error response",
+				"exchange", "bitget",
+				"method", method,
+				"endpoint", path,
+				"status_code", resp.StatusCode,
+				"error", errorFromResponse(errRes).Error(),
+				"duration_ms", duration.Milliseconds(),
+			)
+		}
 		return errorFromResponse(errRes)
+	}
+
+	if o.logEnabled && o.log != nil {
+		o.log.Infoln("[EXCHANGE-API]: Request completed",
+			"exchange", "bitget",
+			"method", method,
+			"endpoint", path,
+			"status_code", resp.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+		)
 	}
 
 	if err = json.Unmarshal(bb.Bytes(), &dest); err != nil {
@@ -142,6 +202,32 @@ func S2M(i any) map[string]string {
 	_ = json.Unmarshal(j, &m)
 
 	return m
+}
+
+// sanitizeHeaders removes sensitive headers for logging
+func sanitizeHeaders(headers http.Header) map[string]string {
+	sanitized := make(map[string]string)
+	for k, v := range headers {
+		if strings.Contains(strings.ToLower(k), "key") ||
+			strings.Contains(strings.ToLower(k), "sign") ||
+			strings.Contains(strings.ToLower(k), "passphrase") {
+			sanitized[k] = "***REDACTED***"
+		} else {
+			sanitized[k] = strings.Join(v, ",")
+		}
+	}
+	return sanitized
+}
+
+// sanitizeBody truncates long bodies and masks sensitive data for logging
+func sanitizeBody(body string) string {
+	if len(body) == 0 {
+		return "(empty)"
+	}
+	if len(body) > 500 {
+		return body[:500] + "... (truncated)"
+	}
+	return body
 }
 
 func errorFromResponse(o *bitget.ResponseError) error {

@@ -32,9 +32,9 @@ type WalletClient struct {
 	client *Client
 }
 
-func NewWalletClient(opt *ClientOptions, store limiter.Store) *WalletClient {
+func NewWalletClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption) *WalletClient {
 	wallet := &WalletClient{
-		client: NewClient(opt, store),
+		client: NewClient(opt, store, opts...),
 	}
 	wallet.initLimiters()
 	return wallet

@@ -37,9 +37,9 @@ type SpotClient struct {
 	client *Client
 }
 
-func NewSpotClient(opt *ClientOptions, store limiter.Store) *SpotClient {
+func NewSpotClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption) *SpotClient {
 	spot := &SpotClient{
-		client: NewClient(opt, store),
+		client: NewClient(opt, store, opts...),
 	}
 	spot.initLimiters()
 	return spot

@@ -14,11 +14,11 @@ type IBitgetSpot interface {
 
 var _ IBitgetSpot = (*SpotClient)(nil)
 
-func NewSpotClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner) *SpotClient {
+func NewSpotClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner, opts ...SubClientOption) *SpotClient {
 	return &SpotClient{
-		accountClient: NewAccountClient(opt, store, signer),
-		tradeClient:   NewTradeClient(opt, store, signer),
-		marketClient:  NewMarketClient(opt, store, signer),
+		accountClient: NewAccountClient(opt, store, signer, opts...),
+		tradeClient:   NewTradeClient(opt, store, signer, opts...),
+		marketClient:  NewMarketClient(opt, store, signer, opts...),
 	}
 }
 
