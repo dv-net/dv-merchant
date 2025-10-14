@@ -49,7 +49,7 @@ func NewService(logger logger.Logger, accessKey, secretKey string, baseURL *url.
 		AccessKey: accessKey,
 		SecretKey: secretKey,
 		BaseURL:   baseURL,
-	}, store)
+	}, store, gateio.WithLogger(logger))
 	if err != nil {
 		return nil, err
 	}

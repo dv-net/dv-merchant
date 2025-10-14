@@ -23,9 +23,9 @@ type IBitgetCommon interface {
 	ServerTime(context.Context) (*bitgetresponses.ServerTimeResponse, error)
 }
 
-func NewCommonClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner) *CommonClient {
+func NewCommonClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner, opts ...SubClientOption) *CommonClient {
 	common := &CommonClient{
-		client: NewClient(opt, store, signer),
+		client: NewClient(opt, store, signer, opts...),
 	}
 	common.initLimiters()
 	return common

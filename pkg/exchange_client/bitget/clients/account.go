@@ -30,9 +30,9 @@ type IBitgetAccount interface {
 	WalletWithdrawal(context.Context, *bitgetrequests.WalletWithdrawalRequest) (*bitgetresponses.WalletWithdrawalResponse, error)
 }
 
-func NewAccountClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner) *AccountClient {
+func NewAccountClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner, opts ...SubClientOption) *AccountClient {
 	account := &AccountClient{
-		client: NewClient(opt, store, signer),
+		client: NewClient(opt, store, signer, opts...),
 	}
 	account.initLimiters()
 	return account

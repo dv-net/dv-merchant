@@ -22,9 +22,9 @@ type AccountClient struct {
 	client *Client
 }
 
-func NewAccountClient(opt *ClientOptions, store limiter.Store) *AccountClient {
+func NewAccountClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption) *AccountClient {
 	account := &AccountClient{
-		client: NewClient(opt, store),
+		client: NewClient(opt, store, opts...),
 	}
 	account.initLimiters()
 	return account
