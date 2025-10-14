@@ -8,12 +8,15 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/go-querystring/query"
 
 	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
 	binanceresponses "github.com/dv-net/dv-merchant/pkg/exchange_client/binance/responses"
+	"github.com/dv-net/dv-merchant/pkg/logger"
 )
 
 type IBinanceClient interface {
@@ -85,6 +88,8 @@ type Client struct {
 	httpClient *http.Client
 	validator  *validator.Validate
 	signer     ISigner
+	log        logger.Logger
+	logEnabled bool
 }
 
 type ClientOptions struct {
@@ -95,10 +100,39 @@ type ClientOptions struct {
 }
 
 func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel, dest interface{}) error {
+	startTime := time.Now()
+
+	if o.logEnabled && o.log != nil {
+		o.log.Infoln("[EXCHANGE-API]: Preparing request",
+			"exchange", "binance",
+			"method", req.Method,
+			"endpoint", req.URL.Path,
+			"security_level", level,
+		)
+	}
+
 	req = o.signer.SignRequest(ctx, req, level)
+
+	if o.logEnabled && o.log != nil {
+		o.log.Infoln("[EXCHANGE-API]: Sending request",
+			"exchange", "binance",
+			"method", req.Method,
+			"url", req.URL.String(),
+			"headers", sanitizeHeaders(req.Header),
+		)
+	}
 
 	resp, err := o.httpClient.Do(req)
 	if err != nil {
+		if o.logEnabled && o.log != nil {
+			o.log.Errorln("[EXCHANGE-API]: Request failed",
+				"exchange", "binance",
+				"method", req.Method,
+				"endpoint", req.URL.Path,
+				"error", err.Error(),
+				"duration_ms", time.Since(startTime).Milliseconds(),
+			)
+		}
 		return err
 	}
 	defer resp.Body.Close()
@@ -109,10 +143,22 @@ func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel,
 		return err
 	}
 
+	duration := time.Since(startTime)
+
 	if resp.StatusCode != http.StatusOK {
 		errRes := binanceresponses.ErrorResponse{}
 		if err = json.Unmarshal(bb.Bytes(), &errRes); err != nil {
 			return err
+		}
+		if o.logEnabled && o.log != nil {
+			o.log.Errorln("[EXCHANGE-API]: API error response",
+				"exchange", "binance",
+				"method", req.Method,
+				"endpoint", req.URL.Path,
+				"status_code", resp.StatusCode,
+				"error", errorFromResponse(&errRes).Error(),
+				"duration_ms", duration.Milliseconds(),
+			)
 		}
 		return errorFromResponse(&errRes)
 	}
@@ -123,6 +169,16 @@ func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel,
 		retryAfter := resp.Header.Get("Retry-After")
 		return fmt.Errorf("IP is banned for %s seconds", retryAfter)
 		// TODO: Implement retry logic when it will eventually be needed.
+	}
+
+	if o.logEnabled && o.log != nil {
+		o.log.Infoln("[EXCHANGE-API]: Request completed",
+			"exchange", "binance",
+			"method", req.Method,
+			"endpoint", req.URL.Path,
+			"status_code", resp.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+		)
 	}
 
 	if err = json.Unmarshal(bb.Bytes(), dest); err != nil {
@@ -146,6 +202,21 @@ func (o *Client) assembleRequest(dto interface{}, req *http.Request) (*http.Requ
 	default:
 		return nil, fmt.Errorf("unsupported method %s", req.Method)
 	}
+}
+
+// sanitizeHeaders removes sensitive headers for logging
+func sanitizeHeaders(headers http.Header) map[string]string {
+	sanitized := make(map[string]string)
+	for k, v := range headers {
+		if strings.Contains(strings.ToLower(k), "key") ||
+			strings.Contains(strings.ToLower(k), "sign") ||
+			strings.Contains(strings.ToLower(k), "signature") {
+			sanitized[k] = "***REDACTED***"
+		} else {
+			sanitized[k] = strings.Join(v, ",")
+		}
+	}
+	return sanitized
 }
 
 func errorFromResponse(o *binanceresponses.ErrorResponse) error {

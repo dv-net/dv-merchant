@@ -260,8 +260,19 @@ func (o *Service) GetWithdrawalRules(ctx context.Context, currencies ...string) 
 }
 
 func (o *Service) CreateSpotOrder(ctx context.Context, baseSymbol string, quoteSymbol string, side string, ticker string, amount *decimal.Decimal, _ *models.OrderRulesDTO) (*models.ExchangeOrderDTO, error) { //nolint:staticcheck
+	o.l.Infoln("[EXCHANGE-ORDER]: Creating spot order",
+		"exchange", "okx",
+		"ticker", ticker,
+		"side", side,
+		"connection_hash", o.connHash,
+	)
+
 	orderID, err := uuid.NewUUID()
 	if err != nil {
+		o.l.Errorln("[EXCHANGE-ORDER]: Failed to generate order ID",
+			"exchange", "okx",
+			"error", err.Error(),
+		)
 		return nil, err
 	}
 	clientOrderID := strings.ReplaceAll(orderID.String(), "-", "")
@@ -273,6 +284,11 @@ func (o *Service) CreateSpotOrder(ctx context.Context, baseSymbol string, quoteS
 
 	instrumentsData, err := o.exClient.Public().GetInstruments(ctx, instrumentRequest)
 	if err != nil {
+		o.l.Errorln("[EXCHANGE-ORDER]: Failed to get instrument data",
+			"exchange", "okx",
+			"ticker", ticker,
+			"error", err.Error(),
+		)
 		// instrumentRequest.InstID = quoteSymbol + "-" + baseSymbol
 		// instrumentsData, err = o.exClient.Public().GetInstruments(ctx, instrumentRequest)
 		return nil, err
@@ -388,10 +404,27 @@ func (o *Service) CreateSpotOrder(ctx context.Context, baseSymbol string, quoteS
 	spotOrderRequest.Sz = orderSize
 	order, err := o.exClient.Trade().PlaceOrder(ctx, []okxrequests.PlaceOrder{spotOrderRequest})
 	if err != nil {
+		o.l.Errorln("[EXCHANGE-ORDER]: Failed to place order",
+			"exchange", "okx",
+			"ticker", ticker,
+			"side", side,
+			"client_order_id", clientOrderID,
+			"error", err.Error(),
+		)
 		return nil, fmt.Errorf("failed to place order: %w", err)
 	}
 
 	amount = &maxAmount //nolint:staticcheck
+
+	o.l.Infoln("[EXCHANGE-ORDER]: Order placed successfully",
+		"exchange", "okx",
+		"ticker", ticker,
+		"side", side,
+		"client_order_id", order.PlaceOrders[0].ClientOrderID,
+		"exchange_order_id", order.PlaceOrders[0].SystemOrderID,
+		"amount", amount.String(),
+		"connection_hash", o.connHash,
+	)
 
 	return &models.ExchangeOrderDTO{
 		ClientOrderID:   order.PlaceOrders[0].ClientOrderID,
@@ -436,7 +469,7 @@ func NewService(l logger.Logger, apiKey, secretKey, passphrase string, baseURL *
 		SecretKey:  secretKey,
 		Passphrase: passphrase,
 		BaseURL:    baseURL,
-	}, store)
+	}, store, okx.WithLogger(l))
 
 	connHash, err := hash.SHA256ConnectionHash(models.ExchangeSlugOkx.String(), apiKey, secretKey, passphrase)
 	if err != nil {
@@ -593,6 +626,15 @@ func (o *Service) GetDepositAddresses(ctx context.Context, currency, _ string) (
 }
 
 func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.CreateWithdrawalOrderParams) (*models.ExchangeWithdrawalDTO, error) {
+	o.l.Infoln("[EXCHANGE-WITHDRAWAL]: Creating withdrawal order",
+		"exchange", "okx",
+		"currency", args.Currency,
+		"chain", args.Chain,
+		"amount", args.NativeAmount.String(),
+		"record_id", args.RecordID.String(),
+		"connection_hash", o.connHash,
+	)
+
 	precision := int32(args.WithdrawalPrecision) //nolint:gosec
 
 	args.NativeAmount = args.NativeAmount.RoundDown(precision).Sub(args.NativeAmount.Div(decimal.NewFromInt(100)).Mul(decimal.NewFromInt(1))).RoundDown(precision)
@@ -602,6 +644,11 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		Slug:       models.ExchangeSlugOkx,
 	})
 	if err != nil {
+		o.l.Errorln("[EXCHANGE-WITHDRAWAL]: Failed to get ticker for currency",
+			"exchange", "okx",
+			"currency", args.Currency,
+			"error", err.Error(),
+		)
 		return nil, err
 	}
 
@@ -624,26 +671,31 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	totalBalance := spotBalance.Add(fundingBalance)
 
-	o.l.Info("balances",
-		"exchange", models.ExchangeSlugOkx.String(),
-		"recordID", args.RecordID.String(),
-		"withdrawalAmount", args.NativeAmount.String(),
-		"withdrawalFee", args.Fee.String(),
-		"totalBalance", totalBalance.String(),
-		"spotBalance", spotBalance.String(),
-		"fundingBalance", fundingBalance.String(),
+	o.l.Infoln("[EXCHANGE-BALANCE]: Withdrawal balance check",
+		"exchange", "okx",
+		"record_id", args.RecordID.String(),
+		"withdrawal_amount", args.NativeAmount.String(),
+		"withdrawal_fee", args.Fee.String(),
+		"total_balance", totalBalance.String(),
+		"spot_balance", spotBalance.String(),
+		"funding_balance", fundingBalance.String(),
+		"connection_hash", o.connHash,
 	)
 
 	if fundingBalance.LessThan(args.NativeAmount) {
-		o.l.Info("funding balance is less than withdrawal amount",
-			"exchange", models.ExchangeSlugOkx.String(),
-			"recordID", args.RecordID.String(),
+		o.l.Infoln("[EXCHANGE-BALANCE]: Funding balance insufficient, checking total balance",
+			"exchange", "okx",
+			"record_id", args.RecordID.String(),
+			"funding_balance", fundingBalance.String(),
+			"withdrawal_amount", args.NativeAmount.String(),
 		)
 
 		if totalBalance.LessThan(args.NativeAmount) {
-			o.l.Info("total balance is less than withdrawal amount",
-				"exchange", models.ExchangeSlugOkx.String(),
-				"recordID", args.RecordID.String(),
+			o.l.Errorln("[EXCHANGE-BALANCE]: Insufficient balance for withdrawal",
+				"exchange", "okx",
+				"record_id", args.RecordID.String(),
+				"total_balance", totalBalance.String(),
+				"required_amount", args.NativeAmount.String(),
 			)
 			return nil, exchangeclient.ErrMinWithdrawalBalance
 		}
@@ -677,14 +729,14 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	req.ClientID = strings.ReplaceAll(clientOrderID.String(), "-", "")
 
-	o.l.Info("withdrawal request assembled",
-		"exchange", models.ExchangeSlugOkx.String(),
-		"recordID", args.RecordID.String(),
-		"request", req,
+	o.l.Infoln("[EXCHANGE-WITHDRAWAL]: Withdrawal request assembled",
+		"exchange", "okx",
+		"record_id", args.RecordID.String(),
 		"amount", req.Amt,
 		"currency", req.Ccy,
 		"chain", req.Chain,
-		"address", req.ToAddr,
+		"client_order_id", req.ClientID,
+		"connection_hash", o.connHash,
 	)
 
 	amount := args.NativeAmount.Sub(args.Fee)
@@ -694,9 +746,9 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	for {
 		if amount.LessThan(minWithdrawal) {
-			o.l.Info("withdrawal amount below minimum",
-				"exchange", models.ExchangeSlugOkx.String(),
-				"recordID", args.RecordID.String(),
+			o.l.Errorln("[EXCHANGE-WITHDRAWAL]: Withdrawal amount below minimum",
+				"exchange", "okx",
+				"record_id", args.RecordID.String(),
 				"current_amount", amount.String(),
 				"min_withdrawal", minWithdrawal.String(),
 			)
@@ -719,15 +771,27 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		if err == nil {
 			dto.InternalOrderID = req.ClientID
 			dto.ExternalOrderID = order.Withdrawals[0].WdID
+
+			o.l.Infoln("[EXCHANGE-WITHDRAWAL]: Withdrawal order created successfully",
+				"exchange", "okx",
+				"record_id", args.RecordID.String(),
+				"client_order_id", dto.InternalOrderID,
+				"exchange_order_id", dto.ExternalOrderID,
+				"amount", amount.String(),
+				"currency", req.Ccy,
+				"chain", req.Chain,
+				"connection_hash", o.connHash,
+			)
+
 			return dto, nil
 		}
 
 		if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
-			o.l.Error("insufficient funds, retrying with reduced amount",
-				exchangeclient.ErrWithdrawalBalanceLocked,
-				"exchange", models.ExchangeSlugOkx.String(),
-				"recordID", args.RecordID.String(),
+			o.l.Errorln("[EXCHANGE-WITHDRAWAL]: Insufficient funds, retrying with reduced amount",
+				"exchange", "okx",
+				"record_id", args.RecordID.String(),
 				"current_amount", amount.String(),
+				"error", exchangeclient.ErrWithdrawalBalanceLocked.Error(),
 			)
 
 			amount = amount.Sub(withdrawalStep)

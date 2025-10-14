@@ -4,6 +4,7 @@ import (
 	"github.com/ulule/limiter/v3"
 
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/bitget"
+	"github.com/dv-net/dv-merchant/pkg/logger"
 )
 
 var _ IBaseBitgetClient = (*BaseClient)(nil)
@@ -23,8 +24,13 @@ func NewBaseClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption
 		opt(c)
 	}
 
-	c.commonClient = NewCommonClient(opt, store, c.signer)
-	c.spotClient = NewSpotClient(opt, store, c.signer)
+	var subClientOpts []SubClientOption
+	if c.log != nil {
+		subClientOpts = append(subClientOpts, WithLogger(c.log))
+	}
+
+	c.commonClient = NewCommonClient(opt, store, c.signer, subClientOpts...)
+	c.spotClient = NewSpotClient(opt, store, c.signer, subClientOpts...)
 	return c, nil
 }
 
@@ -32,6 +38,7 @@ type BaseClient struct {
 	signer       bitget.ISigner
 	spotClient   IBitgetSpot
 	commonClient IBitgetCommon
+	log          logger.Logger
 }
 
 func (o *BaseClient) Spot() IBitgetSpot      { return o.spotClient }

@@ -51,7 +51,7 @@ func NewService(l logger.Logger, accessKey, secretKey, passPhrase string, _ bool
 		KeySecret:     secretKey,
 		KeyPassphrase: passPhrase,
 		BaseURL:       baseURL,
-	}, store, cache)
+	}, store, cache, kucoinclients.WithLogger(l))
 
 	connHash, err := hash.SHA256ConnectionHash(models.ExchangeSlugKucoin.String(), accessKey, secretKey, passPhrase)
 	if err != nil {

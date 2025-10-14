@@ -46,7 +46,7 @@ func NewService(l logger.Logger, accessKey, secretKey, passPhrase string, public
 		PassPhrase: passPhrase,
 		BaseURL:    baseURL,
 		Public:     public,
-	}, store)
+	}, store, bitgetclients.WithBaseLogger(l))
 	if err != nil {
 		return nil, err
 	}
