@@ -53,7 +53,7 @@ func NewService(logger logger.Logger, accessKey, secretKey string, baseURL *url.
 		KeyAPI:    accessKey,
 		KeySecret: secretKey,
 		BaseURL:   baseURL,
-	}, store)
+	}, store, bybit.WithLogger(logger))
 
 	connHash, err := hash.SHA256ConnectionHash(models.ExchangeSlugBybit.String(), accessKey, secretKey)
 	if err != nil {

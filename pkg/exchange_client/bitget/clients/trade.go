@@ -24,9 +24,9 @@ type IBitgetTrade interface {
 	PlaceOrder(context.Context, *bitgetrequests.PlaceOrderRequest) (*bitgetresponses.PlaceOrderResponse, error)
 }
 
-func NewTradeClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner) *TradeClient {
+func NewTradeClient(opt *ClientOptions, store limiter.Store, signer bitget.ISigner, opts ...SubClientOption) *TradeClient {
 	trade := &TradeClient{
-		client: NewClient(opt, store, signer),
+		client: NewClient(opt, store, signer, opts...),
 	}
 	trade.initLimiters()
 	return trade

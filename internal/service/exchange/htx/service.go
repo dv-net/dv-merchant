@@ -546,7 +546,7 @@ func NewService(l logger.Logger, accessKey, secretKey string, baseURL *url.URL, 
 		AccessKey: accessKey,
 		SecretKey: secretKey,
 		BaseURL:   baseURL,
-	}, store)
+	}, store, htx.WithLogger(l))
 	if err != nil {
 		return nil, err
 	}
