@@ -477,6 +477,60 @@ func (o *Service) getFundingBalance(symbol string, funding []binancemodels.Asset
 	return fundingAmount
 }
 
+// getSymbolPriceWithSwap attempts to get a symbol's price, and if it returns zero,
+// tries the swapped version (e.g., DAIBTC -> BTCDAI) and inverts the price.
+// This handles cases where Binance returns 0 for one direction but has data for the reverse.
+func (o *Service) getSymbolPriceWithSwap(ctx context.Context, baseAsset, quoteAsset string) (decimal.Decimal, error) {
+	symbol := baseAsset + quoteAsset
+
+	// Try to get the price directly first
+	price, err := o.getSymbolPrice(ctx, symbol)
+	if err == nil && !price.IsZero() {
+		// Success: symbol exists and has a non-zero price
+		return price, nil
+	}
+
+	// If price is zero or symbol doesn't exist, try the swapped version
+	swappedSymbol := quoteAsset + baseAsset
+	swappedPrice, swapErr := o.getSymbolPrice(ctx, swappedSymbol)
+
+	if swapErr != nil {
+		// Both directions failed
+		if err != nil {
+			// Original symbol fetch failed (symbol doesn't exist)
+			return decimal.Zero, fmt.Errorf("failed to get price for %s or %s: %w", symbol, swappedSymbol, err)
+		}
+		// Original returned zero, swapped failed
+		return decimal.Zero, fmt.Errorf("symbol %s has zero price and reverse %s failed: %w", symbol, swappedSymbol, swapErr)
+	}
+
+	if swappedPrice.IsZero() {
+		// Both directions return zero
+		return decimal.Zero, fmt.Errorf("both %s and %s have zero price (trading may be halted)", symbol, swappedSymbol)
+	}
+
+	// Swapped version worked, invert the price
+	// Example: if BTCDAI = 114000, then DAIBTC = 1/114000 = 0.0000087719
+	return decimal.NewFromInt(1).Div(swappedPrice), nil
+}
+
+// getSymbolPrice fetches the price for a symbol without any swapping logic.
+func (o *Service) getSymbolPrice(ctx context.Context, symbol string) (decimal.Decimal, error) {
+	priceData, err := o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
+		Symbol: symbol,
+	})
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("failed to get price for symbol %s: %w", symbol, err)
+	}
+
+	price, err := decimal.NewFromString(priceData.Price)
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("failed to parse price for symbol %s: %w", symbol, err)
+	}
+
+	return price, nil
+}
+
 func (o *Service) GetOrderRule(ctx context.Context, ticker string) (*models.OrderRulesDTO, error) {
 	res, err := o.exClient.MarketData().GetExchangeInfo(ctx, &binancerequests.GetExchangeInfoRequest{
 		Symbol: ticker,
@@ -510,18 +564,9 @@ func (o *Service) GetOrderRule(ctx context.Context, ticker string) (*models.Orde
 
 	// Get base asset price in USDT
 	if symbolData.BaseAsset != "USDT" {
-		basePriceData, err := o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
-			Symbol: symbolData.BaseAsset + "USDT",
-		})
+		basePrice, err := o.getSymbolPriceWithSwap(ctx, symbolData.BaseAsset, "USDT")
 		if err != nil {
-			return nil, fmt.Errorf("failed to get base asset price %s: %w", symbolData.BaseAsset, err)
-		}
-		basePrice, err := decimal.NewFromString(basePriceData.Price)
-		if err != nil {
-			return nil, err
-		}
-		if basePrice.IsZero() {
-			return nil, fmt.Errorf("base asset %s price is zero", symbolData.BaseAsset)
+			return nil, fmt.Errorf("failed to get base asset price for %s: %w", symbolData.BaseAsset, err)
 		}
 		minOrderAmount = filters.NotionalFilter.MinNotional.Div(basePrice).RoundUp(int32(precision.IntPart()))
 	} else {
@@ -531,40 +576,11 @@ func (o *Service) GetOrderRule(ctx context.Context, ticker string) (*models.Orde
 
 	// Get quote asset price in USDT
 	if symbolData.QuoteAsset != "USDT" {
-		// Try QuoteAsset+USDT first
-		quoteSymbol := symbolData.QuoteAsset + "USDT"
-		quotePriceData, err := o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
-			Symbol: quoteSymbol,
-		})
+		quotePrice, err := o.getSymbolPriceWithSwap(ctx, symbolData.QuoteAsset, "USDT")
 		if err != nil {
-			// If failed, try USDT+QuoteAsset
-			quoteSymbol = "USDT" + symbolData.QuoteAsset
-			quotePriceData, err = o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
-				Symbol: quoteSymbol,
-			})
-			if err != nil {
-				return nil, fmt.Errorf("failed to get quote asset price %s: %w", symbolData.QuoteAsset, err)
-			}
-			// For USDT+Quote pairs, we need to invert the price (1 Quote = 1/price USDT)
-			price, err := decimal.NewFromString(quotePriceData.Price)
-			if err != nil {
-				return nil, err
-			}
-			if price.IsZero() {
-				return nil, fmt.Errorf("quote asset %s price is zero", symbolData.QuoteAsset)
-			}
-			quotePrice := decimal.NewFromInt(1).Div(price)
-			minOrderValue = filters.NotionalFilter.MinNotional.Div(quotePrice).RoundUp(int32(precision.IntPart()))
-		} else {
-			quotePrice, err := decimal.NewFromString(quotePriceData.Price)
-			if err != nil {
-				return nil, err
-			}
-			if quotePrice.IsZero() {
-				return nil, fmt.Errorf("quote asset %s price is zero", symbolData.QuoteAsset)
-			}
-			minOrderValue = filters.NotionalFilter.MinNotional.Div(quotePrice).RoundUp(int32(precision.IntPart()))
+			return nil, fmt.Errorf("failed to get quote asset price for %s: %w", symbolData.QuoteAsset, err)
 		}
+		minOrderValue = filters.NotionalFilter.MinNotional.Div(quotePrice).RoundUp(int32(precision.IntPart()))
 	} else {
 		// Quote asset is USDT, minOrderValue equals MinNotional
 		minOrderValue = filters.NotionalFilter.MinNotional
