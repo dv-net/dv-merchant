@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- fix: panic in Binance GetOrderRule when handling USDT pairs [DV-3558]
+- feat: added proper logging for exchange clients and services [DV-3088]
+- fix: added variation of KuCoin error on withdrawal confirmations lock [DV-3545]
+
+## [0.9.8] - 2025-10-13
 - fix: add error handling for empty withdrawal addresses and improve logging format [DV-3437]
 - Added currency reference data about it being native, and contract address [DV-3456]
 - Added new currencies to the supported currency pool (disabled by default for new stores) [DV-3319]
@@ -21,8 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: sort currency order for form without api key [DV-3529]
 - chore: reuse errors across multiple exchange clients [DV-3544]
 - fix: exclude unconfirmed transactions for tx-find [DV-3528]
-- fix: panic in Binance GetOrderRule when handling USDT pairs [DV-3558]
-- feat: added proper logging for exchange clients and services [DV-3088]
 
 ## [0.9.7] - 2025-09-22
 - Fix rename ResetPasswordCode to Code for consistency in user notifications [DV-3403]
