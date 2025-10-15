@@ -46,7 +46,6 @@ type Client struct {
 	limiters   map[string]*limiter.Limiter
 	signer     bitget.ISigner
 	log        logger.Logger
-	logEnabled bool
 }
 
 func (o *Client) Do(ctx context.Context, method, endpoint string, private bool, dest interface{}, params ...map[string]string) error {
@@ -79,7 +78,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		body string
 	)
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Preparing request",
 			"exchange", "bitget",
 			"method", method,
@@ -128,7 +127,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		}
 	}
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Sending request",
 			"exchange", "bitget",
 			"method", method,
@@ -140,7 +139,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 
 	resp, err := o.httpClient.Do(req)
 	if err != nil {
-		if o.logEnabled && o.log != nil {
+		if o.log != nil {
 			o.log.Errorln("[EXCHANGE-API]: Request failed",
 				"exchange", "bitget",
 				"method", method,
@@ -167,7 +166,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 	}
 
 	if errRes.Code != bitgetresponses.ResponseCodeOK && errRes.Msg != "" {
-		if o.logEnabled && o.log != nil {
+		if o.log != nil {
 			o.log.Errorln("[EXCHANGE-API]: API error response",
 				"exchange", "bitget",
 				"method", method,
@@ -180,7 +179,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		return errorFromResponse(errRes)
 	}
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Request completed",
 			"exchange", "bitget",
 			"method", method,

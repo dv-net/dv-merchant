@@ -52,9 +52,6 @@ func WithLogger(log logger.Logger) ClientOption {
 
 func NewBaseClient(opt *ClientOptions, store limiter.Store, cache key_value.IKeyValue, opts ...ClientOption) *BaseClient {
 	// Create a client with logging enabled by default
-	client := NewClient(opt, store, opts...)
-	client.logEnabled = true
-
 	c := &BaseClient{
 		account: NewAccount(opt, store, opts...),
 		market:  NewMarket(opt, store, opts...),
@@ -110,7 +107,6 @@ type Client struct {
 	store      limiter.Store
 	limiters   map[string]*limiter.Limiter
 	log        logger.Logger
-	logEnabled bool
 }
 
 func (o *Client) Do(ctx context.Context, method string, endpoint string, private bool, dest interface{}, params ...map[string]string) error {
@@ -143,7 +139,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		body string
 	)
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Preparing request",
 			"exchange", "kucoin",
 			"method", method,
@@ -200,7 +196,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		req.Header.Add("KC-API-PASSPHRASE", passphraseSig)
 	}
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Sending request",
 			"exchange", "kucoin",
 			"method", method,
@@ -212,7 +208,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 
 	res, err := o.httpClient.Do(req)
 	if err != nil {
-		if o.logEnabled && o.log != nil {
+		if o.log != nil {
 			o.log.Errorln("[EXCHANGE-API]: Request failed",
 				"exchange", "kucoin",
 				"method", method,
@@ -238,7 +234,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		return err
 	}
 	if err := errorFromResponse(&errRes); err != nil {
-		if o.logEnabled && o.log != nil {
+		if o.log != nil {
 			o.log.Errorln("[EXCHANGE-API]: API error response",
 				"exchange", "kucoin",
 				"method", method,
@@ -251,7 +247,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		return err
 	}
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Request completed",
 			"exchange", "kucoin",
 			"method", method,
