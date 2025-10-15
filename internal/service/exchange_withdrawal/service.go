@@ -667,6 +667,19 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 					)
 					return err
 				}
+				if errors.Is(err, exchangeclient.ErrIncorrectAPIPermissions) {
+					s.logger.Infow("cannot withdrawal due to API key permissions",
+						"userID", userID,
+						"recordID", recordID.String(),
+						"exchange", userExchange.Slug.String(),
+						"currency", setting.Currency,
+						"totalBalance", tokenBalance.String(),
+						"withdrawalAmount", wdOrderParams.NativeAmount.String(),
+						"fiatWithdrawalAmount", wdOrderParams.FiatAmount.String(),
+						"withdrawalFee", wdOrderParams.Fee.String(),
+					)
+					return err
+				}
 				if errors.Is(err, exchangeclient.ErrRateLimited) {
 					s.logger.Infow("withdrawal rate limited",
 						"userID", userID,
@@ -708,7 +721,8 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 				errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) ||
 				errors.Is(err, exchangeclient.ErrMinWithdrawalBalance) ||
 				errors.Is(err, exchangeclient.ErrSoftLockByUserSecurityAction) ||
-				errors.Is(err, exchangeclient.ErrWithdrawalAddressNotWhitelisted) {
+				errors.Is(err, exchangeclient.ErrWithdrawalAddressNotWhitelisted) ||
+				errors.Is(err, exchangeclient.ErrInvalidAPICredentials) {
 				continue
 			}
 			if errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.ETIMEDOUT) {

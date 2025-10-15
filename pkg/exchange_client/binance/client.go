@@ -224,6 +224,9 @@ func errorFromResponse(o *binanceresponses.ErrorResponse) error {
 	if o.Code == binanceresponses.ResponseCodeInvalidSecretKey || o.Code == binanceresponses.ResponseCodeInvalidAPIKey {
 		return exchangeclient.ErrInvalidAPICredentials
 	}
+	if o.Code == binanceresponses.ResponseCodeInvalidPermissionOnAPI {
+		return exchangeclient.ErrIncorrectAPIPermissions
+	}
 	if o.Code == binanceresponses.ResponseCodeInvalidPermissionsOrIP {
 		return exchangeclient.ErrInvalidIPAddress
 	}

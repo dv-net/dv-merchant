@@ -18,16 +18,12 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchange_chains"
 	"github.com/dv-net/dv-merchant/internal/tools/hash"
+	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/binance"
 	binancemodels "github.com/dv-net/dv-merchant/pkg/exchange_client/binance/models"
 	binancerequests "github.com/dv-net/dv-merchant/pkg/exchange_client/binance/requests"
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/utils"
 	"github.com/dv-net/dv-merchant/pkg/logger"
-)
-
-var (
-	ErrInsufficientBalance = errors.New("insufficient balance")
-	ErrSymbolTradingHalted = errors.New("symbol trading is halted")
 )
 
 func NewService(logger logger.Logger, apiKey, secretKey string, public bool, baseURL *url.URL, storage storage.IStorage, convSvc currconv.ICurrencyConvertor) (*Service, error) {
@@ -275,7 +271,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	if spotBalance.LessThan(args.NativeAmount) {
 		if spotBalance.Add(fundingBalance).LessThan(args.NativeAmount) {
-			return nil, ErrInsufficientBalance
+			return nil, exchangeclient.ErrInsufficientBalance
 		}
 
 		transferAmount := totalBalance.Sub(spotBalance)
@@ -392,22 +388,41 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 	fundingAmt = o.getFundingBalance(from, fundingBalances.Data)
 	maxAmount = fundingAmt.Add(spotAmt)
 
+	orderMinQuote, err := decimal.NewFromString(orderMinimumQuote)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse min quote: %w", err)
+	}
+	orderMinBase, err := decimal.NewFromString(orderMinimumBase)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse min base: %w", err)
+	}
+
 	switch tSpotOrderRequest.Side {
 	case binancemodels.OrderSideBuy.String():
-		orderMinQuote, err := decimal.NewFromString(orderMinimumQuote)
-		if err != nil {
-			return nil, err
-		}
+		// For buy orders, check if we have enough quote asset (e.g., BTC to buy ETH)
 		if maxAmount.LessThan(orderMinQuote) {
-			return nil, ErrInsufficientBalance
+			return nil, exchangeclient.ErrInsufficientBalance
 		}
 	case binancemodels.OrderSideSell.String():
-		orderMinBase, err := decimal.NewFromString(orderMinimumBase)
-		if err != nil {
-			return nil, err
-		}
+		// For sell orders, check if we have enough base asset (e.g., ETH to sell)
 		if maxAmount.LessThan(orderMinBase) {
-			return nil, ErrInsufficientBalance
+			return nil, exchangeclient.ErrInsufficientBalance
+		}
+		// Also validate that base asset quantity meets the minimum notional when converted to quote asset
+		// Need current price to calculate: base_quantity × price >= min_notional (in quote asset)
+		currentPrice, err := o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
+			Symbol: ticker,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to get symbol price: %w", err)
+		}
+		marketPrice, err := decimal.NewFromString(currentPrice.Price)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse market price: %w", err)
+		}
+		orderNotionalValue := maxAmount.Mul(marketPrice)
+		if orderNotionalValue.LessThan(orderMinQuote) {
+			return nil, exchangeclient.ErrInsufficientBalance
 		}
 	default:
 		return nil, fmt.Errorf("unsupported order type %s", tSpotOrderRequest.Side)
@@ -546,7 +561,7 @@ func (o *Service) GetOrderRule(ctx context.Context, ticker string) (*models.Orde
 	symbolData := res.Symbols[0]
 
 	if symbolData.Status == binancemodels.SymbolStatusBreak || symbolData.Status == binancemodels.SymbolStatusHalt {
-		return nil, fmt.Errorf("symbol %s is not available for trading: %w", ticker, ErrSymbolTradingHalted)
+		return nil, fmt.Errorf("symbol %s is not available for trading: %w", ticker, exchangeclient.ErrSymbolTradingHalted)
 	}
 
 	filters, err := utils.ExtractMarketFilters(symbolData.Filters)
@@ -649,8 +664,9 @@ func (o *Service) GetOrderDetails(ctx context.Context, args *models.GetOrderByID
 	}
 	symbol := symbolInfo.Symbols[0]
 
-	// Calculate for */USDT symbol
+	// Calculate USD value based on which asset is USDT
 	if strings.EqualFold(symbol.QuoteAsset, "USDT") {
+		// Base asset traded in USDT (e.g., BTCUSDT)
 		priceData, err := o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
 			Symbol: res.Symbol,
 		})
@@ -664,10 +680,12 @@ func (o *Service) GetOrderDetails(ctx context.Context, args *models.GetOrderByID
 		}
 
 		order.AmountUSD = price.Mul(order.Amount)
-	}
-
-	// Calculate for */* symbol, non-USDT
-	{
+	} else if strings.EqualFold(symbol.BaseAsset, "USDT") {
+		// Quote asset traded in USDT (e.g., USDTDAI)
+		// Amount is already in USDT
+		order.AmountUSD = order.Amount
+	} else {
+		// Neither is USDT, need to convert base asset to USDT
 		basePriceData, err := o.exClient.MarketData().GetSymbolPriceTicker(ctx, &binancerequests.GetSymbolPriceTickerRequest{
 			Symbol: symbol.BaseAsset + "USDT",
 		})

@@ -497,10 +497,10 @@ func (s *Service) processExchangePairs(ctx context.Context) {
 				for _, pair := range userPairs {
 					err := s.SubmitExchangeOrder(ctx, userID, pair)
 					if err != nil { //nolint:nestif
-						if errors.Is(err, ErrInsufficientBalance) {
+						if errors.Is(err, exchangeclient.ErrInsufficientBalance) {
 							continue
 						}
-						if errors.Is(err, ErrSymbolTradingHalted) {
+						if errors.Is(err, exchangeclient.ErrSymbolTradingHalted) {
 							continue
 						}
 						if errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.ETIMEDOUT) {
@@ -715,8 +715,8 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 
 	rule, err := exClient.GetOrderRule(ctx, pair.Symbol)
 	if err != nil {
-		if errors.Is(err, ErrSymbolTradingHalted) {
-			return ErrSymbolTradingHalted
+		if errors.Is(err, exchangeclient.ErrSymbolTradingHalted) {
+			return exchangeclient.ErrSymbolTradingHalted
 		}
 		return fmt.Errorf("fetch order rules: %w", err)
 	}
@@ -733,7 +733,7 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 			return fmt.Errorf("parse min order amount: %w", err)
 		}
 		if balance.LessThanOrEqual(minOrderAmount) {
-			return ErrInsufficientBalance
+			return exchangeclient.ErrInsufficientBalance
 		}
 	case models.OrderSideBuy:
 		amt, err := exClient.GetCurrencyBalance(ctx, rule.QuoteCurrency)
@@ -746,7 +746,7 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 			return fmt.Errorf("parse min order value: %w", err)
 		}
 		if balance.LessThanOrEqual(minOrderValue) {
-			return ErrInsufficientBalance
+			return exchangeclient.ErrInsufficientBalance
 		}
 	default:
 		return fmt.Errorf("unknown order type: %s", pair.Type)
@@ -768,6 +768,9 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 			if errors.Is(err, ErrSkipOrder) {
 				s.log.Debugw("skipping order due to custom error being thrown", "userID", userID, "symbol", pair.Symbol)
 				return ErrSkipOrder
+			}
+			if errors.Is(err, exchangeclient.ErrInsufficientBalance) {
+				return exchangeclient.ErrInsufficientBalance
 			}
 			updateParams.Status = pgtype.Text{Valid: true, String: models.ExchangeOrderStatusFailed.String()}
 			updateParams.FailReason = pgtype.Text{Valid: true, String: err.Error()}
