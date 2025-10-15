@@ -2,6 +2,7 @@ package key_value
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"sync/atomic"
@@ -32,16 +33,21 @@ func (im *inMemory) Get(_ context.Context, key string) (KeyValueResult, error) {
 }
 
 func (im *inMemory) Set(_ context.Context, key string, value interface{}, expiration time.Duration) error {
-	if strVal, ok := value.([]byte); ok {
-		_ = im.client.Set(key, strVal, expiration)
-		return nil
+	switch v := value.(type) {
+	case string:
+		im.client.Set(key, []byte(v), expiration)
+	case []byte:
+		im.client.Set(key, v, expiration)
+	case map[string]interface{}:
+		data, err := json.Marshal(v)
+		if err != nil {
+			return fmt.Errorf("marshal map value: %w", err)
+		}
+		im.client.Set(key, data, expiration)
+	default:
+		return fmt.Errorf("unsupported value type: %T", value)
 	}
-	if strVal, ok := value.(string); ok {
-		_ = im.client.Set(key, []byte(strVal), expiration)
-		return nil
-	}
-
-	return fmt.Errorf("unsupported value type: %T", value)
+	return nil
 }
 
 func (im *inMemory) Delete(_ context.Context, key string) error {
