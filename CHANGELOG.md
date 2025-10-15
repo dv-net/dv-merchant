@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: panic in Binance GetOrderRule when handling USDT pairs [DV-3558]
 - feat: added proper logging for exchange clients and services [DV-3088]
 - fix: added variation of KuCoin error on withdrawal confirmations lock [DV-3545]
+- fix: encode analytics data into byte array before forwarding to KV cache [DV-3599]
 
 ## [0.9.8] - 2025-10-13
 - fix: add error handling for empty withdrawal addresses and improve logging format [DV-3437]
