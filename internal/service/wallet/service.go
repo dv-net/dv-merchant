@@ -252,7 +252,10 @@ func (s *Service) getOrCreateWalletAddress(
 
 	key := wallet.ID.String() + ":" + c.ID
 	muIface, _ := s.muMap.LoadOrStore(key, &sync.Mutex{})
-	mu := muIface.(*sync.Mutex)
+	mu, ok := muIface.(*sync.Mutex)
+	if !ok {
+		return nil, fmt.Errorf("failed to get mutex for wallet address creation")
+	}
 
 	mu.Lock()
 	defer func() {
