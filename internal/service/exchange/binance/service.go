@@ -23,14 +23,16 @@ import (
 	binancemodels "github.com/dv-net/dv-merchant/pkg/exchange_client/binance/models"
 	binancerequests "github.com/dv-net/dv-merchant/pkg/exchange_client/binance/requests"
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/utils"
+	"github.com/dv-net/dv-merchant/pkg/logger"
 )
 
-func NewService(apiKey, secretKey string, public bool, baseURL *url.URL, storage storage.IStorage, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(logger logger.Logger, apiKey, secretKey string, public bool, baseURL *url.URL, storage storage.IStorage, convSvc currconv.ICurrencyConvertor) (*Service, error) {
 	exClient, err := binance.NewBaseClient(&binance.ClientOptions{
 		APIKey:       apiKey,
 		SecretKey:    secretKey,
 		BaseURL:      baseURL,
 		PublicClient: public,
+		Logger:       logger,
 	})
 	if err != nil {
 		return nil, err
