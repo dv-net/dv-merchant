@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: added proper logging for exchange clients and services [DV-3088]
 - fix: added variation of KuCoin error on withdrawal confirmations lock [DV-3545]
 - fix: incorrect Binance spot order rules calculation [DV-3598]
+- fix: encode analytics data into byte array before forwarding to KV cache [DV-3599]
 
 ## [0.9.8] - 2025-10-13
 - fix: add error handling for empty withdrawal addresses and improve logging format [DV-3437]
