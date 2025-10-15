@@ -506,7 +506,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		Amount:   args.NativeAmount.Sub(args.Fee).String(),
 	}
 
-	o.l.Info("withdrawal request assembled",
+	o.l.Infow("withdrawal request assembled",
 		"exchange", models.ExchangeSlugGateio.String(),
 		"recordID", args.RecordID.String(),
 		"request", req,
@@ -523,7 +523,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	for {
 		if amount.LessThan(minWithdrawal) {
-			o.l.Info("withdrawal amount below minimum",
+			o.l.Infow("withdrawal amount below minimum",
 				"exchange", models.ExchangeSlugOkx.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
@@ -554,8 +554,8 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		}
 
 		if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
-			o.l.Error("insufficient funds, retrying with reduced amount",
-				exchangeclient.ErrWithdrawalBalanceLocked,
+			o.l.Errorw("insufficient funds, retrying with reduced amount",
+				"error", exchangeclient.ErrWithdrawalBalanceLocked,
 				"exchange", models.ExchangeSlugGateio.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
@@ -704,6 +704,6 @@ func (o *Service) GetOrderDetails(ctx context.Context, args *models.GetOrderByID
 
 		return order, nil
 	}
-	o.l.Error("failed to get order details", fmt.Errorf("ExternalOrderID is nil"))
+	o.l.Errorw("failed to get order details", "error", fmt.Errorf("ExternalOrderID is nil"))
 	return order, nil
 }

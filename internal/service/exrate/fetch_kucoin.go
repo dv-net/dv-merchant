@@ -58,7 +58,7 @@ func (o *kucoinFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 	}
 
 	if body.Code != "200000" {
-		o.log.Debug(
+		o.log.Debugw(
 			"currency exchange service response not OK",
 			"status", body.Code,
 		)

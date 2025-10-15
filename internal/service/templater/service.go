@@ -50,26 +50,26 @@ func New(ctx context.Context, logger logger.Logger, settings setting.ISettingSer
 	}
 
 	if err := svc.initializeSettings(ctx); err != nil {
-		logger.Error("failed to initialize settings", err)
+		logger.Errorw("failed to initialize settings", "error", err)
 		return nil
 	}
 
 	if err := svc.parsePartialsFS(); err != nil {
-		logger.Error("failed to initialize provider", err)
+		logger.Errorw("failed to initialize provider", "error", err)
 	}
 
 	if err := svc.initializeLocalization(); err != nil {
-		logger.Error("failed to initialize localization", err)
+		logger.Errorw("failed to initialize localization", "error", err)
 	}
 
 	if err := svc.preloadTemplates(); err != nil {
-		logger.Error("failed to preload templates", err)
+		logger.Errorw("failed to preload templates", "error", err)
 	}
 
 	// Start cache cleanup goroutine
 	go svc.templateCache.Start()
 
-	svc.logger.Info(
+	svc.logger.Infow(
 		"Templater service initialized",
 		"templates_count",
 		len(svc.templates),
@@ -204,7 +204,7 @@ func (o *Service) ClearCacheForTemplate(templateName string) {
 			o.templateCache.Delete(key)
 		}
 	}
-	o.logger.Info("Template cache cleared for template", "template", templateName)
+	o.logger.Infow("Template cache cleared for template", "template", templateName)
 }
 
 // applyLocalization applies localization data to the payload based on language
@@ -385,7 +385,7 @@ func (o *Service) parsePartialsFS() error {
 		Paths: paths,
 	}
 	o.provider = provider
-	o.logger.Info("Partial provider initialized", "paths", paths)
+	o.logger.Infow("Partial provider initialized", "paths", paths)
 	return nil
 }
 

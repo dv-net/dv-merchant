@@ -166,7 +166,7 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 				DBTx:            tx,
 			})
 			if err != nil {
-				s.log.Error("eventListener fire error", err)
+				s.log.Errorw("eventListener fire error", "error", err)
 				return fmt.Errorf("eventListener fire error: %w", err)
 			}
 			return nil
@@ -250,7 +250,7 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			})
 		}
 		if err != nil {
-			s.log.Error("eventListener fire error", err)
+			s.log.Errorw("eventListener fire error", "error", err)
 			return fmt.Errorf("eventListener fire error: %w", err)
 		}
 
@@ -271,7 +271,7 @@ func (s *Service) HandleTransferCallback(ctx context.Context, dto TransferWebhoo
 		}
 
 		if amount.IsZero() {
-			s.log.Info("amount is zero tx_hash: %s", dto.Amount)
+			s.log.Infof("amount is zero tx_hash: %s", dto.Amount)
 			return nil
 		}
 
@@ -297,7 +297,7 @@ func (s *Service) HandleTransferCallback(ctx context.Context, dto TransferWebhoo
 		switch dto.WalletType {
 		case models.WalletTypeProcessing:
 			if !dto.TransferID.Valid {
-				s.log.Info(
+				s.log.Infow(
 					"withdrawal from processing transaction received without request id",
 					"from",
 					dto.FromAddress,
@@ -500,7 +500,7 @@ func (s *Service) HandleUpdateTransferStatusCallback(ctx context.Context, dto pr
 		result := s.storage.TransferTransactions(repos.WithTx(tx)).BatchCreate(ctx, batchParams)
 		defer func() {
 			if clsErr := result.Close(); clsErr != nil {
-				s.log.Error("close transfer transactions batch", clsErr)
+				s.log.Errorw("close transfer transactions batch", "error", clsErr)
 			}
 		}()
 

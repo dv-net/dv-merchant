@@ -100,7 +100,7 @@ func (svc *Service) Run(ctx context.Context) {
 		case <-cleanupTicker.C:
 			go func() {
 				if err := svc.runCleanHistoryJob(ctx); err != nil {
-					svc.logger.Error("failed to run notification cleanup job", err)
+					svc.logger.Errorw("failed to run notification cleanup job", "error", err)
 				}
 			}()
 		case <-senderTicker.C:
@@ -127,7 +127,7 @@ func (svc *Service) SendUser(
 	)
 
 	if err != nil {
-		svc.logger.Error("failed to fetch notification channels", err)
+		svc.logger.Errorw("failed to fetch notification channels", "error", err)
 		return
 	}
 
@@ -141,14 +141,14 @@ func (svc *Service) SendUser(
 
 	preparedPayload, err := payload.Encode()
 	if err != nil {
-		svc.logger.Error("failed to encode payload", err, "user_id", user.ID, "notification_type", notificationType)
+		svc.logger.Errorw("failed to encode payload", "error", err, "user_id", user.ID, "notification_type", notificationType)
 		return
 	}
 
 	for _, deliveryChannel := range deliveryChannels {
 		dest, err := prepareDestination(deliveryChannel, user)
 		if err != nil {
-			svc.logger.Error("enqueue notification by channel failed", err)
+			svc.logger.Errorw("enqueue notification by channel failed", "error", err)
 			continue
 		}
 
@@ -160,7 +160,7 @@ func (svc *Service) SendUser(
 			Args:        args,
 		})
 		if err != nil {
-			svc.logger.Error("failed to enqueue notification", err, "channel", deliveryChannel, "destination", dest)
+			svc.logger.Errorw("failed to enqueue notification", "error", err, "channel", deliveryChannel, "destination", dest)
 			continue
 		}
 	}
@@ -176,7 +176,7 @@ func (svc *Service) SendSystemEmail(
 ) {
 	preparedPayload, err := payload.Encode()
 	if err != nil {
-		svc.logger.Error("failed to encode payload", err, "destination", email, "notification_type", notificationType)
+		svc.logger.Errorw("failed to encode payload", "error", err, "destination", email, "notification_type", notificationType)
 		return
 	}
 
@@ -190,7 +190,7 @@ func (svc *Service) SendSystemEmail(
 	}
 
 	if existHistory && notificationType == models.NotificationTypeExternalWalletRequested {
-		svc.logger.Info("notification was sent recently, skipping", "destination", email, "notification_type", notificationType)
+		svc.logger.Infow("notification was sent recently, skipping", "destination", email, "notification_type", notificationType)
 		return
 	}
 
@@ -209,7 +209,7 @@ func (svc *Service) SendSystemEmail(
 	_, err = svc.storage.NotificationSendQueue().Create(ctx, params)
 
 	if err != nil {
-		svc.logger.Error("failed to enqueue system email ", err, "destination ", email, "notification_type ", notificationType)
+		svc.logger.Errorw("failed to enqueue system email ", "error", err, "destination ", email, "notification_type ", notificationType)
 	}
 }
 
@@ -221,7 +221,7 @@ func (svc *Service) processQueue(ctx context.Context) {
 
 	notifications, err := svc.storage.NotificationSendQueue().GetQueuedNotifications(ctx, svc.maxRetries)
 	if err != nil {
-		svc.logger.Error("failed to get notification queue", err)
+		svc.logger.Errorw("failed to get notification queue", "error", err)
 	}
 
 	for _, notification := range notifications {
@@ -232,12 +232,12 @@ func (svc *Service) processQueue(ctx context.Context) {
 
 		currentAttempt, err := svc.storage.NotificationSendQueue().IncreaseAttempts(ctx, notification.ID)
 		if err != nil {
-			svc.logger.Error("failed to increase attempts", err, "id", notification.ID)
+			svc.logger.Errorw("failed to increase attempts", "error", err, "id", notification.ID)
 		}
 
 		if res.IsExternal || res.IsSuccess || currentAttempt >= svc.maxRetries {
 			if deleteErr := svc.storage.NotificationSendQueue().Delete(ctx, notification.ID); deleteErr != nil {
-				svc.logger.Error("failed to delete notification queue job", deleteErr)
+				svc.logger.Errorw("failed to delete notification queue job", "error", deleteErr)
 			}
 		}
 	}
@@ -268,7 +268,7 @@ func (svc *Service) createSendHistory(ctx context.Context, notification models.N
 	}
 	err := svc.storage.NotificationSendHistory().Create(ctx, params)
 	if err != nil {
-		svc.logger.Error("failed to submit notification history", err)
+		svc.logger.Errorw("failed to submit notification history", "error", err)
 	}
 }
 
@@ -278,7 +278,7 @@ func (svc *Service) runCleanHistoryJob(ctx context.Context) error {
 		return err
 	}
 	if deletedRows > 0 {
-		svc.logger.Info("Cleaned old notification history", "deletedRows", int(deletedRows))
+		svc.logger.Infow("Cleaned old notification history", "deletedRows", int(deletedRows))
 	}
 	return nil
 }
@@ -309,7 +309,7 @@ func (svc *Service) processReminds(ctx context.Context) {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return
 		}
-		svc.logger.Error("failed to get unverified users", err)
+		svc.logger.Errorw("failed to get unverified users", "error", err)
 	}
 
 	for _, user := range users {
@@ -392,13 +392,13 @@ func (svc *Service) isNotificationDisabledForStore(ctx context.Context, notifica
 
 	store, err := svc.storage.Stores().GetByID(ctx, *args.StoreID)
 	if err != nil {
-		svc.logger.Error("failed to get store for notification settings check", err, "store_id", *args.StoreID)
+		svc.logger.Errorw("failed to get store for notification settings check", "error", err, "store_id", *args.StoreID)
 		return false
 	}
 
 	storeSetting, err := svc.settingsSvc.GetStoreModelSetting(ctx, settingName, store)
 	if err != nil {
-		svc.logger.Error("failed to get store notification setting", err, "setting_name", settingName, "store_id", *args.StoreID)
+		svc.logger.Errorw("failed to get store notification setting", "error", err, "setting_name", settingName, "store_id", *args.StoreID)
 		return false
 	}
 

@@ -266,7 +266,7 @@ func (s *Service) getOrCreateWalletAddress(
 
 	err = s.logProcessingAddressReceived(ctx, walletAddress, pgtypeutils.DecodeText(wallet.IpAddress))
 	if err != nil {
-		s.logger.Error("failed create log to process processing addresses", err)
+		s.logger.Errorw("failed create log to process processing addresses", "error", err)
 	}
 
 	return walletAddress, nil
@@ -719,7 +719,7 @@ func (s *Service) getWalletsTotalBalance(ctx context.Context, user *models.User,
 	}()
 
 	for err := range errCh {
-		s.logger.Error("fetch wallet balance", err)
+		s.logger.Errorw("fetch wallet balance", "error", err)
 	}
 
 	totalUSD := decimal.Zero
@@ -1076,7 +1076,7 @@ func (s *Service) LoadPrivateAddresses(ctx context.Context, dto LoadPrivateKeyDT
 	for _, item := range data.AllSelectedWallets {
 		err := s.logProcessingLoadAddressPrivateKey(ctx, item.Address, item.WalletAddressesID, dto.IP)
 		if err != nil {
-			s.logger.Error("Error store DB log for load private key", err)
+			s.logger.Errorw("error store DB log for load private key", "error", err)
 		}
 	}
 
@@ -1125,7 +1125,7 @@ func (s *Service) calculateAddressHash(addresses []*models.WalletAddress) string
 	hashes := lo.Map(addresses, func(w *models.WalletAddress, _ int) string {
 		h := sha256.New()
 		if _, err := h.Write([]byte(w.Address)); err != nil {
-			s.logger.Error("failed to hash address", err)
+			s.logger.Errorw("failed to hash address", "error", err)
 			return ""
 		}
 		return hex.EncodeToString(h.Sum(nil))[:6]

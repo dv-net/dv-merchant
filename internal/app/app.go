@@ -34,12 +34,12 @@ func Run(ctx context.Context, conf *config.Config, l logger.Logger, currentAppVe
 
 	st, err := storage.InitStore(ctx, conf)
 	if err != nil {
-		lg.Error("failed to init store", err)
+		lg.Errorw("failed to init store", "error", err)
 		return err
 	}
 	defer func() {
 		if storageCloseErr := st.Close(); storageCloseErr != nil {
-			lg.Error("storage close error", storageCloseErr)
+			lg.Errorw("storage close error", "error", storageCloseErr)
 		}
 	}()
 
@@ -60,7 +60,7 @@ func Run(ctx context.Context, conf *config.Config, l logger.Logger, currentAppVe
 	for _, svc := range svcs {
 		go func() {
 			if err := svc.Start(ctx); err != nil {
-				lg.Error("failed to start service", err)
+				lg.Errorw("failed to start service", "error", err)
 			}
 		}()
 	}
@@ -70,7 +70,7 @@ func Run(ctx context.Context, conf *config.Config, l logger.Logger, currentAppVe
 	lg.Info("Dv-merchant Server Start")
 
 	if err := srv.Stop(); err != nil {
-		lg.Error("failed to stop server", err)
+		lg.Errorw("failed to stop server", "error", err)
 	}
 
 	serverErrCh := make(chan error, 1)

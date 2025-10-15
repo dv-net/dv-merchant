@@ -58,30 +58,28 @@ func (b *Client) TestRequestWithAuth(ctx context.Context, auth aml.RequestAuthor
 	// Send the request
 	resp, err := b.cl.Do(httpReq)
 	if err != nil {
-		b.log.Error("sending BitOK HTTP request error", err)
+		b.log.Errorw("sending BitOK HTTP request error", "error", err)
 		return fmt.Errorf("send request: %w", err)
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			b.log.Warn("failed to close response body", "err", cerr)
+			b.log.Warnw("failed to close response body", "error", cerr)
 		}
 	}()
 
 	// Read response body
 	respBodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		b.log.Error("parsing BitOK response error", err)
+		b.log.Errorw("parsing BitOK response error", "error", err)
 		return fmt.Errorf("read response body: %w", err)
 	}
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		b.log.Debug(
+		b.log.Debugw(
 			"failed BitOK networks request",
-			"http_code",
-			resp.StatusCode,
-			"body",
-			string(respBodyBytes),
+			"http_code", resp.StatusCode,
+			"body", string(respBodyBytes),
 		)
 		return &aml.RequestFailedError{
 			StatusCode: resp.StatusCode,
@@ -93,7 +91,7 @@ func (b *Client) TestRequestWithAuth(ctx context.Context, auth aml.RequestAuthor
 	// Decode response
 	var response map[string]interface{}
 	if err := json.Unmarshal(respBodyBytes, &response); err != nil {
-		b.log.Error("parsing BitOK response error", err)
+		b.log.Errorw("parsing BitOK response error", "error", err)
 		return fmt.Errorf("decode response: %w", err)
 	}
 
@@ -121,7 +119,7 @@ func (b *Client) InitCheckTransaction(ctx context.Context, dto aml.InitCheckDTO,
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			b.log.Warn("failed to close response body", "err", cerr)
+			b.log.Warnw("failed to close response body", "error", cerr)
 		}
 	}()
 
@@ -133,14 +131,11 @@ func (b *Client) InitCheckTransaction(ctx context.Context, dto aml.InitCheckDTO,
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		b.log.Debug(
+		b.log.Debugw(
 			"failed bitok init check request",
-			"http_code",
-			resp.StatusCode,
-			"body",
-			string(respBodyBytes),
-			"request",
-			string(reqBodyBytes),
+			"http_code", resp.StatusCode,
+			"body", string(respBodyBytes),
+			"request", string(reqBodyBytes),
 		)
 
 		return nil, &aml.RequestFailedError{
@@ -191,7 +186,7 @@ func (b *Client) FetchCheckStatus(ctx context.Context, checkID string, auth aml.
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			b.log.Warn("failed to close response body", "err", cerr)
+			b.log.Warnw("failed to close response body", "error", cerr)
 		}
 	}()
 

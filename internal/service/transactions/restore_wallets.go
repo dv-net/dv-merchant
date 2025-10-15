@@ -50,7 +50,7 @@ func (s *Service) RestoreAllWallets(ctx context.Context, blockchains []string) e
 			}()
 
 			if err := s.syncWalletTransactions(ctx, v.WalletAddress, v.Store, v.Currency); err != nil {
-				s.log.Error("restore wallet transactions: %w", err)
+				s.log.Errorw("restore wallet transactions", "error", err)
 			}
 		}()
 	}

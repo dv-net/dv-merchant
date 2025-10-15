@@ -426,7 +426,7 @@ func (s Service) createWithdrawalWallet(ctx context.Context, c *models.Currency,
 
 	newWallet, err = s.storage.WithdrawalWallets(opts...).Create(ctx, params)
 	if err != nil {
-		s.logger.Error("Failed to create withdrawal wallet",
+		s.logger.Errorw("Failed to create withdrawal wallet",
 			"user_id", usr.ID,
 			"currency_id", c.ID,
 			"error", err)

@@ -79,7 +79,7 @@ func (s *service) Send(message *Message, dbTx pgx.Tx) error {
 		},
 	)
 	if err != nil {
-		s.log.Error("create webhook_send_queue", err)
+		s.log.Errorw("create webhook_send_queue", "error", err)
 		return fmt.Errorf("create webhook_send_queue: %w", err)
 	}
 
@@ -94,7 +94,7 @@ func (s *service) Run(ctx context.Context) {
 		case <-ticker.C:
 			go func() {
 				if err := s.processWhQueue(ctx); err != nil {
-					s.log.Error("Precess webhook queue error", err)
+					s.log.Errorw("Precess webhook queue error", "error", err)
 				}
 			}()
 		case <-ctx.Done():
@@ -120,24 +120,24 @@ func (s *service) SendWebhook(ctx context.Context, url string, payload []byte, s
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		s.log.Error("webhook sent http", err)
+		s.log.Errorw("webhook sent http", "error", err)
 		return result, nil
 	}
 	defer func() {
 		if err = resp.Body.Close(); err != nil {
-			s.log.Error("close wh resp body error", err)
+			s.log.Errorw("close wh resp body error", "error", err)
 		}
 	}()
 
 	result.ResponseStatusCode = resp.StatusCode
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		s.log.Error("read web hook response body failed", err)
+		s.log.Errorw("read web hook response body failed", "error", err)
 	}
 
 	whResp := &StoreWhResponse{}
 	if err = json.NewDecoder(bytes.NewBuffer(body)).Decode(whResp); err != nil {
-		s.log.Error("decode body failed", err)
+		s.log.Errorw("decode body failed", "error", err)
 	}
 
 	whStatus := WebhookSendStatusFailed
@@ -169,7 +169,7 @@ func (s *service) processWhQueue(ctx context.Context) error {
 		}
 
 		if err := s.ProcessPlainMessage(ctx, prepareHookDtoByRaw(v)); err != nil {
-			s.log.Error("Processing wh message", err)
+			s.log.Errorw("Processing wh message", "error", err)
 		}
 
 		s.locker.Release(v.WebhookID)
@@ -181,11 +181,11 @@ func (s *service) processWhQueue(ctx context.Context) error {
 func (s *service) ProcessPlainMessage(ctx context.Context, dto PreparedHookDto) error {
 	result, sendWhErr := s.SendWebhook(ctx, dto.URL, dto.Payload, dto.Signature)
 	if sendWhErr != nil {
-		s.log.Error("send webhook error", sendWhErr)
+		s.log.Errorw("send webhook error", "error", sendWhErr)
 	}
 
 	if createHistoryErr := s.createSendHistory(ctx, dto, result); createHistoryErr != nil {
-		s.log.Error("create send history failed", createHistoryErr)
+		s.log.Errorw("create send history failed", "error", createHistoryErr)
 	}
 
 	if dto.ID.Valid && !dto.IsManual {

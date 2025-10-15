@@ -90,7 +90,7 @@ func (o *okxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 			}
 
 			if body.Code != "0" {
-				o.log.Debug("currency exchange service response not OK", "status", body.Message)
+				o.log.Debugw("currency exchange service response not OK", "status", body.Message)
 				return
 			}
 			_ = filterOkxResponse(body, currencyFilter, mergeCh)

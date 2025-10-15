@@ -138,25 +138,25 @@ func NewServices(
 	adminSvc := admin_gateway.New(conf.Admin.BaseURL, appVersion, logger, conf.Admin.LogStatus)
 	exrateService, err := exrate.New(conf, currencyService, logger, storage)
 	if err != nil {
-		logger.Error("init currency exchange rate service failed", err)
+		logger.Errorw("init currency exchange rate service failed", "error", err)
 		return nil, err
 	}
 
 	currConvService := currconv.New(exrateService)
 	permissionService, err := permission.New(conf, storage.PSQLConn())
 	if err != nil {
-		logger.Error("init permission service", err)
+		logger.Errorw("init permission service", "error", err)
 		return nil, err
 	}
 	if err := permissionService.LoadPolicies(conf.RolesPoliciesPath); err != nil {
-		logger.Error("load permission policies", err)
+		logger.Errorw("load permission policies", "error", err)
 		return nil, err
 	}
 
 	webhookService := webhook.New(conf.WebHook, storage, logger)
 	eprClient, err := epr.NewClient(conf.EProxy.GRPC.Addr)
 	if err != nil {
-		logger.Error("init epr client", err)
+		logger.Errorw("init epr client", "error", err)
 		return nil, err
 	}
 
@@ -185,7 +185,7 @@ func NewServices(
 	templaterService := templater.New(ctx, logger, settingService)
 	mailSender, err := mail_sender.New(logger, eventListener, templaterService, settingService)
 	if err != nil {
-		logger.Error("initialize mailer", err)
+		logger.Errorw("initialize mailer", "error", err)
 	}
 	if mailSender != nil {
 		notificationDrivers[models.EmailDeliveryChannel] = mailSender
