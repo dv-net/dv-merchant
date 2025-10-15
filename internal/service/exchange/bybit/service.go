@@ -962,7 +962,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	totalBalance := fundingAmount.Add(unifiedAmount)
 
-	o.l.Info("balances",
+	o.l.Infow("balances",
 		"exchange", models.ExchangeSlugBybit.String(),
 		"recordID", args.RecordID.String(),
 		"withdrawalAmount", args.NativeAmount.String(),
@@ -975,13 +975,13 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 	// Bybit requires withdrawals to be made from FUND account
 	// If insufficient funds in FUND, transfer from UNIFIED
 	if fundingAmount.LessThan(args.NativeAmount) {
-		o.l.Info("funding balance is less than withdrawal amount",
+		o.l.Infow("funding balance is less than withdrawal amount",
 			"exchange", models.ExchangeSlugBybit.String(),
 			"recordID", args.RecordID.String(),
 		)
 
 		if totalBalance.LessThan(args.NativeAmount) {
-			o.l.Info("total balance is less than withdrawal amount",
+			o.l.Infow("total balance is less than withdrawal amount",
 				"exchange", models.ExchangeSlugBybit.String(),
 				"recordID", args.RecordID.String(),
 			)
@@ -1007,7 +1007,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 			return nil, err
 		}
 
-		o.l.Info("transferred funds from UNIFIED to FUND",
+		o.l.Infow("transferred funds from UNIFIED to FUND",
 			"exchange", models.ExchangeSlugBybit.String(),
 			"recordID", args.RecordID.String(),
 			"transferAmount", transferAmount.String(),
@@ -1023,7 +1023,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		FeeType:   "1", // 0: return fee to wallet, 1: deduct fee from withdrawal amount
 	}
 
-	o.l.Info("withdrawal request assembled",
+	o.l.Infow("withdrawal request assembled",
 		"exchange", models.ExchangeSlugBybit.String(),
 		"recordID", args.RecordID.String(),
 		"request", req,
@@ -1040,7 +1040,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	for {
 		if amount.LessThan(minWithdrawal) {
-			o.l.Info("withdrawal amount below minimum",
+			o.l.Infow("withdrawal amount below minimum",
 				"exchange", models.ExchangeSlugBybit.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
@@ -1070,8 +1070,8 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 		// Check for Bybit-specific insufficient balance errors
 		if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
-			o.l.Error("insufficient funds, retrying with reduced amount",
-				exchangeclient.ErrWithdrawalBalanceLocked,
+			o.l.Errorw("insufficient funds, retrying with reduced amount",
+				"error", exchangeclient.ErrWithdrawalBalanceLocked,
 				"exchange", models.ExchangeSlugBybit.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),

@@ -140,7 +140,7 @@ func (h Handler) processingCallback(c fiber.Ctx) error {
 	}
 
 	if err != nil {
-		h.logger.Error("failed to fetch currency in processing callback", err)
+		h.logger.Errorw("failed to fetch currency in processing callback", "error", err)
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 

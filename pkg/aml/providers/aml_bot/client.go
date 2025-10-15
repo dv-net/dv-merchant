@@ -87,18 +87,18 @@ func (c *Client) TestRequestWithAuth(ctx context.Context, auth aml.RequestAuthor
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		c.log.Error("sending AML HTTP request error", err)
+		c.log.Errorw("sending AML HTTP request error", "error", err)
 		return fmt.Errorf("executing request: %w", err)
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			c.log.Warn("error closing response body", "error", cerr)
+			c.log.Warnw("error closing response body", "error", cerr)
 		}
 	}()
 
 	respBodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.log.Error("parsing AML response error", err)
+		c.log.Errorw("parsing AML response error", "error", err)
 		return fmt.Errorf("reading response body: %w", err)
 	}
 
@@ -112,7 +112,7 @@ func (c *Client) TestRequestWithAuth(ctx context.Context, auth aml.RequestAuthor
 
 	var response ErrorResponse
 	if err := json.Unmarshal(respBodyBytes, &response); err != nil {
-		c.log.Error("parsing AML response error", err)
+		c.log.Errorw("parsing AML response error", "error", err)
 		return fmt.Errorf("decoding response: %w", err)
 	}
 
@@ -136,23 +136,23 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 
 	jsonRequest, err := QueryToJSON(string(reqBodyBytes))
 	if err != nil {
-		c.log.Error("error converting request to JSON", err)
+		c.log.Errorw("error converting request to JSON", "error", err)
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		c.log.Error("sending AML HTTP request error", err)
+		c.log.Errorw("sending AML HTTP request error", "error", err)
 		return nil, fmt.Errorf("executing request: %w", err)
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			c.log.Warn("error closing response body", "error", cerr)
+			c.log.Warnw("error closing response body", "error", cerr)
 		}
 	}()
 
 	respBodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.log.Error("parsing AML response error", err)
+		c.log.Errorw("parsing AML response error", "error", err)
 		return nil, fmt.Errorf("reading response body: %w", err)
 	}
 
@@ -166,12 +166,12 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 
 	var response Response
 	if err := json.Unmarshal(respBodyBytes, &response); err != nil {
-		c.log.Error("parsing AML response error", err)
+		c.log.Errorw("parsing AML response error", "error", err)
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
 
 	if !response.Result {
-		c.log.Debug("AML API error", "url", req.URL.String(), "description", response.Description)
+		c.log.Debugw("AML API error", "url", req.URL.String(), "description", response.Description)
 		return nil, &aml.RequestFailedError{
 			StatusCode: http.StatusOK,
 			Body:       respBodyBytes,
@@ -181,7 +181,7 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 
 	// Check if response data exists
 	if response.Data == nil {
-		c.log.Debug("AML response has no data", "url", req.URL.String())
+		c.log.Debugw("AML response has no data", "url", req.URL.String())
 		return nil, &aml.RequestFailedError{
 			StatusCode: http.StatusOK,
 			Body:       respBodyBytes,

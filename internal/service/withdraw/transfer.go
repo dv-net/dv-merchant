@@ -137,7 +137,7 @@ func (s *service) DeleteTransfers(ctx context.Context, user *models.User, req *t
 		batch := s.storage.Transfers(repos.WithTx(tx)).BatchDeleteTransfers(ctx, params)
 		defer func() {
 			if err := batch.Close(); err != nil {
-				s.logger.Error("batch delete transfers close error", err)
+				s.logger.Errorw("batch delete transfers close error", "error", err)
 			}
 		}()
 

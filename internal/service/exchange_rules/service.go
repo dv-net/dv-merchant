@@ -90,10 +90,10 @@ func (o *Service) GetWithdrawalRules(ctx context.Context, exchange models.Exchan
 func (o *Service) Run(ctx context.Context) {
 	go func() {
 		if err := o.updateHtxDefaultWithdrawalRules(ctx); err != nil {
-			o.logger.Error("failed to update default exchange rules", err)
+			o.logger.Errorw("failed to update default exchange rules", "error", err)
 		}
 		if err := o.updateUsersWithdrawalRules(ctx); err != nil {
-			o.logger.Error("failed to update user exchange rules", err)
+			o.logger.Errorw("failed to update user exchange rules", "error", err)
 		}
 	}()
 	ticker := time.NewTicker(30 * time.Minute)
@@ -103,10 +103,10 @@ func (o *Service) Run(ctx context.Context) {
 			return
 		case <-ticker.C:
 			if err := o.updateHtxDefaultWithdrawalRules(ctx); err != nil {
-				o.logger.Error("failed to update default htx exchange rules", err)
+				o.logger.Errorw("failed to update default htx exchange rules", "error", err)
 			}
 			if err := o.updateUsersWithdrawalRules(ctx); err != nil {
-				o.logger.Error("failed to update user exchange rules", err)
+				o.logger.Errorw("failed to update user exchange rules", "error", err)
 			}
 		}
 	}

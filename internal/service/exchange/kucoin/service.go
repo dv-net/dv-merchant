@@ -323,7 +323,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	totalBalance := spotBalance.Add(fundingBalance)
 
-	o.l.Info("balances",
+	o.l.Infow("balances",
 		"exchange", models.ExchangeSlugKucoin.String(),
 		"recordID", args.RecordID.String(),
 		"withdrawalAmount", args.NativeAmount.String(),
@@ -334,13 +334,13 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 	)
 
 	if fundingBalance.LessThan(args.NativeAmount) {
-		o.l.Info("funding balance is less than withdrawal amount",
+		o.l.Infow("funding balance is less than withdrawal amount",
 			"exchange", models.ExchangeSlugKucoin.String(),
 			"recordID", args.RecordID.String(),
 		)
 
 		if totalBalance.LessThan(args.NativeAmount) {
-			o.l.Info("total balance is less than withdrawal amount",
+			o.l.Infow("total balance is less than withdrawal amount",
 				"exchange", models.ExchangeSlugKucoin.String(),
 				"recordID", args.RecordID.String(),
 			)
@@ -364,7 +364,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		if err != nil {
 			return nil, err
 		}
-		o.l.Info("transfer funds from spot to funding",
+		o.l.Infow("transfer funds from spot to funding",
 			"exchange", models.ExchangeSlugKucoin.String(),
 			"recordID", args.RecordID.String(),
 			"transferOID", transferOID.String(),
@@ -383,7 +383,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		FeeDeductType: kucoinmodels.FeeDeductTypeExternal,
 	}
 
-	o.l.Info("withdrawal request assembled",
+	o.l.Infow("withdrawal request assembled",
 		"exchange", models.ExchangeSlugKucoin.String(),
 		"recordID", args.RecordID.String(),
 		"withdrawalAmount", req.Amount,
@@ -399,7 +399,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 	dto := &models.ExchangeWithdrawalDTO{}
 	for {
 		if amount.LessThan(minWithdrawals) {
-			o.l.Info("withdrawal amount below minimum",
+			o.l.Infow("withdrawal amount below minimum",
 				"exchange", models.ExchangeSlugKucoin.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
@@ -427,7 +427,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		}
 
 		if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
-			o.l.Info("withdrawal balance locked",
+			o.l.Infow("withdrawal balance locked",
 				"exchange", models.ExchangeSlugKucoin.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
@@ -646,7 +646,7 @@ func (o *Service) GetOrderDetails(ctx context.Context, args *models.GetOrderByID
 	// Since Kucoin does not return inactive orders older then 7 days
 	if args.InternalOrder != nil {
 		if args.InternalOrder.CreatedAt.Time.Before(time.Now().AddDate(0, 0, -7)) {
-			o.l.Info("order is older than 7 days, failing",
+			o.l.Infow("order is older than 7 days, failing",
 				"exchange", models.ExchangeSlugKucoin.String(),
 				"orderID", args.InternalOrder.ID.String(),
 			)

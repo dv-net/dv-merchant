@@ -30,7 +30,7 @@ const maxWorkers = 50
 
 func (s *Service) Run(ctx context.Context) {
 	if s.maxAttempts <= 0 {
-		s.log.Warn("aml status checker", fmt.Errorf("max_attempts must be positive"))
+		s.log.Warnw("aml status checker", "error", fmt.Errorf("max_attempts must be positive"))
 	}
 
 	go s.processQueue(ctx)
@@ -54,7 +54,7 @@ func (s *Service) processQueue(ctx context.Context) {
 
 	queue, err := s.st.AmlCheckQueue().FetchPending(ctx, s.maxAttempts, models.AmlCheckStatusPending)
 	if err != nil {
-		s.log.Error("failed to fetch pending checks", err)
+		s.log.Errorw("failed to fetch pending checks", "error", err)
 		return
 	}
 
@@ -67,7 +67,7 @@ func (s *Service) processQueue(ctx context.Context) {
 		go func() {
 			defer wg.Done()
 			if err = s.processCheckQueueElement(ctx, check); err != nil {
-				s.log.Error("failed to process check", err, "check_id", check.AmlCheck.ID)
+				s.log.Errorw("failed to process check", "error", err, "check_id", check.AmlCheck.ID)
 			}
 
 			<-sema
@@ -164,7 +164,7 @@ func (s *Service) updateCheckAndClearQueue(
 		return fmt.Errorf("failed to delete from queue: %w", err)
 	}
 
-	s.log.Debug("finalized check", "check_id", check.AmlCheck.ID, "status", status, "attempts", check.AmlCheckQueue.Attempts+1)
+	s.log.Debugw("finalized check", "check_id", check.AmlCheck.ID, "status", status, "attempts", check.AmlCheckQueue.Attempts+1)
 
 	return nil
 }

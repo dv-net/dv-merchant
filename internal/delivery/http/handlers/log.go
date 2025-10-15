@@ -94,6 +94,7 @@ func (h *Handler) getLogs(c fiber.Ctx) error {
 			Level:   l.Level,
 			Message: l.Message,
 			Time:    l.Time.UTC().Format(time.RFC3339Nano),
+			Fields:  l.Fields,
 		})
 	}
 

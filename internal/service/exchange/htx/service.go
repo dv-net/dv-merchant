@@ -63,33 +63,33 @@ func (o *Service) GetOrderDetails(ctx context.Context, args *models.GetOrderByID
 }
 
 func (o *Service) getOrderDetailsExternal(ctx context.Context, order *models.OrderDetailsDTO, externalOrderID string) (*models.OrderDetailsDTO, error) {
-	o.l.Info("retrieving external order details", "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "connection_hash", o.connHash)
+	o.l.Infow("retrieving external order details", "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "connection_hash", o.connHash)
 
 	orderID, err := strconv.ParseInt(externalOrderID, 10, 64)
 	if err != nil {
-		o.l.Error("failed to parse external order id", err, "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "connection_hash", o.connHash)
+		o.l.Errorw("failed to parse external order id", "error", err, "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "connection_hash", o.connHash)
 		return nil, fmt.Errorf("order id cant be casted to int64 %w", err)
 	}
 	res, err := o.exClient.Order().GetOrderDetails(ctx, orderID)
 	if err != nil && errors.Is(err, htxmodels.ErrHtxBaseRecordInvalid) {
-		o.l.Info("order not found on exchange", "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "connection_hash", o.connHash)
+		o.l.Infow("order not found on exchange", "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "connection_hash", o.connHash)
 		return order, nil
 	}
 	if err != nil {
-		o.l.Error("failed to get order details from exchange", err, "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "connection_hash", o.connHash)
+		o.l.Errorw("failed to get order details from exchange", "error", err, "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "connection_hash", o.connHash)
 		return nil, err
 	}
 	if res.Order != nil {
 		amt, err := decimal.NewFromString(res.Order.Amount)
 		if err != nil {
-			o.l.Error("failed to parse order amount", err, "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "amount", res.Order.Amount, "connection_hash", o.connHash)
+			o.l.Errorw("failed to parse order amount", "error", err, "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "amount", res.Order.Amount, "connection_hash", o.connHash)
 			return nil, err
 		}
 		order.Amount = amt
 
 		amtUSD, err := o.getNotionalUSD(ctx, res.Order.Symbol, res.Order.Type, amt)
 		if err != nil {
-			o.l.Error("failed to calculate usd amount", err, "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "symbol", res.Order.Symbol, "connection_hash", o.connHash)
+			o.l.Errorw("failed to calculate usd amount", "error", err, "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "symbol", res.Order.Symbol, "connection_hash", o.connHash)
 			return nil, err
 		}
 		order.AmountUSD = amtUSD
@@ -101,9 +101,9 @@ func (o *Service) getOrderDetailsExternal(ctx context.Context, order *models.Ord
 			order.State = models.ExchangeOrderStatusInProgress
 		}
 
-		o.l.Info("order details retrieved successfully", "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "state", res.Order.State.String(), "amount", amt.String(), "amount_usd", amtUSD.String(), "connection_hash", o.connHash)
+		o.l.Infow("order details retrieved successfully", "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "state", res.Order.State.String(), "amount", amt.String(), "amount_usd", amtUSD.String(), "connection_hash", o.connHash)
 	} else {
-		o.l.Info("order response contains no order data", "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "connection_hash", o.connHash)
+		o.l.Infow("order response contains no order data", "exchange_slug", models.ExchangeSlugHtx, "external_order_id", externalOrderID, "connection_hash", o.connHash)
 	}
 	return order, nil
 }
@@ -141,23 +141,23 @@ func (o *Service) getNotionalUSD(ctx context.Context, instID string, side htxmod
 }
 
 func (o *Service) getOrderDetailsInternal(ctx context.Context, order *models.OrderDetailsDTO, clientOrderID string) (*models.OrderDetailsDTO, error) {
-	o.l.Info("retrieving internal order details", "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "connection_hash", o.connHash)
+	o.l.Infow("retrieving internal order details", "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "connection_hash", o.connHash)
 
 	res, err := o.exClient.Order().GetOrderDetailsByClientID(ctx, &htxrequests.GetOrderByClientIDRequest{
 		ClientOrderID: clientOrderID,
 	})
 	if err != nil && errors.Is(err, htxmodels.ErrHtxBaseRecordInvalid) {
-		o.l.Info("order not found on exchange", "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "connection_hash", o.connHash)
+		o.l.Infow("order not found on exchange", "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "connection_hash", o.connHash)
 		return order, nil
 	}
 	if err != nil {
-		o.l.Error("failed to get order details by client id", err, "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "connection_hash", o.connHash)
+		o.l.Errorw("failed to get order details by client id", "error", err, "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "connection_hash", o.connHash)
 		return nil, err
 	}
 	if res.Order != nil {
 		amt, err := decimal.NewFromString(res.Order.Amount)
 		if err != nil {
-			o.l.Error("failed to parse order amount", err, "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "amount", res.Order.Amount, "connection_hash", o.connHash)
+			o.l.Errorw("failed to parse order amount", "error", err, "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "amount", res.Order.Amount, "connection_hash", o.connHash)
 			return nil, err
 		}
 		order.Amount = amt
@@ -168,9 +168,9 @@ func (o *Service) getOrderDetailsInternal(ctx context.Context, order *models.Ord
 			order.State = models.ExchangeOrderStatusInProgress
 		}
 
-		o.l.Info("internal order details retrieved successfully", "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "state", res.Order.State.String(), "amount", amt.String(), "connection_hash", o.connHash)
+		o.l.Infow("internal order details retrieved successfully", "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "state", res.Order.State.String(), "amount", amt.String(), "connection_hash", o.connHash)
 	} else {
-		o.l.Info("order response contains no order data", "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "connection_hash", o.connHash)
+		o.l.Infow("order response contains no order data", "exchange_slug", models.ExchangeSlugHtx, "client_order_id", clientOrderID, "connection_hash", o.connHash)
 	}
 	return order, nil
 }
@@ -282,19 +282,19 @@ func (o *Service) GetWithdrawalRules(ctx context.Context, currencyIDs ...string)
 }
 
 func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side string, ticker string, amount *decimal.Decimal, _ *models.OrderRulesDTO) (*models.ExchangeOrderDTO, error) { //nolint:staticcheck
-	o.l.Info("starting spot order creation", "exchange_slug", models.ExchangeSlugHtx, "side", side, "ticker", ticker, "connection_hash", o.connHash)
+	o.l.Infow("starting spot order creation", "exchange_slug", models.ExchangeSlugHtx, "side", side, "ticker", ticker, "connection_hash", o.connHash)
 
 	spotAccount, err := o.getSpotAccount(ctx)
 	if err != nil {
-		o.l.Error("failed to get spot account", err, "exchange_slug", models.ExchangeSlugHtx, "side", side, "ticker", ticker, "connection_hash", o.connHash)
+		o.l.Errorw("failed to get spot account", "error", err, "exchange_slug", models.ExchangeSlugHtx, "side", side, "ticker", ticker, "connection_hash", o.connHash)
 		return nil, err
 	}
 
-	o.l.Info("retrieved spot account", "exchange_slug", models.ExchangeSlugHtx, "account_id", spotAccount.ID, "account_type", spotAccount.Type.String(), "side", side, "ticker", ticker, "connection_hash", o.connHash)
+	o.l.Infow("retrieved spot account", "exchange_slug", models.ExchangeSlugHtx, "account_id", spotAccount.ID, "account_type", spotAccount.Type.String(), "side", side, "ticker", ticker, "connection_hash", o.connHash)
 
 	balance, err := o.exClient.Account().GetAccountBalance(ctx, spotAccount)
 	if err != nil {
-		o.l.Error("failed to get account balance", err, "exchange_slug", models.ExchangeSlugHtx, "account_id", spotAccount.ID, "side", side, "ticker", ticker, "connection_hash", o.connHash)
+		o.l.Errorw("failed to get account balance", "error", err, "exchange_slug", models.ExchangeSlugHtx, "account_id", spotAccount.ID, "side", side, "ticker", ticker, "connection_hash", o.connHash)
 		return nil, err
 	}
 
@@ -305,11 +305,11 @@ func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side 
 		return item, false
 	})
 
-	o.l.Info("filtered available balances", "exchange_slug", models.ExchangeSlugHtx, "balance_count", len(balances), "side", side, "ticker", ticker, "connection_hash", o.connHash)
+	o.l.Infow("filtered available balances", "exchange_slug", models.ExchangeSlugHtx, "balance_count", len(balances), "side", side, "ticker", ticker, "connection_hash", o.connHash)
 
 	orderID, err := uuid.NewUUID()
 	if err != nil {
-		o.l.Error("failed to generate order id", err, "exchange_slug", models.ExchangeSlugHtx, "side", side, "ticker", ticker, "connection_hash", o.connHash)
+		o.l.Errorw("failed to generate order id", "error", err, "exchange_slug", models.ExchangeSlugHtx, "side", side, "ticker", ticker, "connection_hash", o.connHash)
 		return nil, err
 	}
 
@@ -494,7 +494,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 
 	for {
 		if amount.LessThan(minWithdrawal) {
-			o.l.Info("withdrawal amount below minimum",
+			o.l.Infow("withdrawal amount below minimum",
 				"exchange", models.ExchangeSlugHtx.String(),
 				"recordID", args.RecordID.String(),
 				"current_amount", amount.String(),
@@ -519,8 +519,8 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		res, err := o.exClient.Wallet().WithdrawVirtualCurrency(ctx, req)
 		if err != nil {
 			if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
-				o.l.Error("insufficient funds, retrying with reduced amount",
-					exchangeclient.ErrWithdrawalBalanceLocked,
+				o.l.Errorw("insufficient funds, retrying with reduced amount",
+					"error", exchangeclient.ErrWithdrawalBalanceLocked,
 					"exchange", models.ExchangeSlugHtx.String(),
 					"recordID", args.RecordID.String(),
 					"current_amount", amount.String(),

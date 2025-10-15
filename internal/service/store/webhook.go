@@ -115,7 +115,7 @@ func (s *Service) handleDepositReceived(ev event.IEvent) error {
 
 	_, err = s.storage.StoreCurrencies().FindByStoreID(context.Background(), params)
 	if err != nil {
-		s.log.Error("store available currency not found %s", err)
+		s.log.Errorw("store available currency not found", "error", err)
 		return nil
 	}
 
@@ -233,9 +233,9 @@ func (s *Service) SendWebhookManual(ctx context.Context, txID, userID uuid.UUID)
 			URL:           hook.StoreWebhook.Url,
 		})
 		if whSendErr != nil {
-			s.log.Error(
+			s.log.Errorw(
 				"store webhook send error",
-				err,
+				"error", err,
 				"store_id", tx.GetStoreID().String(),
 				"tx_id", tx.GetID().String(),
 				"tx_hash", tx.GetTxHash(),
@@ -284,7 +284,7 @@ func (s *Service) processWebhooksByTransactionEvent(
 		dbTx,
 	)
 	if err != nil {
-		s.log.Error("store webhook not found", err)
+		s.log.Errorw("store webhook not found", "error", err)
 		return nil
 	}
 
@@ -294,7 +294,7 @@ func (s *Service) processWebhooksByTransactionEvent(
 		}
 
 		if err != nil {
-			s.log.Error("send webhook error", err)
+			s.log.Errorw("send webhook error", "error", err)
 			continue
 		}
 		message := webhook.Message{
@@ -307,19 +307,14 @@ func (s *Service) processWebhooksByTransactionEvent(
 		whSendErr := s.webhookService.Send(&message, dbTx)
 
 		if whSendErr != nil {
-			s.log.Error(
+			s.log.Errorw(
 				"store webhook send error",
-				err,
-				"store_id",
-				txCreatedEvent.GetStore().ID.String(),
-				"tx_id",
-				txCreatedEvent.GetTx().GetID().String(),
-				"tx_hash",
-				txCreatedEvent.GetTx().GetTxHash(),
-				"wh_type",
-				string(txCreatedEvent.GetWebhookEvent()),
-				"wh_body",
-				string(hookPayload),
+				"error", err,
+				"store_id", txCreatedEvent.GetStore().ID.String(),
+				"tx_id", txCreatedEvent.GetTx().GetID().String(),
+				"tx_hash", txCreatedEvent.GetTx().GetTxHash(),
+				"wh_type", string(txCreatedEvent.GetWebhookEvent()),
+				"wh_body", string(hookPayload),
 			)
 		}
 	}
@@ -339,7 +334,7 @@ func (s *Service) isWebhookAlreadySent(url, whType string, txID uuid.UUID, dbTx 
 		whCheckParams,
 	)
 	if err != nil {
-		s.log.Error("check webhook status error", err)
+		s.log.Errorw("check webhook status error", "error", err)
 	}
 
 	return exists

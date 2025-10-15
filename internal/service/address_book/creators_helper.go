@@ -160,7 +160,7 @@ func (s *Service) createUniversalAddress(ctx context.Context, params CreateAddre
 		return nil, fmt.Errorf("no address entries were created (all already existed)")
 	}
 
-	s.logger.Info("Created universal address for blockchain",
+	s.logger.Infow("Created universal address for blockchain",
 		"user_id", params.UserID,
 		"address", params.Address,
 		"blockchain", params.Blockchain.String(),
@@ -198,7 +198,7 @@ func (s *Service) createEVMAddress(ctx context.Context, params CreateAddressDTO)
 			}
 
 			if len(currencies) == 0 {
-				s.logger.Warn("No currencies found for EVM blockchain, skipping",
+				s.logger.Warnw("No currencies found for EVM blockchain, skipping",
 					"blockchain", blockchain.String())
 				continue
 			}
@@ -238,7 +238,7 @@ func (s *Service) createEVMAddress(ctx context.Context, params CreateAddressDTO)
 		return nil, fmt.Errorf("no EVM address entries were created (all already existed)")
 	}
 
-	s.logger.Info("Created EVM address across all EVM blockchains",
+	s.logger.Infow("Created EVM address across all EVM blockchains",
 		"user_id", params.UserID,
 		"address", params.Address,
 		"total_currencies", totalCurrencyCount,
@@ -276,7 +276,7 @@ func (s *Service) restoreAddressEntry(ctx context.Context, params CreateAddressD
 		return nil, fmt.Errorf("failed to restore address from trash: %w", err)
 	}
 
-	s.logger.Info("Restored soft-deleted address book entry",
+	s.logger.Infow("Restored soft-deleted address book entry",
 		"user_id", params.UserID,
 		"address", params.Address,
 		"currency", params.CurrencyID)
@@ -348,7 +348,7 @@ func (s *Service) createWithdrawalRule(ctx context.Context, addressEntry *models
 		return fmt.Errorf("failed to update processing whitelist: %w", err)
 	}
 
-	s.logger.Info("Created withdrawal rule for address book entry",
+	s.logger.Infow("Created withdrawal rule for address book entry",
 		"address", addressEntry.Address,
 		"currency", addressEntry.CurrencyID,
 		"user_id", addressEntry.UserID)
@@ -371,7 +371,7 @@ func (s *Service) restoreWithdrawalRule(ctx context.Context, addressEntry *model
 		Address:            addressEntry.Address,
 	})
 	if err != nil {
-		s.logger.Info("No existing withdrawal rule found, creating new one",
+		s.logger.Infow("No existing withdrawal rule found, creating new one",
 			"address", addressEntry.Address,
 			"currency", addressEntry.CurrencyID,
 			"user_id", addressEntry.UserID)
@@ -397,12 +397,12 @@ func (s *Service) restoreWithdrawalRule(ctx context.Context, addressEntry *model
 			return fmt.Errorf("failed to update processing whitelist: %w", err)
 		}
 
-		s.logger.Info("Restored soft-deleted withdrawal rule for address book entry",
+		s.logger.Infow("Restored soft-deleted withdrawal rule for address book entry",
 			"address", addressEntry.Address,
 			"currency", addressEntry.CurrencyID,
 			"user_id", addressEntry.UserID)
 	} else {
-		s.logger.Info("Withdrawal rule already exists and is active",
+		s.logger.Infow("Withdrawal rule already exists and is active",
 			"address", addressEntry.Address,
 			"currency", addressEntry.CurrencyID,
 			"user_id", addressEntry.UserID)
@@ -450,7 +450,7 @@ func (s *Service) addWithdrawalRulesForUniversalAddress(ctx context.Context, use
 
 			rulesCreated++
 
-			s.logger.Info("Added/restored withdrawal rule for universal address entry",
+			s.logger.Infow("Added/restored withdrawal rule for universal address entry",
 				"address", entry.Address,
 				"currency", entry.CurrencyID,
 				"blockchain", blockchain.String(),
@@ -464,7 +464,7 @@ func (s *Service) addWithdrawalRulesForUniversalAddress(ctx context.Context, use
 		return err
 	}
 
-	s.logger.Info("Added withdrawal rules for universal address",
+	s.logger.Infow("Added withdrawal rules for universal address",
 		"user_id", userID,
 		"address", address,
 		"blockchain", blockchain.String(),
@@ -504,7 +504,7 @@ func (s *Service) addWithdrawalRulesForEVMAddress(ctx context.Context, userID uu
 
 			rulesCreated++
 
-			s.logger.Info("Added/restored withdrawal rule for EVM address entry",
+			s.logger.Infow("Added/restored withdrawal rule for EVM address entry",
 				"address", entry.Address,
 				"currency", entry.CurrencyID,
 				"blockchain", entry.Blockchain.String(),
@@ -518,7 +518,7 @@ func (s *Service) addWithdrawalRulesForEVMAddress(ctx context.Context, userID uu
 		return err
 	}
 
-	s.logger.Info("Added withdrawal rules for EVM address",
+	s.logger.Infow("Added withdrawal rules for EVM address",
 		"user_id", userID,
 		"address", address,
 		"rules_created", rulesCreated,
@@ -617,7 +617,7 @@ func (s *Service) updateProcessingWhitelist(ctx context.Context, walletID uuid.U
 
 	// If no addresses exist yet, there's nothing to update in the processing whitelist
 	if errors.Is(err, pgx.ErrNoRows) || len(addresses) == 0 {
-		s.logger.Info("No withdrawal wallet addresses found, skipping processing whitelist update",
+		s.logger.Infow("No withdrawal wallet addresses found, skipping processing whitelist update",
 			"wallet_id", walletID,
 			"user_id", user.ID,
 			"blockchain", blockchain)

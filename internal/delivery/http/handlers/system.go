@@ -47,7 +47,7 @@ func (h Handler) updateProcessing(c fiber.Ctx) error {
 	go func() {
 		err := h.services.UpdaterService.UpdateProcessing(ctx)
 		if err != nil {
-			h.logger.Error("error updating processing status", err)
+			h.logger.Errorw("error updating processing status", "error", err)
 		}
 	}()
 	return c.JSON(response.OkByMessage("Success start processing update"))
@@ -68,7 +68,7 @@ func (h Handler) updateBackend(c fiber.Ctx) error {
 	go func() {
 		err := h.services.UpdaterService.UpdateBackend(ctx)
 		if err != nil {
-			h.logger.Error("error updating backend status", err)
+			h.logger.Errorw("error updating backend status", "error", err)
 		}
 	}()
 
@@ -89,7 +89,7 @@ func (h Handler) updateBackend(c fiber.Ctx) error {
 func (h *Handler) loadNewVersions(c fiber.Ctx) error {
 	versions, err := h.services.UpdaterService.CheckApplicationVersions(c.Context())
 	if err != nil {
-		h.logger.Error("error checking application versions", err)
+		h.logger.Errorw("error checking application versions", "error", err)
 		return c.JSON(response.OkByData(&system_response.VersionResponse{
 			NewBackendVersion:    nil,
 			NewProcessingVersion: nil,

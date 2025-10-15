@@ -90,7 +90,7 @@ func (s *Service) FetchTronResourceStatistics(ctx context.Context, user *models.
 
 	userLocation, err := time.LoadLocation(user.Location)
 	if err != nil {
-		s.logger.Warn("invalid user location, fallback to UTC", err)
+		s.logger.Warnw("invalid user location, fallback to UTC", "error", err)
 		userLocation = time.UTC
 	}
 
@@ -102,7 +102,7 @@ func (s *Service) FetchTronResourceStatistics(ctx context.Context, user *models.
 		Resolution:      resolution,
 	})
 	if err != nil {
-		s.logger.Error("failed to fetch tron wallet balance statistics", err)
+		s.logger.Errorw("failed to fetch tron wallet balance statistics", "error", err)
 		return nil, fmt.Errorf("failed to fetch tron wallet balance statistics: %w", err)
 	}
 
@@ -120,7 +120,7 @@ func (s *Service) FetchTronResourceStatistics(ctx context.Context, user *models.
 		},
 	})
 	if err != nil {
-		s.logger.Error("failed to fetch transfer expenses", err)
+		s.logger.Errorw("failed to fetch transfer expenses", "error", err)
 		return nil, fmt.Errorf("failed to fetch transfer expenses: %w", err)
 	}
 
