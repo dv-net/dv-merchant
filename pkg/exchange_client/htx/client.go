@@ -51,10 +51,6 @@ func WithLogger(log logger.Logger) ClientOption {
 }
 
 func NewBaseClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption) (*BaseClient, error) {
-	// Create a client with logging enabled by default
-	client := NewClient(opt, store, opts...)
-	client.logEnabled = true
-
 	c := &BaseClient{
 		opts:          opt,
 		accountClient: NewAccountClient(opt, store, opts...),
@@ -115,7 +111,6 @@ type Client struct {
 	limiters   map[string]*limiter.Limiter
 	signer     ISigner
 	log        logger.Logger
-	logEnabled bool
 }
 
 func (o *Client) Do(ctx context.Context, method, endpoint string, private bool, dest interface{}, params ...map[string]string) error {
@@ -160,7 +155,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		body string
 	)
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Preparing request",
 			"exchange", "htx",
 			"method", method,
@@ -209,7 +204,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		}
 	}
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Sending request",
 			"exchange", "htx",
 			"method", method,
@@ -221,7 +216,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 
 	resp, err := o.httpClient.Do(req)
 	if err != nil {
-		if o.logEnabled && o.log != nil {
+		if o.log != nil {
 			o.log.Errorln("[EXCHANGE-API]: Request failed",
 				"exchange", "htx",
 				"method", method,
@@ -251,7 +246,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		if err = json.Unmarshal(bb.Bytes(), &errRes); err != nil {
 			return err
 		}
-		if o.logEnabled && o.log != nil {
+		if o.log != nil {
 			o.log.Errorln("[EXCHANGE-API]: API error response",
 				"exchange", "htx",
 				"method", method,
@@ -265,7 +260,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 	}
 	if errRes.Status != htxresponses.StatusOK {
 		if errRes.StatusCode != http.StatusOK || errRes.ErrMsg != "" {
-			if o.logEnabled && o.log != nil {
+			if o.log != nil {
 				o.log.Errorln("[EXCHANGE-API]: API error response",
 					"exchange", "htx",
 					"method", method,
@@ -279,7 +274,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		}
 	}
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Request completed",
 			"exchange", "htx",
 			"method", method,
