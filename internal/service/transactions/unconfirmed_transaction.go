@@ -27,7 +27,7 @@ func (s *Service) Run(ctx context.Context, collapseInterval time.Duration) {
 		case <-ticker.C:
 			err := s.storage.UnconfirmedTransactions().CollapseAllByConfirmed(ctx)
 			if err != nil {
-				s.log.Error("collapse unconfirmed transaction failed", err)
+				s.log.Errorw("collapse unconfirmed transaction failed", "error", err)
 			}
 		case <-ctx.Done():
 			s.log.Info("unconfirmed collapser finished by ctx")

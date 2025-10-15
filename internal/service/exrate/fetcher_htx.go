@@ -83,7 +83,7 @@ func (o *htxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 	}
 
 	if body.Status != "ok" {
-		o.log.Debug(
+		o.log.Debugw(
 			"currency exchange service response not OK",
 			"status", body.Status,
 		)

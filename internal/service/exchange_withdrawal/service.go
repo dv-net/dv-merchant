@@ -490,28 +490,28 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 	for _, setting := range settings {
 		wdState, err := s.getWithdrawalState(ctx, userID, setting.ExchangeID)
 		if err != nil {
-			s.logger.Error("failed to fetch exchange withdrawal state", err, "userID", userID)
+			s.logger.Errorw("failed to fetch exchange withdrawal state", "error", err, "userID", userID)
 			continue
 		}
 
 		if *wdState == models.ExchangeWithdrawalStateDisabled {
-			s.logger.Debug("skipping withdrawals", "userID", userID)
+			s.logger.Debugw("skipping withdrawals", "userID", userID)
 			continue
 		}
 
 		if !setting.IsEnabled {
-			s.logger.Debug("skipped disabled withdrawal", "userID", userID, "withdrawalID", setting.ID)
+			s.logger.Debugw("skipped disabled withdrawal", "userID", userID, "withdrawalID", setting.ID)
 			continue
 		}
 
 		userExchange, err := s.st.Exchanges().GetByID(ctx, setting.ExchangeID)
 		if err != nil {
-			s.logger.Error("failed to get user exchange by id", err)
+			s.logger.Errorw("failed to get user exchange by id", "error", err)
 			return
 		}
 		userExchangeClient, err := s.exManager.GetDriver(ctx, userExchange.Slug, userID)
 		if err != nil {
-			s.logger.Error("failed to get user exchange client", err)
+			s.logger.Errorw("failed to get user exchange client", "error", err)
 			return
 		}
 
@@ -599,7 +599,7 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 				},
 			}
 
-			s.logger.Info("creating withdrawal order",
+			s.logger.Infow("creating withdrawal order",
 				"userID", userID,
 				"recordID", recordID.String(),
 				"exchange", userExchange.Slug.String(),
@@ -674,7 +674,7 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 						"exchange", models.ExchangeSlugKucoin.String(),
 					)
 				}
-				s.logger.Warn("failed to create withdrawal order",
+				s.logger.Warnw("failed to create withdrawal order",
 					"error", err.Error(),
 					"userID", userID,
 					"recordID", recordID.String(),
@@ -714,7 +714,7 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 			if errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.ETIMEDOUT) {
 				continue
 			}
-			s.logger.Error("failed to process withdrawal", err)
+			s.logger.Errorw("failed to process withdrawal", "error", err)
 		}
 	}
 }
@@ -993,7 +993,7 @@ func (s *Service) RunWithdrawalUpdater(ctx context.Context) {
 			return
 		case <-oldWdTicker.C:
 			if err := s.processOldWithdrawals(ctx); err != nil {
-				s.logger.Error("failed to process old withdrawals", err)
+				s.logger.Errorw("failed to process old withdrawals", "error", err)
 			}
 		}
 	}
@@ -1010,7 +1010,7 @@ func (s *Service) UpdateWithdrawalSetting(ctx context.Context, userID uuid.UUID,
 func (s *Service) processNewWithdrawals(ctx context.Context) {
 	settings, err := s.st.ExchangeWithdrawalSettings().GetActive(ctx)
 	if err != nil {
-		s.logger.Error("failed to fetch withdrawal settings", err)
+		s.logger.Errorw("failed to fetch withdrawal settings", "error", err)
 		return
 	}
 
@@ -1045,12 +1045,12 @@ func (s *Service) processOldWithdrawals(ctx context.Context) error {
 			if order.Status == models.WithdrawalHistoryStatusInProgress {
 				ex, err := s.st.Exchanges().GetByID(ctx, order.ExchangeID)
 				if err != nil {
-					s.logger.Error("failed to fetch exchange", err)
+					s.logger.Errorw("failed to fetch exchange", "error", err)
 					return err
 				}
 				exClient, err := s.exManager.GetDriver(ctx, ex.Slug, order.UserID)
 				if err != nil {
-					s.logger.Error("failed to get exchange client", err)
+					s.logger.Errorw("failed to get exchange client", "error", err)
 					return err
 				}
 				if err := s.handleWithdrawal(ctx, ex.Slug, order, exClient, tx); err != nil {
@@ -1060,7 +1060,7 @@ func (s *Service) processOldWithdrawals(ctx context.Context) error {
 			return nil
 		})
 		if err != nil {
-			s.logger.Error("failed to process withdrawal", err)
+			s.logger.Errorw("failed to process withdrawal", "error", err)
 		}
 	}
 	return nil

@@ -40,7 +40,7 @@ func (s *Service) deleteUniversalAddress(ctx context.Context, usr *models.User, 
 				}
 			}
 
-			s.logger.Info("Deleted universal address entry",
+			s.logger.Infow("Deleted universal address entry",
 				"user_id", usr.ID,
 				"address", address,
 				"currency", entry.CurrencyID,
@@ -72,7 +72,7 @@ func (s *Service) deleteEVMAddress(ctx context.Context, usr *models.User, addres
 		}
 
 		if len(evmEntries) == 0 {
-			s.logger.Warn("No EVM address entries found for deletion",
+			s.logger.Warnw("No EVM address entries found for deletion",
 				"user_id", usr.ID,
 				"address", address)
 			return fmt.Errorf("no EVM address entries found for user %s, address %s", usr.ID, address)
@@ -115,7 +115,7 @@ func (s *Service) deleteEVMAddress(ctx context.Context, usr *models.User, addres
 func (s *Service) cleanupWithdrawalRule(ctx context.Context, usr *models.User, addressEntry *models.UserAddressBook, tx pgx.Tx) error {
 	withdrawalWallet, err := s.withdrawalWalletService.GetWithdrawalWalletsByCurrencyID(ctx, usr, addressEntry.CurrencyID, repos.WithTx(tx))
 	if err != nil {
-		s.logger.Warn("Withdrawal wallet not found for cleanup",
+		s.logger.Warnw("Withdrawal wallet not found for cleanup",
 			"currency", addressEntry.CurrencyID,
 			"user_id", addressEntry.UserID)
 		return nil //nolint:nilerr
@@ -126,7 +126,7 @@ func (s *Service) cleanupWithdrawalRule(ctx context.Context, usr *models.User, a
 		Address:            addressEntry.Address,
 	})
 	if err != nil {
-		s.logger.Warn("Withdrawal wallet address not found for cleanup",
+		s.logger.Warnw("Withdrawal wallet address not found for cleanup",
 			"address", addressEntry.Address,
 			"currency", addressEntry.CurrencyID)
 		return nil //nolint:nilerr
@@ -137,7 +137,7 @@ func (s *Service) cleanupWithdrawalRule(ctx context.Context, usr *models.User, a
 		return fmt.Errorf("failed to delete withdrawal wallet address: %w", err)
 	}
 
-	s.logger.Info("Cleaned up withdrawal rule for address book entry",
+	s.logger.Infow("Cleaned up withdrawal rule for address book entry",
 		"address", addressEntry.Address,
 		"currency", addressEntry.CurrencyID,
 		"user_id", addressEntry.UserID)

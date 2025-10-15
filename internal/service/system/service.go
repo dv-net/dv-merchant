@@ -116,7 +116,7 @@ func (s *Service) RunHeartbeatLoop(ctx context.Context) {
 		return
 	}
 
-	s.log.Warn("dv admin version notify", "error", err)
+	s.log.Warnw("dv admin version notify", "error", err)
 
 	ticker := time.NewTicker(max(s.config.Admin.PingVersionInterval, time.Minute*30))
 	defer ticker.Stop()
@@ -125,7 +125,7 @@ func (s *Service) RunHeartbeatLoop(ctx context.Context) {
 		select {
 		case <-ticker.C:
 			if err = s.runHeartBeat(ctx); err != nil {
-				s.log.Warn("admin error", "error", err)
+				s.log.Warnw("admin error", "error", err)
 				continue
 			}
 

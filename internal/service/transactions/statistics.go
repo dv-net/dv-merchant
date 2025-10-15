@@ -55,7 +55,7 @@ func (s *Service) GetTransactionStats(ctx context.Context, user *models.User, pa
 		DateTo:         dateTo,
 	})
 	if err != nil {
-		s.log.Error("fetch tx stats error", err)
+		s.log.Errorw("fetch tx stats error", "error", err)
 		return nil, errors.New("prepare tx stats error")
 	}
 
