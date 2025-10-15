@@ -145,7 +145,7 @@ func (o *Client) Do(ctx context.Context, method, endpoint string, private bool, 
 	}
 }
 
-func (o *Client) DoPlain(ctx context.Context, method, path string, private bool, dest interface{}, params ...map[string]string) error { //nolint:gocyclo
+func (o *Client) DoPlain(ctx context.Context, method, path string, private bool, dest interface{}, params ...map[string]string) error {
 	startTime := time.Now()
 	baseURL := o.baseURL.String() + path
 	var (
