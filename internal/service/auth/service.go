@@ -173,7 +173,7 @@ func (s Service) GetUserByToken(ctx context.Context, hashedToken string) (*model
 
 	if token.ExpiresAt != nil && token.ExpiresAt.Before(time.Now()) {
 		if removeErr := s.storage.PersonalAccessToken().Delete(ctx, token.ID); removeErr != nil {
-			s.logger.Error("remove expired token error", removeErr)
+			s.logger.Errorw("remove expired token error", "error", removeErr)
 		}
 
 		return nil, ErrTokenExpired

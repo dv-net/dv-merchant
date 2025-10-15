@@ -31,7 +31,7 @@ func (s *Service) ProcessingBalanceStatsInBackground(ctx context.Context, update
 
 	go func() {
 		if err := s.processingBalanceStats(ctx); err != nil {
-			s.logger.Error("update processing wallets stats", err)
+			s.logger.Errorw("update processing wallets stats", "error", err)
 		}
 	}()
 
@@ -42,7 +42,7 @@ func (s *Service) ProcessingBalanceStatsInBackground(ctx context.Context, update
 		case <-ticker.C:
 			go func() {
 				if err := s.processingBalanceStats(ctx); err != nil {
-					s.logger.Error("update processing wallets stats", err)
+					s.logger.Errorw("update processing wallets stats", "error", err)
 				}
 			}()
 		}
@@ -99,7 +99,7 @@ func (s *Service) CreateTronWalletBalances(ctx context.Context, ownerID uuid.UUI
 
 		resources, err := s.extractTargetResources(w)
 		if err != nil {
-			s.logger.Error("extract processing resources", err)
+			s.logger.Errorw("extract processing resources", "error", err)
 			continue
 		}
 
@@ -124,7 +124,7 @@ func (s *Service) CreateTronWalletBalances(ctx context.Context, ownerID uuid.UUI
 		batchRes := s.storage.TronWalletBalanceStatistics(repos.WithTx(tx)).InsertTronWalletBalanceStatisticsBatch(ctx, params)
 		defer func() {
 			if err := batchRes.Close(); err != nil {
-				s.logger.Error("batch tron wallet balance stats close error", err)
+				s.logger.Errorw("batch tron wallet balance stats close error", "error", err)
 			}
 		}()
 
@@ -203,14 +203,14 @@ func (s *Service) extractTargetResources(w processing.WalletProcessing) (*resour
 	// DelegatedBandwidth = TotalBandwidthUsed - StackedBandwidth
 	delegatedBwth := totalBwth.Sub(stakedBwth)
 	if delegatedBwth.LessThan(decimal.Zero) {
-		s.logger.Warn("negative delegated bandwidth calculated", "address", w.Address, "total_bandwidth", totalBwth, "stacked_bandwidth", stakedBwth)
+		s.logger.Warnw("negative delegated bandwidth calculated", "address", w.Address, "total_bandwidth", totalBwth, "stacked_bandwidth", stakedBwth)
 		delegatedBwth = decimal.Zero
 	}
 
 	// DelegatedEnergy = TotalEnergyUsed - StakedEnergy
 	delegatedEnergy := totalEnergy.Sub(stakedEnergy)
 	if delegatedEnergy.LessThan(decimal.Zero) {
-		s.logger.Warn("negative delegated energy calculated", "address", w.Address, "total_energy", totalEnergy, "stacked_energy", stakedEnergy)
+		s.logger.Warnw("negative delegated energy calculated", "address", w.Address, "total_energy", totalEnergy, "stacked_energy", stakedEnergy)
 		delegatedEnergy = decimal.Zero
 	}
 

@@ -220,7 +220,7 @@ func (s *Service) GetProcessingBalances(ctx context.Context, dto GetProcessingWa
 			defer wg.Done()
 			wallets, err := s.processBlockchainWallets(ctx, blockchain, dto, enabledCurrencies)
 			if err != nil {
-				s.logger.Error("failed to process blockchain wallets", err, "blockchain", blockchain.String())
+				s.logger.Errorw("failed to process blockchain wallets", "error", err, "blockchain", blockchain.String())
 				return
 			}
 			if len(wallets) != 0 {

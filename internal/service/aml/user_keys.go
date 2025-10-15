@@ -49,20 +49,20 @@ func (s *Service) UpdateUserKeys(ctx context.Context, usr *models.User, dto User
 	err := repos.BeginTxFunc(ctx, s.st.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		for _, key := range dto.Keys {
 			if key.Name == "" {
-				s.log.Error("empty key name provided", nil, "user_id", usr.ID, "slug", dto.Slug)
+				s.log.Errorw("empty key name provided", "error", nil, "user_id", usr.ID, "slug", dto.Slug)
 				return fmt.Errorf("key name cannot be empty for user %s and slug %s", usr.ID, dto.Slug)
 			}
 
 			keyID, err := s.st.AmlUserKeys(repos.WithTx(tx)).FetchServiceKeyIDBySlugAndName(ctx, dto.Slug, key.Name)
 			if err != nil {
-				s.log.Error("failed to fetch key ID", err, "user_id", usr.ID, "slug", dto.Slug, "key_name", key.Name)
+				s.log.Errorw("failed to fetch key ID", "error", err, "user_id", usr.ID, "slug", dto.Slug, "key_name", key.Name)
 				return fmt.Errorf("failed to fetch key ID for slug %s and name %s: %w", dto.Slug, key.Name, err)
 			}
 
 			// Remove key if value is nil
 			if key.Value == nil {
 				if err = s.st.AmlUserKeys(repos.WithTx(tx)).DeleteAllUserKeysBySlugAndKeyID(ctx, usr.ID, dto.Slug, keyID); err != nil {
-					s.log.Error("failed to delete key", err, "user_id", usr.ID, "slug", dto.Slug, "key_name", key.Name)
+					s.log.Errorw("failed to delete key", "error", err, "user_id", usr.ID, "slug", dto.Slug, "key_name", key.Name)
 					return fmt.Errorf("failed to delete key for user %s, slug %s, name %s: %w", usr.ID, dto.Slug, key.Name, err)
 				}
 				continue
@@ -70,7 +70,7 @@ func (s *Service) UpdateUserKeys(ctx context.Context, usr *models.User, dto User
 
 			// Key upsert
 			if _, err = s.st.AmlUserKeys(repos.WithTx(tx)).CreateOrUpdateUserKeys(ctx, usr.ID, keyID, *key.Value); err != nil {
-				s.log.Error("failed to create or update key", err, "user_id", usr.ID, "slug", dto.Slug, "key_name", key.Name)
+				s.log.Errorw("failed to create or update key", "error", err, "user_id", usr.ID, "slug", dto.Slug, "key_name", key.Name)
 				return fmt.Errorf("failed to create or update key for user %s, slug %s, name %s: %w", usr.ID, dto.Slug, key.Name, err)
 			}
 		}
@@ -102,7 +102,7 @@ func (s *Service) UpdateUserKeys(ctx context.Context, usr *models.User, dto User
 
 	keys, err := s.st.AmlUserKeys().FetchAllBySlug(ctx, usr.ID, dto.Slug)
 	if err != nil {
-		s.log.Error("failed to fetch updated keys", err, "user_id", usr.ID, "slug", dto.Slug)
+		s.log.Errorw("failed to fetch updated keys", "error", err, "user_id", usr.ID, "slug", dto.Slug)
 		return nil, fmt.Errorf("failed to fetch updated keys for user %s and slug %s: %w", usr.ID, dto.Slug, err)
 	}
 

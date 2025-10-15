@@ -62,7 +62,7 @@ func New(log logger.Logger, eventListener event.IListener, templateSvc templater
 	}
 
 	if err := svc.initServices(); err != nil {
-		svc.log.Error("failed to initialize mailer", fmt.Errorf("init services: %w", err))
+		svc.log.Errorw("failed to initialize mailer", "error", fmt.Errorf("init services: %w", err))
 		return nil, err
 	}
 
@@ -170,7 +170,7 @@ func (svc *Service) initMailer(ctx context.Context) error {
 		svc.mailerClient = smtpCl
 	default:
 		err := fmt.Errorf("unsupported mailer provider: %s", svc.mailerSettings.MailerProtocol)
-		svc.log.Error("failed to init notification services", err)
+		svc.log.Errorw("failed to init notification services", "error", err)
 		return err
 	}
 	return nil

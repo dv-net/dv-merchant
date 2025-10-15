@@ -11,7 +11,7 @@ replace (
 
 require (
 	github.com/gofiber/fiber/v3 v3.0.0-beta.4
-	github.com/jackc/pgx/v5 v5.7.5
+	github.com/jackc/pgx/v5 v5.7.6
 	github.com/swaggo/swag v1.16.6
 	go.uber.org/zap v1.27.0
 )
@@ -24,7 +24,7 @@ require (
 	github.com/dv-net/dv-proto v0.5.1
 	github.com/dv-net/email-template v0.1.4
 	github.com/dv-net/go-bip39 v1.1.1
-	github.com/dv-net/mx v0.1.1
+	github.com/dv-net/mx v0.1.3
 	github.com/dv-net/xconfig v0.1.0
 	github.com/dv-net/xconfig/decoders/xconfigyaml v0.0.0-20250828100326-2c7d793ffc71
 	github.com/emersion/go-sasl v0.0.0-20200509203442-7bfe0ed36a21

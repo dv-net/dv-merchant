@@ -76,7 +76,7 @@ func (s *Service) sendRequest(
 
 	defer func() {
 		if err = resp.Body.Close(); err != nil {
-			s.log.Error("failed to close response body", err)
+			s.log.Errorw("failed to close response body", "error", err)
 		}
 	}()
 
@@ -137,7 +137,7 @@ func (s *Service) sendPublicRequest(
 
 	defer func() {
 		if err = resp.Body.Close(); err != nil {
-			s.log.Error("failed to close response body", err)
+			s.log.Errorw("failed to close response body", "error", err)
 		}
 	}()
 

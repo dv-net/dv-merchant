@@ -79,7 +79,7 @@ func (r *Router) landingRedirect(app *fiber.App) {
 	app.Get("/", func(c fiber.Ctx) error {
 		info, err := r.services.SystemService.GetInfo(c.Context())
 		if err != nil {
-			r.logger.Error("error getting info", err)
+			r.logger.Errorw("error getting info", "error", err)
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
 

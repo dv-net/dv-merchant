@@ -169,7 +169,7 @@ func preparePermissionCommands(currentAppVersion string) []*cli.Command {
 				}
 				defer func() {
 					if storageCloseErr := st.Close(); storageCloseErr != nil {
-						lg.Error("storage close error", storageCloseErr)
+						lg.Errorw("storage close error", "error", storageCloseErr)
 					}
 				}()
 				srv, err := permission.New(conf, st.PSQLConn())
@@ -214,7 +214,7 @@ func preparePermissionCommands(currentAppVersion string) []*cli.Command {
 				}
 				defer func() {
 					if storageCloseErr := st.Close(); storageCloseErr != nil {
-						lg.Error("storage close error", storageCloseErr)
+						lg.Errorw("storage close error", "error", storageCloseErr)
 					}
 				}()
 
@@ -250,7 +250,7 @@ func prepareUserPermissionCommands(currentAppVersion string) []*cli.Command {
 				}
 				defer func() {
 					if storageCloseErr := st.Close(); storageCloseErr != nil {
-						lg.Error("storage close error", storageCloseErr)
+						lg.Errorw("storage close error", "error", storageCloseErr)
 					}
 				}()
 
@@ -286,7 +286,7 @@ func prepareUserPermissionCommands(currentAppVersion string) []*cli.Command {
 				}
 				defer func() {
 					if storageCloseErr := st.Close(); storageCloseErr != nil {
-						lg.Error("storage close error", storageCloseErr)
+						lg.Errorw("storage close error", "error", storageCloseErr)
 					}
 				}()
 				srv, err := permission.New(conf, st.PSQLConn())

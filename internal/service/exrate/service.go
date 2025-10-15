@@ -137,7 +137,7 @@ LOOP:
 			timer.Reset(srv.fetchInterval)
 			currencyList, err := srv.getCurrencyList(ctx)
 			if err != nil {
-				srv.logger.Error("get all currency list", err)
+				srv.logger.Errorw("get all currency list", "error", err)
 				continue LOOP
 			}
 			cf := NewCurrencyFilter(currencyList)
@@ -206,7 +206,7 @@ func (srv *service) GetCurrencyRate(ctx context.Context, source, from, to string
 
 	rateValue, parseErr := decimal.NewFromString(v)
 	if parseErr != nil {
-		srv.logger.Error("failed to parse rate", parseErr)
+		srv.logger.Errorw("failed to parse rate", "error", parseErr)
 		return v, fmt.Errorf("failed to parse rate: %w", err)
 	}
 
@@ -237,7 +237,7 @@ func (srv *service) GetAllCurrencyRate(ctx context.Context, source string, scale
 	for _, pair := range filter.symbols {
 		rateStr, err := srv.GetCurrencyRate(ctx, source, pair.From, pair.To)
 		if err != nil {
-			srv.logger.Debug("currency rate not exists %s", err)
+			srv.logger.Debugw("currency rate not exists", "error", err)
 			continue
 		}
 
@@ -247,7 +247,7 @@ func (srv *service) GetAllCurrencyRate(ctx context.Context, source string, scale
 
 		rateValue, parseErr := decimal.NewFromString(rateStr)
 		if parseErr != nil {
-			srv.logger.Error("failed to parse rate %s", parseErr)
+			srv.logger.Errorw("failed to parse rate", "error", parseErr)
 			continue
 		}
 
@@ -325,7 +325,7 @@ func (srv *service) LoadRatesList(ctx context.Context, rateSource string) (*Rate
 func (srv *service) getCurrencyList(ctx context.Context) (result CurrencyList, err error) {
 	currModelList, err := srv.currencyService.GetCurrenciesEnabled(ctx)
 	if err != nil {
-		srv.logger.Error("get all currency list", err)
+		srv.logger.Errorw("get all currency list", "error", err)
 		return nil, err
 	}
 

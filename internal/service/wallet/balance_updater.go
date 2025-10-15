@@ -25,7 +25,7 @@ func (s *Service) Run(ctx context.Context, tickerInterval time.Duration) {
 		case <-ticker.C:
 			queue, err := s.storage.UpdateBalanceQueue().GetQueuedWithCurrency(ctx)
 			if err != nil {
-				s.logger.Error("failed to update balance queue", err)
+				s.logger.Errorw("failed to update balance queue", "error", err)
 				continue
 			}
 
@@ -50,7 +50,7 @@ func (s *Service) processQueue(ctx context.Context, queue []*repo_update_balance
 
 			return s.storage.UpdateBalanceQueue(repos.WithTx(tx)).Delete(ctx, q.UpdateBalanceQueue.ID)
 		}); err != nil {
-			s.logger.Error("failed to handle update balance queue", err)
+			s.logger.Errorw("failed to handle update balance queue", "error", err)
 			continue
 		}
 	}

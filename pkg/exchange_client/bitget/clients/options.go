@@ -34,6 +34,5 @@ type SubClientOption func(*Client)
 func WithLogger(log logger.Logger) SubClientOption {
 	return func(c *Client) {
 		c.log = log
-		c.logEnabled = true
 	}
 }

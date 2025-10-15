@@ -79,7 +79,7 @@ func (s *service) GetPrefetchWithdrawalAddress(ctx context.Context, user *models
 		})
 		if multiAddrErr != nil {
 			if !errors.Is(multiAddrErr, pgx.ErrNoRows) {
-				s.logger.Warn("fetch wallet addresses for multi withdrawals failed", multiAddrErr)
+				s.logger.Warnw("fetch wallet addresses for multi withdrawals failed", "error", multiAddrErr)
 			}
 
 			continue
@@ -87,7 +87,7 @@ func (s *service) GetPrefetchWithdrawalAddress(ctx context.Context, user *models
 
 		addr, err := s.prepareWalletToByMultipleRules(ctx, &multiWithdrawalWallet.User, multiWithdrawalWallet.MultiWithdrawalRule, multiWithdrawalWallet.Currency, multiWithdrawalWallet.Addresses)
 		if err != nil || addr == "" {
-			s.logger.Debug("fetch wallet addresses for multi withdrawals failed", "err", multiAddrErr)
+			s.logger.Debugw("fetch wallet addresses for multi withdrawals failed", "error", multiAddrErr)
 			continue
 		}
 

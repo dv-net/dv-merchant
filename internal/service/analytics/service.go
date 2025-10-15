@@ -195,7 +195,11 @@ func (s *Service) GetSystemInfo(ctx context.Context) (*SystemInfo, error) {
 	}
 
 	// Cache the result
-	if err := s.storage.KeyValue().Set(ctx, SystemInfoCacheKey, systemInfo, -1); err != nil {
+	systemInfoJSON, err := json.Marshal(systemInfo)
+	if err != nil {
+		return nil, fmt.Errorf("marshal system info: %w", err)
+	}
+	if err := s.storage.KeyValue().Set(ctx, SystemInfoCacheKey, systemInfoJSON, -1); err != nil {
 		return nil, fmt.Errorf("set system info cache: %w", err)
 	}
 

@@ -166,15 +166,15 @@ func (s *service) processWithdrawalsFromProcessing(ctx context.Context) {
 	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		processingWithdrawals, err := s.storage.WithdrawalsFromProcessing(repos.WithTx(tx)).GetQueuedWithdrawalsWithCurrencyAndUser(ctx)
 		if err != nil {
-			s.logger.Error("failed to fetch processing withdrawals", err)
+			s.logger.Errorw("failed to fetch processing withdrawals", "error", err)
 			return err
 		}
 
 		for _, withdrawal := range processingWithdrawals {
 			if _, err = s.processProcessingWithdrawal(ctx, *withdrawal, tx); err != nil {
-				s.logger.Error(
+				s.logger.Errorw(
 					"failed to process processing withdrawal",
-					err,
+					"error", err,
 					"id", withdrawal.WithdrawalFromProcessingWallet.ID.String(),
 				)
 
@@ -185,21 +185,21 @@ func (s *service) processWithdrawalsFromProcessing(ctx context.Context) {
 		return nil
 	})
 	if err != nil {
-		s.logger.Error("processing withdrawals", err)
+		s.logger.Errorw("processing withdrawals", "error", err)
 	}
 }
 
 func (s *service) processWithdrawalTransfers(ctx context.Context, blockchain models.Blockchain) {
 	locker := s.transfersInProcess.get(blockchain)
 	if !locker.CompareAndSwap(false, true) {
-		s.logger.Debug("transfer iteration skipped by lock", "blockchain", blockchain)
+		s.logger.Debugw("transfer iteration skipped by lock", "blockchain", blockchain)
 		return
 	}
 	defer locker.Store(false)
 
 	wallets, err := s.storage.WithdrawalWallets().GetWalletsForWithdrawal(ctx, blockchain)
 	if err != nil {
-		s.logger.Error("failed to get wallets for withdrawal", err)
+		s.logger.Errorw("failed to get wallets for withdrawal", "error", err)
 		return
 	}
 
@@ -207,7 +207,7 @@ func (s *service) processWithdrawalTransfers(ctx context.Context, blockchain mod
 		transfer, err := s.processTransferByWallet(ctx, *wallet)
 		if err != nil {
 			if !isIgnoredLogError(err) {
-				s.logger.Error("failed to process wallet: ", err)
+				s.logger.Errorw("failed to process wallet", "error", err)
 			}
 			continue
 		}
@@ -460,14 +460,14 @@ func (s *service) prepareWithdrawalAddressByUsed(
 func (s *service) processMultiTransfers(ctx context.Context) {
 	wallets, err := s.storage.WithdrawalWallets().GetForMultiWithdrawal(ctx, uuid.NullUUID{})
 	if err != nil {
-		s.logger.Error("failed to get withdrawal wallets", err)
+		s.logger.Errorw("failed to get withdrawal wallets", "error", err)
 		return
 	}
 
 	for _, wallet := range wallets {
 		if err = s.checkTransferRequirementsByUser(ctx, &wallet.User); err != nil {
 			if !errors.Is(err, ErrTransfersDisabled) && !errors.Is(err, pgx.ErrNoRows) && !errors.Is(err, ErrWithdrawalsFromProcessingDisabled) {
-				s.logger.Error("failed to process wallet", err)
+				s.logger.Errorw("failed to process wallet", "error", err)
 			}
 
 			continue
@@ -475,14 +475,14 @@ func (s *service) processMultiTransfers(ctx context.Context) {
 
 		rates, err := s.exRateService.LoadRatesList(ctx, wallet.User.RateSource.String())
 		if err != nil {
-			s.logger.Error("failed to load rates list", err)
+			s.logger.Errorw("failed to load rates list", "error", err)
 			continue
 		}
 
 		var preparedWallet string
 		preparedWallet, err = s.prepareWalletToByMode(ctx, &wallet.User, wallet.MultiWithdrawalRule, wallet.Currency, wallet.Addresses)
 		if err != nil {
-			s.logger.Debug("failed to prepare wallet", err)
+			s.logger.Debugw("failed to prepare wallet", "error", err)
 			continue
 		}
 
@@ -499,7 +499,7 @@ func (s *service) processMultiTransfers(ctx context.Context) {
 			},
 		)
 		if err != nil {
-			s.logger.Debug("failed to get wallet addresses", err)
+			s.logger.Debugw("failed to get wallet addresses", "error", err)
 			continue
 		}
 
@@ -519,14 +519,15 @@ func (s *service) processMultiTransfers(ctx context.Context) {
 
 		transfer, err := s.initializeTransfer(ctx, dto, &wallet.User, nil)
 		if err != nil {
-			s.logger.Error("failed to initialize transfer", err)
+			s.logger.Errorw("failed to initialize transfer", "error", err)
 			continue
 		}
 
 		if transfer != nil {
 			s.logger.Infow(
 				"multi transfer initialized",
-				"from", transfer.FromAddresses, "to", transfer.ToAddresses,
+				"from", transfer.FromAddresses,
+				"to", transfer.ToAddresses,
 			)
 		}
 	}
@@ -594,7 +595,7 @@ func (s *service) checkTransferRequirementsByUser(ctx context.Context, u *models
 
 	// transfers disabled by user setting
 	if transfersStatusFlag != nil && transfersStatusFlag.Value != setting.FlagValueEnabled {
-		s.logger.Debug("transfers disabled ", "user_id ", u.ID.String())
+		s.logger.Debugw("transfers disabled", "user_id ", u.ID.String())
 		return ErrTransfersDisabled
 	}
 

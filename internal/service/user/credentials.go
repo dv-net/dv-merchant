@@ -38,7 +38,7 @@ func (s *Service) InitEmailChange(ctx context.Context, usr *models.User) error {
 
 	code, err := s.otpSvc.InitCode(ctx, "", usr.Email)
 	if err != nil {
-		s.logger.Error("init otp code", err)
+		s.logger.Errorw("init otp code", "error", err)
 		return errors.New("failed to init otp code")
 	}
 
@@ -69,12 +69,12 @@ func (s *Service) ConfirmEmailChange(ctx context.Context, user *models.User, dto
 	}
 
 	if err := s.otpSvc.VerifyCode(ctx, code, "", user.Email); err != nil {
-		s.logger.Warn("failed to verify email code", err)
+		s.logger.Warnw("failed to verify email code", "error", err)
 		return fmt.Errorf("incorrect verification code or email")
 	}
 
 	if err := s.changeUserEmail(ctx, user, dto.NewEmail); err != nil {
-		s.logger.Error("change email with logout error", err)
+		s.logger.Errorw("change email with logout error", "error", err)
 		return errors.New("change email with logout error")
 	}
 
@@ -96,7 +96,7 @@ func (s *Service) changeUserEmail(ctx context.Context, usr *models.User, newEmai
 		NewEmail: newEmail,
 		OldEmail: usr.Email,
 	}); err != nil {
-		s.logger.Error("failed to change email", err)
+		s.logger.Errorw("failed to change email", "error", err)
 		return errors.New("failed to change email")
 	}
 
@@ -146,13 +146,13 @@ func (s *Service) ChangePassword(ctx context.Context, user *models.User, d dto.C
 func (s *Service) InitPasswordReset(ctx context.Context, email string) error {
 	user, err := s.storage.Users().GetByEmail(ctx, email)
 	if err != nil {
-		s.logger.Error("fetch user by email", err)
+		s.logger.Errorw("fetch user by email", "error", err)
 		return nil
 	}
 
 	code, err := s.otpSvc.InitCode(ctx, "", email)
 	if err != nil {
-		s.logger.Error("init otp code", err)
+		s.logger.Errorw("init otp code", "error", err)
 		return errors.New("failed to init otp code")
 	}
 
@@ -178,7 +178,7 @@ func (s *Service) ResetPassword(ctx context.Context, dto ResetPasswordDto) error
 		}
 
 		if err = s.otpSvc.VerifyCode(ctx, dto.Code, "", usr.Email); err != nil {
-			s.logger.Warn("failed to verify email", err)
+			s.logger.Warnw("failed to verify email", "error", err)
 			return errors.New("failed to verify email")
 		}
 
@@ -222,7 +222,7 @@ func (s *Service) InitEmailConfirmation(ctx context.Context, usr *models.User) e
 
 	code, err := s.otpSvc.InitCode(ctx, "", usr.Email)
 	if err != nil {
-		s.logger.Error("init otp code", err)
+		s.logger.Errorw("init otp code", "error", err)
 		return errors.New("failed to init otp code")
 	}
 

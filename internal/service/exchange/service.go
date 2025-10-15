@@ -129,7 +129,7 @@ func (s *Service) DeleteExchangeKeys(ctx context.Context, userID uuid.UUID, slug
 		}))
 		defer func() {
 			if err := batch.Close(); err != nil {
-				s.log.Error("batch insert exchange user keys close error", err)
+				s.log.Errorw("batch insert exchange user keys close error", "error", err)
 			}
 		}()
 
@@ -410,20 +410,20 @@ func (s *Service) processExchangeOrders(ctx context.Context) {
 		Statuses: []models.ExchangeOrderStatus{models.ExchangeOrderStatusInProgress},
 	})
 	if err != nil {
-		s.log.Error("failed to fetch orders", err)
+		s.log.Errorw("failed to fetch orders", "error", err)
 	}
 	for _, order := range orders {
 		go func(order *models.ExchangeOrder) {
 			err = repos.BeginTxFunc(ctx, s.st.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 				ex, err := s.st.Exchanges(repos.WithTx(tx)).GetByID(ctx, order.ExchangeID)
 				if err != nil {
-					s.log.Error("failed to get exchange", err)
+					s.log.Errorw("failed to get exchange", "error", err)
 					return err
 				}
 
 				exClient, err := s.exManager.GetDriver(ctx, ex.Slug, order.UserID)
 				if err != nil {
-					s.log.Error("failed to get exchange client", err)
+					s.log.Errorw("failed to get exchange client", "error", err)
 					return err
 				}
 
@@ -434,12 +434,12 @@ func (s *Service) processExchangeOrders(ctx context.Context) {
 					InternalOrder:   order,
 				})
 				if err != nil {
-					s.log.Error("failed to get order details", err)
+					s.log.Errorw("failed to get order details", "error", err)
 					return err
 				}
 				if exOrder == nil {
 					err := fmt.Errorf("received nil order details")
-					s.log.Error("received nil order details from exchange", err, "order_id", order.ID, "connection_hash", exClient.GetConnectionHash())
+					s.log.Errorw("received nil order details from exchange", "error", err, "order_id", order.ID, "connection_hash", exClient.GetConnectionHash())
 					return err
 				}
 				updateParams := repo_exchange_orders.UpdateParams{
@@ -463,7 +463,7 @@ func (s *Service) processExchangeOrders(ctx context.Context) {
 			})
 
 			if err != nil {
-				s.log.Error("failed to update exchange order", err)
+				s.log.Errorw("failed to update exchange order", "error", err)
 			}
 		}(order)
 	}
@@ -472,7 +472,7 @@ func (s *Service) processExchangeOrders(ctx context.Context) {
 func (s *Service) processExchangePairs(ctx context.Context) {
 	exchangePairs, err := s.st.UserExchangePairs().GetAll(ctx)
 	if err != nil {
-		s.log.Error("failed to get user exchange pairs", err)
+		s.log.Errorw("failed to get user exchange pairs", "error", err)
 	}
 	mPairs := make(map[uuid.UUID]map[uuid.UUID][]*models.UserExchangePair)
 	for _, pair := range exchangePairs {
@@ -486,7 +486,7 @@ func (s *Service) processExchangePairs(ctx context.Context) {
 		for exID, p := range pairs {
 			swapState, err := s.getSwapState(ctx, userID, exID)
 			if err != nil {
-				s.log.Errorw("failed to fetch exchange withdrawal state", err, "userID", userID)
+				s.log.Errorw("failed to fetch exchange withdrawal state", "error", err, "userID", userID)
 				continue
 			}
 			if *swapState == models.ExchangeSwapStateDisabled {
@@ -497,10 +497,10 @@ func (s *Service) processExchangePairs(ctx context.Context) {
 				for _, pair := range userPairs {
 					err := s.SubmitExchangeOrder(ctx, userID, pair)
 					if err != nil { //nolint:nestif
-						if errors.Is(err, ErrInsufficientBalance) {
+						if errors.Is(err, exchangeclient.ErrInsufficientBalance) {
 							continue
 						}
-						if errors.Is(err, ErrSymbolTradingHalted) {
+						if errors.Is(err, exchangeclient.ErrSymbolTradingHalted) {
 							continue
 						}
 						if errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.ETIMEDOUT) {
@@ -509,9 +509,9 @@ func (s *Service) processExchangePairs(ctx context.Context) {
 						if errors.Is(err, ErrSkipOrder) {
 							continue
 						}
-						s.log.Error("failed to submit exchange order", err, "symbol", pair.Symbol)
+						s.log.Errorw("failed to submit exchange order", "error", err, "symbol", pair.Symbol)
 						if err := s.suspendTransfers(ctx, userID); err != nil {
-							s.log.Error("failed to suspend transfers after unknown state change on exchange", err, "userID", userID)
+							s.log.Errorw("failed to suspend transfers after unknown state change on exchange", "error", err, "userID", userID)
 						}
 					}
 				}
@@ -686,7 +686,7 @@ func (s *Service) batchInsertAddresses(ctx context.Context, tx pgx.Tx, userID uu
 	batch := s.st.ExchangeAddresses(repos.WithTx(tx)).BatchInsertExchangeAddresses(ctx, params)
 	defer func() {
 		if err := batch.Close(); err != nil {
-			s.log.Error("failed to close batch insert exchange addresses", err)
+			s.log.Errorw("failed to close batch insert exchange addresses", "error", err)
 		}
 	}()
 
@@ -715,8 +715,8 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 
 	rule, err := exClient.GetOrderRule(ctx, pair.Symbol)
 	if err != nil {
-		if errors.Is(err, ErrSymbolTradingHalted) {
-			return ErrSymbolTradingHalted
+		if errors.Is(err, exchangeclient.ErrSymbolTradingHalted) {
+			return exchangeclient.ErrSymbolTradingHalted
 		}
 		return fmt.Errorf("fetch order rules: %w", err)
 	}
@@ -733,7 +733,7 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 			return fmt.Errorf("parse min order amount: %w", err)
 		}
 		if balance.LessThanOrEqual(minOrderAmount) {
-			return ErrInsufficientBalance
+			return exchangeclient.ErrInsufficientBalance
 		}
 	case models.OrderSideBuy:
 		amt, err := exClient.GetCurrencyBalance(ctx, rule.QuoteCurrency)
@@ -746,7 +746,7 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 			return fmt.Errorf("parse min order value: %w", err)
 		}
 		if balance.LessThanOrEqual(minOrderValue) {
-			return ErrInsufficientBalance
+			return exchangeclient.ErrInsufficientBalance
 		}
 	default:
 		return fmt.Errorf("unknown order type: %s", pair.Type)
@@ -766,8 +766,11 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 
 		if err != nil {
 			if errors.Is(err, ErrSkipOrder) {
-				s.log.Debug("skipping order due to custom error being thrown", "userID", userID, "symbol", pair.Symbol)
+				s.log.Debugw("skipping order due to custom error being thrown", "userID", userID, "symbol", pair.Symbol)
 				return ErrSkipOrder
+			}
+			if errors.Is(err, exchangeclient.ErrInsufficientBalance) {
+				return exchangeclient.ErrInsufficientBalance
 			}
 			updateParams.Status = pgtype.Text{Valid: true, String: models.ExchangeOrderStatusFailed.String()}
 			updateParams.FailReason = pgtype.Text{Valid: true, String: err.Error()}

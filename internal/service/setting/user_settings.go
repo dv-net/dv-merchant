@@ -64,7 +64,7 @@ func (s *Service) notifySettingChange(name, value string) {
 	}
 	err := s.eventListener.Fire(ev)
 	if err != nil {
-		s.log.Error("fire event", err)
+		s.log.Errorw("fire event", "error", err)
 	}
 }
 
@@ -75,7 +75,7 @@ func (s *Service) notifyMailerSettingsChange(name, value string) {
 	}
 	err := s.eventListener.Fire(ev)
 	if err != nil {
-		s.log.Error("fire event", err)
+		s.log.Errorw("fire event", "error", err)
 	}
 }
 
@@ -83,7 +83,7 @@ func (s *Service) notifyNotificationSenderChanged(newValue string) {
 	ev := NotificationSenderChangedEvent{newValue}
 	err := s.eventListener.Fire(ev)
 	if err != nil {
-		s.log.Error("fire event", err)
+		s.log.Errorw("fire event", "error", err)
 	}
 }
 
