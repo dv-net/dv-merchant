@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/dv-net/dv-merchant/internal/config"
@@ -109,6 +110,8 @@ type Service struct {
 
 	updateBalanceInProgress         atomic.Bool
 	updateProcessingStatsInProgress atomic.Bool
+
+	muMap sync.Map
 }
 
 var _ IWalletService = (*Service)(nil)
@@ -246,30 +249,90 @@ func (s *Service) getOrCreateWalletAddress(
 	if c.Blockchain == nil || *c.Blockchain == "" {
 		return nil, fmt.Errorf("blockchain is not set for currency %s", c.ID)
 	}
-	walletAddress, err := s.storage.WalletAddresses().GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
 
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return nil, fmt.Errorf("failed to get wallet address: %w", err)
-	}
+	key := wallet.ID.String() + ":" + c.ID
+	muIface, _ := s.muMap.LoadOrStore(key, &sync.Mutex{})
+	mu := muIface.(*sync.Mutex)
 
-	if err != nil && errors.Is(err, pgx.ErrNoRows) {
+	mu.Lock()
+	defer func() {
+		mu.Unlock()
+		time.AfterFunc(100*time.Millisecond, func() {
+			s.muMap.Delete(key)
+		})
+	}()
+
+	const maxRetries = 5
+	var lastErr error
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		walletAddress, err := s.storage.WalletAddresses(repos.WithTx(dbTx)).GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("failed to get wallet address: %w", err)
+		}
+
+		if err == nil {
+			if walletAddress.Dirty {
+				return s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, walletAddress)
+			}
+
+			logErr := s.logProcessingAddressReceived(ctx, walletAddress, pgtypeutils.DecodeText(wallet.IpAddress))
+			if logErr != nil {
+				s.logger.Errorw("failed create log to process processing addresses", "error", logErr)
+			}
+
+			return walletAddress, nil
+		}
+
 		addr, err := s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, nil)
 		if err != nil {
-			return nil, err
+			if isDuplicateErr(err) {
+				s.logger.Debugw("duplicate detected, retrying",
+					"attempt", attempt,
+					"wallet_id", wallet.ID,
+					"currency_id", c.ID)
+
+				time.Sleep(time.Duration(attempt) * 50 * time.Millisecond)
+				continue
+			}
+
+			lastErr = err
+			s.logger.Warnw("error creating wallet address",
+				"attempt", attempt,
+				"error", err,
+				"wallet_id", wallet.ID,
+				"currency_id", c.ID)
+
+			time.Sleep(time.Duration(attempt) * 100 * time.Millisecond)
+			continue
 		}
+
 		return addr, nil
 	}
 
-	if err == nil && walletAddress.Dirty {
-		return s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, walletAddress)
+	walletAddress, err := s.storage.WalletAddresses(repos.WithTx(dbTx)).GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
+	if err == nil {
+		s.logger.Warnw("address found after retries",
+			"wallet_id", wallet.ID,
+			"currency_id", c.ID)
+		return walletAddress, nil
 	}
 
-	err = s.logProcessingAddressReceived(ctx, walletAddress, pgtypeutils.DecodeText(wallet.IpAddress))
-	if err != nil {
-		s.logger.Errorw("failed create log to process processing addresses", "error", err)
+	if lastErr != nil {
+		return nil, fmt.Errorf("failed to get or create wallet address after %d retries: %w", maxRetries, lastErr)
 	}
 
-	return walletAddress, nil
+	return nil, fmt.Errorf("failed to get or create wallet address after %d retries: address not found and no error recorded", maxRetries)
+}
+
+func isDuplicateErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "duplicate key") ||
+		strings.Contains(msg, "unique constraint") ||
+		strings.Contains(msg, "already exists")
 }
 
 func (s *Service) createNewWalletAddress(
