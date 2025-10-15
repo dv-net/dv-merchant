@@ -76,6 +76,7 @@ func NewClient(opt *ClientOptions) (*Client, error) {
 		baseURL:    opt.BaseURL,
 		httpClient: http.DefaultClient,
 		signer:     NewSigner(opt.APIKey, opt.SecretKey),
+		log:        opt.Logger,
 	}
 
 	return client, nil
@@ -89,7 +90,6 @@ type Client struct {
 	validator  *validator.Validate
 	signer     ISigner
 	log        logger.Logger
-	logEnabled bool
 }
 
 type ClientOptions struct {
@@ -97,12 +97,13 @@ type ClientOptions struct {
 	SecretKey    string   `validate:"required_if=PublicClient false"`
 	BaseURL      *url.URL `validate:"required_if=PublicClient false"`
 	PublicClient bool
+	Logger       logger.Logger
 }
 
 func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel, dest interface{}) error {
 	startTime := time.Now()
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Preparing request",
 			"exchange", "binance",
 			"method", req.Method,
@@ -113,7 +114,7 @@ func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel,
 
 	req = o.signer.SignRequest(ctx, req, level)
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Sending request",
 			"exchange", "binance",
 			"method", req.Method,
@@ -124,7 +125,7 @@ func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel,
 
 	resp, err := o.httpClient.Do(req)
 	if err != nil {
-		if o.logEnabled && o.log != nil {
+		if o.log != nil {
 			o.log.Errorln("[EXCHANGE-API]: Request failed",
 				"exchange", "binance",
 				"method", req.Method,
@@ -150,7 +151,7 @@ func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel,
 		if err = json.Unmarshal(bb.Bytes(), &errRes); err != nil {
 			return err
 		}
-		if o.logEnabled && o.log != nil {
+		if o.log != nil {
 			o.log.Errorln("[EXCHANGE-API]: API error response",
 				"exchange", "binance",
 				"method", req.Method,
@@ -171,7 +172,7 @@ func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel,
 		// TODO: Implement retry logic when it will eventually be needed.
 	}
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Request completed",
 			"exchange", "binance",
 			"method", req.Method,

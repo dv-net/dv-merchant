@@ -23,10 +23,6 @@ import (
 )
 
 func NewBaseClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption) *BaseClient {
-	// Create a client with logging enabled by default
-	client := NewClient(opt, store, opts...)
-	client.logEnabled = true
-
 	c := &BaseClient{
 		account: NewAccount(opt, store, opts...),
 		market:  NewMarket(opt, store, opts...),
@@ -70,7 +66,6 @@ type Client struct {
 	store      limiter.Store
 	limiters   map[string]*limiter.Limiter
 	log        logger.Logger
-	logEnabled bool
 }
 
 func (o *Client) Do(ctx context.Context, method string, endpoint string, private bool, dest interface{}, params ...map[string]string) error {
@@ -93,7 +88,7 @@ func (o *Client) Do(ctx context.Context, method string, endpoint string, private
 	return o.DoPlain(ctx, method, endpoint, private, dest, params...)
 }
 
-func (o *Client) DoPlain(ctx context.Context, method, path string, private bool, dest interface{}, params ...map[string]string) error { //nolint:gocyclo
+func (o *Client) DoPlain(ctx context.Context, method, path string, private bool, dest interface{}, params ...map[string]string) error {
 	startTime := time.Now()
 	baseURL := o.baseURL.String() + path
 	var (
@@ -103,7 +98,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		body string
 	)
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Preparing request",
 			"exchange", "bybit",
 			"method", method,
@@ -174,7 +169,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		req.Header.Set(SignatureKey, signature)
 	}
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Sending request",
 			"exchange", "bybit",
 			"method", method,
@@ -186,7 +181,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 
 	res, err := o.httpClient.Do(req)
 	if err != nil {
-		if o.logEnabled && o.log != nil {
+		if o.log != nil {
 			o.log.Errorln("[EXCHANGE-API]: Request failed",
 				"exchange", "bybit",
 				"method", method,
@@ -208,7 +203,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 	duration := time.Since(startTime)
 
 	if res.StatusCode >= http.StatusBadRequest {
-		if o.logEnabled && o.log != nil {
+		if o.log != nil {
 			o.log.Errorln("[EXCHANGE-API]: API error response",
 				"exchange", "bybit",
 				"method", method,
@@ -229,7 +224,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 
 	if apiErr.Code != 0 {
 		if err := errorFromResponse(&apiErr); err != nil {
-			if o.logEnabled && o.log != nil {
+			if o.log != nil {
 				o.log.Errorln("[EXCHANGE-API]: API error response",
 					"exchange", "bybit",
 					"method", method,
@@ -243,7 +238,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 		}
 	}
 
-	if o.logEnabled && o.log != nil {
+	if o.log != nil {
 		o.log.Infoln("[EXCHANGE-API]: Request completed",
 			"exchange", "bybit",
 			"method", method,

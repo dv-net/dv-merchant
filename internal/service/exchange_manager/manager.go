@@ -273,7 +273,7 @@ func (o *Manager) createBinanceServiceRaw(ctx context.Context, apiKey, secretKey
 		return nil, err
 	}
 
-	return binance.NewService(apiKey, secretKey, false, baseURL, o.storage, o.currConvService)
+	return binance.NewService(o.l, apiKey, secretKey, false, baseURL, o.storage, o.currConvService)
 }
 
 func (o *Manager) createBinanceService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) {
@@ -302,7 +302,7 @@ func (o *Manager) createBinanceService(ctx context.Context, userID uuid.UUID) (I
 	accessKey := keyMap[models.ExchangeKeyNameAPIKey.String()]
 	secretKey := keyMap[models.ExchangeKeyNameSecretKey.String()]
 
-	return binance.NewService(accessKey, secretKey, false, baseURL, o.storage, o.currConvService)
+	return binance.NewService(o.l, accessKey, secretKey, false, baseURL, o.storage, o.currConvService)
 }
 
 func (o *Manager) createPublicBinanceService(ctx context.Context) (IExchangeClient, error) {
@@ -316,7 +316,7 @@ func (o *Manager) createPublicBinanceService(ctx context.Context) (IExchangeClie
 		return nil, err
 	}
 
-	return binance.NewService("-", "-", true, baseURL, o.storage, o.currConvService)
+	return binance.NewService(o.l, "-", "-", true, baseURL, o.storage, o.currConvService)
 }
 
 func (o *Manager) createBitgetServiceRaw(ctx context.Context, accessKey, secretKey, passPhrase string) (IExchangeClient, error) {
