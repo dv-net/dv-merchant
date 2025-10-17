@@ -620,7 +620,7 @@ func (o *Service) GetOrderRule(ctx context.Context, ticker string) (*models.Orde
 		BaseCurrency:    symbolData.Symbol.BaseCurrency,
 		QuoteCurrency:   symbolData.Symbol.QuoteCurrency,
 		MinOrderAmount:  symbolData.Symbol.BaseMinSize.String(),
-		MinOrderValue:   symbolData.Symbol.QuoteMinSize.String(),
+		MinOrderValue:   symbolData.Symbol.MinFunds.Mul(decimal.NewFromInt(10)).String(), // KuCoin returns for ex. 0.1 USDT and we try 0.1161 LTC -> 0,105 USDT - fail. Temporary fix for this
 		MaxOrderAmount:  symbolData.Symbol.BaseMaxSize.String(),
 		AmountPrecision: int(basePrecision.IntPart()),
 		ValuePrecision:  int(quotePrecision.IntPart()),
