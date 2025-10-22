@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - refactor: AML validation errors (unsupported currency, invalid address) [DV-2896]
 - fix: KuCoin minFunds incorrect behaviour on spot order creation [DV-3611] 
 - fix: ByBit exchange balance duplicates causing incorrect total_usd calculation
+- update: Frontend update
 
 
 ## [0.9.10] - 2025-10-15
