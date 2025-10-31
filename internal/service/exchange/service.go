@@ -518,6 +518,10 @@ func (s *Service) processExchangePairs(ctx context.Context) {
 					if !shouldErrorSuspendTransfers(err) {
 						continue
 					}
+					// Handle invalid JSON responses
+					if strings.Contains(err.Error(), "invalid character") {
+						continue
+					}
 
 					// Critical error - log and suspend transfers
 					s.log.Errorw("failed to submit exchange order", "error", err, "symbol", pair.Symbol, "exchange", exchangeSlug.String())
