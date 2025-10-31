@@ -18,6 +18,8 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchange_withdrawal_history"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchange_withdrawal_settings"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchanges"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_invoice_addresses"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_invoices"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_log_types"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_logs"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_multi_withdrawal_rules"
@@ -112,6 +114,8 @@ type IRepository interface {
 	AmlCheckHistory(opts ...Option) repo_aml_check_history.Querier
 	AmlSupportedAssets(opts ...Option) repo_aml_supported_assets.Querier
 	UserAddressBook(opts ...Option) repo_user_address_book.Querier
+	Invoices(opts ...Option) repo_invoices.Querier
+	InvoiceAddresses(opts ...Option) repo_invoice_addresses.Querier
 }
 
 type repository struct {
@@ -169,6 +173,8 @@ type repository struct {
 	amlCheckHistory             *repo_aml_check_history.Queries
 	amlSupportedAssets          *repo_aml_supported_assets.Queries
 	userAddressBook             *repo_user_address_book.Queries
+	invoices                    *repo_invoices.Queries
+	invoiceAddresses            *repo_invoice_addresses.Queries
 }
 
 func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue) IRepository {
@@ -227,6 +233,8 @@ func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue)
 		amlCheckHistory:             repo_aml_check_history.New(psql.DB),
 		amlSupportedAssets:          repo_aml_supported_assets.New(psql.DB),
 		userAddressBook:             repo_user_address_book.New(psql.DB),
+		invoices:                    repo_invoices.New(psql.DB),
+		invoiceAddresses:            repo_invoice_addresses.New(psql.DB),
 	}
 }
 
@@ -676,4 +684,22 @@ func (r *repository) UserAddressBook(opts ...Option) repo_user_address_book.Quer
 	}
 
 	return r.userAddressBook
+}
+
+func (r *repository) Invoices(opts ...Option) repo_invoices.Querier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.invoices.WithTx(options.Tx)
+	}
+
+	return r.invoices
+}
+
+func (r *repository) InvoiceAddresses(opts ...Option) repo_invoice_addresses.Querier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.invoiceAddresses.WithTx(options.Tx)
+	}
+
+	return r.invoiceAddresses
 }

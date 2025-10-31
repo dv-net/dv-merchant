@@ -7,6 +7,7 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_request"
 	"github.com/dv-net/dv-merchant/internal/event"
+	eventtypes "github.com/dv-net/dv-merchant/internal/event/types"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currency"
 	"github.com/dv-net/dv-merchant/internal/service/exrate"
@@ -94,6 +95,7 @@ func New(
 	srv.eventListener.Register(transactions.DepositReceivedEventType, srv.handleDepositReceived)
 	srv.eventListener.Register(transactions.DepositUnconfirmedEventType, srv.handleDepositReceived)
 	srv.eventListener.Register(transactions.WithdrawalFromProcessingReceivedEventType, srv.handleWithdrawalReceived)
+	srv.eventListener.Register(eventtypes.ChangeInvoiceStausEventType, srv.handleInvoiceChangeStatus)
 
 	return srv
 }

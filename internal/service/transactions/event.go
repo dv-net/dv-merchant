@@ -223,6 +223,7 @@ func (e DepositUnconfirmedEvent) String() string {
 func (e DepositUnconfirmedEvent) GetWalletLocale() string {
 	return ""
 }
+
 func (e DepositUnconfirmedEvent) GetWalletEmail() string {
 	return ""
 }

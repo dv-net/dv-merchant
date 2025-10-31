@@ -6,7 +6,7 @@ SELECT sqlc.embed(sw), ss.secret
 FROM store_webhooks sw
 LEFT JOIN store_secrets ss on ss.store_id = $1
 WHERE sw.store_id = $1
-  and sqlc.arg(event_type)::varchar in (select json_array_elements_text(sw.events))
+  AND sw.events::jsonb @> jsonb_build_array(sqlc.arg(event_type)::text)
   and sw.enabled = true
 ORDER BY sw.created_at;
 

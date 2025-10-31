@@ -2,13 +2,13 @@
 SELECT *
 FROM wallet_addresses
 WHERE deleted_at IS NULL
-  AND wallet_id = $1;
+  AND account_id = $1;
 
 -- name: GetWalletAddressesByAddress :one
 SELECT *
 FROM wallet_addresses
 WHERE deleted_at IS NULL
-  AND wallet_id = $1
+  AND account_id = $1
   and address = $2
   and currency_id = $3
 limit 1;
@@ -65,7 +65,7 @@ WHERE wa.currency_id = $2
 -- name: GetAllClearByWalletID :many
 SELECT *
 FROM wallet_addresses
-WHERE wallet_id = $1
+WHERE account_id = $1
   AND dirty = false
   AND deleted_at IS NULL
   and currency_id = ANY (sqlc.arg('currency_ids')::varchar[]);
@@ -73,7 +73,7 @@ WHERE wallet_id = $1
 -- name: GetByWalletIDAndCurrencyID :one
 SELECT *
 FROM wallet_addresses
-WHERE wallet_id = $1
+WHERE account_id = $1
   AND currency_id = $2
   AND deleted_at IS NULL
 ORDER BY created_at DESC
@@ -168,7 +168,7 @@ WHERE user_id = $1
 SELECT sqlc.embed(wa), sqlc.embed(c), sqlc.embed(s)
 FROM wallet_addresses wa
          JOIN currencies c ON wa.currency_id = c.id
-         JOIN wallets w ON wa.wallet_id = w.id
+         JOIN wallets w ON wa.account_id = w.id
          JOIN stores s ON w.store_id = s.id
 WHERE (sqlc.arg(blockchains)::varchar[] IS NULL OR c.blockchain = ANY (sqlc.arg(blockchains)::varchar[]));
 
@@ -190,12 +190,12 @@ LIMIT 1;
 -- name: SoftDeleteByWallets :exec
 UPDATE wallet_addresses
 SET deleted_at = now()
-WHERE wallet_id = ANY ($1::uuid[]);
+WHERE account_id = ANY ($1::uuid[]);
 
 -- name: RestoreByWallets :exec
 UPDATE wallet_addresses
 SET deleted_at = NULL
-WHERE wallet_id = ANY ($1::uuid[]);
+WHERE account_id = ANY ($1::uuid[]);
 
 -- name: GetAddressForMultiWithdrawal :one
 SELECT wa.currency_id,
@@ -243,3 +243,36 @@ HAVING (sqlc.narg(min_amount) IS NULL OR SUM(wa.amount) >= sqlc.narg(min_amount)
    AND (sqlc.narg(min_usd) IS NULL OR (SUM(wa.amount) * MAX(r.exchange_rate))::numeric > sqlc.narg(min_usd))
 ORDER BY (SUM(wa.amount) * MAX(r.exchange_rate))::decimal DESC
 LIMIT 1;
+
+-- name: GetAvailableAddress :one
+SELECT *
+FROM wallet_addresses
+WHERE currency_id = $1
+  AND user_id = $2
+  AND status = 'available'
+  AND dirty = false
+ORDER BY amount DESC, updated_at
+LIMIT 1;
+
+-- name: GetWalletAddressByTypeAndID :many
+SELECT *
+FROM wallet_addresses
+WHERE account_id = $1
+  AND account_type = $2;
+
+-- name: UpdateStatus :exec
+UPDATE wallet_addresses
+SET status = $1
+WHERE id = $2;
+
+-- name: UpdateStatusByAccountID :exec
+UPDATE wallet_addresses wa
+SET status = $1
+WHERE wa.account_id = $2
+  AND wa.account_type = $3
+  AND wa.status = 'reservers'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM unconfirmed_transactions ut
+      WHERE ut.account_id = wa.id
+  );

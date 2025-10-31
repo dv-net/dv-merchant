@@ -66,6 +66,32 @@ func (s *Service) logProcessingLoadAddressPrivateKey(ctx context.Context, addres
 	return nil
 }
 
+func (s *Service) logWalletStatusChanged(ctx context.Context, walletAddress *models.WalletAddress, oldStatus, newStatus string) error {
+	textVariables := struct {
+		OldStatus string `json:"old_status"`
+		NewStatus string `json:"new_status"`
+	}{
+		OldStatus: oldStatus,
+		NewStatus: newStatus,
+	}
+
+	textVariablesJSON, err := json.Marshal(textVariables)
+	if err != nil {
+		return fmt.Errorf("failed to marshal text variables: %w", err)
+	}
+
+	_, err = s.storage.WalletAddressesActivityLog().Create(ctx, repo_wallet_addresses_activity_logs.CreateParams{
+		WalletAddressesID: walletAddress.ID,
+		Text:              "Wallet status changed from {old_status} to {new_status}",
+		TextVariables:     textVariablesJSON,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create log: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Service) GetWalletLogs(ctx context.Context, walletAddressID uuid.UUID) ([]*AddressLog, error) {
 	walletLogs, err := s.storage.WalletAddressesActivityLog().GetLogByWalletAddressID(ctx, walletAddressID)
 	if err != nil {

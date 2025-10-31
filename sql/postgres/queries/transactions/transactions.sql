@@ -162,7 +162,7 @@ WITH tx AS ((SELECT t.id,
                     t.user_id,
                     t.store_id,
                     t.receipt_id as receipt_id,
-                    t.wallet_id,
+                    t.account_id,
                     t.currency_id,
                     t.bc_uniq_key,
                     t.blockchain as blockchain,
@@ -184,7 +184,7 @@ WITH tx AS ((SELECT t.id,
                     ut.user_id,
                     ut.store_id,
                     null  as receipt_id,
-                    ut.wallet_id,
+                    ut.account_id,
                     ut.currency_id,
                     ut.bc_uniq_key,
                     ut.blockchain,
@@ -202,7 +202,7 @@ WITH tx AS ((SELECT t.id,
                AND ut.user_id = $2)
             LIMIT 1)
 SELECT tx.*,
-       w.id                as wallet_id,
+       w.id                as account_id,
        w.store_id          as wallet_store_id,
        w.store_external_id as store_external_id,
        w.created_at        as wallet_created_at,
@@ -210,13 +210,13 @@ SELECT tx.*,
        c.code              as currency_code,
        c.blockchain        as currency_blockchain
 FROM tx
-         INNER JOIN wallets w on w.id = tx.wallet_id
+         INNER JOIN wallets w on w.id = tx.account_id
          INNER JOIN currencies c on c.id = tx.currency_id
 LIMIT 1;
 
 -- name: FindLastWalletTransactions :many
 WITH tx AS ((SELECT true as is_confirmed,
-                    t.wallet_id,
+                    t.account_id,
                     t.currency_id,
                     t.tx_hash,
                     t.amount,
@@ -224,14 +224,14 @@ WITH tx AS ((SELECT true as is_confirmed,
                     t.type,
                     t.created_at
              FROM transactions t
-             WHERE t.wallet_id = $1
+             WHERE t.account_id = $1
                AND t.amount_usd >= 1
                AND t.type = $2
              ORDER BY created_at_index DESC
              LIMIT $3)
             UNION
             (SELECT false as is_confirmed,
-                    ut.wallet_id,
+                    ut.account_id,
                     ut.currency_id,
                     ut.tx_hash,
                     ut.amount,
@@ -239,7 +239,7 @@ WITH tx AS ((SELECT true as is_confirmed,
                     ut.type,
                     ut.created_at
              FROM unconfirmed_transactions ut
-             WHERE ut.wallet_id = $1
+             WHERE ut.account_id = $1
                AND ut.type = $2
                AND ut.amount_usd >= 1
                AND NOT EXISTS (SELECT 1
@@ -259,7 +259,20 @@ LIMIT $3;
 -- name: GetWalletTransactions :many
 SELECT *
 FROM transactions t
-WHERE t.wallet_id = $1
+WHERE t.account_id = $1
   AND t.to_address = $2
 ORDER BY network_created_at DESC
 LIMIT 500;
+
+-- name: CalculateTotalAmountsByInvoice :one
+SELECT COALESCE(sum(amount)::numeric, 0)::numeric     AS total_amount,
+       COALESCE(sum(amount_usd)::numeric, 0)::numeric AS total_amount_usd
+FROM transactions
+WHERE invoice_id = $1
+  AND type = 'deposit';
+
+-- name: GetByInvoiceID :many
+SELECT *
+FROM transactions
+WHERE invoice_id = $1
+ORDER BY created_at_index DESC;

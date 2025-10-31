@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/models"
-
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type WebhookDtoInterface interface {
@@ -13,8 +13,11 @@ type WebhookDtoInterface interface {
 	GetAddressForUpdateBalance() string
 	GetStatus() models.TransactionStatus
 	GetCurrency() *models.Currency
+	GetAmount() string
+	GetFee() string
 }
 
+// Deposit
 func (dto DepositWebhookDto) GetToAddress() string {
 	return dto.ToAddress
 }
@@ -31,6 +34,15 @@ func (dto DepositWebhookDto) GetStatus() models.TransactionStatus {
 	return dto.Status
 }
 
+func (dto DepositWebhookDto) GetAmount() string {
+	return dto.Amount
+}
+
+func (dto DepositWebhookDto) GetFee() string {
+	return dto.Fee
+}
+
+// Transfer
 func (dto TransferWebhookDto) GetToAddress() string {
 	return dto.ToAddress
 }
@@ -45,6 +57,14 @@ func (dto TransferWebhookDto) GetCurrency() *models.Currency {
 
 func (dto TransferWebhookDto) GetStatus() models.TransactionStatus {
 	return dto.Status
+}
+
+func (dto TransferWebhookDto) GetAmount() string {
+	return dto.Amount
+}
+
+func (dto TransferWebhookDto) GetFee() string {
+	return dto.Fee
 }
 
 type ProcessingWebhook struct {
@@ -98,4 +118,12 @@ type TransferWebhookDto struct {
 	WalletType       models.WalletType        `json:"wallet_type"`
 	ExternalWalletID *uuid.UUID               `json:"external_wallet_id,omitempty"`
 	Currency         *models.Currency
+}
+
+type AmountFeeCalculation struct {
+	Amount       decimal.Decimal
+	Fee          decimal.Decimal
+	UsdAmount    decimal.Decimal
+	UsdFee       decimal.Decimal
+	ExchangeRate decimal.Decimal
 }

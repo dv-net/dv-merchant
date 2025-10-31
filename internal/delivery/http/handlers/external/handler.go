@@ -7,6 +7,8 @@ import (
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
+	"github.com/dv-net/dv-merchant/pkg/dbutils/pgerror"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -46,4 +48,17 @@ func (h *Handler) Init(api *fiber.App) {
 	h.initExchangeBalances(secured)
 
 	h.initProcessingWalletBalances(secured)
+
+	h.initInvoiceRoutes(secured)
+}
+
+func (h Handler) handleError(err error, modelName string) error {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return apierror.New().AddError(errors.New(modelName + " not found")).SetHttpCode(fiber.StatusNotFound)
+	}
+	var uniqueErr *pgerror.UniqueConstraintError
+	if errors.As(err, &uniqueErr) {
+		return apierror.New().AddError(uniqueErr).SetHttpCode(fiber.StatusUnprocessableEntity)
+	}
+	return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 }

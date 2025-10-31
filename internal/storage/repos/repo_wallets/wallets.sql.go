@@ -95,7 +95,7 @@ const getWalletWithStore = `-- name: GetWalletWithStore :many
 SELECT w.id as wallet_id, w.store_external_id, wa.address, wa.currency_id, s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
 FROM wallets w
          INNER JOIN stores s ON w.store_id = s.id
-         INNER JOIN wallet_addresses wa ON w.id = wa.wallet_id
+         INNER JOIN wallet_addresses wa ON w.id = wa.account_id
 WHERE wa.address = $1
   AND s.user_id = $2
   AND w.deleted_at IS NULL

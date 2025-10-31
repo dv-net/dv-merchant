@@ -12,7 +12,7 @@ func FromReceiptModelToResponse(r *models.Receipt) *receipt_response.ReceiptResp
 		StoreID:    r.StoreID.String(),
 		CurrencyID: r.CurrencyID,
 		Amount:     r.Amount,
-		WalletID:   r.WalletID.UUID.String(),
+		WalletID:   r.AccountID.UUID.String(),
 		CreatedAt:  r.CreatedAt.Time,
 		UpdatedAt:  r.UpdatedAt.Time,
 	}

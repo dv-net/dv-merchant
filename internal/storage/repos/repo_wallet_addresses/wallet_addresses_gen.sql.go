@@ -8,38 +8,44 @@ package repo_wallet_addresses
 import (
 	"context"
 
+	"github.com/dv-net/dv-merchant/internal/constant"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 )
 
 const create = `-- name: Create :one
-INSERT INTO wallet_addresses (wallet_id, user_id, currency_id, blockchain, address, created_at, dirty)
-	VALUES ($1, $2, $3, $4, $5, now(), $6)
-	RETURNING id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+INSERT INTO wallet_addresses (user_id, currency_id, blockchain, address, created_at, dirty, status, account_type, account_id, store_id)
+	VALUES ($1, $2, $3, $4, now(), $5, $6, $7, $8, $9)
+	RETURNING id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id
 `
 
 type CreateParams struct {
-	WalletID   uuid.UUID         `db:"wallet_id" json:"wallet_id"`
-	UserID     uuid.UUID         `db:"user_id" json:"user_id"`
-	CurrencyID string            `db:"currency_id" json:"currency_id"`
-	Blockchain models.Blockchain `db:"blockchain" json:"blockchain"`
-	Address    string            `db:"address" json:"address"`
-	Dirty      bool              `db:"dirty" json:"dirty"`
+	UserID      uuid.UUID             `db:"user_id" json:"user_id"`
+	CurrencyID  string                `db:"currency_id" json:"currency_id"`
+	Blockchain  models.Blockchain     `db:"blockchain" json:"blockchain"`
+	Address     string                `db:"address" json:"address"`
+	Dirty       bool                  `db:"dirty" json:"dirty"`
+	Status      constant.WalletStatus `db:"status" json:"status"`
+	AccountType string                `db:"account_type" json:"account_type"`
+	AccountID   uuid.NullUUID         `db:"account_id" json:"account_id"`
+	StoreID     uuid.NullUUID         `db:"store_id" json:"store_id"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.WalletAddress, error) {
 	row := q.db.QueryRow(ctx, create,
-		arg.WalletID,
 		arg.UserID,
 		arg.CurrencyID,
 		arg.Blockchain,
 		arg.Address,
 		arg.Dirty,
+		arg.Status,
+		arg.AccountType,
+		arg.AccountID,
+		arg.StoreID,
 	)
 	var i models.WalletAddress
 	err := row.Scan(
 		&i.ID,
-		&i.WalletID,
 		&i.UserID,
 		&i.CurrencyID,
 		&i.Blockchain,
@@ -49,12 +55,16 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.WalletA
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Dirty,
+		&i.Status,
+		&i.AccountType,
+		&i.AccountID,
+		&i.StoreID,
 	)
 	return &i, err
 }
 
 const getById = `-- name: GetById :one
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty FROM wallet_addresses WHERE deleted_at IS NULL AND id=$1 LIMIT 1
+SELECT id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id FROM wallet_addresses WHERE deleted_at IS NULL AND id=$1 LIMIT 1
 `
 
 func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.WalletAddress, error) {
@@ -62,7 +72,6 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.WalletAddr
 	var i models.WalletAddress
 	err := row.Scan(
 		&i.ID,
-		&i.WalletID,
 		&i.UserID,
 		&i.CurrencyID,
 		&i.Blockchain,
@@ -72,6 +81,10 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.WalletAddr
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Dirty,
+		&i.Status,
+		&i.AccountType,
+		&i.AccountID,
+		&i.StoreID,
 	)
 	return &i, err
 }

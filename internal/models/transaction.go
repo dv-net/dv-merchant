@@ -46,7 +46,7 @@ type ITransaction interface { //nolint:interfacebloat
 	GetNetworkCreatedAt() pgtype.Timestamp
 	GetAmount() decimal.Decimal
 	GetAmountUsd() decimal.Decimal
-	GetWalletID() uuid.NullUUID
+	GetAccountID() uuid.NullUUID
 	GetStoreID() uuid.UUID
 	GetCurrencyID() string
 	IsConfirmed() bool
@@ -92,8 +92,8 @@ func (tx Transaction) GetAmountUsd() decimal.Decimal {
 	return tx.AmountUsd.Decimal
 }
 
-func (tx Transaction) GetWalletID() uuid.NullUUID {
-	return tx.WalletID
+func (tx Transaction) GetAccountID() uuid.NullUUID {
+	return tx.AccountID
 }
 
 func (tx Transaction) IsConfirmed() bool {
@@ -142,8 +142,8 @@ func (utx UnconfirmedTransaction) GetAmountUsd() decimal.Decimal {
 	return utx.AmountUsd.Decimal
 }
 
-func (utx UnconfirmedTransaction) GetWalletID() uuid.NullUUID {
-	return utx.WalletID
+func (utx UnconfirmedTransaction) GetAccountID() uuid.NullUUID {
+	return utx.AccountID
 }
 
 func (utx UnconfirmedTransaction) GetStoreID() uuid.UUID {

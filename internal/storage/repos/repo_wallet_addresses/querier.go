@@ -7,6 +7,7 @@ package repo_wallet_addresses
 import (
 	"context"
 
+	"github.com/dv-net/dv-merchant/internal/constant"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 )
@@ -16,20 +17,24 @@ type Querier interface {
 	FilterOwnerWalletAddresses(ctx context.Context, userID uuid.UUID, column2 []string) ([]*FilterOwnerWalletAddressesRow, error)
 	GetAddressForMultiWithdrawal(ctx context.Context, arg GetAddressForMultiWithdrawalParams) (*GetAddressForMultiWithdrawalRow, error)
 	GetAddressForWithdrawal(ctx context.Context, arg GetAddressForWithdrawalParams) (*GetAddressForWithdrawalRow, error)
-	GetAllClearByWalletID(ctx context.Context, walletID uuid.UUID, currencyIds []string) ([]*models.WalletAddress, error)
+	GetAllClearByWalletID(ctx context.Context, accountID uuid.NullUUID, currencyIds []string) ([]*models.WalletAddress, error)
+	GetAvailableAddress(ctx context.Context, currencyID string, userID uuid.UUID) (*models.WalletAddress, error)
 	GetById(ctx context.Context, id uuid.UUID) (*models.WalletAddress, error)
-	GetByWalletIDAndCurrencyID(ctx context.Context, walletID uuid.UUID, currencyID string) (*models.WalletAddress, error)
+	GetByWalletIDAndCurrencyID(ctx context.Context, accountID uuid.NullUUID, currencyID string) (*models.WalletAddress, error)
 	GetListByCurrencyWithAmount(ctx context.Context, arg GetListByCurrencyWithAmountParams) (*GetListByCurrencyWithAmountRow, error)
 	GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetPrefetchWalletAddressByUserIDParams) ([]*GetPrefetchWalletAddressByUserIDRow, error)
+	GetWalletAddressByTypeAndID(ctx context.Context, accountID uuid.NullUUID, accountType string) ([]*models.WalletAddress, error)
 	GetWalletAddressesByAddress(ctx context.Context, arg GetWalletAddressesByAddressParams) (*models.WalletAddress, error)
 	GetWalletAddressesByUserID(ctx context.Context, userID uuid.UUID) ([]*models.WalletAddress, error)
-	GetWalletAddressesByWalletId(ctx context.Context, walletID uuid.UUID) ([]*models.WalletAddress, error)
+	GetWalletAddressesByWalletId(ctx context.Context, accountID uuid.NullUUID) ([]*models.WalletAddress, error)
 	GetWalletAddressesTotalWithCurrencyID(ctx context.Context, userID uuid.UUID) ([]*GetWalletAddressesTotalWithCurrencyIDRow, error)
 	GetWalletsDataForRestoreByBlockchains(ctx context.Context, blockchains []string) ([]*GetWalletsDataForRestoreByBlockchainsRow, error)
 	IsWalletExistsByAddress(ctx context.Context, address string) (bool, error)
 	MarkAddressDirty(ctx context.Context, address string) (*models.WalletAddress, error)
 	RestoreByWallets(ctx context.Context, dollar_1 []uuid.UUID) error
 	SoftDeleteByWallets(ctx context.Context, dollar_1 []uuid.UUID) error
+	UpdateStatus(ctx context.Context, status constant.WalletStatus, iD uuid.UUID) error
+	UpdateStatusByAccountID(ctx context.Context, arg UpdateStatusByAccountIDParams) error
 	UpdateWalletBalance(ctx context.Context, address string, currencyID string) error
 	UpdateWalletNativeTokenBalance(ctx context.Context, arg UpdateWalletNativeTokenBalanceParams) error
 }

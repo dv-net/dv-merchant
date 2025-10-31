@@ -7,6 +7,7 @@ package models
 import (
 	"time"
 
+	"github.com/dv-net/dv-merchant/internal/constant"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
@@ -195,6 +196,28 @@ type ExchangeWithdrawalSetting struct {
 	IsEnabled  bool             `db:"is_enabled" json:"is_enabled"`
 }
 
+type Invoice struct {
+	ID                uuid.UUID              `db:"id" json:"id"`
+	UserID            uuid.UUID              `db:"user_id" json:"user_id"`
+	StoreID           uuid.UUID              `db:"store_id" json:"store_id"`
+	OrderID           string                 `db:"order_id" json:"order_id"`
+	ExpectedAmountUsd decimal.Decimal        `db:"expected_amount_usd" json:"expected_amount_usd"`
+	ReceivedAmountUsd decimal.Decimal        `db:"received_amount_usd" json:"received_amount_usd"`
+	Status            constant.InvoiceStatus `db:"status" json:"status"`
+	ExpiresAt         pgtype.Timestamptz     `db:"expires_at" json:"expires_at"`
+	CreatedAt         pgtype.Timestamptz     `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz     `db:"updated_at" json:"updated_at"`
+}
+
+type InvoiceAddress struct {
+	ID              uuid.UUID           `db:"id" json:"id"`
+	InvoiceID       uuid.UUID           `db:"invoice_id" json:"invoice_id"`
+	WalletAddressID uuid.UUID           `db:"wallet_address_id" json:"wallet_address_id"`
+	RateAtCreation  decimal.NullDecimal `db:"rate_at_creation" json:"rate_at_creation"`
+	CreatedAt       pgtype.Timestamptz  `db:"created_at" json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz  `db:"updated_at" json:"updated_at"`
+}
+
 type Log struct {
 	ID          uuid.UUID        `db:"id" json:"id"`
 	LogTypeSlug string           `db:"log_type_slug" json:"log_type_slug"`
@@ -277,7 +300,7 @@ type Receipt struct {
 	StoreID    uuid.UUID        `db:"store_id" json:"store_id"`
 	CurrencyID string           `db:"currency_id" json:"currency_id"`
 	Amount     decimal.Decimal  `db:"amount" json:"amount"`
-	WalletID   uuid.NullUUID    `db:"wallet_id" json:"wallet_id"`
+	AccountID  uuid.NullUUID    `db:"account_id" json:"account_id"`
 	CreatedAt  pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt  pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 }
@@ -353,7 +376,7 @@ type Transaction struct {
 	UserID             uuid.UUID           `db:"user_id" json:"user_id"`
 	StoreID            uuid.NullUUID       `db:"store_id" json:"store_id"`
 	ReceiptID          uuid.NullUUID       `db:"receipt_id" json:"receipt_id"`
-	WalletID           uuid.NullUUID       `db:"wallet_id" json:"wallet_id"`
+	AccountID          uuid.NullUUID       `db:"account_id" json:"account_id"`
 	CurrencyID         string              `db:"currency_id" json:"currency_id"`
 	Blockchain         string              `db:"blockchain" json:"blockchain"`
 	TxHash             string              `db:"tx_hash" json:"tx_hash"`
@@ -370,6 +393,7 @@ type Transaction struct {
 	UpdatedAt          pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
 	CreatedAtIndex     pgtype.Int8         `db:"created_at_index" json:"created_at_index"`
 	IsSystem           bool                `db:"is_system" json:"is_system"`
+	InvoiceID          uuid.NullUUID       `db:"invoice_id" json:"invoice_id"`
 }
 
 type Transfer struct {
@@ -424,7 +448,7 @@ type UnconfirmedTransaction struct {
 	ID               uuid.UUID           `db:"id" json:"id"`
 	UserID           uuid.UUID           `db:"user_id" json:"user_id"`
 	StoreID          uuid.NullUUID       `db:"store_id" json:"store_id"`
-	WalletID         uuid.NullUUID       `db:"wallet_id" json:"wallet_id"`
+	AccountID        uuid.NullUUID       `db:"account_id" json:"account_id"`
 	CurrencyID       string              `db:"currency_id" json:"currency_id"`
 	TxHash           string              `db:"tx_hash" json:"tx_hash"`
 	BcUniqKey        *string             `db:"bc_uniq_key" json:"bc_uniq_key"`
@@ -437,6 +461,7 @@ type UnconfirmedTransaction struct {
 	CreatedAt        pgtype.Timestamp    `db:"created_at" json:"created_at"`
 	UpdatedAt        pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
 	Blockchain       string              `db:"blockchain" json:"blockchain"`
+	InvoiceID        uuid.NullUUID       `db:"invoice_id" json:"invoice_id"`
 }
 
 type UpdateBalanceQueue struct {
@@ -531,17 +556,28 @@ type Wallet struct {
 }
 
 type WalletAddress struct {
-	ID         uuid.UUID        `db:"id" json:"id"`
-	WalletID   uuid.UUID        `db:"wallet_id" json:"wallet_id"`
-	UserID     uuid.UUID        `db:"user_id" json:"user_id"`
-	CurrencyID string           `db:"currency_id" json:"currency_id"`
-	Blockchain Blockchain       `db:"blockchain" json:"blockchain"`
-	Address    string           `db:"address" json:"address"`
-	Amount     decimal.Decimal  `db:"amount" json:"amount"`
-	CreatedAt  pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt  pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-	DeletedAt  pgtype.Timestamp `db:"deleted_at" json:"deleted_at"`
-	Dirty      bool             `db:"dirty" json:"dirty"`
+	ID          uuid.UUID             `db:"id" json:"id"`
+	UserID      uuid.UUID             `db:"user_id" json:"user_id"`
+	CurrencyID  string                `db:"currency_id" json:"currency_id"`
+	Blockchain  Blockchain            `db:"blockchain" json:"blockchain"`
+	Address     string                `db:"address" json:"address"`
+	Amount      decimal.Decimal       `db:"amount" json:"amount"`
+	CreatedAt   pgtype.Timestamp      `db:"created_at" json:"created_at"`
+	UpdatedAt   pgtype.Timestamp      `db:"updated_at" json:"updated_at"`
+	DeletedAt   pgtype.Timestamp      `db:"deleted_at" json:"deleted_at"`
+	Dirty       bool                  `db:"dirty" json:"dirty"`
+	Status      constant.WalletStatus `db:"status" json:"status"`
+	AccountType string                `db:"account_type" json:"account_type"`
+	AccountID   uuid.NullUUID         `db:"account_id" json:"account_id"`
+	StoreID     uuid.NullUUID         `db:"store_id" json:"store_id"`
+}
+
+type WalletAddressStatusHistory struct {
+	ID              uuid.UUID        `db:"id" json:"id"`
+	WalletAddressID uuid.UUID        `db:"wallet_address_id" json:"wallet_address_id"`
+	OldStatus       pgtype.Text      `db:"old_status" json:"old_status"`
+	NewStatus       string           `db:"new_status" json:"new_status"`
+	ChangedAt       pgtype.Timestamp `db:"changed_at" json:"changed_at"`
 }
 
 type WalletAddressesActivityLog struct {

@@ -128,7 +128,7 @@ func (s *Service) GetTransactionInfo(ctx context.Context, userID uuid.UUID, hash
 		StoreID:     &res.StoreID.UUID,
 		ReceiptID:   receiptID,
 		Wallet: TransactionWalletInfoDto{
-			ID:              res.WalletID.UUID,
+			ID:              res.AccountID.UUID,
 			WalletStoreID:   res.WalletStoreID,
 			StoreExternalID: res.StoreExternalID,
 			WalletCreatedAt: res.WalletCreatedAt.Time,
@@ -383,9 +383,9 @@ func (s *Service) prepareTransactionsForExport(ctx context.Context, txs []*repo_
 
 func (s *Service) GetLastWalletDepositTransactions(ctx context.Context, walletID uuid.UUID) ([]ShortTransactionInfo, error) {
 	res, err := s.storage.Transactions().FindLastWalletTransactions(ctx, repo_transactions.FindLastWalletTransactionsParams{
-		WalletID: uuid.NullUUID{UUID: walletID, Valid: true},
-		Type:     models.TransactionsTypeDeposit,
-		Limit:    10,
+		AccountID: uuid.NullUUID{UUID: walletID, Valid: true},
+		Type:      models.TransactionsTypeDeposit,
+		Limit:     10,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("find last transactions: %w", err)
@@ -459,7 +459,7 @@ func (s *Service) GetWalletInfoWithTransactionsByAddress(
 
 func (s *Service) prepareTxInfoByWallet(ctx context.Context, walletID uuid.UUID, address string) ([]WalletTransactionInfo, error) {
 	transactions, err := s.storage.Transactions().GetWalletTransactions(ctx, repo_transactions.GetWalletTransactionsParams{
-		WalletID: uuid.NullUUID{
+		AccountID: uuid.NullUUID{
 			UUID:  walletID,
 			Valid: true,
 		},

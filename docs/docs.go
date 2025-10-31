@@ -8170,6 +8170,81 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/external/invoice": {
+            "post": {
+                "security": [
+                    {
+                        "XApiKey": []
+                    }
+                ],
+                "description": "Create invoice",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invoice"
+                ],
+                "summary": "Create invoice",
+                "parameters": [
+                    {
+                        "description": "Create invoice request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_invoice_request.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invoice created",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-InvoiceResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "423": {
+                        "description": "Locked",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/external/processing-wallet-balances": {
             "get": {
                 "security": [
@@ -9036,6 +9111,115 @@ const docTemplate = `{
                     },
                     "503": {
                         "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/public/invoice/{id}": {
+            "get": {
+                "description": "Get invoice by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invoice"
+                ],
+                "summary": "Get invoice",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invoice id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-InvoiceResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "410": {
+                        "description": "Gone",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/public/invoice/{id}/wallet": {
+            "post": {
+                "description": "Attach wallet to invoice",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invoice"
+                ],
+                "summary": "Attach wallet to invoice",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Invoice id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Currency id",
+                        "name": "currency_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "410": {
+                        "description": "Gone",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -10233,6 +10417,9 @@ const docTemplate = `{
                 "is_evm_like": {
                     "type": "boolean"
                 },
+                "is_stable_coin": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -11307,6 +11494,32 @@ const docTemplate = `{
                 }
             }
         },
+        "InvoiceResponse": {
+            "type": "object",
+            "properties": {
+                "amount_usd": {
+                    "type": "number"
+                },
+                "expired_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "invoice_addresses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_invoice_response.InvoiceAddressResponse"
+                    }
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_constant.InvoiceStatus"
+                }
+            }
+        },
         "JSONResponse-AddUserRoleResponse": {
             "type": "object",
             "properties": {
@@ -11640,6 +11853,20 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/InitProcessingResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-InvoiceResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/InvoiceResponse"
                 },
                 "message": {
                     "type": "string"
@@ -13069,14 +13296,23 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
+                "contract_address": {
+                    "type": "string"
+                },
                 "currency_label": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
+                "is_native": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
+                },
+                "order": {
+                    "type": "integer"
                 },
                 "token_label": {
                     "type": "string"
@@ -14892,6 +15128,27 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_dv-net_dv-merchant_internal_constant.InvoiceStatus": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "waiting_confirmation",
+                "paid",
+                "expired",
+                "underpaid",
+                "overpaid",
+                "cancelled"
+            ],
+            "x-enum-varnames": [
+                "InvoiceStatusPending",
+                "InvoiceStatusWaiting",
+                "InvoiceStausPaid",
+                "InvoiceStatusExpired",
+                "InvoiceStatusUnderpaid",
+                "InvoiceStatusOverpaid",
+                "InvoiceStatusCancelled"
+            ]
+        },
         "github_com_dv-net_dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest": {
             "type": "object",
             "required": [
@@ -14907,6 +15164,25 @@ const docTemplate = `{
                     "enum": [
                         "okx htx binance bitget bybit gate dv-min dv-max dv-avg"
                     ]
+                }
+            }
+        },
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_invoice_request.CreateRequest": {
+            "type": "object",
+            "required": [
+                "amount_usd",
+                "order_id"
+            ],
+            "properties": {
+                "amount_usd": {
+                    "description": "Amount in USD",
+                    "type": "number",
+                    "example": 100.5
+                },
+                "order_id": {
+                    "description": "Unique order identifier",
+                    "type": "string",
+                    "example": "ORDER-123456"
                 }
             }
         },
@@ -15114,6 +15390,44 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_dv-net_dv-merchant_internal_delivery_http_responses_invoice_response.InvoiceAddressResponse": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "bc_uniq_key": {
+                    "type": "string"
+                },
+                "blockchain": {
+                    "$ref": "#/definitions/Blockchain"
+                },
+                "currency_id": {
+                    "type": "string"
+                },
+                "expected_amount": {
+                    "type": "number"
+                },
+                "expected_amount_usd": {
+                    "type": "number"
+                },
+                "paid_at": {
+                    "type": "string"
+                },
+                "rate_at_creation": {
+                    "type": "number"
+                },
+                "received_amount": {
+                    "type": "number"
+                },
+                "received_amount_usd": {
+                    "type": "number"
+                },
+                "tx_hash": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.LogData": {
             "type": "object",
             "properties": {
@@ -15146,6 +15460,9 @@ const docTemplate = `{
         "github_com_dv-net_dv-merchant_internal_dto.LogDTO": {
             "type": "object",
             "properties": {
+                "fields": {
+                    "type": "string"
+                },
                 "level": {
                     "type": "string"
                 },
@@ -15262,9 +15579,6 @@ const docTemplate = `{
                 "htx",
                 "binance",
                 "bitget",
-                "dv-min",
-                "dv-max",
-                "dv-avg",
                 "kucoin",
                 "bybit",
                 "gate"
@@ -15274,9 +15588,6 @@ const docTemplate = `{
                 "RateSourceHTX",
                 "RateSourceBinance",
                 "RateSourceBitGet",
-                "RateSourceDVMin",
-                "RateSourceDVMax",
-                "RateSourceDVAvg",
                 "RateSourceKucoin",
                 "RateSourceBybit",
                 "RateSourceGateio"

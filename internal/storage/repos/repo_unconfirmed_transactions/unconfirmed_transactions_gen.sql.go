@@ -15,15 +15,15 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO unconfirmed_transactions (user_id, store_id, wallet_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, blockchain)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now(), $13)
-	RETURNING id, user_id, store_id, wallet_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, updated_at, blockchain
+INSERT INTO unconfirmed_transactions (user_id, store_id, account_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, blockchain, invoice_id)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now(), $13, $14)
+	RETURNING id, user_id, store_id, account_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, updated_at, blockchain, invoice_id
 `
 
 type CreateParams struct {
 	UserID           uuid.UUID               `db:"user_id" json:"user_id"`
 	StoreID          uuid.NullUUID           `db:"store_id" json:"store_id"`
-	WalletID         uuid.NullUUID           `db:"wallet_id" json:"wallet_id"`
+	AccountID        uuid.NullUUID           `db:"account_id" json:"account_id"`
 	CurrencyID       string                  `db:"currency_id" json:"currency_id"`
 	TxHash           string                  `db:"tx_hash" json:"tx_hash"`
 	BcUniqKey        *string                 `db:"bc_uniq_key" json:"bc_uniq_key"`
@@ -34,13 +34,14 @@ type CreateParams struct {
 	AmountUsd        decimal.NullDecimal     `db:"amount_usd" json:"amount_usd"`
 	NetworkCreatedAt pgtype.Timestamp        `db:"network_created_at" json:"network_created_at"`
 	Blockchain       string                  `db:"blockchain" json:"blockchain"`
+	InvoiceID        uuid.NullUUID           `db:"invoice_id" json:"invoice_id"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.UnconfirmedTransaction, error) {
 	row := q.db.QueryRow(ctx, create,
 		arg.UserID,
 		arg.StoreID,
-		arg.WalletID,
+		arg.AccountID,
 		arg.CurrencyID,
 		arg.TxHash,
 		arg.BcUniqKey,
@@ -51,13 +52,14 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Unconfi
 		arg.AmountUsd,
 		arg.NetworkCreatedAt,
 		arg.Blockchain,
+		arg.InvoiceID,
 	)
 	var i models.UnconfirmedTransaction
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.StoreID,
-		&i.WalletID,
+		&i.AccountID,
 		&i.CurrencyID,
 		&i.TxHash,
 		&i.BcUniqKey,
@@ -70,12 +72,13 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Unconfi
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Blockchain,
+		&i.InvoiceID,
 	)
 	return &i, err
 }
 
 const getById = `-- name: GetById :one
-SELECT id, user_id, store_id, wallet_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, updated_at, blockchain FROM unconfirmed_transactions WHERE id=$1 LIMIT 1
+SELECT id, user_id, store_id, account_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, updated_at, blockchain, invoice_id FROM unconfirmed_transactions WHERE id=$1 LIMIT 1
 `
 
 func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.UnconfirmedTransaction, error) {
@@ -85,7 +88,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Unconfirme
 		&i.ID,
 		&i.UserID,
 		&i.StoreID,
-		&i.WalletID,
+		&i.AccountID,
 		&i.CurrencyID,
 		&i.TxHash,
 		&i.BcUniqKey,
@@ -98,6 +101,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Unconfirme
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Blockchain,
+		&i.InvoiceID,
 	)
 	return &i, err
 }

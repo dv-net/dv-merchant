@@ -1,5 +1,5 @@
 -- name: Create :one
-INSERT INTO receipts (status, store_id, currency_id, amount, wallet_id, created_at)
+INSERT INTO receipts (status, store_id, currency_id, amount, account_id, created_at)
 	VALUES ($1, $2, $3, $4, $5, now())
 	RETURNING *;
 

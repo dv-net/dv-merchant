@@ -5,24 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
-
-	"github.com/dv-net/dv-merchant/internal/service/transactions"
-	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_currencies"
-	"github.com/dv-net/dv-merchant/internal/util"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_webhook_request"
-	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/webhook"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_webhooks"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_webhook_send_histories"
 	"github.com/dv-net/dv-merchant/internal/tools/hash"
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/shopspring/decimal"
-
-	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -89,72 +79,6 @@ func (s *Service) DeleteStoreWebhooks(ctx context.Context, id uuid.UUID, opts ..
 	return nil
 }
 
-func (s *Service) handleDepositReceived(ev event.IEvent) error {
-	convertedEv, ok := ev.(transactions.TransactionEvent)
-	if !ok {
-		return fmt.Errorf("invalid event type %s", ev.Type())
-	}
-
-	payload, err := s.prepareDepositHookPayload(
-		convertedEv.GetTx(),
-		convertedEv.GetCurrency(),
-		convertedEv.GetWebhookEvent(),
-		convertedEv.GetStoreExternalID(),
-	)
-	if err != nil {
-		return fmt.Errorf("prepare deposit hook payload: %w", err)
-	}
-
-	if convertedEv.GetStore().MinimalPayment.GreaterThan(convertedEv.GetTx().GetAmountUsd()) {
-		return nil
-	}
-	params := repo_store_currencies.FindByStoreIDParams{
-		StoreID:    convertedEv.GetStore().ID,
-		CurrencyID: convertedEv.GetCurrency().ID,
-	}
-
-	_, err = s.storage.StoreCurrencies().FindByStoreID(context.Background(), params)
-	if err != nil {
-		s.log.Errorw("store available currency not found", "error", err)
-		return nil
-	}
-
-	return s.processWebhooksByTransactionEvent(ev, transactions.DepositReceivedEventType, payload)
-}
-
-func (s *Service) handleWithdrawalReceived(ev event.IEvent) error {
-	convertedEv, ok := ev.(transactions.WithdrawalFromProcessingReceivedEvent)
-	if !ok {
-		return fmt.Errorf("invalid event type %s", ev.Type())
-	}
-
-	payload := map[string]any{
-		"type":          convertedEv.GetWebhookEvent(),
-		"created_at":    convertedEv.Tx.CreatedAt,
-		"paid_at":       convertedEv.Tx.NetworkCreatedAt,
-		"amount":        convertedEv.Tx.GetAmountUsd().String(),
-		"withdrawal_id": convertedEv.WithdrawalID,
-		"transactions": map[string]any{
-			"tx_id":       convertedEv.Tx.ID.String(),
-			"tx_hash":     convertedEv.Tx.TxHash,
-			"bc_uniq_key": convertedEv.Tx.BcUniqKey,
-			"created_at":  convertedEv.Tx.CreatedAt,
-			"currency":    convertedEv.Currency.Code,
-			"currency_id": convertedEv.Currency.ID,
-			"blockchain":  convertedEv.Currency.Blockchain.String(),
-			"amount":      convertedEv.Tx.GetAmount().String(),
-			"amount_usd":  convertedEv.Tx.GetAmountUsd().String(),
-		},
-	}
-
-	preparedPayload, err := json.Marshal(payload)
-	if err != nil {
-		return fmt.Errorf("prepare withdrawal hook payload: %w", err)
-	}
-
-	return s.processWebhooksByTransactionEvent(ev, transactions.WithdrawalFromProcessingReceivedEventType, preparedPayload)
-}
-
 func (s *Service) SendWebhookManual(ctx context.Context, txID, userID uuid.UUID) error {
 	transaction, err := s.storage.Transactions().GetById(ctx, txID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
@@ -193,8 +117,8 @@ func (s *Service) SendWebhookManual(ctx context.Context, txID, userID uuid.UUID)
 	}
 
 	storeExternalID := ""
-	if tx.GetWalletID().Valid {
-		wallet, fetchWalletErr := s.storage.Wallets().GetById(ctx, tx.GetWalletID().UUID)
+	if tx.GetAccountID().Valid {
+		wallet, fetchWalletErr := s.storage.Wallets().GetById(ctx, tx.GetAccountID().UUID)
 		if fetchWalletErr != nil {
 			return fmt.Errorf("fetch wallet: %w", fetchWalletErr)
 		}
@@ -266,62 +190,6 @@ func (s *Service) getWebhooksByStore(
 	return webhooks, nil
 }
 
-func (s *Service) processWebhooksByTransactionEvent(
-	ev event.IEvent,
-	eventType string,
-	hookPayload []byte,
-) error {
-	txCreatedEvent, ok := ev.(transactions.TransactionEvent)
-	if !ok || txCreatedEvent.EventType() != eventType {
-		return nil
-	}
-
-	dbTx := txCreatedEvent.GetDatabaseTx()
-	webhooks, err := s.getWebhooksByStore(
-		context.Background(),
-		txCreatedEvent.GetStore().ID,
-		string(txCreatedEvent.GetWebhookEvent()),
-		dbTx,
-	)
-	if err != nil {
-		s.log.Errorw("store webhook not found", "error", err)
-		return nil
-	}
-
-	for _, v := range webhooks {
-		if s.isWebhookAlreadySent(v.StoreWebhook.Url, string(txCreatedEvent.GetWebhookEvent()), txCreatedEvent.GetTx().GetID(), dbTx) {
-			continue
-		}
-
-		if err != nil {
-			s.log.Errorw("send webhook error", "error", err)
-			continue
-		}
-		message := webhook.Message{
-			TxID:      txCreatedEvent.GetTx().GetID(),
-			WebhookID: v.StoreWebhook.ID,
-			Type:      string(txCreatedEvent.GetWebhookEvent()),
-			Data:      hookPayload,
-			Signature: hash.SHA256Signature(hookPayload, v.Secret.String),
-		}
-		whSendErr := s.webhookService.Send(&message, dbTx)
-
-		if whSendErr != nil {
-			s.log.Errorw(
-				"store webhook send error",
-				"error", err,
-				"store_id", txCreatedEvent.GetStore().ID.String(),
-				"tx_id", txCreatedEvent.GetTx().GetID().String(),
-				"tx_hash", txCreatedEvent.GetTx().GetTxHash(),
-				"wh_type", string(txCreatedEvent.GetWebhookEvent()),
-				"wh_body", string(hookPayload),
-			)
-		}
-	}
-
-	return nil
-}
-
 func (s *Service) isWebhookAlreadySent(url, whType string, txID uuid.UUID, dbTx pgx.Tx) bool {
 	whCheckParams := repo_webhook_send_histories.CheckWebhookWasSentParams{
 		TxID: txID,
@@ -338,47 +206,6 @@ func (s *Service) isWebhookAlreadySent(url, whType string, txID uuid.UUID, dbTx 
 	}
 
 	return exists
-}
-
-func (s *Service) prepareDepositHookPayload(
-	tx models.ITransaction,
-	curr models.Currency,
-	whType models.WebhookEvent,
-	storeExternalID string,
-) ([]byte, error) {
-	var prefix string
-	if !tx.IsConfirmed() {
-		prefix = "unconfirmed_"
-	}
-	payload := map[string]any{
-		prefix + "type":       whType,
-		prefix + "status":     models.TransactionStatusCompleted,
-		prefix + "created_at": tx.GetCreatedAt(),
-		prefix + "paid_at":    tx.GetNetworkCreatedAt(),
-		prefix + "amount":     tx.GetAmountUsd().String(),
-		prefix + "transactions": map[string]any{
-			prefix + "tx_id":       tx.GetID().String(),
-			prefix + "tx_hash":     tx.GetTxHash(),
-			prefix + "bc_uniq_key": tx.GetBcUniqKey(),
-			prefix + "created_at":  tx.GetCreatedAt(),
-			prefix + "currency":    curr.Code,
-			prefix + "currency_id": curr.ID,
-			prefix + "blockchain":  curr.Blockchain.String(),
-			prefix + "amount":      tx.GetAmount().String(),
-			prefix + "amount_usd":  tx.GetAmountUsd().String(),
-		},
-		prefix + "wallet": map[string]any{
-			prefix + "id":                tx.GetWalletID(),
-			prefix + "store_external_id": storeExternalID,
-		},
-	}
-
-	preparedPayload, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("prepare wh body: %w", err)
-	}
-
-	return preparedPayload, nil
 }
 
 func (s *Service) SendMockWebhook(ctx context.Context, user *models.User, whID uuid.UUID, whType models.WebhookEvent) (webhook.Result, error) {
@@ -418,70 +245,4 @@ func (s *Service) SendMockWebhook(ctx context.Context, user *models.User, whID u
 	}
 
 	return s.webhookService.SendWebhook(ctx, wh.Url, payload, sign)
-}
-
-func (s *Service) prepareMockTransactionDataForWhTest(whType models.WebhookEvent, wh models.StoreWebhook, userID uuid.UUID) (models.ITransaction, error) {
-	walletID, _ := uuid.NewRandom()
-	preparedWalletID := uuid.NullUUID{
-		UUID:  walletID,
-		Valid: true,
-	}
-	preparedStoreID := uuid.NullUUID{
-		UUID:  wh.StoreID,
-		Valid: true,
-	}
-	txID, _ := uuid.NewRandom()
-	pgTimeStamp := pgtype.Timestamp{Time: time.Now(), Valid: true}
-	curr, _ := models.BlockchainBitcoin.NativeCurrency()
-
-	var txData models.ITransaction
-	switch whType {
-	case models.WebhookEventPaymentReceived, models.WebhookEventWithdrawalFromProcessingReceived:
-		receiptID, _ := uuid.NewRandom()
-		txData = models.Transaction{
-			ID:                 txID,
-			UserID:             userID,
-			StoreID:            preparedStoreID,
-			ReceiptID:          uuid.NullUUID{UUID: receiptID, Valid: true},
-			WalletID:           preparedWalletID,
-			CurrencyID:         curr,
-			Blockchain:         models.BlockchainBitcoin.String(),
-			TxHash:             "tx_hash_example",
-			BcUniqKey:          util.Pointer("bc_uniq_key_example"),
-			Type:               models.TransactionsTypeDeposit,
-			FromAddress:        "15muvlleOFc9nh10zTJSoM08Fil96tXBfn",
-			ToAddress:          "1pmlFcSaUPBhJYeuG7ahQvTWQGWJff0IW1",
-			Amount:             decimal.New(100, 0),
-			AmountUsd:          decimal.NullDecimal{Decimal: decimal.New(100, 0), Valid: true},
-			Fee:                decimal.Decimal{},
-			WithdrawalIsManual: false,
-			NetworkCreatedAt:   pgTimeStamp,
-			CreatedAt:          pgTimeStamp,
-			UpdatedAt:          pgTimeStamp,
-			CreatedAtIndex:     pgtype.Int8{Int64: 1, Valid: true},
-		}
-	case models.WebhookEventPaymentNotConfirmed:
-		txData = models.UnconfirmedTransaction{
-			ID:               txID,
-			UserID:           userID,
-			StoreID:          preparedStoreID,
-			WalletID:         preparedWalletID,
-			CurrencyID:       curr,
-			TxHash:           "tx_hash_example",
-			BcUniqKey:        util.Pointer("bc_uniq_key_example"),
-			Type:             models.TransactionsTypeDeposit,
-			FromAddress:      "15muvlleOFc9nh10zTJSoM08Fil96tXBfn",
-			ToAddress:        "1pmlFcSaUPBhJYeuG7ahQvTWQGWJff0IW1",
-			Amount:           decimal.New(100, 10),
-			AmountUsd:        decimal.NullDecimal{Decimal: decimal.New(100, 10), Valid: true},
-			NetworkCreatedAt: pgTimeStamp,
-			CreatedAt:        pgTimeStamp,
-			UpdatedAt:        pgTimeStamp,
-			Blockchain:       models.BlockchainBitcoin.String(),
-		}
-	default:
-		return nil, fmt.Errorf("undefined wh_type: %s", whType.String())
-	}
-
-	return txData, nil
 }

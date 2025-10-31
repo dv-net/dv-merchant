@@ -517,6 +517,8 @@ definitions:
         type: boolean
       is_evm_like:
         type: boolean
+      is_stable_coin:
+        type: boolean
       name:
         type: string
       precision:
@@ -1243,6 +1245,23 @@ definitions:
     - role
     - store_ids
     type: object
+  InvoiceResponse:
+    properties:
+      amount_usd:
+        type: number
+      expired_at:
+        type: string
+      id:
+        type: string
+      invoice_addresses:
+        items:
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_invoice_response.InvoiceAddressResponse'
+        type: array
+      order_id:
+        type: string
+      status:
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_constant.InvoiceStatus'
+    type: object
   JSONResponse-AddUserRoleResponse:
     properties:
       code:
@@ -1458,6 +1477,15 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/InitProcessingResponse'
+      message:
+        type: string
+    type: object
+  JSONResponse-InvoiceResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/InvoiceResponse'
       message:
         type: string
     type: object
@@ -2396,12 +2424,18 @@ definitions:
         $ref: '#/definitions/Blockchain'
       code:
         type: string
+      contract_address:
+        type: string
       currency_label:
         type: string
       id:
         type: string
+      is_native:
+        type: boolean
       name:
         type: string
+      order:
+        type: integer
       token_label:
         type: string
     type: object
@@ -3634,6 +3668,24 @@ definitions:
     required:
     - stages
     type: object
+  github_com_dv-net_dv-merchant_internal_constant.InvoiceStatus:
+    enum:
+    - pending
+    - waiting_confirmation
+    - paid
+    - expired
+    - underpaid
+    - overpaid
+    - cancelled
+    type: string
+    x-enum-varnames:
+    - InvoiceStatusPending
+    - InvoiceStatusWaiting
+    - InvoiceStausPaid
+    - InvoiceStatusExpired
+    - InvoiceStatusUnderpaid
+    - InvoiceStatusOverpaid
+    - InvoiceStatusCancelled
   github_com_dv-net_dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest:
     properties:
       rate_scale:
@@ -3645,6 +3697,20 @@ definitions:
     required:
     - rate_scale
     - rate_source
+    type: object
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_invoice_request.CreateRequest:
+    properties:
+      amount_usd:
+        description: Amount in USD
+        example: 100.5
+        type: number
+      order_id:
+        description: Unique order identifier
+        example: ORDER-123456
+        type: string
+    required:
+    - amount_usd
+    - order_id
     type: object
   github_com_dv-net_dv-merchant_internal_delivery_http_request_processing_request.MnemonicRequest:
     properties:
@@ -3781,6 +3847,31 @@ definitions:
       withdraw_quota_per_day:
         type: string
     type: object
+  github_com_dv-net_dv-merchant_internal_delivery_http_responses_invoice_response.InvoiceAddressResponse:
+    properties:
+      address:
+        type: string
+      bc_uniq_key:
+        type: string
+      blockchain:
+        $ref: '#/definitions/Blockchain'
+      currency_id:
+        type: string
+      expected_amount:
+        type: number
+      expected_amount_usd:
+        type: number
+      paid_at:
+        type: string
+      rate_at_creation:
+        type: number
+      received_amount:
+        type: number
+      received_amount_usd:
+        type: number
+      tx_hash:
+        type: string
+    type: object
   github_com_dv-net_dv-merchant_internal_delivery_http_responses_log_response.LogData:
     properties:
       created_at:
@@ -3802,6 +3893,8 @@ definitions:
     type: object
   github_com_dv-net_dv-merchant_internal_dto.LogDTO:
     properties:
+      fields:
+        type: string
       level:
         type: string
       message:
@@ -3888,9 +3981,6 @@ definitions:
     - htx
     - binance
     - bitget
-    - dv-min
-    - dv-max
-    - dv-avg
     - kucoin
     - bybit
     - gate
@@ -3900,9 +3990,6 @@ definitions:
     - RateSourceHTX
     - RateSourceBinance
     - RateSourceBitGet
-    - RateSourceDVMin
-    - RateSourceDVMax
-    - RateSourceDVAvg
     - RateSourceKucoin
     - RateSourceBybit
     - RateSourceGateio
@@ -9365,6 +9452,54 @@ paths:
       summary: Get external exchange balances
       tags:
       - Exchange
+  /v1/external/invoice:
+    post:
+      consumes:
+      - application/json
+      description: Create invoice
+      parameters:
+      - description: Create invoice request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_invoice_request.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invoice created
+          schema:
+            $ref: '#/definitions/JSONResponse-InvoiceResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "423":
+          description: Locked
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Create invoice
+      tags:
+      - Invoice
   /v1/external/processing-wallet-balances:
     get:
       consumes:
@@ -9921,6 +10056,78 @@ paths:
       summary: Get Currency rate
       tags:
       - Currency
+  /v1/public/invoice/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get invoice by id
+      parameters:
+      - description: Invoice id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-InvoiceResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "410":
+          description: Gone
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get invoice
+      tags:
+      - Invoice
+  /v1/public/invoice/{id}/wallet:
+    post:
+      consumes:
+      - application/json
+      description: Attach wallet to invoice
+      parameters:
+      - description: Invoice id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Currency id
+        in: body
+        name: currency_id
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "410":
+          description: Gone
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Attach wallet to invoice
+      tags:
+      - Invoice
   /v1/public/mnemonic/generate:
     get:
       consumes:

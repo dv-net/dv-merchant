@@ -56,8 +56,8 @@ func FromStoreTransactionModelToResponse(t *models.Transaction) *store_response.
 		res.ReceiptID = util.Pointer(t.ReceiptID.UUID.String())
 	}
 
-	if t.WalletID.Valid {
-		res.WalletID = util.Pointer(t.WalletID.UUID.String())
+	if t.AccountID.Valid {
+		res.WalletID = util.Pointer(t.AccountID.UUID.String())
 	}
 
 	return res

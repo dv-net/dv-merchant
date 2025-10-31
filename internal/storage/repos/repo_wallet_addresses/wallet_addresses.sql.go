@@ -8,6 +8,7 @@ package repo_wallet_addresses
 import (
 	"context"
 
+	"github.com/dv-net/dv-merchant/internal/constant"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -134,7 +135,7 @@ func (q *Queries) GetAddressForMultiWithdrawal(ctx context.Context, arg GetAddre
 }
 
 const getAddressForWithdrawal = `-- name: GetAddressForWithdrawal :one
-select wallet_addresses.id, wallet_addresses.wallet_id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty, currencies.id, currencies.code, currencies.name, currencies.precision, currencies.is_fiat, currencies.blockchain, currencies.contract_address, currencies.withdrawal_min_balance, currencies.has_balance, currencies.status, currencies.sort_order, currencies.min_confirmation, currencies.created_at, currencies.updated_at, currencies.is_stablecoin, currencies.currency_label, currencies.token_label, currencies.is_native, currencies.is_new_store_default, (amount * exchange_rate)::decimal as amount_usd
+select wallet_addresses.id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty, wallet_addresses.status, wallet_addresses.account_type, wallet_addresses.account_id, wallet_addresses.store_id, currencies.id, currencies.code, currencies.name, currencies.precision, currencies.is_fiat, currencies.blockchain, currencies.contract_address, currencies.withdrawal_min_balance, currencies.has_balance, currencies.status, currencies.sort_order, currencies.min_confirmation, currencies.created_at, currencies.updated_at, currencies.is_stablecoin, currencies.currency_label, currencies.token_label, currencies.is_native, currencies.is_new_store_default, (amount * exchange_rate)::decimal as amount_usd
 from wallet_addresses
          left join currencies
                    on wallet_addresses.currency_id = currencies.id
@@ -175,37 +176,40 @@ type GetAddressForWithdrawalParams struct {
 }
 
 type GetAddressForWithdrawalRow struct {
-	ID                   uuid.UUID          `db:"id" json:"id"`
-	WalletID             uuid.UUID          `db:"wallet_id" json:"wallet_id"`
-	UserID               uuid.UUID          `db:"user_id" json:"user_id"`
-	CurrencyID           string             `db:"currency_id" json:"currency_id"`
-	Blockchain           models.Blockchain  `db:"blockchain" json:"blockchain"`
-	Address              string             `db:"address" json:"address"`
-	Amount               decimal.Decimal    `db:"amount" json:"amount"`
-	CreatedAt            pgtype.Timestamp   `db:"created_at" json:"created_at"`
-	UpdatedAt            pgtype.Timestamp   `db:"updated_at" json:"updated_at"`
-	DeletedAt            pgtype.Timestamp   `db:"deleted_at" json:"deleted_at"`
-	Dirty                bool               `db:"dirty" json:"dirty"`
-	ID_2                 pgtype.Text        `db:"id_2" json:"id_2"`
-	Code                 pgtype.Text        `db:"code" json:"code"`
-	Name                 pgtype.Text        `db:"name" json:"name"`
-	Precision            pgtype.Int2        `db:"precision" json:"precision"`
-	IsFiat               pgtype.Bool        `db:"is_fiat" json:"is_fiat"`
-	Blockchain_2         *models.Blockchain `db:"blockchain_2" json:"blockchain_2"`
-	ContractAddress      pgtype.Text        `db:"contract_address" json:"contract_address"`
-	WithdrawalMinBalance *decimal.Decimal   `db:"withdrawal_min_balance" json:"withdrawal_min_balance"`
-	HasBalance           pgtype.Bool        `db:"has_balance" json:"has_balance"`
-	Status               pgtype.Bool        `db:"status" json:"status"`
-	SortOrder            pgtype.Int2        `db:"sort_order" json:"sort_order"`
-	MinConfirmation      pgtype.Int2        `db:"min_confirmation" json:"min_confirmation"`
-	CreatedAt_2          pgtype.Timestamp   `db:"created_at_2" json:"created_at_2"`
-	UpdatedAt_2          pgtype.Timestamp   `db:"updated_at_2" json:"updated_at_2"`
-	IsStablecoin         pgtype.Bool        `db:"is_stablecoin" json:"is_stablecoin"`
-	CurrencyLabel        pgtype.Text        `db:"currency_label" json:"currency_label"`
-	TokenLabel           pgtype.Text        `db:"token_label" json:"token_label"`
-	IsNative             pgtype.Bool        `db:"is_native" json:"is_native"`
-	IsNewStoreDefault    pgtype.Bool        `db:"is_new_store_default" json:"is_new_store_default"`
-	AmountUsd            decimal.Decimal    `db:"amount_usd" json:"amount_usd"`
+	ID                   uuid.UUID             `db:"id" json:"id"`
+	UserID               uuid.UUID             `db:"user_id" json:"user_id"`
+	CurrencyID           string                `db:"currency_id" json:"currency_id"`
+	Blockchain           models.Blockchain     `db:"blockchain" json:"blockchain"`
+	Address              string                `db:"address" json:"address"`
+	Amount               decimal.Decimal       `db:"amount" json:"amount"`
+	CreatedAt            pgtype.Timestamp      `db:"created_at" json:"created_at"`
+	UpdatedAt            pgtype.Timestamp      `db:"updated_at" json:"updated_at"`
+	DeletedAt            pgtype.Timestamp      `db:"deleted_at" json:"deleted_at"`
+	Dirty                bool                  `db:"dirty" json:"dirty"`
+	Status               constant.WalletStatus `db:"status" json:"status"`
+	AccountType          string                `db:"account_type" json:"account_type"`
+	AccountID            uuid.NullUUID         `db:"account_id" json:"account_id"`
+	StoreID              uuid.NullUUID         `db:"store_id" json:"store_id"`
+	ID_2                 pgtype.Text           `db:"id_2" json:"id_2"`
+	Code                 pgtype.Text           `db:"code" json:"code"`
+	Name                 pgtype.Text           `db:"name" json:"name"`
+	Precision            pgtype.Int2           `db:"precision" json:"precision"`
+	IsFiat               pgtype.Bool           `db:"is_fiat" json:"is_fiat"`
+	Blockchain_2         *models.Blockchain    `db:"blockchain_2" json:"blockchain_2"`
+	ContractAddress      pgtype.Text           `db:"contract_address" json:"contract_address"`
+	WithdrawalMinBalance *decimal.Decimal      `db:"withdrawal_min_balance" json:"withdrawal_min_balance"`
+	HasBalance           pgtype.Bool           `db:"has_balance" json:"has_balance"`
+	Status_2             pgtype.Bool           `db:"status_2" json:"status_2"`
+	SortOrder            pgtype.Int2           `db:"sort_order" json:"sort_order"`
+	MinConfirmation      pgtype.Int2           `db:"min_confirmation" json:"min_confirmation"`
+	CreatedAt_2          pgtype.Timestamp      `db:"created_at_2" json:"created_at_2"`
+	UpdatedAt_2          pgtype.Timestamp      `db:"updated_at_2" json:"updated_at_2"`
+	IsStablecoin         pgtype.Bool           `db:"is_stablecoin" json:"is_stablecoin"`
+	CurrencyLabel        pgtype.Text           `db:"currency_label" json:"currency_label"`
+	TokenLabel           pgtype.Text           `db:"token_label" json:"token_label"`
+	IsNative             pgtype.Bool           `db:"is_native" json:"is_native"`
+	IsNewStoreDefault    pgtype.Bool           `db:"is_new_store_default" json:"is_new_store_default"`
+	AmountUsd            decimal.Decimal       `db:"amount_usd" json:"amount_usd"`
 }
 
 func (q *Queries) GetAddressForWithdrawal(ctx context.Context, arg GetAddressForWithdrawalParams) (*GetAddressForWithdrawalRow, error) {
@@ -221,7 +225,6 @@ func (q *Queries) GetAddressForWithdrawal(ctx context.Context, arg GetAddressFor
 	var i GetAddressForWithdrawalRow
 	err := row.Scan(
 		&i.ID,
-		&i.WalletID,
 		&i.UserID,
 		&i.CurrencyID,
 		&i.Blockchain,
@@ -231,6 +234,10 @@ func (q *Queries) GetAddressForWithdrawal(ctx context.Context, arg GetAddressFor
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Dirty,
+		&i.Status,
+		&i.AccountType,
+		&i.AccountID,
+		&i.StoreID,
 		&i.ID_2,
 		&i.Code,
 		&i.Name,
@@ -240,7 +247,7 @@ func (q *Queries) GetAddressForWithdrawal(ctx context.Context, arg GetAddressFor
 		&i.ContractAddress,
 		&i.WithdrawalMinBalance,
 		&i.HasBalance,
-		&i.Status,
+		&i.Status_2,
 		&i.SortOrder,
 		&i.MinConfirmation,
 		&i.CreatedAt_2,
@@ -256,16 +263,16 @@ func (q *Queries) GetAddressForWithdrawal(ctx context.Context, arg GetAddressFor
 }
 
 const getAllClearByWalletID = `-- name: GetAllClearByWalletID :many
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+SELECT id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id
 FROM wallet_addresses
-WHERE wallet_id = $1
+WHERE account_id = $1
   AND dirty = false
   AND deleted_at IS NULL
   and currency_id = ANY ($2::varchar[])
 `
 
-func (q *Queries) GetAllClearByWalletID(ctx context.Context, walletID uuid.UUID, currencyIds []string) ([]*models.WalletAddress, error) {
-	rows, err := q.db.Query(ctx, getAllClearByWalletID, walletID, currencyIds)
+func (q *Queries) GetAllClearByWalletID(ctx context.Context, accountID uuid.NullUUID, currencyIds []string) ([]*models.WalletAddress, error) {
+	rows, err := q.db.Query(ctx, getAllClearByWalletID, accountID, currencyIds)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +282,6 @@ func (q *Queries) GetAllClearByWalletID(ctx context.Context, walletID uuid.UUID,
 		var i models.WalletAddress
 		if err := rows.Scan(
 			&i.ID,
-			&i.WalletID,
 			&i.UserID,
 			&i.CurrencyID,
 			&i.Blockchain,
@@ -285,6 +291,10 @@ func (q *Queries) GetAllClearByWalletID(ctx context.Context, walletID uuid.UUID,
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Dirty,
+			&i.Status,
+			&i.AccountType,
+			&i.AccountID,
+			&i.StoreID,
 		); err != nil {
 			return nil, err
 		}
@@ -296,22 +306,22 @@ func (q *Queries) GetAllClearByWalletID(ctx context.Context, walletID uuid.UUID,
 	return items, nil
 }
 
-const getByWalletIDAndCurrencyID = `-- name: GetByWalletIDAndCurrencyID :one
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+const getAvailableAddress = `-- name: GetAvailableAddress :one
+SELECT id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id
 FROM wallet_addresses
-WHERE wallet_id = $1
-  AND currency_id = $2
-  AND deleted_at IS NULL
-ORDER BY created_at DESC
+WHERE currency_id = $1
+  AND user_id = $2
+  AND status = 'available'
+  AND dirty = false
+ORDER BY amount DESC, updated_at
 LIMIT 1
 `
 
-func (q *Queries) GetByWalletIDAndCurrencyID(ctx context.Context, walletID uuid.UUID, currencyID string) (*models.WalletAddress, error) {
-	row := q.db.QueryRow(ctx, getByWalletIDAndCurrencyID, walletID, currencyID)
+func (q *Queries) GetAvailableAddress(ctx context.Context, currencyID string, userID uuid.UUID) (*models.WalletAddress, error) {
+	row := q.db.QueryRow(ctx, getAvailableAddress, currencyID, userID)
 	var i models.WalletAddress
 	err := row.Scan(
 		&i.ID,
-		&i.WalletID,
 		&i.UserID,
 		&i.CurrencyID,
 		&i.Blockchain,
@@ -321,6 +331,42 @@ func (q *Queries) GetByWalletIDAndCurrencyID(ctx context.Context, walletID uuid.
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Dirty,
+		&i.Status,
+		&i.AccountType,
+		&i.AccountID,
+		&i.StoreID,
+	)
+	return &i, err
+}
+
+const getByWalletIDAndCurrencyID = `-- name: GetByWalletIDAndCurrencyID :one
+SELECT id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id
+FROM wallet_addresses
+WHERE account_id = $1
+  AND currency_id = $2
+  AND deleted_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetByWalletIDAndCurrencyID(ctx context.Context, accountID uuid.NullUUID, currencyID string) (*models.WalletAddress, error) {
+	row := q.db.QueryRow(ctx, getByWalletIDAndCurrencyID, accountID, currencyID)
+	var i models.WalletAddress
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CurrencyID,
+		&i.Blockchain,
+		&i.Address,
+		&i.Amount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Dirty,
+		&i.Status,
+		&i.AccountType,
+		&i.AccountID,
+		&i.StoreID,
 	)
 	return &i, err
 }
@@ -386,7 +432,7 @@ func (q *Queries) GetListByCurrencyWithAmount(ctx context.Context, arg GetListBy
 
 const getPrefetchWalletAddressByUserID = `-- name: GetPrefetchWalletAddressByUserID :many
 select withdrawal_wallets.id             as withdrawal_wallet_id,
-       wallet_addresses.id, wallet_addresses.wallet_id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty,
+       wallet_addresses.id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty, wallet_addresses.status, wallet_addresses.account_type, wallet_addresses.account_id, wallet_addresses.store_id,
        currencies.id, currencies.code, currencies.name, currencies.precision, currencies.is_fiat, currencies.blockchain, currencies.contract_address, currencies.withdrawal_min_balance, currencies.has_balance, currencies.status, currencies.sort_order, currencies.min_confirmation, currencies.created_at, currencies.updated_at, currencies.is_stablecoin, currencies.currency_label, currencies.token_label, currencies.is_native, currencies.is_new_store_default,
        (amount * exchange_rate)::decimal as amount_usd
 from wallet_addresses
@@ -443,7 +489,6 @@ func (q *Queries) GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetP
 		if err := rows.Scan(
 			&i.WithdrawalWalletID,
 			&i.WalletAddress.ID,
-			&i.WalletAddress.WalletID,
 			&i.WalletAddress.UserID,
 			&i.WalletAddress.CurrencyID,
 			&i.WalletAddress.Blockchain,
@@ -453,6 +498,10 @@ func (q *Queries) GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetP
 			&i.WalletAddress.UpdatedAt,
 			&i.WalletAddress.DeletedAt,
 			&i.WalletAddress.Dirty,
+			&i.WalletAddress.Status,
+			&i.WalletAddress.AccountType,
+			&i.WalletAddress.AccountID,
+			&i.WalletAddress.StoreID,
 			&i.Currency.ID,
 			&i.Currency.Code,
 			&i.Currency.Name,
@@ -484,28 +533,69 @@ func (q *Queries) GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetP
 	return items, nil
 }
 
+const getWalletAddressByTypeAndID = `-- name: GetWalletAddressByTypeAndID :many
+SELECT id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id
+FROM wallet_addresses
+WHERE account_id = $1
+  AND account_type = $2
+`
+
+func (q *Queries) GetWalletAddressByTypeAndID(ctx context.Context, accountID uuid.NullUUID, accountType string) ([]*models.WalletAddress, error) {
+	rows, err := q.db.Query(ctx, getWalletAddressByTypeAndID, accountID, accountType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*models.WalletAddress{}
+	for rows.Next() {
+		var i models.WalletAddress
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.CurrencyID,
+			&i.Blockchain,
+			&i.Address,
+			&i.Amount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Dirty,
+			&i.Status,
+			&i.AccountType,
+			&i.AccountID,
+			&i.StoreID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getWalletAddressesByAddress = `-- name: GetWalletAddressesByAddress :one
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+SELECT id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id
 FROM wallet_addresses
 WHERE deleted_at IS NULL
-  AND wallet_id = $1
+  AND account_id = $1
   and address = $2
   and currency_id = $3
 limit 1
 `
 
 type GetWalletAddressesByAddressParams struct {
-	WalletID   uuid.UUID `db:"wallet_id" json:"wallet_id"`
-	Address    string    `db:"address" json:"address"`
-	CurrencyID string    `db:"currency_id" json:"currency_id"`
+	AccountID  uuid.NullUUID `db:"account_id" json:"account_id"`
+	Address    string        `db:"address" json:"address"`
+	CurrencyID string        `db:"currency_id" json:"currency_id"`
 }
 
 func (q *Queries) GetWalletAddressesByAddress(ctx context.Context, arg GetWalletAddressesByAddressParams) (*models.WalletAddress, error) {
-	row := q.db.QueryRow(ctx, getWalletAddressesByAddress, arg.WalletID, arg.Address, arg.CurrencyID)
+	row := q.db.QueryRow(ctx, getWalletAddressesByAddress, arg.AccountID, arg.Address, arg.CurrencyID)
 	var i models.WalletAddress
 	err := row.Scan(
 		&i.ID,
-		&i.WalletID,
 		&i.UserID,
 		&i.CurrencyID,
 		&i.Blockchain,
@@ -515,12 +605,16 @@ func (q *Queries) GetWalletAddressesByAddress(ctx context.Context, arg GetWallet
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Dirty,
+		&i.Status,
+		&i.AccountType,
+		&i.AccountID,
+		&i.StoreID,
 	)
 	return &i, err
 }
 
 const getWalletAddressesByUserID = `-- name: GetWalletAddressesByUserID :many
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+SELECT id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id
 FROM wallet_addresses
 WHERE user_id = $1
   AND deleted_at IS NULL
@@ -537,7 +631,6 @@ func (q *Queries) GetWalletAddressesByUserID(ctx context.Context, userID uuid.UU
 		var i models.WalletAddress
 		if err := rows.Scan(
 			&i.ID,
-			&i.WalletID,
 			&i.UserID,
 			&i.CurrencyID,
 			&i.Blockchain,
@@ -547,6 +640,10 @@ func (q *Queries) GetWalletAddressesByUserID(ctx context.Context, userID uuid.UU
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Dirty,
+			&i.Status,
+			&i.AccountType,
+			&i.AccountID,
+			&i.StoreID,
 		); err != nil {
 			return nil, err
 		}
@@ -559,14 +656,14 @@ func (q *Queries) GetWalletAddressesByUserID(ctx context.Context, userID uuid.UU
 }
 
 const getWalletAddressesByWalletId = `-- name: GetWalletAddressesByWalletId :many
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+SELECT id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id
 FROM wallet_addresses
 WHERE deleted_at IS NULL
-  AND wallet_id = $1
+  AND account_id = $1
 `
 
-func (q *Queries) GetWalletAddressesByWalletId(ctx context.Context, walletID uuid.UUID) ([]*models.WalletAddress, error) {
-	rows, err := q.db.Query(ctx, getWalletAddressesByWalletId, walletID)
+func (q *Queries) GetWalletAddressesByWalletId(ctx context.Context, accountID uuid.NullUUID) ([]*models.WalletAddress, error) {
+	rows, err := q.db.Query(ctx, getWalletAddressesByWalletId, accountID)
 	if err != nil {
 		return nil, err
 	}
@@ -576,7 +673,6 @@ func (q *Queries) GetWalletAddressesByWalletId(ctx context.Context, walletID uui
 		var i models.WalletAddress
 		if err := rows.Scan(
 			&i.ID,
-			&i.WalletID,
 			&i.UserID,
 			&i.CurrencyID,
 			&i.Blockchain,
@@ -586,6 +682,10 @@ func (q *Queries) GetWalletAddressesByWalletId(ctx context.Context, walletID uui
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Dirty,
+			&i.Status,
+			&i.AccountType,
+			&i.AccountID,
+			&i.StoreID,
 		); err != nil {
 			return nil, err
 		}
@@ -632,10 +732,10 @@ func (q *Queries) GetWalletAddressesTotalWithCurrencyID(ctx context.Context, use
 }
 
 const getWalletsDataForRestoreByBlockchains = `-- name: GetWalletsDataForRestoreByBlockchains :many
-SELECT wa.id, wa.wallet_id, wa.user_id, wa.currency_id, wa.blockchain, wa.address, wa.amount, wa.created_at, wa.updated_at, wa.deleted_at, wa.dirty, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_native, c.is_new_store_default, s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
+SELECT wa.id, wa.user_id, wa.currency_id, wa.blockchain, wa.address, wa.amount, wa.created_at, wa.updated_at, wa.deleted_at, wa.dirty, wa.status, wa.account_type, wa.account_id, wa.store_id, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_native, c.is_new_store_default, s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
 FROM wallet_addresses wa
          JOIN currencies c ON wa.currency_id = c.id
-         JOIN wallets w ON wa.wallet_id = w.id
+         JOIN wallets w ON wa.account_id = w.id
          JOIN stores s ON w.store_id = s.id
 WHERE ($1::varchar[] IS NULL OR c.blockchain = ANY ($1::varchar[]))
 `
@@ -657,7 +757,6 @@ func (q *Queries) GetWalletsDataForRestoreByBlockchains(ctx context.Context, blo
 		var i GetWalletsDataForRestoreByBlockchainsRow
 		if err := rows.Scan(
 			&i.WalletAddress.ID,
-			&i.WalletAddress.WalletID,
 			&i.WalletAddress.UserID,
 			&i.WalletAddress.CurrencyID,
 			&i.WalletAddress.Blockchain,
@@ -667,6 +766,10 @@ func (q *Queries) GetWalletsDataForRestoreByBlockchains(ctx context.Context, blo
 			&i.WalletAddress.UpdatedAt,
 			&i.WalletAddress.DeletedAt,
 			&i.WalletAddress.Dirty,
+			&i.WalletAddress.Status,
+			&i.WalletAddress.AccountType,
+			&i.WalletAddress.AccountID,
+			&i.WalletAddress.StoreID,
 			&i.Currency.ID,
 			&i.Currency.Code,
 			&i.Currency.Name,
@@ -713,7 +816,7 @@ func (q *Queries) GetWalletsDataForRestoreByBlockchains(ctx context.Context, blo
 }
 
 const isWalletExistsByAddress = `-- name: IsWalletExistsByAddress :one
-SELECT EXISTS(SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty FROM wallet_addresses WHERE address = $1)
+SELECT EXISTS(SELECT id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id FROM wallet_addresses WHERE address = $1)
 LIMIT 1
 `
 
@@ -729,7 +832,7 @@ UPDATE wallet_addresses
 SET updated_at=now(),
     dirty= true
 WHERE address = $1
-RETURNING id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+RETURNING id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, status, account_type, account_id, store_id
 `
 
 func (q *Queries) MarkAddressDirty(ctx context.Context, address string) (*models.WalletAddress, error) {
@@ -737,7 +840,6 @@ func (q *Queries) MarkAddressDirty(ctx context.Context, address string) (*models
 	var i models.WalletAddress
 	err := row.Scan(
 		&i.ID,
-		&i.WalletID,
 		&i.UserID,
 		&i.CurrencyID,
 		&i.Blockchain,
@@ -747,6 +849,10 @@ func (q *Queries) MarkAddressDirty(ctx context.Context, address string) (*models
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Dirty,
+		&i.Status,
+		&i.AccountType,
+		&i.AccountID,
+		&i.StoreID,
 	)
 	return &i, err
 }
@@ -754,7 +860,7 @@ func (q *Queries) MarkAddressDirty(ctx context.Context, address string) (*models
 const restoreByWallets = `-- name: RestoreByWallets :exec
 UPDATE wallet_addresses
 SET deleted_at = NULL
-WHERE wallet_id = ANY ($1::uuid[])
+WHERE account_id = ANY ($1::uuid[])
 `
 
 func (q *Queries) RestoreByWallets(ctx context.Context, dollar_1 []uuid.UUID) error {
@@ -765,11 +871,46 @@ func (q *Queries) RestoreByWallets(ctx context.Context, dollar_1 []uuid.UUID) er
 const softDeleteByWallets = `-- name: SoftDeleteByWallets :exec
 UPDATE wallet_addresses
 SET deleted_at = now()
-WHERE wallet_id = ANY ($1::uuid[])
+WHERE account_id = ANY ($1::uuid[])
 `
 
 func (q *Queries) SoftDeleteByWallets(ctx context.Context, dollar_1 []uuid.UUID) error {
 	_, err := q.db.Exec(ctx, softDeleteByWallets, dollar_1)
+	return err
+}
+
+const updateStatus = `-- name: UpdateStatus :exec
+UPDATE wallet_addresses
+SET status = $1
+WHERE id = $2
+`
+
+func (q *Queries) UpdateStatus(ctx context.Context, status constant.WalletStatus, iD uuid.UUID) error {
+	_, err := q.db.Exec(ctx, updateStatus, status, iD)
+	return err
+}
+
+const updateStatusByAccountID = `-- name: UpdateStatusByAccountID :exec
+UPDATE wallet_addresses wa
+SET status = $1
+WHERE wa.account_id = $2
+  AND wa.account_type = $3
+  AND wa.status = 'reservers'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM unconfirmed_transactions ut
+      WHERE ut.account_id = wa.id
+  )
+`
+
+type UpdateStatusByAccountIDParams struct {
+	Status      constant.WalletStatus `db:"status" json:"status"`
+	AccountID   uuid.NullUUID         `db:"account_id" json:"account_id"`
+	AccountType string                `db:"account_type" json:"account_type"`
+}
+
+func (q *Queries) UpdateStatusByAccountID(ctx context.Context, arg UpdateStatusByAccountIDParams) error {
+	_, err := q.db.Exec(ctx, updateStatusByAccountID, arg.Status, arg.AccountID, arg.AccountType)
 	return err
 }
 
