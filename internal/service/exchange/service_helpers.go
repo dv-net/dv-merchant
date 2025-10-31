@@ -25,7 +25,7 @@ var (
 		exchangeclient.ErrIncorrectAPIPermissions,
 
 		// Custom skip
-		ErrSkipOrder,
+		exchangeclient.ErrSkipOrder,
 	}
 
 	// networkErrors are transient network errors that should be ignored

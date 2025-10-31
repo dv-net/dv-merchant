@@ -793,9 +793,9 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 		}
 
 		if err != nil {
-			if errors.Is(err, ErrSkipOrder) {
+			if errors.Is(err, exchangeclient.ErrSkipOrder) {
 				s.log.Debugw("skipping order due to custom error being thrown", "userID", userID, "symbol", pair.Symbol)
-				return ErrSkipOrder
+				return exchangeclient.ErrSkipOrder
 			}
 			if errors.Is(err, exchangeclient.ErrInsufficientBalance) {
 				return exchangeclient.ErrInsufficientBalance
