@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/exchange_request"
@@ -473,51 +472,76 @@ func (s *Service) processExchangePairs(ctx context.Context) {
 	exchangePairs, err := s.st.UserExchangePairs().GetAll(ctx)
 	if err != nil {
 		s.log.Errorw("failed to get user exchange pairs", "error", err)
-	}
-	mPairs := make(map[uuid.UUID]map[uuid.UUID][]*models.UserExchangePair)
-	for _, pair := range exchangePairs {
-		if mPairs[pair.UserID] == nil {
-			mPairs[pair.UserID] = make(map[uuid.UUID][]*models.UserExchangePair)
-		}
-		mPairs[pair.UserID][pair.ExchangeID] = append(mPairs[pair.UserID][pair.ExchangeID], pair)
+		return
 	}
 
-	for userID, pairs := range mPairs {
-		for exID, p := range pairs {
-			swapState, err := s.getSwapState(ctx, userID, exID)
+	// Group pairs by user and exchange for batch processing
+	userPairs := s.groupExchangePairs(exchangePairs)
+
+	// Process each user's exchange pairs
+	for userID, userExchanges := range userPairs {
+		for exchangeID, exchangePair := range userExchanges {
+			// Check if swaps are enabled for this user-exchange combo
+			swapState, err := s.getSwapState(ctx, userID, exchangeID)
 			if err != nil {
-				s.log.Errorw("failed to fetch exchange withdrawal state", "error", err, "userID", userID)
+				s.log.Errorw("failed to fetch exchange swap state", "error", err, "userID", userID)
 				continue
 			}
-			if *swapState == models.ExchangeSwapStateDisabled {
-				s.log.Debugw("skipping exchange swap", "userID", userID, "exchangeID", exID)
+			if swapState == util.Pointer(models.ExchangeSwapStateDisabled) {
+				s.log.Debugw("skipping exchange swap - disabled", "userID", userID, "exchangeID", exchangeID)
 				continue
 			}
-			go func(userID uuid.UUID, userPairs []*models.UserExchangePair) {
+
+			// Check if user has API keys configured
+			exchange, err := s.st.Exchanges().GetByID(ctx, exchangeID)
+			if err != nil {
+				s.log.Errorw("failed to get exchange", "error", err, "exchangeID", exchangeID)
+				continue
+			}
+
+			keys, err := s.st.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
+				UserID:       userID,
+				ExchangeSlug: exchange.Slug,
+			})
+			if err != nil {
+				s.log.Errorw("failed to get exchange keys", "error", err, "userID", userID, "slug", exchange.Slug)
+				continue
+			}
+			if len(keys) == 0 {
+				s.log.Debugw("skipping user exchange - no keys configured", "userID", userID, "slug", exchange.Slug)
+				continue
+			}
+
+			go func(userID uuid.UUID, exchangeSlug models.ExchangeSlug, userPairs []*models.UserExchangePair) {
 				for _, pair := range userPairs {
 					err := s.SubmitExchangeOrder(ctx, userID, pair)
-					if err != nil { //nolint:nestif
-						if errors.Is(err, exchangeclient.ErrInsufficientBalance) {
-							continue
-						}
-						if errors.Is(err, exchangeclient.ErrSymbolTradingHalted) {
-							continue
-						}
-						if errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.ETIMEDOUT) {
-							continue
-						}
-						if errors.Is(err, ErrSkipOrder) {
-							continue
-						}
-						s.log.Errorw("failed to submit exchange order", "error", err, "symbol", pair.Symbol)
-						if err := s.suspendTransfers(ctx, userID); err != nil {
-							s.log.Errorw("failed to suspend transfers after unknown state change on exchange", "error", err, "userID", userID)
-						}
+					if !shouldErrorSuspendTransfers(err) {
+						continue
+					}
+
+					// Critical error - log and suspend transfers
+					s.log.Errorw("failed to submit exchange order", "error", err, "symbol", pair.Symbol, "exchange", exchangeSlug.String())
+					if err := s.suspendTransfers(ctx, userID); err != nil {
+						s.log.Errorw("failed to suspend transfers", "error", err, "userID", userID)
 					}
 				}
-			}(userID, p)
+			}(userID, exchange.Slug, exchangePair)
 		}
 	}
+}
+
+// groupExchangePairs organizes pairs into nested map structure for efficient processing
+func (s *Service) groupExchangePairs(pairs []*models.UserExchangePair) map[uuid.UUID]map[uuid.UUID][]*models.UserExchangePair {
+	grouped := make(map[uuid.UUID]map[uuid.UUID][]*models.UserExchangePair)
+
+	for _, pair := range pairs {
+		if grouped[pair.UserID] == nil {
+			grouped[pair.UserID] = make(map[uuid.UUID][]*models.UserExchangePair)
+		}
+		grouped[pair.UserID][pair.ExchangeID] = append(grouped[pair.UserID][pair.ExchangeID], pair)
+	}
+
+	return grouped
 }
 
 // Suspend transfers on unknown error

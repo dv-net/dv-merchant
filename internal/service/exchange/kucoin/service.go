@@ -463,7 +463,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 		Symbol: ticker,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "System-level rate limit exceeded") {
+		if errors.Is(err, exchangeclient.ErrRateLimited) {
 			return nil, ErrSkipOrder
 		}
 		return nil, err
@@ -482,7 +482,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 
 	accountList, err := o.exClient.Account().GetAccountList(ctx, kucoinrequests.GetAccountList{})
 	if err != nil {
-		if strings.Contains(err.Error(), "System-level rate limit exceeded") {
+		if errors.Is(err, exchangeclient.ErrRateLimited) {
 			return nil, ErrSkipOrder
 		}
 		return nil, err
@@ -556,7 +556,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 
 		_, err = o.exClient.Account().CreateFlexTransfer(ctx, fundsTransferRequest)
 		if err != nil {
-			if strings.Contains(err.Error(), "System-level rate limit exceeded") {
+			if errors.Is(err, exchangeclient.ErrRateLimited) {
 				return nil, ErrSkipOrder
 			}
 			return nil, err
@@ -574,9 +574,35 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 		spotOrderRequest.Funds = maxAmount.String()
 	}
 
+	// Validate order value before sending to exchange
+	minOrderValue, err := decimal.NewFromString(rule.MinOrderValue)
+	if err != nil {
+		return nil, fmt.Errorf("invalid min order value: %w", err)
+	}
+
+	if maxAmount.LessThan(minOrderValue) {
+		o.l.Infow("order value below minimum after calculations, skipping",
+			"exchange", models.ExchangeSlugKucoin.String(),
+			"ticker", ticker,
+			"side", side,
+			"calculated_amount", maxAmount.String(),
+			"min_required", minOrderValue.String(),
+		)
+		return nil, ErrSkipOrder
+	}
+
 	placedOrder, err := o.exClient.Spot().CreateOrder(ctx, spotOrderRequest)
 	if err != nil {
-		if strings.Contains(err.Error(), "System-level rate limit exceeded") {
+		if errors.Is(err, exchangeclient.ErrRateLimited) {
+			return nil, ErrSkipOrder
+		}
+		if errors.Is(err, exchangeclient.ErrMinOrderValue) {
+			o.l.Infow("order value below minimum, skipping",
+				"exchange", models.ExchangeSlugKucoin.String(),
+				"ticker", ticker,
+				"side", side,
+				"amount", maxAmount.String(),
+			)
 			return nil, ErrSkipOrder
 		}
 		return nil, fmt.Errorf("failed to place order: %w", err)

@@ -15,4 +15,5 @@ var (
 	ErrWithdrawalPending               = errors.New("withdrawal pending")
 	ErrInvalidAddress                  = errors.New("invalid address")
 	ErrRateLimited                     = errors.New("rate limited")
+	ErrMinOrderValue                   = errors.New("order value below minimum")
 )

@@ -336,6 +336,9 @@ func errorFromResponse(err any, version string) error {
 			if strings.Contains(errRes.ErrMsg, "Verification failure") {
 				return exchangeclient.ErrInvalidAPICredentials
 			}
+			if errRes.ErrCode == "api-signature-not-valid" {
+				return exchangeclient.ErrInvalidAPICredentials
+			}
 			if errRes.ErrCode == "rate-too-many-requests" {
 				return fmt.Errorf("htx error: %w", htxmodels.ErrHtxRateLimitExceeded)
 			}
