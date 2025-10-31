@@ -1,6 +1,9 @@
 package exchange
 
-import "errors"
+import (
+	"errors"
+	"syscall"
+)
 
 var (
 	ErrExchangeNotFound        = errors.New("exchange not found")
@@ -9,3 +12,10 @@ var (
 	ErrInvalidIPAddress        = errors.New("invalid IP address")
 	ErrSkipOrder               = errors.New("skip order")
 )
+
+var KnownNetworkErrors = []error{
+	syscall.ECONNRESET,
+	syscall.EPIPE,
+	syscall.ECONNREFUSED,
+	syscall.ETIMEDOUT,
+}
