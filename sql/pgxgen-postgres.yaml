@@ -65,6 +65,9 @@ sqlc:
             go_type: NotificationArgs
           - path: github.com/dv-net/dv-merchant/internal/models
             go_type: AddressBookType
+          - path: github.com/dv-net/dv-merchant/internal/constant
+            go_type: constant.InvoiceStatus
+
     crud:
       auto_remove_generated_files: true
       exclude_table_name_from_methods: true
@@ -834,3 +837,28 @@ sqlc:
           primary_column: id
           methods:
             find:
+
+        # invoices
+        invoices:
+          output_dir: postgres/queries/invoices
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              returning: "*"
+              column_values:
+                created_at: now()
+        # invoice_addresses:
+        invoice_addresses:
+          output_dir: postgres/queries/invoice_addresses
+          primary_column: id
+          methods:
+            create:
+              skip_columns:
+                - id
+                - updated_at
+              returning: "*"
+              column_values:
+                created_at: now()

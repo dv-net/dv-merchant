@@ -30,7 +30,7 @@ func WalletBalanceModelsToResponses(models ...*models.WalletWithUSDBalance) []wa
 func FromWalletAddressModelToResponse(o *models.WalletAddress) *wallet_response.WalletAddressResponse {
 	return &wallet_response.WalletAddressResponse{
 		ID:         o.ID,
-		WalletID:   o.WalletID,
+		WalletID:   o.AccountID.UUID,
 		UserID:     o.UserID,
 		CurrencyID: o.CurrencyID,
 		Blockchain: o.Blockchain.String(),

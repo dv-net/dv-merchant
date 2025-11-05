@@ -17,6 +17,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/dv-net/dv-merchant/internal/config"
+	"github.com/dv-net/dv-merchant/internal/constant"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/currency"
@@ -34,6 +35,7 @@ import (
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 	addressesv2 "github.com/dv-net/dv-proto/gen/go/eproxy/addresses/v2"
 	evmv2 "github.com/dv-net/dv-proto/gen/go/eproxy/evm/v2"
+
 	"github.com/gocarina/gocsv"
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
@@ -94,6 +96,10 @@ type IWalletService interface {
 	FetchTronResourceStatistics(ctx context.Context, user *models.User, dto FetchTronStatisticsParams) (map[string]CombinedStats, error)
 	UpdateLocale(ctx context.Context, walletID uuid.UUID, locale string, opts ...repos.Option) error
 	SendUserWalletNotification(ctx context.Context, walletID uuid.UUID, selectCurrency *string) error
+
+	IWalletAddressFinder
+	IWalletAddressLifecycle
+	IWalletAddressPoolManager
 }
 
 type Service struct {
@@ -184,7 +190,7 @@ func (s *Service) GetFullDataByID(ctx context.Context, id uuid.UUID) (*GetAllByS
 	}
 
 	// get all clear addresses by wallet id
-	addresses, err := s.storage.WalletAddresses().GetAllClearByWalletID(ctx, id, availableCurrenciesIDs)
+	addresses, err := s.storage.WalletAddresses().GetAllClearByWalletID(ctx, uuid.NullUUID{UUID: id, Valid: true}, availableCurrenciesIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all clear addresses by wallet id: %w", err)
 	}
@@ -269,7 +275,7 @@ func (s *Service) getOrCreateWalletAddress(
 	var lastErr error
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		walletAddress, err := s.storage.WalletAddresses(repos.WithTx(dbTx)).GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
+		walletAddress, err := s.storage.WalletAddresses(repos.WithTx(dbTx)).GetByWalletIDAndCurrencyID(ctx, uuid.NullUUID{UUID: wallet.ID, Valid: true}, c.ID)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("failed to get wallet address: %w", err)
 		}
@@ -313,7 +319,7 @@ func (s *Service) getOrCreateWalletAddress(
 		return addr, nil
 	}
 
-	walletAddress, err := s.storage.WalletAddresses(repos.WithTx(dbTx)).GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
+	walletAddress, err := s.storage.WalletAddresses(repos.WithTx(dbTx)).GetByWalletIDAndCurrencyID(ctx, uuid.NullUUID{UUID: wallet.ID, Valid: true}, c.ID)
 	if err == nil {
 		s.logger.Warnw("address found after retries",
 			"wallet_id", wallet.ID,
@@ -375,11 +381,14 @@ func (s *Service) createNewWalletAddress(
 	}
 
 	walletAddress, err := s.storage.WalletAddresses(repos.WithTx(dbTx)).Create(ctx, repo_wallet_addresses.CreateParams{
-		WalletID:   wallet.ID,
-		UserID:     storeOwner.ID,
-		CurrencyID: c.ID,
-		Blockchain: *c.Blockchain,
-		Address:    newWallet.Address,
+		AccountID:   uuid.NullUUID{UUID: wallet.ID, Valid: true},
+		AccountType: constant.WalletAddress.String(),
+		UserID:      storeOwner.ID,
+		CurrencyID:  c.ID,
+		Blockchain:  *c.Blockchain,
+		Address:     newWallet.Address,
+		Status:      constant.WalletStatusStatic,
+		StoreID:     uuid.NullUUID{UUID: wallet.StoreID, Valid: true},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create new wallet address: %w", err)
@@ -883,7 +892,7 @@ func (s *Service) SendUserWalletNotification(ctx context.Context, walletID uuid.
 		availableCurrenciesIDs = append(availableCurrenciesIDs, c.ID)
 	}
 
-	addresses, err := s.storage.WalletAddresses().GetAllClearByWalletID(ctx, walletID, availableCurrenciesIDs)
+	addresses, err := s.storage.WalletAddresses().GetAllClearByWalletID(ctx, uuid.NullUUID{UUID: walletID, Valid: true}, availableCurrenciesIDs)
 	if err != nil {
 		return fmt.Errorf("failed to get all clear addresses by wallet id: %w", err)
 	}

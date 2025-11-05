@@ -36,7 +36,7 @@ SELECT sw.id, sw.store_id, sw.url, sw.enabled, sw.events, sw.created_at, sw.upda
 FROM store_webhooks sw
 LEFT JOIN store_secrets ss on ss.store_id = $1
 WHERE sw.store_id = $1
-  and $2::varchar in (select json_array_elements_text(sw.events))
+  AND sw.events::jsonb @> jsonb_build_array($2::text)
   and sw.enabled = true
 ORDER BY sw.created_at
 `

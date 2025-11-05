@@ -8,6 +8,7 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/service/aml"
 	"github.com/dv-net/dv-merchant/internal/service/analytics"
+	"github.com/dv-net/dv-merchant/internal/service/invoice"
 	"github.com/dv-net/dv-merchant/internal/service/notification_settings"
 	"github.com/dv-net/dv-merchant/internal/tools"
 	amlproviders "github.com/dv-net/dv-merchant/pkg/aml"
@@ -24,7 +25,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/config"
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
-	"github.com/dv-net/dv-merchant/internal/service/address"
 	"github.com/dv-net/dv-merchant/internal/service/address_book"
 	"github.com/dv-net/dv-merchant/internal/service/admin"
 	"github.com/dv-net/dv-merchant/internal/service/auth"
@@ -88,7 +88,6 @@ type Services struct {
 	WalletConverter               wallet.IWalletAddressConverter
 	WalletBalanceService          wallet.IWalletBalances
 	BalanceUpdater                wallet.BalanceUpdater
-	AddressesService              address.IWalletAddressService
 	AddressBookService            address_book.IAddressBookService
 	ExplorerProxyService          eproxy.IExplorerProxy
 	ReceiptService                receipts.IReceiptService
@@ -120,6 +119,7 @@ type Services struct {
 	AMLService                    aml.IService
 	AMLKeysService                aml.KeysService
 	AMLStatusChecker              aml.StatusChecker
+	InvoiceService                invoice.IInvoiceService
 }
 
 func NewServices(
@@ -198,7 +198,6 @@ func NewServices(
 	notificationService := notify.New(logger, storage, settingService, notificationSender, permissionService)
 
 	transactionService := transactions.New(logger, storage, eProxyService, currConvService, eventListener, notificationService)
-	addressesService := address.New(conf, storage, logger, processingService)
 	withdrawalWalletService := withdrawal_wallet.New(storage, logger, currencyService, currConvService, processingService)
 	addressBookService := address_book.New(storage, logger, currencyService, withdrawalWalletService, processingService)
 	walletService := wallet.New(conf, storage, logger, currencyService, processingService, exrateService, currConvService, settingService, eProxyService, notificationService)
@@ -222,7 +221,20 @@ func NewServices(
 	systemService := system.New(settingService, permissionService, adminSvc, logger, appVersion, commitHash, conf, analyticsService)
 
 	dictionaryService := dictionary.New(storage, exrateService, systemService)
-	callbackService := callback.New(logger, eventListener, storage, transactionService, transactionService, storeService, currConvService, receiptService)
+	invoiceService := invoice.New(logger, storage, walletService, currConvService, userService, exrateService)
+
+	callbackService := callback.New(
+		logger,
+		eventListener,
+		storage,
+		transactionService,
+		transactionService,
+		storeService,
+		currConvService,
+		receiptService,
+		walletService,
+		invoiceService,
+	)
 
 	exchangeManager := exchange_manager.NewManager(logger, storage, currConvService)
 	exchangeRulesService := exchange_rules.NewService(logger, storage, exchangeManager)
@@ -264,7 +276,6 @@ func NewServices(
 		WalletBalanceService:          walletService,
 		BalanceUpdater:                walletService,
 		WalletConverter:               walletService,
-		AddressesService:              addressesService,
 		AddressBookService:            addressBookService,
 		ExplorerProxyService:          eProxyService,
 		ReceiptService:                receiptService,
@@ -296,6 +307,7 @@ func NewServices(
 		AMLService:                    amlService,
 		AMLKeysService:                amlService,
 		AMLStatusChecker:              amlService,
+		InvoiceService:                invoiceService,
 	}, nil
 }
 

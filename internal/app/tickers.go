@@ -62,6 +62,10 @@ func initTickers(ctx context.Context, services *service.Services, conf *config.C
 	if services.AMLStatusChecker != nil {
 		go services.AMLStatusChecker.Run(ctx)
 	}
+
+	if services.InvoiceService != nil {
+		go services.InvoiceService.Run(ctx)
+	}
 }
 
 func processingPingMonitor(ctx context.Context, services *service.Services, l logger.Logger) {

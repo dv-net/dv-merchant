@@ -171,8 +171,8 @@ func (h *Handler) getHotWalletBalances(c fiber.Ctx) error {
 }
 
 func (h *Handler) initWalletRoutes(v1 fiber.Router) {
-	wallet := v1.Group("/wallet")
-	wallet.Post("/", h.createWalletWithAddressByBody)
-	wallet.Get("/", h.createWalletWithAddressByQuery)
-	wallet.Get("/balance/hot", h.getHotWalletBalances)
+	w := v1.Group("/wallet")
+	w.Post("/", h.createWalletWithAddressByBody)
+	w.Get("/", h.createWalletWithAddressByQuery)
+	w.Get("/balance/hot", h.getHotWalletBalances)
 }

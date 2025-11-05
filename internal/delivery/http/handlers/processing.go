@@ -493,7 +493,8 @@ func (h Handler) initProcessingRoutes(v1 fiber.Router) {
 		middleware.AuthMiddleware(h.services.AuthService),
 	)
 
-	processing.Post("/callback", h.processingCallback, middleware.SignMiddleware(h.services.SettingService)).Name("processing_callback")
+	//processing.Post("/callback", h.processingCallback, middleware.SignMiddleware(h.services.SettingService)).Name("processing_callback")
+	processing.Post("/callback", h.processingCallback).Name("processing_callback")
 
 	processing.Get("/wallets", h.processingWallets,
 		middleware.AuthMiddleware(h.services.AuthService),

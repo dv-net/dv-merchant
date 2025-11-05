@@ -201,7 +201,7 @@ func (s *Service) processEvent(ctx context.Context, wallet models.WalletAddress,
 		_, err = s.CreateTransaction(ctx, repo_transactions.CreateParams{
 			UserID:             wallet.UserID,
 			StoreID:            uuid.NullUUID{UUID: store.ID, Valid: true},
-			WalletID:           uuid.NullUUID{UUID: wallet.WalletID, Valid: true},
+			AccountID:          uuid.NullUUID{UUID: wallet.AccountID.UUID, Valid: true},
 			CurrencyID:         wallet.CurrencyID,
 			Blockchain:         wallet.Blockchain.String(),
 			TxHash:             tx.Hash,

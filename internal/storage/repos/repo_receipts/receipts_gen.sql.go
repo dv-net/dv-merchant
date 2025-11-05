@@ -14,9 +14,9 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO receipts (status, store_id, currency_id, amount, wallet_id, created_at)
+INSERT INTO receipts (status, store_id, currency_id, amount, account_id, created_at)
 	VALUES ($1, $2, $3, $4, $5, now())
-	RETURNING id, status, store_id, currency_id, amount, wallet_id, created_at, updated_at
+	RETURNING id, status, store_id, currency_id, amount, account_id, created_at, updated_at
 `
 
 type CreateParams struct {
@@ -24,7 +24,7 @@ type CreateParams struct {
 	StoreID    uuid.UUID            `db:"store_id" json:"store_id"`
 	CurrencyID string               `db:"currency_id" json:"currency_id"`
 	Amount     decimal.Decimal      `db:"amount" json:"amount"`
-	WalletID   uuid.NullUUID        `db:"wallet_id" json:"wallet_id"`
+	AccountID  uuid.NullUUID        `db:"account_id" json:"account_id"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Receipt, error) {
@@ -33,7 +33,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Receipt
 		arg.StoreID,
 		arg.CurrencyID,
 		arg.Amount,
-		arg.WalletID,
+		arg.AccountID,
 	)
 	var i models.Receipt
 	err := row.Scan(
@@ -42,7 +42,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Receipt
 		&i.StoreID,
 		&i.CurrencyID,
 		&i.Amount,
-		&i.WalletID,
+		&i.AccountID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -50,7 +50,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Receipt
 }
 
 const getAll = `-- name: GetAll :many
-SELECT id, status, store_id, currency_id, amount, wallet_id, created_at, updated_at FROM receipts ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT id, status, store_id, currency_id, amount, account_id, created_at, updated_at FROM receipts ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type GetAllParams struct {
@@ -73,7 +73,7 @@ func (q *Queries) GetAll(ctx context.Context, arg GetAllParams) ([]*models.Recei
 			&i.StoreID,
 			&i.CurrencyID,
 			&i.Amount,
-			&i.WalletID,
+			&i.AccountID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -88,7 +88,7 @@ func (q *Queries) GetAll(ctx context.Context, arg GetAllParams) ([]*models.Recei
 }
 
 const getByID = `-- name: GetByID :one
-SELECT id, status, store_id, currency_id, amount, wallet_id, created_at, updated_at FROM receipts WHERE id=$1 LIMIT 1
+SELECT id, status, store_id, currency_id, amount, account_id, created_at, updated_at FROM receipts WHERE id=$1 LIMIT 1
 `
 
 func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.Receipt, error) {
@@ -100,7 +100,7 @@ func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.Receipt, e
 		&i.StoreID,
 		&i.CurrencyID,
 		&i.Amount,
-		&i.WalletID,
+		&i.AccountID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

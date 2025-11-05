@@ -171,9 +171,8 @@ func (q *Queries) GetStoreByStoreApiKey(ctx context.Context, key string) (*model
 const getStoreByWalletAddress = `-- name: GetStoreByWalletAddress :one
 SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
 FROM stores s
-         JOIN wallets w ON s.id = w.store_id
          LEFT JOIN wallet_addresses wa
-                   ON wa.wallet_id = w.id
+                   ON wa.store_id = s.id
 WHERE wa.address = $1
   AND wa.currency_id = $2
 LIMIT 1

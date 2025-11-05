@@ -10,37 +10,27 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/cache/settings"
-	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_wallet_addresses"
-
-	"github.com/dv-net/dv-merchant/internal/tools"
-
-	"github.com/dv-net/dv-merchant/internal/storage/repos"
-
-	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_from_processing_wallets"
-
-	"github.com/shopspring/decimal"
-
-	"github.com/dv-net/dv-merchant/internal/util"
-
-	"github.com/dv-net/dv-merchant/internal/service/setting"
-
-	"connectrpc.com/connect"
-
-	"github.com/dv-net/dv-merchant/internal/service/currency"
-	"github.com/dv-net/dv-merchant/internal/service/exrate"
-
-	"github.com/jackc/pgx/v5"
-
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
+	"github.com/dv-net/dv-merchant/internal/service/currency"
+	"github.com/dv-net/dv-merchant/internal/service/exrate"
 	"github.com/dv-net/dv-merchant/internal/service/processing"
+	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/storage"
+	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transactions"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transfers"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallet_addresses"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_from_processing_wallets"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_wallet_addresses"
+	"github.com/dv-net/dv-merchant/internal/tools"
+	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 
+	"connectrpc.com/connect"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
 )
 
 type IWithdrawServiceRunner interface {
@@ -573,7 +563,6 @@ func (s *service) prepareWalletToByMode(
 		if len(withdrawalAddresses) == 0 {
 			return "", errors.New("withdrawal addresses list is empty")
 		}
-		fmt.Println(withdrawalAddresses)
 		return tools.RandomSliceElement(withdrawalAddresses), nil
 	default:
 		return "", fmt.Errorf("mode '%s' is not supported", rule.Mode)

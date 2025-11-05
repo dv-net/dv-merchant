@@ -15,16 +15,16 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO transactions (user_id, store_id, receipt_id, wallet_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, created_at_index, is_system)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, now(), extract(epoch from now()) * 1000, $17)
-	RETURNING id, user_id, store_id, receipt_id, wallet_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system
+INSERT INTO transactions (user_id, store_id, receipt_id, account_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, created_at_index, is_system, invoice_id)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, now(), extract(epoch from now()) * 1000, $17, $18)
+	RETURNING id, user_id, store_id, receipt_id, account_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system, invoice_id
 `
 
 type CreateParams struct {
 	UserID             uuid.UUID               `db:"user_id" json:"user_id"`
 	StoreID            uuid.NullUUID           `db:"store_id" json:"store_id"`
 	ReceiptID          uuid.NullUUID           `db:"receipt_id" json:"receipt_id"`
-	WalletID           uuid.NullUUID           `db:"wallet_id" json:"wallet_id"`
+	AccountID          uuid.NullUUID           `db:"account_id" json:"account_id"`
 	CurrencyID         string                  `db:"currency_id" json:"currency_id"`
 	Blockchain         string                  `db:"blockchain" json:"blockchain"`
 	TxHash             string                  `db:"tx_hash" json:"tx_hash"`
@@ -38,6 +38,7 @@ type CreateParams struct {
 	WithdrawalIsManual bool                    `db:"withdrawal_is_manual" json:"withdrawal_is_manual"`
 	NetworkCreatedAt   pgtype.Timestamp        `db:"network_created_at" json:"network_created_at"`
 	IsSystem           bool                    `db:"is_system" json:"is_system"`
+	InvoiceID          uuid.NullUUID           `db:"invoice_id" json:"invoice_id"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transaction, error) {
@@ -45,7 +46,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transac
 		arg.UserID,
 		arg.StoreID,
 		arg.ReceiptID,
-		arg.WalletID,
+		arg.AccountID,
 		arg.CurrencyID,
 		arg.Blockchain,
 		arg.TxHash,
@@ -59,6 +60,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transac
 		arg.WithdrawalIsManual,
 		arg.NetworkCreatedAt,
 		arg.IsSystem,
+		arg.InvoiceID,
 	)
 	var i models.Transaction
 	err := row.Scan(
@@ -66,7 +68,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transac
 		&i.UserID,
 		&i.StoreID,
 		&i.ReceiptID,
-		&i.WalletID,
+		&i.AccountID,
 		&i.CurrencyID,
 		&i.Blockchain,
 		&i.TxHash,
@@ -83,12 +85,13 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transac
 		&i.UpdatedAt,
 		&i.CreatedAtIndex,
 		&i.IsSystem,
+		&i.InvoiceID,
 	)
 	return &i, err
 }
 
 const getById = `-- name: GetById :one
-SELECT id, user_id, store_id, receipt_id, wallet_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system FROM transactions WHERE id=$1 LIMIT 1
+SELECT id, user_id, store_id, receipt_id, account_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system, invoice_id FROM transactions WHERE id=$1 LIMIT 1
 `
 
 func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Transaction, error) {
@@ -99,7 +102,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Transactio
 		&i.UserID,
 		&i.StoreID,
 		&i.ReceiptID,
-		&i.WalletID,
+		&i.AccountID,
 		&i.CurrencyID,
 		&i.Blockchain,
 		&i.TxHash,
@@ -116,6 +119,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Transactio
 		&i.UpdatedAt,
 		&i.CreatedAtIndex,
 		&i.IsSystem,
+		&i.InvoiceID,
 	)
 	return &i, err
 }

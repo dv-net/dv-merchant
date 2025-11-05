@@ -16,7 +16,7 @@ where w.id = $1;
 SELECT w.id as wallet_id, w.store_external_id, wa.address, wa.currency_id, sqlc.embed(s)
 FROM wallets w
          INNER JOIN stores s ON w.store_id = s.id
-         INNER JOIN wallet_addresses wa ON w.id = wa.wallet_id
+         INNER JOIN wallet_addresses wa ON w.id = wa.account_id
 WHERE wa.address = $1
   AND s.user_id = $2
   AND w.deleted_at IS NULL;

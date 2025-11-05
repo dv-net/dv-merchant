@@ -23,7 +23,7 @@ func (q *Queries) CollapseAllByConfirmed(ctx context.Context) error {
 }
 
 const getOneByHashAndBlockchain = `-- name: GetOneByHashAndBlockchain :one
-SELECT id, user_id, store_id, wallet_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, updated_at, blockchain FROM unconfirmed_transactions WHERE tx_hash=$1 and blockchain=$2 LIMIT 1
+SELECT id, user_id, store_id, account_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, updated_at, blockchain, invoice_id FROM unconfirmed_transactions WHERE tx_hash=$1 and blockchain=$2 LIMIT 1
 `
 
 type GetOneByHashAndBlockchainParams struct {
@@ -38,7 +38,7 @@ func (q *Queries) GetOneByHashAndBlockchain(ctx context.Context, arg GetOneByHas
 		&i.ID,
 		&i.UserID,
 		&i.StoreID,
-		&i.WalletID,
+		&i.AccountID,
 		&i.CurrencyID,
 		&i.TxHash,
 		&i.BcUniqKey,
@@ -51,6 +51,7 @@ func (q *Queries) GetOneByHashAndBlockchain(ctx context.Context, arg GetOneByHas
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Blockchain,
+		&i.InvoiceID,
 	)
 	return &i, err
 }

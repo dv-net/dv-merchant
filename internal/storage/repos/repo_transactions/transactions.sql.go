@@ -177,9 +177,29 @@ func (q *Queries) CalculateDepositStatisticsTotal(ctx context.Context, arg Calcu
 	return &i, err
 }
 
+const calculateTotalAmountsByInvoice = `-- name: CalculateTotalAmountsByInvoice :one
+SELECT COALESCE(sum(amount)::numeric, 0)::numeric     AS total_amount,
+       COALESCE(sum(amount_usd)::numeric, 0)::numeric AS total_amount_usd
+FROM transactions
+WHERE invoice_id = $1
+  AND type = 'deposit'
+`
+
+type CalculateTotalAmountsByInvoiceRow struct {
+	TotalAmount    decimal.Decimal `db:"total_amount" json:"total_amount"`
+	TotalAmountUsd decimal.Decimal `db:"total_amount_usd" json:"total_amount_usd"`
+}
+
+func (q *Queries) CalculateTotalAmountsByInvoice(ctx context.Context, invoiceID uuid.NullUUID) (*CalculateTotalAmountsByInvoiceRow, error) {
+	row := q.db.QueryRow(ctx, calculateTotalAmountsByInvoice, invoiceID)
+	var i CalculateTotalAmountsByInvoiceRow
+	err := row.Scan(&i.TotalAmount, &i.TotalAmountUsd)
+	return &i, err
+}
+
 const findLastWalletTransactions = `-- name: FindLastWalletTransactions :many
 WITH tx AS ((SELECT true as is_confirmed,
-                    t.wallet_id,
+                    t.account_id,
                     t.currency_id,
                     t.tx_hash,
                     t.amount,
@@ -187,14 +207,14 @@ WITH tx AS ((SELECT true as is_confirmed,
                     t.type,
                     t.created_at
              FROM transactions t
-             WHERE t.wallet_id = $1
+             WHERE t.account_id = $1
                AND t.amount_usd >= 1
                AND t.type = $2
              ORDER BY created_at_index DESC
              LIMIT $3)
             UNION
             (SELECT false as is_confirmed,
-                    ut.wallet_id,
+                    ut.account_id,
                     ut.currency_id,
                     ut.tx_hash,
                     ut.amount,
@@ -202,7 +222,7 @@ WITH tx AS ((SELECT true as is_confirmed,
                     ut.type,
                     ut.created_at
              FROM unconfirmed_transactions ut
-             WHERE ut.wallet_id = $1
+             WHERE ut.account_id = $1
                AND ut.type = $2
                AND ut.amount_usd >= 1
                AND NOT EXISTS (SELECT 1
@@ -213,7 +233,7 @@ WITH tx AS ((SELECT true as is_confirmed,
              ORDER BY created_at DESC
              LIMIT $3)
             LIMIT $3)
-SELECT tx.is_confirmed, tx.wallet_id, tx.currency_id, tx.tx_hash, tx.amount, tx.amount_usd, tx.type, tx.created_at,
+SELECT tx.is_confirmed, tx.account_id, tx.currency_id, tx.tx_hash, tx.amount, tx.amount_usd, tx.type, tx.created_at,
        c.id as curr_code
 FROM tx
          INNER JOIN currencies c on c.id = tx.currency_id
@@ -221,14 +241,14 @@ LIMIT $3
 `
 
 type FindLastWalletTransactionsParams struct {
-	WalletID uuid.NullUUID           `db:"wallet_id" json:"wallet_id"`
-	Type     models.TransactionsType `db:"type" json:"type"`
-	Limit    int32                   `db:"limit" json:"limit"`
+	AccountID uuid.NullUUID           `db:"account_id" json:"account_id"`
+	Type      models.TransactionsType `db:"type" json:"type"`
+	Limit     int32                   `db:"limit" json:"limit"`
 }
 
 type FindLastWalletTransactionsRow struct {
 	IsConfirmed bool                `db:"is_confirmed" json:"is_confirmed"`
-	WalletID    uuid.NullUUID       `db:"wallet_id" json:"wallet_id"`
+	AccountID   uuid.NullUUID       `db:"account_id" json:"account_id"`
 	CurrencyID  string              `db:"currency_id" json:"currency_id"`
 	TxHash      string              `db:"tx_hash" json:"tx_hash"`
 	Amount      decimal.Decimal     `db:"amount" json:"amount"`
@@ -239,7 +259,7 @@ type FindLastWalletTransactionsRow struct {
 }
 
 func (q *Queries) FindLastWalletTransactions(ctx context.Context, arg FindLastWalletTransactionsParams) ([]*FindLastWalletTransactionsRow, error) {
-	rows, err := q.db.Query(ctx, findLastWalletTransactions, arg.WalletID, arg.Type, arg.Limit)
+	rows, err := q.db.Query(ctx, findLastWalletTransactions, arg.AccountID, arg.Type, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +269,7 @@ func (q *Queries) FindLastWalletTransactions(ctx context.Context, arg FindLastWa
 		var i FindLastWalletTransactionsRow
 		if err := rows.Scan(
 			&i.IsConfirmed,
-			&i.WalletID,
+			&i.AccountID,
 			&i.CurrencyID,
 			&i.TxHash,
 			&i.Amount,
@@ -274,7 +294,7 @@ WITH tx AS ((SELECT t.id,
                     t.user_id,
                     t.store_id,
                     t.receipt_id as receipt_id,
-                    t.wallet_id,
+                    t.account_id,
                     t.currency_id,
                     t.bc_uniq_key,
                     t.blockchain as blockchain,
@@ -296,7 +316,7 @@ WITH tx AS ((SELECT t.id,
                     ut.user_id,
                     ut.store_id,
                     null  as receipt_id,
-                    ut.wallet_id,
+                    ut.account_id,
                     ut.currency_id,
                     ut.bc_uniq_key,
                     ut.blockchain,
@@ -313,8 +333,8 @@ WITH tx AS ((SELECT t.id,
              where ut.tx_hash = $1
                AND ut.user_id = $2)
             LIMIT 1)
-SELECT tx.id, tx.is_confirmed, tx.user_id, tx.store_id, tx.receipt_id, tx.wallet_id, tx.currency_id, tx.bc_uniq_key, tx.blockchain, tx.tx_hash, tx.from_address, tx.to_address, tx.amount, tx.amount_usd, tx.fee, tx.type, tx.network_created_at, tx.created_at,
-       w.id                as wallet_id,
+SELECT tx.id, tx.is_confirmed, tx.user_id, tx.store_id, tx.receipt_id, tx.account_id, tx.currency_id, tx.bc_uniq_key, tx.blockchain, tx.tx_hash, tx.from_address, tx.to_address, tx.amount, tx.amount_usd, tx.fee, tx.type, tx.network_created_at, tx.created_at,
+       w.id                as account_id,
        w.store_id          as wallet_store_id,
        w.store_external_id as store_external_id,
        w.created_at        as wallet_created_at,
@@ -322,7 +342,7 @@ SELECT tx.id, tx.is_confirmed, tx.user_id, tx.store_id, tx.receipt_id, tx.wallet
        c.code              as currency_code,
        c.blockchain        as currency_blockchain
 FROM tx
-         INNER JOIN wallets w on w.id = tx.wallet_id
+         INNER JOIN wallets w on w.id = tx.account_id
          INNER JOIN currencies c on c.id = tx.currency_id
 LIMIT 1
 `
@@ -338,7 +358,7 @@ type FindTransactionByHashAndUserIDRow struct {
 	UserID             uuid.UUID           `db:"user_id" json:"user_id"`
 	StoreID            uuid.NullUUID       `db:"store_id" json:"store_id"`
 	ReceiptID          uuid.NullUUID       `db:"receipt_id" json:"receipt_id"`
-	WalletID           uuid.NullUUID       `db:"wallet_id" json:"wallet_id"`
+	AccountID          uuid.NullUUID       `db:"account_id" json:"account_id"`
 	CurrencyID         string              `db:"currency_id" json:"currency_id"`
 	BcUniqKey          pgtype.Text         `db:"bc_uniq_key" json:"bc_uniq_key"`
 	Blockchain         string              `db:"blockchain" json:"blockchain"`
@@ -351,7 +371,7 @@ type FindTransactionByHashAndUserIDRow struct {
 	Type               string              `db:"type" json:"type"`
 	NetworkCreatedAt   pgtype.Timestamp    `db:"network_created_at" json:"network_created_at"`
 	CreatedAt          pgtype.Timestamp    `db:"created_at" json:"created_at"`
-	WalletID_2         uuid.UUID           `db:"wallet_id_2" json:"wallet_id_2"`
+	AccountID_2        uuid.UUID           `db:"account_id_2" json:"account_id_2"`
 	WalletStoreID      uuid.UUID           `db:"wallet_store_id" json:"wallet_store_id"`
 	StoreExternalID    string              `db:"store_external_id" json:"store_external_id"`
 	WalletCreatedAt    pgtype.Timestamp    `db:"wallet_created_at" json:"wallet_created_at"`
@@ -369,7 +389,7 @@ func (q *Queries) FindTransactionByHashAndUserID(ctx context.Context, arg FindTr
 		&i.UserID,
 		&i.StoreID,
 		&i.ReceiptID,
-		&i.WalletID,
+		&i.AccountID,
 		&i.CurrencyID,
 		&i.BcUniqKey,
 		&i.Blockchain,
@@ -382,7 +402,7 @@ func (q *Queries) FindTransactionByHashAndUserID(ctx context.Context, arg FindTr
 		&i.Type,
 		&i.NetworkCreatedAt,
 		&i.CreatedAt,
-		&i.WalletID_2,
+		&i.AccountID_2,
 		&i.WalletStoreID,
 		&i.StoreExternalID,
 		&i.WalletCreatedAt,
@@ -450,6 +470,56 @@ func (q *Queries) GetBalanceNativeToken(ctx context.Context, arg GetBalanceNativ
 	return balance, err
 }
 
+const getByInvoiceID = `-- name: GetByInvoiceID :many
+SELECT id, user_id, store_id, receipt_id, account_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system, invoice_id
+FROM transactions
+WHERE invoice_id = $1
+ORDER BY created_at_index DESC
+`
+
+func (q *Queries) GetByInvoiceID(ctx context.Context, invoiceID uuid.NullUUID) ([]*models.Transaction, error) {
+	rows, err := q.db.Query(ctx, getByInvoiceID, invoiceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*models.Transaction{}
+	for rows.Next() {
+		var i models.Transaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.StoreID,
+			&i.ReceiptID,
+			&i.AccountID,
+			&i.CurrencyID,
+			&i.Blockchain,
+			&i.TxHash,
+			&i.BcUniqKey,
+			&i.Type,
+			&i.FromAddress,
+			&i.ToAddress,
+			&i.Amount,
+			&i.AmountUsd,
+			&i.Fee,
+			&i.WithdrawalIsManual,
+			&i.NetworkCreatedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CreatedAtIndex,
+			&i.IsSystem,
+			&i.InvoiceID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getExistingWithdrawalAddress = `-- name: GetExistingWithdrawalAddress :one
 SELECT coalesce(to_address, '')::varchar
 FROM transactions
@@ -472,7 +542,7 @@ func (q *Queries) GetExistingWithdrawalAddress(ctx context.Context, arg GetExist
 }
 
 const getLastByHashAndBlockchain = `-- name: GetLastByHashAndBlockchain :one
-SELECT id, user_id, store_id, receipt_id, wallet_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system
+SELECT id, user_id, store_id, receipt_id, account_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system, invoice_id
 FROM transactions
 WHERE tx_hash = $1
   AND blockchain = $2
@@ -493,7 +563,7 @@ func (q *Queries) GetLastByHashAndBlockchain(ctx context.Context, arg GetLastByH
 		&i.UserID,
 		&i.StoreID,
 		&i.ReceiptID,
-		&i.WalletID,
+		&i.AccountID,
 		&i.CurrencyID,
 		&i.Blockchain,
 		&i.TxHash,
@@ -510,12 +580,13 @@ func (q *Queries) GetLastByHashAndBlockchain(ctx context.Context, arg GetLastByH
 		&i.UpdatedAt,
 		&i.CreatedAtIndex,
 		&i.IsSystem,
+		&i.InvoiceID,
 	)
 	return &i, err
 }
 
 const getTransactionByHashAndBcUniqKey = `-- name: GetTransactionByHashAndBcUniqKey :one
-SELECT id, user_id, store_id, receipt_id, wallet_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system
+SELECT id, user_id, store_id, receipt_id, account_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system, invoice_id
 FROM transactions
 WHERE tx_hash = $1
   and bc_uniq_key = $2
@@ -535,7 +606,7 @@ func (q *Queries) GetTransactionByHashAndBcUniqKey(ctx context.Context, arg GetT
 		&i.UserID,
 		&i.StoreID,
 		&i.ReceiptID,
-		&i.WalletID,
+		&i.AccountID,
 		&i.CurrencyID,
 		&i.Blockchain,
 		&i.TxHash,
@@ -552,12 +623,13 @@ func (q *Queries) GetTransactionByHashAndBcUniqKey(ctx context.Context, arg GetT
 		&i.UpdatedAt,
 		&i.CreatedAtIndex,
 		&i.IsSystem,
+		&i.InvoiceID,
 	)
 	return &i, err
 }
 
 const getTransactionsByStoreAndType = `-- name: GetTransactionsByStoreAndType :many
-SELECT id, user_id, store_id, receipt_id, wallet_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system
+SELECT id, user_id, store_id, receipt_id, account_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system, invoice_id
 FROM transactions
 WHERE store_id = $1
   and type = $2
@@ -591,7 +663,7 @@ func (q *Queries) GetTransactionsByStoreAndType(ctx context.Context, arg GetTran
 			&i.UserID,
 			&i.StoreID,
 			&i.ReceiptID,
-			&i.WalletID,
+			&i.AccountID,
 			&i.CurrencyID,
 			&i.Blockchain,
 			&i.TxHash,
@@ -608,6 +680,7 @@ func (q *Queries) GetTransactionsByStoreAndType(ctx context.Context, arg GetTran
 			&i.UpdatedAt,
 			&i.CreatedAtIndex,
 			&i.IsSystem,
+			&i.InvoiceID,
 		); err != nil {
 			return nil, err
 		}
@@ -620,7 +693,7 @@ func (q *Queries) GetTransactionsByStoreAndType(ctx context.Context, arg GetTran
 }
 
 const getTransactionsByStoreId = `-- name: GetTransactionsByStoreId :many
-SELECT id, user_id, store_id, receipt_id, wallet_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system
+SELECT id, user_id, store_id, receipt_id, account_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system, invoice_id
 FROM transactions
 WHERE store_id = $1
 ORDER BY created_at_index DESC
@@ -647,7 +720,7 @@ func (q *Queries) GetTransactionsByStoreId(ctx context.Context, arg GetTransacti
 			&i.UserID,
 			&i.StoreID,
 			&i.ReceiptID,
-			&i.WalletID,
+			&i.AccountID,
 			&i.CurrencyID,
 			&i.Blockchain,
 			&i.TxHash,
@@ -664,6 +737,7 @@ func (q *Queries) GetTransactionsByStoreId(ctx context.Context, arg GetTransacti
 			&i.UpdatedAt,
 			&i.CreatedAtIndex,
 			&i.IsSystem,
+			&i.InvoiceID,
 		); err != nil {
 			return nil, err
 		}
@@ -676,7 +750,7 @@ func (q *Queries) GetTransactionsByStoreId(ctx context.Context, arg GetTransacti
 }
 
 const getTransactionsByUserId = `-- name: GetTransactionsByUserId :many
-SELECT id, user_id, store_id, receipt_id, wallet_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system
+SELECT id, user_id, store_id, receipt_id, account_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system, invoice_id
 FROM transactions
 WHERE user_id = $1
 ORDER BY created_at_index DESC
@@ -703,7 +777,7 @@ func (q *Queries) GetTransactionsByUserId(ctx context.Context, arg GetTransactio
 			&i.UserID,
 			&i.StoreID,
 			&i.ReceiptID,
-			&i.WalletID,
+			&i.AccountID,
 			&i.CurrencyID,
 			&i.Blockchain,
 			&i.TxHash,
@@ -720,6 +794,7 @@ func (q *Queries) GetTransactionsByUserId(ctx context.Context, arg GetTransactio
 			&i.UpdatedAt,
 			&i.CreatedAtIndex,
 			&i.IsSystem,
+			&i.InvoiceID,
 		); err != nil {
 			return nil, err
 		}
@@ -732,21 +807,21 @@ func (q *Queries) GetTransactionsByUserId(ctx context.Context, arg GetTransactio
 }
 
 const getWalletTransactions = `-- name: GetWalletTransactions :many
-SELECT id, user_id, store_id, receipt_id, wallet_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system
+SELECT id, user_id, store_id, receipt_id, account_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system, invoice_id
 FROM transactions t
-WHERE t.wallet_id = $1
+WHERE t.account_id = $1
   AND t.to_address = $2
 ORDER BY network_created_at DESC
 LIMIT 500
 `
 
 type GetWalletTransactionsParams struct {
-	WalletID  uuid.NullUUID `db:"wallet_id" json:"wallet_id"`
+	AccountID uuid.NullUUID `db:"account_id" json:"account_id"`
 	ToAddress string        `db:"to_address" json:"to_address"`
 }
 
 func (q *Queries) GetWalletTransactions(ctx context.Context, arg GetWalletTransactionsParams) ([]*models.Transaction, error) {
-	rows, err := q.db.Query(ctx, getWalletTransactions, arg.WalletID, arg.ToAddress)
+	rows, err := q.db.Query(ctx, getWalletTransactions, arg.AccountID, arg.ToAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -759,7 +834,7 @@ func (q *Queries) GetWalletTransactions(ctx context.Context, arg GetWalletTransa
 			&i.UserID,
 			&i.StoreID,
 			&i.ReceiptID,
-			&i.WalletID,
+			&i.AccountID,
 			&i.CurrencyID,
 			&i.Blockchain,
 			&i.TxHash,
@@ -776,6 +851,7 @@ func (q *Queries) GetWalletTransactions(ctx context.Context, arg GetWalletTransa
 			&i.UpdatedAt,
 			&i.CreatedAtIndex,
 			&i.IsSystem,
+			&i.InvoiceID,
 		); err != nil {
 			return nil, err
 		}

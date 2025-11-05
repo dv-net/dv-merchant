@@ -20,9 +20,8 @@ LIMIT 1;
 -- name: GetStoreByWalletAddress :one
 SELECT s.*
 FROM stores s
-         JOIN wallets w ON s.id = w.store_id
          LEFT JOIN wallet_addresses wa
-                   ON wa.wallet_id = w.id
+                   ON wa.store_id = s.id
 WHERE wa.address = $1
   AND wa.currency_id = $2
 LIMIT 1;

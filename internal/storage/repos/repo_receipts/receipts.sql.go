@@ -13,7 +13,7 @@ import (
 )
 
 const getByUserId = `-- name: GetByUserId :many
-SELECT r.id, r.status, r.store_id, r.currency_id, r.amount, r.wallet_id, r.created_at, r.updated_at from receipts r inner join stores s on r.store_id = s.id where s.user_id = $1 limit $2 offset $3
+SELECT r.id, r.status, r.store_id, r.currency_id, r.amount, r.account_id, r.created_at, r.updated_at from receipts r inner join stores s on r.store_id = s.id where s.user_id = $1 limit $2 offset $3
 `
 
 type GetByUserIdParams struct {
@@ -37,7 +37,7 @@ func (q *Queries) GetByUserId(ctx context.Context, arg GetByUserIdParams) ([]*mo
 			&i.StoreID,
 			&i.CurrencyID,
 			&i.Amount,
-			&i.WalletID,
+			&i.AccountID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

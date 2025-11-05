@@ -30,4 +30,6 @@ func (h *Handler) Init(api *fiber.App) {
 	h.initStoreRoutes(public)
 
 	h.initMnemonic(public)
+
+	h.initInvoiceRoutes(public)
 }
