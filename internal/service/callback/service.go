@@ -193,7 +193,7 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			ReceiptID:          receiptID,
 			WalletID:           uuid.NullUUID{UUID: wallet.ID, Valid: true},
 			CurrencyID:         dto.Currency.ID,
-			Blockchain:         dto.Currency.Blockchain.String(),
+			Blockchain:         *dto.Currency.Blockchain,
 			IsSystem:           dto.IsSystem,
 			TxHash:             dto.Hash,
 			BcUniqKey:          &dto.TxUniqKey,
@@ -259,113 +259,220 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 }
 
 func (s *Service) HandleTransferCallback(ctx context.Context, dto TransferWebhookDto) error {
-	// skip unconfirmed transaction
-	if dto.Status == models.TransactionStatusWaitingConfirmations || dto.Status == models.TransactionStatusInMempool {
+	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{IsoLevel: pgx.Serializable}, func(tx pgx.Tx) error {
+		amount, shouldContinue, err := s.validateTransferCallback(ctx, dto, tx)
+		if err != nil {
+			return err
+		}
+		if !shouldContinue {
+			return nil
+		}
+
+		if s.checkUnconfirmed(dto) {
+			return s.handleUnconfirmedTransfer(ctx, dto, amount, tx)
+		}
+
+		if err := s.updateTransferTxHash(ctx, dto, tx); err != nil {
+			return err
+		}
+
+		return s.handleConfirmedTransfer(ctx, dto, amount, tx)
+	})
+}
+
+func (s *Service) validateTransferCallback(ctx context.Context, dto TransferWebhookDto, tx pgx.Tx) (decimal.Decimal, bool, error) {
+	amount, err := decimal.NewFromString(dto.Amount)
+	if err != nil {
+		return decimal.Zero, false, fmt.Errorf("parse amount: %w", err)
+	}
+
+	if amount.IsZero() {
+		s.log.Infof("amount is zero tx_hash: %s", dto.Amount)
+		return decimal.Zero, false, nil
+	}
+
+	_, err = s.transactionsService.GetByHashAndBcUniq(ctx, dto.Hash, dto.TxUniqKey, repos.WithTx(tx))
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return decimal.Zero, false, fmt.Errorf("transaction found error: %w", err)
+	}
+
+	if err == nil {
+		s.log.Info("transaction already exists")
+		return decimal.Zero, false, nil
+	}
+
+	return amount, true, nil
+}
+
+func (s *Service) handleUnconfirmedTransfer(ctx context.Context, dto TransferWebhookDto, amount decimal.Decimal, tx pgx.Tx) error {
+	switch dto.WalletType {
+	case models.WalletTypeProcessing:
+		return s.handleUnconfirmedProcessingTransfer(ctx, dto, amount, tx)
+	case models.WalletTypeHot:
+		return s.handleUnconfirmedHotWalletTransfer(ctx, dto, amount, tx)
+	default:
+		return fmt.Errorf("unsupported wallet type for unconfirmed transaction: %s", dto.WalletType)
+	}
+}
+
+func (s *Service) handleUnconfirmedProcessingTransfer(ctx context.Context, dto TransferWebhookDto, amount decimal.Decimal, tx pgx.Tx) error {
+	if !dto.TransferID.Valid {
+		s.log.Infow(
+			"unconfirmed withdrawal from processing transaction received without request id",
+			"from", dto.FromAddress,
+			"to", dto.ToAddress,
+			"hash", dto.Hash,
+		)
 		return nil
 	}
 
-	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{IsoLevel: pgx.Serializable}, func(tx pgx.Tx) error {
-		amount, err := decimal.NewFromString(dto.Amount)
-		if err != nil {
-			return fmt.Errorf("parse amount: %w", err)
-		}
+	withdrawalData, err := s.storage.WithdrawalsFromProcessing(repos.WithTx(tx)).FindByTransferID(ctx, dto.TransferID.UUID)
+	if err != nil {
+		return fmt.Errorf("withdrawal from processing not found: %w", err)
+	}
 
-		if amount.IsZero() {
-			s.log.Infof("amount is zero tx_hash: %s", dto.Amount)
-			return nil
-		}
+	storeData, err := s.storeService.GetStoreByID(ctx, withdrawalData.WithdrawalFromProcessingWallet.StoreID)
+	if err != nil {
+		return fmt.Errorf("fetch store data: %w", err)
+	}
 
-		_, err = s.transactionsService.GetByHashAndBcUniq(ctx, dto.Hash, dto.TxUniqKey, repos.WithTx(tx))
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			return fmt.Errorf("transaction found error: %w", err)
-		}
+	usdAmount, err := s.convertToUSD(ctx, amount, dto.Currency, storeData)
+	if err != nil {
+		return err
+	}
 
-		if err == nil {
-			s.log.Info("transaction already exists")
-			return nil
-		}
+	dummyWallet := &models.Wallet{
+		ID:      uuid.Nil,
+		StoreID: storeData.ID,
+	}
 
-		if dto.TransferID.Valid {
-			if err = s.storage.Transfers(repos.WithTx(tx)).UpdateTxHash(ctx, repo_transfers.UpdateTxHashParams{
-				ID:     dto.TransferID.UUID,
-				TxHash: util.Pointer(dto.Hash),
-			}); err != nil {
-				return fmt.Errorf("update transfer tx hash: %w", err)
-			}
-		}
+	err = s.createUnconfirmedTransferTransaction(
+		ctx, dto, storeData, dummyWallet, amount, usdAmount,
+		models.TransactionsTypeWithdrawalFromProcessing,
+		repos.WithTx(tx),
+	)
+	return err
+}
 
-		switch dto.WalletType {
-		case models.WalletTypeProcessing:
-			if !dto.TransferID.Valid {
-				s.log.Infow(
-					"withdrawal from processing transaction received without request id",
-					"from",
-					dto.FromAddress,
-					"to",
-					dto.ToAddress,
-					"hash",
-					dto.Hash,
-				)
+func (s *Service) handleUnconfirmedHotWalletTransfer(ctx context.Context, dto TransferWebhookDto, amount decimal.Decimal, tx pgx.Tx) error {
+	if dto.ExternalWalletID == nil {
+		return fmt.Errorf("invalid external wallet id")
+	}
 
-				return nil
-			}
+	wallet, err := s.storage.Wallets(repos.WithTx(tx)).GetById(ctx, *dto.ExternalWalletID)
+	if err != nil {
+		return fmt.Errorf("wallet found error: %w", err)
+	}
 
-			withdrawalData, err := s.storage.WithdrawalsFromProcessing(repos.WithTx(tx)).FindByTransferID(
-				ctx,
-				dto.TransferID.UUID,
-			)
-			if err != nil {
-				return fmt.Errorf("withdrawal from processing not found")
-			}
+	storeData, err := s.storeService.GetStoreByWalletAddress(ctx, dto.FromAddress, dto.Currency.ID, repos.WithTx(tx))
+	if err != nil {
+		return fmt.Errorf("storeData found error: %w", err)
+	}
 
-			storeData, err := s.storeService.GetStoreByID(ctx, withdrawalData.WithdrawalFromProcessingWallet.StoreID)
-			if err != nil {
-				return fmt.Errorf("fetch store data: %w", err)
-			}
+	usdAmount, err := s.convertToUSD(ctx, amount, dto.Currency, storeData)
+	if err != nil {
+		return err
+	}
 
-			createParams, prepareTxErr := s.prepareCreateTxParamsByProcessingWallet(
-				ctx,
-				dto,
-				storeData,
-				amount,
-			)
-			if prepareTxErr != nil {
-				return prepareTxErr
-			}
+	err = s.createUnconfirmedTransferTransaction(
+		ctx, dto, storeData, wallet, amount, usdAmount,
+		models.TransactionsTypeTransfer,
+		repos.WithTx(tx),
+	)
+	return err
+}
 
-			createdTx, err := s.transactionsService.CreateTransaction(ctx, *createParams, repos.WithTx(tx))
-			if err != nil {
-				return fmt.Errorf("transaction creation: %w", err)
-			}
-			return s.eventListener.Fire(transactions.WithdrawalFromProcessingReceivedEvent{
-				WithdrawalID: withdrawalData.WithdrawalFromProcessingWallet.ID.String(),
-				Tx:           *createdTx,
-				Store:        *storeData,
-				Currency:     *dto.Currency,
-				WebhookEvent: models.WebhookEventWithdrawalFromProcessingReceived,
-				DBTx:         tx,
-			})
-		case models.WalletTypeHot:
-			createParams, prepareTxErr := s.prepareCreateTxParamsByHotWallet(ctx, dto, amount, tx)
-			if prepareTxErr != nil {
-				return prepareTxErr
-			}
-
-			_, err = s.transactionsService.CreateTransaction(ctx, *createParams, repos.WithTx(tx))
-			if err != nil {
-				return fmt.Errorf("transaction creation: %w", err)
-			}
-
-			// update balance native token if need
-			updateNativeTokenRequired := createParams.Fee.IsPositive() && dto.Blockchain.RecalculateNativeBalance()
-			if err = s.enqueueAddressBalanceUpdate(ctx, dto, updateNativeTokenRequired, repos.WithTx(tx)); err != nil {
-				return fmt.Errorf("cant't update balance: %w", err)
-			}
-		default:
-			return fmt.Errorf("unsupported wallet type: %s", dto.WalletType)
-		}
+func (s *Service) updateTransferTxHash(ctx context.Context, dto TransferWebhookDto, tx pgx.Tx) error {
+	if !dto.TransferID.Valid {
 		return nil
+	}
+
+	return s.storage.Transfers(repos.WithTx(tx)).UpdateTxHash(ctx, repo_transfers.UpdateTxHashParams{
+		ID:     dto.TransferID.UUID,
+		TxHash: util.Pointer(dto.Hash),
 	})
+}
+
+func (s *Service) handleConfirmedTransfer(ctx context.Context, dto TransferWebhookDto, amount decimal.Decimal, tx pgx.Tx) error {
+	switch dto.WalletType {
+	case models.WalletTypeProcessing:
+		return s.handleConfirmedProcessingTransfer(ctx, dto, amount, tx)
+	case models.WalletTypeHot:
+		return s.handleConfirmedHotWalletTransfer(ctx, dto, amount, tx)
+	default:
+		return fmt.Errorf("unsupported wallet type: %s", dto.WalletType)
+	}
+}
+
+func (s *Service) handleConfirmedProcessingTransfer(ctx context.Context, dto TransferWebhookDto, amount decimal.Decimal, tx pgx.Tx) error {
+	if !dto.TransferID.Valid {
+		s.log.Infow(
+			"withdrawal from processing transaction received without request id",
+			"from", dto.FromAddress,
+			"to", dto.ToAddress,
+			"hash", dto.Hash,
+		)
+		return nil
+	}
+
+	withdrawalData, err := s.storage.WithdrawalsFromProcessing(repos.WithTx(tx)).FindByTransferID(ctx, dto.TransferID.UUID)
+	if err != nil {
+		return fmt.Errorf("withdrawal from processing not found: %w", err)
+	}
+
+	storeData, err := s.storeService.GetStoreByID(ctx, withdrawalData.WithdrawalFromProcessingWallet.StoreID)
+	if err != nil {
+		return fmt.Errorf("fetch store data: %w", err)
+	}
+
+	createParams, err := s.prepareCreateTxParamsByProcessingWallet(ctx, dto, storeData, amount)
+	if err != nil {
+		return err
+	}
+
+	createdTx, err := s.transactionsService.CreateTransaction(ctx, *createParams, repos.WithTx(tx))
+	if err != nil {
+		return fmt.Errorf("transaction creation: %w", err)
+	}
+
+	return s.eventListener.Fire(transactions.WithdrawalFromProcessingReceivedEvent{
+		WithdrawalID: withdrawalData.WithdrawalFromProcessingWallet.ID.String(),
+		Tx:           *createdTx,
+		Store:        *storeData,
+		Currency:     *dto.Currency,
+		WebhookEvent: models.WebhookEventWithdrawalFromProcessingReceived,
+		DBTx:         tx,
+	})
+}
+
+func (s *Service) handleConfirmedHotWalletTransfer(ctx context.Context, dto TransferWebhookDto, amount decimal.Decimal, tx pgx.Tx) error {
+	createParams, err := s.prepareCreateTxParamsByHotWallet(ctx, dto, amount, tx)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.transactionsService.CreateTransaction(ctx, *createParams, repos.WithTx(tx))
+	if err != nil {
+		return fmt.Errorf("transaction creation: %w", err)
+	}
+
+	updateNativeTokenRequired := createParams.Fee.IsPositive() && dto.Blockchain.RecalculateNativeBalance()
+	return s.enqueueAddressBalanceUpdate(ctx, dto, updateNativeTokenRequired, repos.WithTx(tx))
+}
+
+func (s *Service) convertToUSD(ctx context.Context, amount decimal.Decimal, currency *models.Currency, store *models.Store) (decimal.Decimal, error) {
+	usdAmount, err := s.currConvService.Convert(ctx, currconv.ConvertDTO{
+		Source:     store.RateSource.String(),
+		From:       currency.Code,
+		To:         models.CurrencyCodeUSDT,
+		Amount:     amount.String(),
+		StableCoin: currency.IsStablecoin,
+		Scale:      &store.RateScale,
+	})
+	if err != nil {
+		return decimal.Zero, fmt.Errorf("convert usd: %w", err)
+	}
+	return usdAmount, nil
 }
 
 func (s *Service) prepareCreateTxParamsByProcessingWallet(
@@ -395,7 +502,7 @@ func (s *Service) prepareCreateTxParamsByProcessingWallet(
 		UserID:             storeData.UserID,
 		StoreID:            uuid.NullUUID{UUID: storeData.ID, Valid: true},
 		CurrencyID:         dto.Currency.ID,
-		Blockchain:         dto.Currency.Blockchain.String(),
+		Blockchain:         *dto.Currency.Blockchain,
 		TxHash:             dto.Hash,
 		BcUniqKey:          &dto.TxUniqKey,
 		Type:               models.TransactionsTypeWithdrawalFromProcessing,
@@ -451,7 +558,7 @@ func (s *Service) prepareCreateTxParamsByHotWallet(
 		StoreID:            uuid.NullUUID{UUID: storeData.ID, Valid: true},
 		WalletID:           uuid.NullUUID{UUID: wallet.ID, Valid: true},
 		CurrencyID:         dto.Currency.ID,
-		Blockchain:         dto.Currency.Blockchain.String(),
+		Blockchain:         *dto.Currency.Blockchain,
 		TxHash:             dto.Hash,
 		BcUniqKey:          &dto.TxUniqKey,
 		Type:               models.TransactionsTypeTransfer,
@@ -536,7 +643,7 @@ func (s *Service) createUnconfirmedTransaction(
 	usdAmount decimal.Decimal,
 	opts repos.Option,
 ) (*models.UnconfirmedTransaction, error) {
-	blockchain := string(*dto.Currency.Blockchain)
+	blockchain := *dto.Currency.Blockchain
 	uTransaction, err := s.unconfirmedTransactionsService.GetUnconfirmedByHash(ctx, dto.Hash, blockchain, opts)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("unconfirmed transaction found error: %w", err)
@@ -568,6 +675,50 @@ func (s *Service) createUnconfirmedTransaction(
 	}
 
 	return uTransaction, nil
+}
+
+func (s *Service) createUnconfirmedTransferTransaction(
+	ctx context.Context,
+	dto TransferWebhookDto,
+	store *models.Store,
+	wallet *models.Wallet,
+	amount decimal.Decimal,
+	usdAmount decimal.Decimal,
+	transactionType models.TransactionsType,
+	opts repos.Option,
+) error {
+	blockchain := *dto.Currency.Blockchain
+	_, err := s.unconfirmedTransactionsService.GetUnconfirmedByHash(ctx, dto.Hash, blockchain, opts)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("unconfirmed transaction found error: %w", err)
+	}
+
+	if err == nil {
+		s.log.Info("unconfirmed transaction already exists")
+		return nil
+	}
+
+	params := repo_unconfirmed_transactions.CreateParams{
+		UserID:      store.UserID,
+		StoreID:     uuid.NullUUID{UUID: store.ID, Valid: true},
+		WalletID:    uuid.NullUUID{UUID: wallet.ID, Valid: true},
+		CurrencyID:  dto.Currency.ID,
+		Blockchain:  blockchain,
+		TxHash:      dto.Hash,
+		BcUniqKey:   &dto.TxUniqKey,
+		Type:        transactionType,
+		FromAddress: dto.FromAddress,
+		ToAddress:   dto.ToAddress,
+		Amount:      amount,
+		AmountUsd:   decimal.NullDecimal{Decimal: usdAmount, Valid: true},
+	}
+
+	_, err = s.unconfirmedTransactionsService.CreateUnconfirmedTransaction(ctx, params, opts)
+	if err != nil {
+		return fmt.Errorf("unconfirmed transaction creation: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) checkUnconfirmed(dto WebhookDtoInterface) bool {

@@ -157,6 +157,24 @@ WHERE user_id = $1
   AND amount > 0
   AND deleted_at IS NULL;
 
+-- name: GetHotWalletsTotalBalanceWithDust :one
+SELECT
+    COALESCE(SUM(wallet_addresses.amount * rate.exchange_rate), 0)::numeric as total_usd,
+    COALESCE(SUM(CASE
+        WHEN (wallet_addresses.amount * rate.exchange_rate) < 1
+        THEN wallet_addresses.amount * rate.exchange_rate
+        ELSE 0
+    END), 0)::numeric as dust_usd
+FROM wallet_addresses
+LEFT JOIN (
+    SELECT
+        unnest(sqlc.arg('currency_ids')::text[]) AS currency_id,
+        unnest(sqlc.arg('currency_rate')::decimal[]) AS exchange_rate
+) rate ON wallet_addresses.currency_id = rate.currency_id
+WHERE wallet_addresses.user_id = $1
+  AND wallet_addresses.amount > 0
+  AND wallet_addresses.deleted_at IS NULL;
+
 -- name: FilterOwnerWalletAddresses :many
 SELECT address, user_id, id as wallet_addresses_id
 FROM wallet_addresses

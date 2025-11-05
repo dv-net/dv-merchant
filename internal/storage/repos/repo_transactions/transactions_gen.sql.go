@@ -26,7 +26,7 @@ type CreateParams struct {
 	ReceiptID          uuid.NullUUID           `db:"receipt_id" json:"receipt_id"`
 	WalletID           uuid.NullUUID           `db:"wallet_id" json:"wallet_id"`
 	CurrencyID         string                  `db:"currency_id" json:"currency_id"`
-	Blockchain         string                  `db:"blockchain" json:"blockchain"`
+	Blockchain         models.Blockchain       `db:"blockchain" json:"blockchain"`
 	TxHash             string                  `db:"tx_hash" json:"tx_hash"`
 	BcUniqKey          *string                 `db:"bc_uniq_key" json:"bc_uniq_key"`
 	Type               models.TransactionsType `db:"type" json:"type"`

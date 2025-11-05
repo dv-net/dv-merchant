@@ -154,6 +154,10 @@ overrides:
       - column: transactions.from_address
         go_type:
           type: "string"
+      - column: transactions.blockchain
+        go_type:
+          type: "Blockchain"
+
       - column: exchange_withdrawal_history.status
         go_type:
           type: "WithdrawalHistoryStatus"
@@ -168,6 +172,9 @@ overrides:
       - column: unconfirmed_transactions.from_address
         go_type:
           type: "string"
+      - column: unconfirmed_transactions.blockchain
+        go_type:
+          type: "Blockchain"
 
       # setting
       - column: settings.model_type
