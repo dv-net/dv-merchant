@@ -242,6 +242,54 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/external/transactions/unconfirmed/transfer": {
+            "get": {
+                "security": [
+                    {
+                        "XApiKey": []
+                    }
+                ],
+                "description": "Get unconfirmed transfer transactions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Get unconfirmed transfer transactions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store API key",
+                        "name": "api_key",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-UnconfirmedTransactionResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/external/wallet": {
             "get": {
                 "security": [
@@ -909,6 +957,9 @@ const docTemplate = `{
                 "is_evm_like": {
                     "type": "boolean"
                 },
+                "is_stable_coin": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -1059,6 +1110,20 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/ProcessingWithdrawalResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-UnconfirmedTransactionResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/UnconfirmedTransactionResponse"
                 },
                 "message": {
                     "type": "string"
@@ -1319,6 +1384,54 @@ const docTemplate = `{
                 },
                 "max_transfers_trc20": {
                     "type": "string"
+                }
+            }
+        },
+        "UnconfirmedTransactionResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "amount_usd": {
+                    "type": "number"
+                },
+                "bc_uniq_key": {
+                    "type": "string"
+                },
+                "blockchain": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "currency_id": {
+                    "type": "string"
+                },
+                "from_address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "network_created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "to_address": {
+                    "type": "string"
+                },
+                "tx_hash": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
                 }
             }
         },

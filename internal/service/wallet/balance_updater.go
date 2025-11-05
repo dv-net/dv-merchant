@@ -68,7 +68,7 @@ func (s *Service) handleUpdateQueue(ctx context.Context, q *repo_update_balance_
 			repo_wallet_addresses.UpdateWalletNativeTokenBalanceParams{
 				Address:    q.UpdateBalanceQueue.Address,
 				CurrencyID: nativeCurr,
-				Blockchain: q.Currency.Blockchain.String(),
+				Blockchain: *q.Currency.Blockchain,
 			},
 		); err != nil {
 			return fmt.Errorf("failed to update addresses for update balance queue: %w", err)

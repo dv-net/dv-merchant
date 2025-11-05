@@ -104,7 +104,7 @@ func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel,
 	startTime := time.Now()
 
 	if o.log != nil {
-		o.log.Infoln("[EXCHANGE-API]: Preparing request",
+		o.log.Debugln("[EXCHANGE-API]: Preparing request",
 			"exchange", "binance",
 			"method", req.Method,
 			"endpoint", req.URL.Path,
@@ -115,7 +115,7 @@ func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel,
 	req = o.signer.SignRequest(ctx, req, level)
 
 	if o.log != nil {
-		o.log.Infoln("[EXCHANGE-API]: Sending request",
+		o.log.Debugln("[EXCHANGE-API]: Sending request",
 			"exchange", "binance",
 			"method", req.Method,
 			"url", req.URL.String(),
@@ -173,7 +173,7 @@ func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel,
 	}
 
 	if o.log != nil {
-		o.log.Infoln("[EXCHANGE-API]: Request completed",
+		o.log.Debugln("[EXCHANGE-API]: Request completed",
 			"exchange", "binance",
 			"method", req.Method,
 			"endpoint", req.URL.Path,

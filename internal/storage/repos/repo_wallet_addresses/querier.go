@@ -19,6 +19,7 @@ type Querier interface {
 	GetAllClearByWalletID(ctx context.Context, walletID uuid.UUID, currencyIds []string) ([]*models.WalletAddress, error)
 	GetById(ctx context.Context, id uuid.UUID) (*models.WalletAddress, error)
 	GetByWalletIDAndCurrencyID(ctx context.Context, walletID uuid.UUID, currencyID string) (*models.WalletAddress, error)
+	GetHotWalletsTotalBalanceWithDust(ctx context.Context, arg GetHotWalletsTotalBalanceWithDustParams) (*GetHotWalletsTotalBalanceWithDustRow, error)
 	GetListByCurrencyWithAmount(ctx context.Context, arg GetListByCurrencyWithAmountParams) (*GetListByCurrencyWithAmountRow, error)
 	GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetPrefetchWalletAddressByUserIDParams) ([]*GetPrefetchWalletAddressByUserIDRow, error)
 	GetWalletAddressesByAddress(ctx context.Context, arg GetWalletAddressesByAddressParams) (*models.WalletAddress, error)

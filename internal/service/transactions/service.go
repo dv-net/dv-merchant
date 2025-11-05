@@ -357,7 +357,7 @@ func (s *Service) prepareTransactionsForExport(ctx context.Context, txs []*repo_
 		userTxModel := &UserTransactionModel{
 			StoreName:        store.Name,
 			CurrencyID:       tx.CurrencyID,
-			Blockchain:       tx.Blockchain,
+			Blockchain:       tx.Blockchain.String(),
 			TxHash:           tx.TxHash,
 			Type:             tx.Type.String(),
 			FromAddress:      tx.FromAddress,

@@ -147,7 +147,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 	)
 
 	if o.log != nil {
-		o.log.Infoln("[EXCHANGE-API]: Preparing request",
+		o.log.Debugln("[EXCHANGE-API]: Preparing request",
 			"exchange", "okx",
 			"method", method,
 			"endpoint", path,
@@ -198,7 +198,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 	}
 
 	if o.log != nil {
-		o.log.Infoln("[EXCHANGE-API]: Sending request",
+		o.log.Debugln("[EXCHANGE-API]: Sending request",
 			"exchange", "okx",
 			"method", method,
 			"url", o.baseURL.String()+path,
@@ -249,7 +249,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 	}
 
 	if o.log != nil {
-		o.log.Infoln("[EXCHANGE-API]: Request completed",
+		o.log.Debugln("[EXCHANGE-API]: Request completed",
 			"exchange", "okx",
 			"method", method,
 			"endpoint", path,

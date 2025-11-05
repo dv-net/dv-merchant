@@ -39,7 +39,7 @@ func FromStoreTransactionModelToResponse(t *models.Transaction) *store_response.
 		UserID:             t.UserID.String(),
 		StoreID:            t.StoreID.UUID.String(),
 		CurrencyID:         t.CurrencyID,
-		Blockchain:         t.Blockchain,
+		Blockchain:         t.Blockchain.String(),
 		TxHash:             t.TxHash,
 		Type:               t.Type,
 		FromAddress:        t.FromAddress,

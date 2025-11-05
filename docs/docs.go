@@ -8346,6 +8346,54 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/external/transactions/unconfirmed/transfer": {
+            "get": {
+                "security": [
+                    {
+                        "XApiKey": []
+                    }
+                ],
+                "description": "Get unconfirmed transfer transactions",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Get unconfirmed transfer transactions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store API key",
+                        "name": "api_key",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-UnconfirmedTransactionResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/external/wallet": {
             "get": {
                 "security": [
@@ -10233,6 +10281,9 @@ const docTemplate = `{
                 "is_evm_like": {
                     "type": "boolean"
                 },
+                "is_stable_coin": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -12069,6 +12120,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-UnconfirmedTransactionResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/UnconfirmedTransactionResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-VersionResponse": {
             "type": "object",
             "properties": {
@@ -13069,14 +13134,23 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
+                "contract_address": {
+                    "type": "string"
+                },
                 "currency_label": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
+                "is_native": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
+                },
+                "order": {
+                    "type": "integer"
                 },
                 "token_label": {
                     "type": "string"
@@ -14061,6 +14135,54 @@ const docTemplate = `{
                 "user_id": {
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "UnconfirmedTransactionResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "amount_usd": {
+                    "type": "number"
+                },
+                "bc_uniq_key": {
+                    "type": "string"
+                },
+                "blockchain": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "currency_id": {
+                    "type": "string"
+                },
+                "from_address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "network_created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "to_address": {
+                    "type": "string"
+                },
+                "tx_hash": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
                 }
             }
         },
@@ -15146,6 +15268,9 @@ const docTemplate = `{
         "github_com_dv-net_dv-merchant_internal_dto.LogDTO": {
             "type": "object",
             "properties": {
+                "fields": {
+                    "type": "string"
+                },
                 "level": {
                     "type": "string"
                 },
@@ -15262,9 +15387,6 @@ const docTemplate = `{
                 "htx",
                 "binance",
                 "bitget",
-                "dv-min",
-                "dv-max",
-                "dv-avg",
                 "kucoin",
                 "bybit",
                 "gate"
@@ -15274,9 +15396,6 @@ const docTemplate = `{
                 "RateSourceHTX",
                 "RateSourceBinance",
                 "RateSourceBitGet",
-                "RateSourceDVMin",
-                "RateSourceDVMax",
-                "RateSourceDVAvg",
                 "RateSourceKucoin",
                 "RateSourceBybit",
                 "RateSourceGateio"
@@ -15486,7 +15605,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "blockchain": {
-                    "type": "string"
+                    "$ref": "#/definitions/Blockchain"
                 },
                 "created_at": {
                     "type": "string"

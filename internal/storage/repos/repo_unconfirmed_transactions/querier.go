@@ -12,9 +12,12 @@ import (
 )
 
 type Querier interface {
-	CollapseAllByConfirmed(ctx context.Context) error
+	CollapseAllByConfirmedDeposit(ctx context.Context) error
 	Create(ctx context.Context, arg CreateParams) (*models.UnconfirmedTransaction, error)
+	DeleteByTxHash(ctx context.Context, id uuid.UUID) error
+	GetAllTransfer(ctx context.Context) ([]*models.UnconfirmedTransaction, error)
 	GetById(ctx context.Context, id uuid.UUID) (*models.UnconfirmedTransaction, error)
+	GetByType(ctx context.Context, arg GetByTypeParams) ([]*models.UnconfirmedTransaction, error)
 	GetOneByHashAndBlockchain(ctx context.Context, arg GetOneByHashAndBlockchainParams) (*models.UnconfirmedTransaction, error)
 }
 

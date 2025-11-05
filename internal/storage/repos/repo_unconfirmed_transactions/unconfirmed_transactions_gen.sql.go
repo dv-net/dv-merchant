@@ -33,7 +33,7 @@ type CreateParams struct {
 	Amount           decimal.Decimal         `db:"amount" json:"amount"`
 	AmountUsd        decimal.NullDecimal     `db:"amount_usd" json:"amount_usd"`
 	NetworkCreatedAt pgtype.Timestamp        `db:"network_created_at" json:"network_created_at"`
-	Blockchain       string                  `db:"blockchain" json:"blockchain"`
+	Blockchain       models.Blockchain       `db:"blockchain" json:"blockchain"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.UnconfirmedTransaction, error) {

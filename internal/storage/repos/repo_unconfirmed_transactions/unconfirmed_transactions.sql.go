@@ -9,26 +9,136 @@ import (
 	"context"
 
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/google/uuid"
 )
 
-const collapseAllByConfirmed = `-- name: CollapseAllByConfirmed :exec
-DELETE FROM unconfirmed_transactions ut
+const collapseAllByConfirmedDeposit = `-- name: CollapseAllByConfirmedDeposit :exec
+DELETE
+FROM unconfirmed_transactions ut
        USING transactions t
-       WHERE t.tx_hash=ut.tx_hash AND t.currency_id=ut.currency_id AND t.bc_uniq_key=ut.bc_uniq_key
+WHERE t.tx_hash=ut.tx_hash
+  AND t.currency_id=ut.currency_id
+  AND t.bc_uniq_key=ut.bc_uniq_key
+  AND ut.type='deposit'
 `
 
-func (q *Queries) CollapseAllByConfirmed(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, collapseAllByConfirmed)
+func (q *Queries) CollapseAllByConfirmedDeposit(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, collapseAllByConfirmedDeposit)
 	return err
 }
 
+const deleteByTxHash = `-- name: DeleteByTxHash :exec
+DELETE
+FROM unconfirmed_transactions
+WHERE id = $1
+`
+
+func (q *Queries) DeleteByTxHash(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteByTxHash, id)
+	return err
+}
+
+const getAllTransfer = `-- name: GetAllTransfer :many
+SELECT id, user_id, store_id, wallet_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, updated_at, blockchain
+FROM unconfirmed_transactions
+WHERE type = 'transfer'
+`
+
+func (q *Queries) GetAllTransfer(ctx context.Context) ([]*models.UnconfirmedTransaction, error) {
+	rows, err := q.db.Query(ctx, getAllTransfer)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*models.UnconfirmedTransaction{}
+	for rows.Next() {
+		var i models.UnconfirmedTransaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.StoreID,
+			&i.WalletID,
+			&i.CurrencyID,
+			&i.TxHash,
+			&i.BcUniqKey,
+			&i.Type,
+			&i.FromAddress,
+			&i.ToAddress,
+			&i.Amount,
+			&i.AmountUsd,
+			&i.NetworkCreatedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Blockchain,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getByType = `-- name: GetByType :many
+SELECT id, user_id, store_id, wallet_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, updated_at, blockchain
+FROM unconfirmed_transactions
+WHERE type = $1 AND user_id = $2
+`
+
+type GetByTypeParams struct {
+	Type   models.TransactionsType `db:"type" json:"type"`
+	UserID uuid.UUID               `db:"user_id" json:"user_id"`
+}
+
+func (q *Queries) GetByType(ctx context.Context, arg GetByTypeParams) ([]*models.UnconfirmedTransaction, error) {
+	rows, err := q.db.Query(ctx, getByType, arg.Type, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*models.UnconfirmedTransaction{}
+	for rows.Next() {
+		var i models.UnconfirmedTransaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.StoreID,
+			&i.WalletID,
+			&i.CurrencyID,
+			&i.TxHash,
+			&i.BcUniqKey,
+			&i.Type,
+			&i.FromAddress,
+			&i.ToAddress,
+			&i.Amount,
+			&i.AmountUsd,
+			&i.NetworkCreatedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Blockchain,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getOneByHashAndBlockchain = `-- name: GetOneByHashAndBlockchain :one
-SELECT id, user_id, store_id, wallet_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, updated_at, blockchain FROM unconfirmed_transactions WHERE tx_hash=$1 and blockchain=$2 LIMIT 1
+SELECT id, user_id, store_id, wallet_id, currency_id, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, network_created_at, created_at, updated_at, blockchain
+FROM unconfirmed_transactions
+WHERE tx_hash =$1 and blockchain=$2
+LIMIT 1
 `
 
 type GetOneByHashAndBlockchainParams struct {
-	TxHash     string `db:"tx_hash" json:"tx_hash"`
-	Blockchain string `db:"blockchain" json:"blockchain"`
+	TxHash     string            `db:"tx_hash" json:"tx_hash"`
+	Blockchain models.Blockchain `db:"blockchain" json:"blockchain"`
 }
 
 func (q *Queries) GetOneByHashAndBlockchain(ctx context.Context, arg GetOneByHashAndBlockchainParams) (*models.UnconfirmedTransaction, error) {
