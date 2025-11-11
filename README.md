@@ -3,78 +3,78 @@
 ## 🚀 DV.net Merchant Backend
 <br>
 
-[🇬🇧 English](https://github.com/dv-net/.github/blob/main/profile/README.md) • [🇷🇺 Русский](https://github.com/dv-net/.github/blob/main/profile/ru/README.md) • [🇨🇳 中文](https://github.com/dv-net/.github/blob/main/profile/zh/README.md)
+[🇬🇧 English](README.md) • [🇷🇺 Русский](README.ru.md) • [🇨🇳 中文](README.zh.md)
 
-[Веб-сайт](https://dv.net) • [Документация](https://docs.dv.net) • [API](https://docs.dv.net/en/operations/post-v1-external-wallet.html) • [Поддержка](https://dv.net/#support)
+[Website](https://dv.net) • [Docs](https://docs.dv.net) • [API](https://docs.dv.net/en/operations/post-v1-external-wallet.html) • [Support](https://dv.net/#support)
 
 </div>
 
 ---
 
-## 💡 О проекте
+## 💡 Overview
 
-**DV.net Merchant Backend** — высоконагруженная back-end платформа для приёма, обработки и отправки криптовалюты. Система полностью открытая, self-hosted и позволяет контролировать каждый аспект платежей без посредников и скрытых комиссий.
+**DV.net Merchant Backend** is a high-load, self-hosted payments platform for accepting, processing, and sending cryptocurrency. The stack is fully open source, runs on your own infrastructure, and keeps you in control of every transaction.
 
-> 🔒 **Некастодиально** — приватные ключи остаются на вашей стороне
+> 🔒 **Non-custodial** — private keys always stay on your side
 >
-> ⚡ **Производительно** — Go 1.24, Fiber v3, PostgreSQL & Redis
+> ⚡ **High-performance** — Go 1.24, Fiber v3, PostgreSQL & Redis
 >
-> 🌐 **Широкая поддержка** — множество блокчейнов и централизованных бирж
+> 🌐 **Wide coverage** — multiple blockchains and centralized exchanges
 >
-> 🧱 **Модульно** — чистая архитектура: delivery → service → storage
+> 🧱 **Modular** — clean architecture with delivery → service → storage
 
 ---
 
-## ✨ Возможности
+## ✨ Highlights
 
-**🎯 Бизнес-функции**
-- ✅ Приём и отправка криптовалют без KYC/KYB
-- ✅ Нотификации, вебхуки и гибкая маршрутизация событий
-- ✅ Управление комиссиями, оптимизация ресурсов TRON и EVM
-- ✅ Интеграции с CEX (Binance, OKX, HTX, KuCoin, Bybit и др.)
+**🎯 Business capabilities**
+- ✅ Accept and send crypto without mandatory KYC/KYB
+- ✅ Notifications, webhooks, and flexible event routing
+- ✅ Fee management plus TRON/EVM resource optimization
+- ✅ Integrations with major CEXs (Binance, OKX, HTX, KuCoin, Bybit, etc.)
 
-**🔧 Технические особенности**
-- ✅ HTTP API на базе Fiber v3 и Casbin RBAC
-- ✅ Асинхронные обработчики и планировщики внутри `internal/app`
-- ✅ Слой сервисов с DI и бизнес-логикой (`internal/service`)
-- ✅ Репозитории поверх PostgreSQL и Redis (`internal/storage`)
-- ✅ Автоматическая генерация SQL (`sqlc`, `pgxgen`)
-- ✅ Набор вспомогательных пакетов в `pkg` (клиенты, retry, OTP, AML)
+**🔧 Technical features**
+- ✅ Fiber v3 HTTP API with Casbin-based RBAC
+- ✅ Async workers and schedulers in `internal/app`
+- ✅ Service layer with DI and business logic (`internal/service`)
+- ✅ PostgreSQL / Redis repositories (`internal/storage`)
+- ✅ Automated SQL generation (`sqlc`, `pgxgen`)
+- ✅ Rich helper packages in `pkg` (clients, retry, OTP, AML)
 
 ---
 
-## 🧭 Архитектура
+## 🧭 Architecture at a Glance
 
 ```text
-cmd/                CLI и точки входа (сервер, миграции, утилиты)
-configs/            Шаблоны конфигов и Casbin политики
-internal/app        Инициализация приложения, фоновые задачи
-internal/delivery   HTTP-эндпоинты, middleware, маршрутизация
-internal/service    Бизнес-логика, интеграции, события
-internal/storage    Репозитории PostgreSQL/Redis, миграции
-pkg/                Внешние клиенты и общие библиотеки
-sql/                SQL-модули, миграции и генерация кода
+cmd/                CLI entrypoints (server, migrations, utilities)
+configs/            Config templates and Casbin policies
+internal/app        App bootstrap and background jobs
+internal/delivery   HTTP handlers, middleware, routing
+internal/service    Business logic, integrations, events
+internal/storage    PostgreSQL/Redis repositories
+pkg/                External clients and shared libraries
+sql/                SQL modules, migrations, code generation
 ```
 
-Диаграммы и Swagger доступные в каталоге `docs/` (`swagger.yaml`, `swagger.json`).
+Diagrams and Swagger specs live in `docs/` (`swagger.yaml`, `swagger.json`).
 
 ---
 
-## 🚀 Запуск
+## 🚀 Getting Started
 
-**Self-hosted установка (1 команда)**
+**Self-hosted install (one command)**
 ```bash
 sudo bash -c "$(curl -fsSL https://dv.net/install.sh)"
 ```
 
-**Docker-бандл для разработки**
+**Developer Docker bundle**
 ```bash
 git clone --recursive https://github.com/dv-net/dv-bundle.git
 cd dv-bundle && cp .env.example .env
 docker compose up -d
 ```
 
-**Локальная сборка бекенда**
+**Manual backend build**
 ```bash
 git clone https://github.com/dv-net/dv-merchant.git
 cd dv-merchant
@@ -82,81 +82,81 @@ cd dv-merchant
 make build
 ```
 
-После сборки бинарь `github.com/dv-net/dv-merchant` появится в `.bin/`.
+The binary `github.com/dv-net/dv-merchant` will appear in `.bin/` once the build finishes.
 
 ---
 
-## 🧪 Разработка и тестирование
+## 🧪 Development & Testing
 
-**Как проверять изменения перед коммитом**
-- Запустите линтеры и форматирование, чтобы убедиться в едином стиле кода.
-- Выполните модульные тесты, убедитесь, что покрыты критичные сценарии.
-- При необходимости дополните тестами новые фичи или багфиксы.
+**Pre-commit checklist**
+- Run linting and formatting to keep the codebase consistent.
+- Execute unit tests and make sure critical flows are covered.
+- Add or update tests when shipping new features or fixes.
 
 ```bash
-# Статический анализ и форматирование
+# Static analysis & formatting
 make lint
 go fmt ./...
 
-# Модульные тесты
+# Unit tests
 make test
 ```
 
-> ℹ️ Расширенные сценарии (`make run`, Docker Compose и т.п.) описаны в репозитории [`dv-bundle`](https://github.com/dv-net/dv-bundle) (файл `README.md`) и на https://docs.dv.net.
+> ℹ️ Extended workflows (`make run`, Docker Compose, etc.) are documented in the [`dv-bundle`](https://github.com/dv-net/dv-bundle) repo (`README.md`) and on https://docs.dv.net.
 
 ---
 
-## 🛠 CLI команды
+## 🛠 CLI Commands
 
-- `.bin/dv-merchant start` — запуск HTTP API.
-- `.bin/dv-merchant migrate up|down` — миграции БД.
-- `.bin/dv-merchant seed up|down` — начальные данные.
-- `.bin/dv-merchant config` — валидация конфигов и генерация env.
-- `.bin/dv-merchant permission` — управление ролями и политиками.
-- `.bin/dv-merchant transactions` — инструменты по операциям.
-- `.bin/dv-merchant users` — управление пользователями.
-
----
-
-## 📚 Документация
-
-- 📖 [Полный гайд](https://docs.dv.net) — установка, настройка, сценарии.
-- 🔌 [API Reference](https://docs.dv.net/en/operations/post-v1-external-wallet.html) — схемы запросов и ответы.
-- 🧾 [Swagger](docs/swagger.yaml) — доступен в репозитории.
+- `.bin/dv-merchant start` — run the HTTP API server.
+- `.bin/dv-merchant migrate up|down` — apply or roll back DB migrations.
+- `.bin/dv-merchant seed up|down` — load or drop seed data.
+- `.bin/dv-merchant config` — validate config and generate env/flags.
+- `.bin/dv-merchant permission` — manage roles and Casbin policies.
+- `.bin/dv-merchant transactions` — tooling for transaction operations.
+- `.bin/dv-merchant users` — manage users from the console.
 
 ---
 
-## 🔐 Безопасность
+## 📚 Documentation
 
-1. 🔓 Некастодиальная модель — ключи и адреса контролируете вы.
-2. 🧠 Поддержка мультисиг и делегирования ресурсов TRON.
-3. 🛡️ RBAC на Casbin + гибкие политики в `configs/rbac_*`.
-4. 📜 Полный аудит: события, логирование, прометей-метрики.
+- 📖 [Full guide](https://docs.dv.net) — installation, configuration, scenarios.
+- 🔌 [API reference](https://docs.dv.net/en/operations/post-v1-external-wallet.html) — request/response schemas.
+- 🧾 [Swagger spec](docs/swagger.yaml) — shipped with the repository.
 
 ---
 
-## 🤝 Вклад в проект
+## 🔐 Security Features
+
+1. 🔓 Non-custodial design — you control keys and addresses.
+2. 🧠 Multisig support and TRON resource delegation.
+3. 🛡️ Casbin RBAC with flexible `configs/rbac_*` policies.
+4. 📜 Full audit trail: events, logging, Prometheus metrics.
+
+---
+
+## 🤝 Contributing
 
 ```bash
-# Перед PR
+# Before submitting a PR
 make lint
 go test ./...
 ```
 
-- ⭐ Поставьте звезду репозиторию, если проект полезен.
-- 🐛 Сообщайте об ошибках через Issues.
-- 💡 Предлагайте новые фичи и сценарии.
-- 🔧 Pull Requests приветствуются!
+- ⭐ Star the repo if it helps your project.
+- 🐛 Report bugs via Issues.
+- 💡 Propose new features and use cases.
+- 🔧 Pull Requests are welcome!
 
 ---
 
-## 📞 Контакты
+## 📞 Contact
 
 <div align="center">
 
 **Telegram:** [@dv_net_support_bot](https://t.me/dv_net_support_bot) • **Email:** [support@dv.net](mailto:support@dv.net)
 
-**Сайт:** [dv.net](https://dv.net) • **Документация:** [docs.dv.net](https://docs.dv.net)
+**Website:** [dv.net](https://dv.net) • **Docs:** [docs.dv.net](https://docs.dv.net)
 
 </div>
 
@@ -166,6 +166,6 @@ go test ./...
 
 **© 2025 DV.net** • [DV Technologies Ltd.](https://dv.net)
 
-*Сделано с ❤️ для криптосообщества*
+*Built with ❤️ for the crypto community*
 
 </div>
