@@ -27,7 +27,8 @@ func (s *Service) GetUserAddresses(ctx context.Context, usr *models.User) (*with
 		case models.AddressBookTypeSimple:
 			simpleEntries = append(simpleEntries, entry)
 		case models.AddressBookTypeUniversal:
-			universalGroups[entry.Address] = append(universalGroups[entry.Address], entry)
+			key := fmt.Sprintf("%s:%s", entry.Address, entry.Blockchain.String())
+			universalGroups[key] = append(universalGroups[key], entry)
 		case models.AddressBookTypeEVM:
 			evmGroups[entry.Address] = append(evmGroups[entry.Address], entry)
 		}
