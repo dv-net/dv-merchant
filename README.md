@@ -79,7 +79,6 @@ docker compose up -d
 git clone https://github.com/dv-net/dv-merchant.git
 cd dv-merchant
 
-go mod download
 make build
 ```
 
@@ -109,13 +108,13 @@ make test
 
 ## 🛠 CLI команды
 
-- `github.com/dv-net/dv-merchant start` — запуск HTTP API.
-- `github.com/dv-net/dv-merchant migrate up|down` — миграции БД.
-- `github.com/dv-net/dv-merchant seed up|down` — начальные данные.
-- `github.com/dv-net/dv-merchant config` — валидация конфигов и генерация env.
-- `github.com/dv-net/dv-merchant permission` — управление ролями и политиками.
-- `github.com/dv-net/dv-merchant transactions` — инструменты по операциям.
-- `github.com/dv-net/dv-merchant users` — управление пользователями.
+- `.bin/dv-merchant start` — запуск HTTP API.
+- `.bin/dv-merchant migrate up|down` — миграции БД.
+- `.bin/dv-merchant seed up|down` — начальные данные.
+- `.bin/dv-merchant config` — валидация конфигов и генерация env.
+- `.bin/dv-merchant permission` — управление ролями и политиками.
+- `.bin/dv-merchant transactions` — инструменты по операциям.
+- `.bin/dv-merchant users` — управление пользователями.
 
 ---
 
