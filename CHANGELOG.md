@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [0.9.11] - 2025-10-15
 - fix: fixed universal groups separation by blockchain [DV-3645]
 - fix: improve wallet address retrieval with mutex locking and retry logic
 - refactor: AML validation errors (unsupported currency, invalid address) [DV-2896]
