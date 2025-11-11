@@ -140,8 +140,17 @@ func (o *Service) GetAccountBalance(ctx context.Context) ([]*models.AccountBalan
 		}
 	}
 
-	balances := make([]*models.AccountBalanceDTO, 0, len(enabledCurrencies))
+	// Deduplicate by ticker to avoid counting the same balance multiple times across different chains
+	seenTickers := make(map[string]bool)
+	balances := make([]*models.AccountBalanceDTO, 0)
+
 	for _, currency := range enabledCurrencies {
+		// Skip if we've already processed this ticker
+		if seenTickers[currency.Ticker] {
+			continue
+		}
+		seenTickers[currency.Ticker] = true
+
 		var totalBalance decimal.Decimal
 
 		if tradingBalance, exists := tradingBalanceMap[currency.Ticker]; exists {

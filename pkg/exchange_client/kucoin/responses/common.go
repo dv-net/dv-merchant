@@ -14,7 +14,10 @@ const (
 	ErrorCodeInvalidPassphrase   ErrorCode = 400004
 	ErrorCodeInvalidSignature    ErrorCode = 400005
 	ErrorCodeIPWhitelist         ErrorCode = 400006
+	ErrorCodeMinOrderValue       ErrorCode = 400760 // Order value below minimum (e.g., "should more then 0.1 USDT")
 	ErrorWithdrawalTooFast       ErrorCode = 115004
+	// Rate limit errors
+	ErrorCodeRateLimitExceeded ErrorCode = 429000 // Both system-level and user-level rate limits
 )
 
 type Basic struct {

@@ -445,7 +445,7 @@ func (s *Service) prepareMockTransactionDataForWhTest(whType models.WebhookEvent
 			ReceiptID:          uuid.NullUUID{UUID: receiptID, Valid: true},
 			WalletID:           preparedWalletID,
 			CurrencyID:         curr,
-			Blockchain:         models.BlockchainBitcoin.String(),
+			Blockchain:         models.BlockchainBitcoin,
 			TxHash:             "tx_hash_example",
 			BcUniqKey:          util.Pointer("bc_uniq_key_example"),
 			Type:               models.TransactionsTypeDeposit,
@@ -477,7 +477,7 @@ func (s *Service) prepareMockTransactionDataForWhTest(whType models.WebhookEvent
 			NetworkCreatedAt: pgTimeStamp,
 			CreatedAt:        pgTimeStamp,
 			UpdatedAt:        pgTimeStamp,
-			Blockchain:       models.BlockchainBitcoin.String(),
+			Blockchain:       models.BlockchainBitcoin,
 		}
 	default:
 		return nil, fmt.Errorf("undefined wh_type: %s", whType.String())

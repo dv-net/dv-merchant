@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 - The readme has been updated and translated into Russian and Chinese [DV-3708]
+
+## [0.9.11] - 2025-10-15
+- fix: fixed universal groups separation by blockchain [DV-3645]
+- fix: improve wallet address retrieval with mutex locking and retry logic
+- refactor: AML validation errors (unsupported currency, invalid address) [DV-2896]
+- fix: KuCoin minFunds incorrect behaviour on spot order creation [DV-3611] 
+- fix: ByBit exchange balance duplicates causing incorrect total_usd calculation
+- update: Frontend update
+- feat: add endpoint to retrieve unconfirmed transfer transactions [DV-3733]
+
+
+## [0.9.10] - 2025-10-15
 - fix: incorrect Binance spot order rules calculation [DV-3598]
 - fix: incorrect behaviour of logging [DV-3593]
 - fix: encode analytics data into byte array before forwarding to KV cache [DV-3599]

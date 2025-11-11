@@ -2,7 +2,6 @@ package aml
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -73,16 +72,16 @@ func NewService(st storage.IStorage, factory providers.ProviderFactory, log logg
 func (s *Service) ScoreTransaction(ctx context.Context, usr *models.User, dto CheckDTO) (*models.AmlCheck, error) {
 	providerSlug, ok := slugMapping[dto.ProviderSlug]
 	if !ok {
-		return nil, fmt.Errorf("unsupported or disabled provider: %s", dto.ProviderSlug)
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedProvider, dto.ProviderSlug)
 	}
 
 	currData, err := s.st.AmlSupportedAssets().GetBySlugAndCurrencyID(ctx, dto.CurrencyID, dto.ProviderSlug)
 	if err != nil {
-		return nil, errors.New("currency is not supported")
+		return nil, ErrUnsupportedCurrencies
 	}
 
 	if !avalidator.ValidateAddressByBlockchain(dto.OutputAddress, currData.Currency.Blockchain.String()) {
-		return nil, fmt.Errorf("invalid address '%s' for blockchain '%s'", dto.OutputAddress, currData.Currency.Blockchain)
+		return nil, fmt.Errorf("%w: '%s' for blockchain '%s'", ErrInvalidAddress, dto.OutputAddress, currData.Currency.Blockchain)
 	}
 
 	provider, err := s.factory.GetClient(providerSlug)

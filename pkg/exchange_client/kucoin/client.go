@@ -140,7 +140,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 	)
 
 	if o.log != nil {
-		o.log.Infoln("[EXCHANGE-API]: Preparing request",
+		o.log.Debugln("[EXCHANGE-API]: Preparing request",
 			"exchange", "kucoin",
 			"method", method,
 			"endpoint", path,
@@ -197,7 +197,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 	}
 
 	if o.log != nil {
-		o.log.Infoln("[EXCHANGE-API]: Sending request",
+		o.log.Debugln("[EXCHANGE-API]: Sending request",
 			"exchange", "kucoin",
 			"method", method,
 			"url", o.baseURL.String()+path,
@@ -248,7 +248,7 @@ func (o *Client) DoPlain(ctx context.Context, method, path string, private bool,
 	}
 
 	if o.log != nil {
-		o.log.Infoln("[EXCHANGE-API]: Request completed",
+		o.log.Debugln("[EXCHANGE-API]: Request completed",
 			"exchange", "kucoin",
 			"method", method,
 			"endpoint", path,
@@ -326,8 +326,11 @@ func errorFromResponse(errRes *kucoinresponse.Basic) error {
 		if isWhitelistError(errRes.Code) {
 			return exchangeclient.ErrInvalidIPAddress
 		}
-		if errRes.Code == kucoinresponse.ErrorWithdrawalTooFast {
+		if errRes.Code == kucoinresponse.ErrorWithdrawalTooFast || errRes.Code == kucoinresponse.ErrorCodeRateLimitExceeded {
 			return exchangeclient.ErrRateLimited
+		}
+		if errRes.Code == kucoinresponse.ErrorCodeMinOrderValue {
+			return exchangeclient.ErrMinOrderValue
 		}
 		// Convert msg to string and wrap error
 		msgStr := fmt.Sprintf("%v", errRes.Msg)

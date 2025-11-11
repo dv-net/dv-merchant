@@ -39,7 +39,6 @@ var (
 	ErrInsufficientBalance         = errors.New("insufficient balance")
 	ErrUnprocessableCurrencyStatus = errors.New("unprocessable currency status")
 	ErrMaxOrderValueReached        = errors.New("max order value reached")
-	ErrSkipOrder                   = errors.New("skip order")
 )
 
 func NewService(l logger.Logger, accessKey, secretKey, passPhrase string, _ bool, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
@@ -463,8 +462,8 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 		Symbol: ticker,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "System-level rate limit exceeded") {
-			return nil, ErrSkipOrder
+		if errors.Is(err, exchangeclient.ErrRateLimited) {
+			return nil, exchangeclient.ErrSkipOrder
 		}
 		return nil, err
 	}
@@ -482,8 +481,8 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 
 	accountList, err := o.exClient.Account().GetAccountList(ctx, kucoinrequests.GetAccountList{})
 	if err != nil {
-		if strings.Contains(err.Error(), "System-level rate limit exceeded") {
-			return nil, ErrSkipOrder
+		if errors.Is(err, exchangeclient.ErrRateLimited) {
+			return nil, exchangeclient.ErrSkipOrder
 		}
 		return nil, err
 	}
@@ -535,7 +534,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 		fundingAmount = o.getBalance(tradingSymbol.Symbol.BaseCurrency, fundingBalances)
 		maxAmount = spotAmount.Add(fundingAmount)
 		if maxAmount.LessThan(orderMinimumBase) {
-			return nil, ErrInsufficientBalance
+			return nil, exchangeclient.ErrInsufficientBalance
 		}
 	case kucoinmodels.OrderSideBuy:
 		fundsTransferRequest.Currency = tradingSymbol.Symbol.QuoteCurrency
@@ -556,8 +555,8 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 
 		_, err = o.exClient.Account().CreateFlexTransfer(ctx, fundsTransferRequest)
 		if err != nil {
-			if strings.Contains(err.Error(), "System-level rate limit exceeded") {
-				return nil, ErrSkipOrder
+			if errors.Is(err, exchangeclient.ErrRateLimited) {
+				return nil, exchangeclient.ErrSkipOrder
 			}
 			return nil, err
 		}
@@ -574,10 +573,54 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 		spotOrderRequest.Funds = maxAmount.String()
 	}
 
+	// Validate order value before sending to exchange
+	minOrderValue, err := decimal.NewFromString(rule.MinOrderValue)
+	if err != nil {
+		return nil, fmt.Errorf("invalid min order value: %w", err)
+	}
+
+	orderValueInQuote := maxAmount
+	if spotOrderRequest.Side == kucoinmodels.OrderSideSell {
+		tickerPrice, err := o.exClient.Public().GetTicker(ctx, kucoinrequests.GetTicker{
+			Symbol: spotOrderRequest.Symbol,
+		})
+		if err != nil {
+			if errors.Is(err, exchangeclient.ErrRateLimited) {
+				return nil, exchangeclient.ErrSkipOrder
+			}
+			return nil, fmt.Errorf("failed to get ticker price: %w", err)
+		}
+		if tickerPrice.Ticker == nil || tickerPrice.Ticker.BestBid.IsZero() {
+			return nil, fmt.Errorf("no valid ticker price available for %s: %w", spotOrderRequest.Symbol, exchangeclient.ErrSkipOrder)
+		}
+		orderValueInQuote = maxAmount.Mul(tickerPrice.Ticker.BestBid)
+	}
+
+	if orderValueInQuote.LessThan(minOrderValue) {
+		o.l.Infow("order value below minimum after calculations, skipping",
+			"exchange", models.ExchangeSlugKucoin.String(),
+			"ticker", ticker,
+			"side", side,
+			"calculated_amount", maxAmount.String(),
+			"calculated_value_quote", orderValueInQuote.String(),
+			"min_required", minOrderValue.String(),
+		)
+		return nil, exchangeclient.ErrSkipOrder
+	}
+
 	placedOrder, err := o.exClient.Spot().CreateOrder(ctx, spotOrderRequest)
 	if err != nil {
-		if strings.Contains(err.Error(), "System-level rate limit exceeded") {
-			return nil, ErrSkipOrder
+		if errors.Is(err, exchangeclient.ErrRateLimited) {
+			return nil, exchangeclient.ErrSkipOrder
+		}
+		if errors.Is(err, exchangeclient.ErrMinOrderValue) {
+			o.l.Infow("order value below minimum, skipping",
+				"exchange", models.ExchangeSlugKucoin.String(),
+				"ticker", ticker,
+				"side", side,
+				"amount", maxAmount.String(),
+			)
+			return nil, exchangeclient.ErrSkipOrder
 		}
 		return nil, fmt.Errorf("failed to place order: %w", err)
 	}
@@ -620,7 +663,7 @@ func (o *Service) GetOrderRule(ctx context.Context, ticker string) (*models.Orde
 		BaseCurrency:    symbolData.Symbol.BaseCurrency,
 		QuoteCurrency:   symbolData.Symbol.QuoteCurrency,
 		MinOrderAmount:  symbolData.Symbol.BaseMinSize.String(),
-		MinOrderValue:   symbolData.Symbol.QuoteMinSize.String(),
+		MinOrderValue:   symbolData.Symbol.MinFunds.Mul(decimal.NewFromInt(10)).String(), // KuCoin returns for ex. 0.1 USDT and we try 0.1161 LTC -> 0,105 USDT - fail. Temporary fix for this
 		MaxOrderAmount:  symbolData.Symbol.BaseMaxSize.String(),
 		AmountPrecision: int(basePrecision.IntPart()),
 		ValuePrecision:  int(quotePrecision.IntPart()),

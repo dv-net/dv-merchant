@@ -15,4 +15,6 @@ var (
 	ErrWithdrawalPending               = errors.New("withdrawal pending")
 	ErrInvalidAddress                  = errors.New("invalid address")
 	ErrRateLimited                     = errors.New("rate limited")
+	ErrMinOrderValue                   = errors.New("order value below minimum")
+	ErrSkipOrder                       = errors.New("skip order") // custom error for all cases when we need to skip order
 )

@@ -38,12 +38,9 @@ func (h *Handler) Init(api *fiber.App) {
 	)
 
 	h.initWalletRoutes(secured)
-
 	h.initStoreRoutes(secured)
-
 	h.initWithdrawalRoutes(secured)
-
 	h.initExchangeBalances(secured)
-
 	h.initProcessingWalletBalances(secured)
+	h.initTransactionsRouter(secured)
 }
