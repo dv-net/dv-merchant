@@ -50,6 +50,11 @@ func (h *Handler) scoreTransaction(c fiber.Ctx) error {
 		OutputAddress: req.OutputAddress,
 	})
 	if err != nil {
+		if errors.Is(err, aml.ErrUnsupportedCurrencies) ||
+			errors.Is(err, aml.ErrUnsupportedProvider) ||
+			errors.Is(err, aml.ErrInvalidAddress) {
+			return apierror.New().AddError(err).SetHttpCode(http.StatusUnprocessableEntity)
+		}
 		return apierror.New().AddError(err).SetHttpCode(http.StatusInternalServerError)
 	}
 

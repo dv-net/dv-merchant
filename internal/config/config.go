@@ -90,7 +90,7 @@ type (
 	}
 
 	Transactions struct {
-		UnconfirmedCollapseInterval time.Duration `yaml:"unconfirmed_collapse_interval" default:"3m"`
+		UnconfirmedCollapseInterval time.Duration `yaml:"unconfirmed_collapse_interval" default:"30s"`
 	}
 
 	Wallets struct {

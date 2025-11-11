@@ -355,7 +355,7 @@ type Transaction struct {
 	ReceiptID          uuid.NullUUID       `db:"receipt_id" json:"receipt_id"`
 	WalletID           uuid.NullUUID       `db:"wallet_id" json:"wallet_id"`
 	CurrencyID         string              `db:"currency_id" json:"currency_id"`
-	Blockchain         string              `db:"blockchain" json:"blockchain"`
+	Blockchain         Blockchain          `db:"blockchain" json:"blockchain"`
 	TxHash             string              `db:"tx_hash" json:"tx_hash"`
 	BcUniqKey          *string             `db:"bc_uniq_key" json:"bc_uniq_key"`
 	Type               TransactionsType    `db:"type" json:"type"`
@@ -436,7 +436,7 @@ type UnconfirmedTransaction struct {
 	NetworkCreatedAt pgtype.Timestamp    `db:"network_created_at" json:"network_created_at"`
 	CreatedAt        pgtype.Timestamp    `db:"created_at" json:"created_at"`
 	UpdatedAt        pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
-	Blockchain       string              `db:"blockchain" json:"blockchain"`
+	Blockchain       Blockchain          `db:"blockchain" json:"blockchain"`
 }
 
 type UpdateBalanceQueue struct {

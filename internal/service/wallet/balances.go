@@ -9,13 +9,11 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/wallet_request"
 	"github.com/dv-net/dv-merchant/internal/models"
-	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/exrate"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallet_addresses"
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	"github.com/jackc/pgx/v5"
 	"github.com/samber/lo"
-	"github.com/shopspring/decimal"
 )
 
 type IWalletBalances interface {
@@ -91,33 +89,23 @@ func (s *Service) GetWalletBalance(ctx context.Context, dto wallet_request.GetWa
 }
 
 func (s *Service) GetHotWalletsTotalBalance(ctx context.Context, user *models.User) (*AddressesTotalBalance, error) {
-	var total, dust decimal.Decimal
-
-	addresses, err := s.storage.WalletAddresses().GetWalletAddressesTotalWithCurrencyID(ctx, user.ID)
+	rates, err := s.exrateService.LoadRatesList(ctx, user.RateSource.String())
 	if err != nil {
-		return nil, fmt.Errorf("failed to get all hot wallets: %w", err)
+		return nil, fmt.Errorf("failed to load rates: %w", err)
 	}
 
-	for _, address := range addresses {
-		amountUSD, err := s.currConvService.Convert(ctx, currconv.ConvertDTO{
-			Source:     user.RateSource.String(),
-			From:       address.Code.String,
-			To:         models.CurrencyCodeUSD,
-			Amount:     address.Balance.String(),
-			StableCoin: false,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("error convert amount wallet: %w", err)
-		}
-		if amountUSD.LessThan(decimal.NewFromInt(1)) {
-			dust = dust.Add(amountUSD)
-		}
-		total = total.Add(amountUSD)
+	result, err := s.storage.WalletAddresses().GetHotWalletsTotalBalanceWithDust(ctx, repo_wallet_addresses.GetHotWalletsTotalBalanceWithDustParams{
+		UserID:       user.ID,
+		CurrencyIds:  rates.CurrencyIDs,
+		CurrencyRate: rates.Rate,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get hot wallets balance: %w", err)
 	}
 
 	return &AddressesTotalBalance{
-		TotalUSD:  total,
-		TotalDust: dust,
+		TotalUSD:  result.TotalUsd,
+		TotalDust: result.DustUsd,
 	}, nil
 }
 

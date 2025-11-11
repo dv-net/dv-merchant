@@ -438,9 +438,9 @@ LIMIT 1
 `
 
 type GetBalanceNativeTokenParams struct {
-	ToAddress  string `db:"to_address" json:"to_address"`
-	CurrencyID string `db:"currency_id" json:"currency_id"`
-	Blockchain string `db:"blockchain" json:"blockchain"`
+	ToAddress  string            `db:"to_address" json:"to_address"`
+	CurrencyID string            `db:"currency_id" json:"currency_id"`
+	Blockchain models.Blockchain `db:"blockchain" json:"blockchain"`
 }
 
 func (q *Queries) GetBalanceNativeToken(ctx context.Context, arg GetBalanceNativeTokenParams) (decimal.Decimal, error) {
@@ -481,8 +481,8 @@ LIMIT 1
 `
 
 type GetLastByHashAndBlockchainParams struct {
-	TxHash     string `db:"tx_hash" json:"tx_hash"`
-	Blockchain string `db:"blockchain" json:"blockchain"`
+	TxHash     string            `db:"tx_hash" json:"tx_hash"`
+	Blockchain models.Blockchain `db:"blockchain" json:"blockchain"`
 }
 
 func (q *Queries) GetLastByHashAndBlockchain(ctx context.Context, arg GetLastByHashAndBlockchainParams) (*models.Transaction, error) {

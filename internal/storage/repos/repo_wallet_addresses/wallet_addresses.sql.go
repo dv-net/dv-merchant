@@ -325,6 +325,43 @@ func (q *Queries) GetByWalletIDAndCurrencyID(ctx context.Context, walletID uuid.
 	return &i, err
 }
 
+const getHotWalletsTotalBalanceWithDust = `-- name: GetHotWalletsTotalBalanceWithDust :one
+SELECT
+    COALESCE(SUM(wallet_addresses.amount * rate.exchange_rate), 0)::numeric as total_usd,
+    COALESCE(SUM(CASE
+        WHEN (wallet_addresses.amount * rate.exchange_rate) < 1
+        THEN wallet_addresses.amount * rate.exchange_rate
+        ELSE 0
+    END), 0)::numeric as dust_usd
+FROM wallet_addresses
+LEFT JOIN (
+    SELECT
+        unnest($2::text[]) AS currency_id,
+        unnest($3::decimal[]) AS exchange_rate
+) rate ON wallet_addresses.currency_id = rate.currency_id
+WHERE wallet_addresses.user_id = $1
+  AND wallet_addresses.amount > 0
+  AND wallet_addresses.deleted_at IS NULL
+`
+
+type GetHotWalletsTotalBalanceWithDustParams struct {
+	UserID       uuid.UUID         `db:"user_id" json:"user_id"`
+	CurrencyIds  []string          `db:"currency_ids" json:"currency_ids"`
+	CurrencyRate []decimal.Decimal `db:"currency_rate" json:"currency_rate"`
+}
+
+type GetHotWalletsTotalBalanceWithDustRow struct {
+	TotalUsd decimal.Decimal `db:"total_usd" json:"total_usd"`
+	DustUsd  decimal.Decimal `db:"dust_usd" json:"dust_usd"`
+}
+
+func (q *Queries) GetHotWalletsTotalBalanceWithDust(ctx context.Context, arg GetHotWalletsTotalBalanceWithDustParams) (*GetHotWalletsTotalBalanceWithDustRow, error) {
+	row := q.db.QueryRow(ctx, getHotWalletsTotalBalanceWithDust, arg.UserID, arg.CurrencyIds, arg.CurrencyRate)
+	var i GetHotWalletsTotalBalanceWithDustRow
+	err := row.Scan(&i.TotalUsd, &i.DustUsd)
+	return &i, err
+}
+
 const getListByCurrencyWithAmount = `-- name: GetListByCurrencyWithAmount :one
 select c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_native, c.is_new_store_default, array_agg(address)::varchar[] as addresses, sum(amount)::numeric as amount
 from wallet_addresses wa
@@ -823,9 +860,9 @@ WHERE wa.currency_id = $2
 `
 
 type UpdateWalletNativeTokenBalanceParams struct {
-	Address    string `db:"address" json:"address"`
-	CurrencyID string `db:"currency_id" json:"currency_id"`
-	Blockchain string `db:"blockchain" json:"blockchain"`
+	Address    string            `db:"address" json:"address"`
+	CurrencyID string            `db:"currency_id" json:"currency_id"`
+	Blockchain models.Blockchain `db:"blockchain" json:"blockchain"`
 }
 
 func (q *Queries) UpdateWalletNativeTokenBalance(ctx context.Context, arg UpdateWalletNativeTokenBalanceParams) error {

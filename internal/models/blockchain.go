@@ -136,3 +136,26 @@ func (b Blockchain) IsEVMLike() bool {
 		return false
 	}
 }
+
+func (b Blockchain) ConfirmationBlockCount() uint64 {
+	switch b {
+	case BlockchainBitcoin:
+		return 1
+	case BlockchainLitecoin:
+		return 3
+	case BlockchainBinanceSmartChain:
+		return 15
+	case BlockchainEthereum:
+		return 32
+	case BlockchainTron:
+		return 19
+	case BlockchainDogecoin:
+		return 12
+	case BlockchainArbitrum:
+		return 6
+	case BlockchainPolygon:
+		return 300
+	default:
+		return 0
+	}
+}
