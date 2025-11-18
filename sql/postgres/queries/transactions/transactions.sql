@@ -227,7 +227,6 @@ WITH tx AS ((SELECT true as is_confirmed,
              WHERE t.wallet_id = $1
                AND t.amount_usd >= 1
                AND t.type = $2
-             ORDER BY created_at_index DESC
              LIMIT $3)
             UNION
             (SELECT false as is_confirmed,
@@ -247,13 +246,13 @@ WITH tx AS ((SELECT true as is_confirmed,
                                WHERE t2.tx_hash = ut.tx_hash
                                  AND t2.currency_id = ut.currency_id
                                  AND t2.bc_uniq_key = ut.bc_uniq_key)
-             ORDER BY created_at DESC
              LIMIT $3)
             LIMIT $3)
 SELECT tx.*,
        c.id as curr_code
 FROM tx
          INNER JOIN currencies c on c.id = tx.currency_id
+ORDER BY tx.created_at DESC
 LIMIT $3;
 
 -- name: GetWalletTransactions :many
