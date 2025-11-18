@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.9.13] - 2025-11-18
+- Fix `FindLastWalletTransactions` sql query  [DV-3808]
+
 ## [0.9.12] - 2025-11-18
 - Fix transaction ordering at `tx-find` method  [DV-3808]
 - The readme has been updated and translated into Russian and Chinese [DV-3708]
