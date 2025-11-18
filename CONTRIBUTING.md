@@ -2,22 +2,24 @@
 
 ## 🤝 Contributing to DV.net Merchant Backend
 
+*Guidelines for contributing to the project*
+
 </div>
 
 ---
 
 ## 📋 Table of Contents
 
-- [Getting Started](#-getting-started)
-- [Development Workflow](#-development-workflow)
-- [Coding Standards](#-coding-standards)
-- [Testing](#-testing)
-- [Commit Messages](#-commit-messages)
-- [Pull Request Process](#-pull-request-process)
-- [Issue Reporting](#-issue-reporting)
-- [Security](#-security)
-- [Code Review](#-code-review)
-- [Release Process](#-release-process)
+- [🚀 Getting Started](#-getting-started) — Setup development environment
+- [🔄 Development Workflow](#-development-workflow) — Branch strategy and workflow
+- [📐 Coding Standards](#-coding-standards) — Code style and conventions
+- [🧪 Testing](#-testing) — Testing requirements and guidelines
+- [💬 Commit Messages](#-commit-messages) — Commit message format
+- [🔀 Pull Request Process](#-pull-request-process) — PR submission and review
+- [🐛 Issue Reporting](#-issue-reporting) — How to report bugs
+- [🔒 Security](#-security) — Security vulnerability reporting
+- [👀 Code Review](#-code-review) — Review process and criteria
+- [🏷️ Release Process](#-release-process) — Versioning and releases
 
 ---
 
@@ -26,28 +28,27 @@
 ### Prerequisites
 
 - **Go 1.24.4+** — [Download](https://go.dev/dl/)
-- **PostgreSQL** — database operations
-- **Redis** — caching (optional for local dev)
-- **Make** — build commands
-- **Git** — version control
+- **PostgreSQL** — Database operations
+- **Redis** — Caching (optional for local dev)
+- **Make** — Build commands
+- **Git** — Version control
 
 ### Setup
 
 ```bash
-# Fork and clone
+# 1. Fork and clone
 git clone https://github.com/YOUR_USERNAME/dv-merchant.git
 cd dv-merchant
 
-# Add upstream
+# 2. Add upstream remote
 git remote add upstream https://github.com/dv-net/dv-merchant.git
 
-# Install dependencies
-go mod download
-
-# Build and test
+# 3. Build and verify
 make build
 make test
 ```
+
+> 💡 **Tip**: Run `go mod download` if dependencies are missing
 
 ---
 
@@ -55,27 +56,29 @@ make test
 
 ### Branch Strategy
 
-- 🌿 **`main`** — production-ready stable code
-- 🔧 **`dev`** — active development branch
-- 🌱 **`feature/*`** — new features
-- 🐛 **`fix/*`** — bug fixes
-- 📚 **`docs/*`** — documentation updates
+- 🌿 **`main`** — Production-ready stable code
+- 🔧 **`dev`** — Active development branch
+- 🌱 **`feature/*`** — New features (target: `dev`)
+- 🐛 **`fix/*`** — Bug fixes (target: `dev` or `main`)
+- 📚 **`docs/*`** — Documentation updates (target: `dev`)
 
 ### Workflow
 
 ```bash
-# Update main
+# 1. Update main branch
 git checkout main
 git pull upstream main
 
-# Create feature branch
+# 2. Create feature branch
 git checkout -b feature/your-feature-name
 
-# Make changes, then verify
+# 3. Make changes, then verify
 make fmt
 make lint
 make test
 ```
+
+> ⚠️ **Important**: Always create PRs from feature branches, never from `main` or `dev`
 
 ---
 
@@ -85,16 +88,16 @@ make test
 
 Follow [Effective Go](https://go.dev/doc/effective_go) and project conventions:
 
-- **Formatting**: `gofumpt` (via `make fmt`)
-- **Imports**: `goimports` for organization
-- **Naming**: Go conventions
-- **Errors**: explicit handling required
-- **Documentation**: export all exported functions/types
+- **Formatting** — `gofumpt` (via `make fmt`)
+- **Imports** — `goimports` for organization
+- **Naming** — Go naming conventions
+- **Errors** — Explicit handling required
+- **Documentation** — Document all exported functions/types
 
 ### Linting
 
 ```bash
-# Build custom plugins (first time)
+# Build custom plugins (first time only)
 make build_plugins
 
 # Run linter
@@ -112,13 +115,13 @@ pkg/               Shared libraries
 sql/               Migrations, codegen
 ```
 
-### Rules
+### Key Rules
 
-- 🚫 Never use `pgx.BeginTransaction` directly
-- ✅ Initialize all struct fields in constructors
-- ✅ Use `snake_case` for JSON/YAML fields
-- ✅ Functions < 180 lines (handlers configurable)
-- ✅ Cyclomatic complexity < 60
+- 🚫 **Transactions** — Never use `pgx.BeginTransaction` directly
+- ✅ **Structs** — Initialize all struct fields in constructors
+- ✅ **Naming** — Use `snake_case` for JSON/YAML fields
+- ✅ **Size** — Functions < 180 lines (handlers configurable)
+- ✅ **Complexity** — Cyclomatic complexity < 60
 
 ---
 
@@ -126,34 +129,38 @@ sql/               Migrations, codegen
 
 ### Requirements
 
-- All new features must include tests
-- Bug fixes must include regression tests
-- Use `testify` for assertions
-- Test files: `*_test.go` in same package
+- ✅ **New Features** — Must include tests
+- ✅ **Bug Fixes** — Must include regression tests
+- ✅ **Framework** — Use `testify` for assertions
+- ✅ **Naming** — Test files: `*_test.go` in same package
 
 ### Running Tests
 
 ```bash
-# All tests
+# Run all tests
 make test
 
-# Specific package
+# Run specific package
 go test ./internal/service/package
 
-# With coverage
+# Run with coverage
 go test -cover ./...
+
+# Run with verbose output
+go test -v ./...
 ```
 
 ### Coverage
 
-- Target **80%+** for new code
-- Focus on business logic and edge cases
+> 🎯 **Target**: **80%+** coverage for new code
+> 
+> Focus on testing business logic and edge cases
 
 ---
 
 ## 💬 Commit Messages
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+Follow [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
 ```
 <type>(<scope>): <subject>
@@ -163,20 +170,20 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 <footer>
 ```
 
-### Types
+### Commit Types
 
-- `feat` — new feature
-- `fix` — bug fix
-- `docs` — documentation
-- `refactor` — code refactoring
-- `perf` — performance
-- `test` — tests
-- `chore` — maintenance
-- `security` — security fixes
+- `feat` — New feature
+- `fix` — Bug fix
+- `docs` — Documentation changes
+- `refactor` — Code refactoring
+- `perf` — Performance improvements
+- `test` — Adding or updating tests
+- `chore` — Maintenance tasks
+- `security` — Security fixes
 
 ### Example
 
-```
+```bash
 feat(exchange): add Binance withdrawal support
 
 Add support for Binance exchange withdrawals with proper
@@ -192,13 +199,13 @@ Closes #123
 ### Before Submitting
 
 ```bash
-# Update branch
+# 1. Update your branch
 git checkout main
 git pull upstream main
 git checkout your-branch
 git rebase upstream/main
 
-# Run checks
+# 2. Run all checks
 make fmt
 make lint
 make test
@@ -206,28 +213,34 @@ make test
 
 ### Creating PR
 
-1. Push branch: `git push origin your-branch`
-2. Create PR on GitHub targeting `main` or `dev`
-3. Include:
-   - Clear title and description
-   - Related issue numbers
-   - What changed and why
+**Step 1**: Push your branch
+```bash
+git push origin your-branch
+```
 
-### Checklist
+**Step 2**: Create PR on GitHub
+- Target: `main` or `dev` branch
+- Title: Clear and descriptive
+- Description: Include what changed and why
+- Issues: Link related issue numbers
 
-- [ ] Code follows style guidelines
-- [ ] Tests pass (`make test`)
-- [ ] Linting passes (`make lint`)
-- [ ] Documentation updated
-- [ ] No merge conflicts
-- [ ] Commit messages follow conventions
+**Step 3**: Verify requirements
+
+- ✅ **Code style** — Follows project guidelines
+- ✅ **Tests** — `make test` passes
+- ✅ **Linting** — `make lint` passes
+- ✅ **Documentation** — Updated if needed
+- ✅ **Conflicts** — No merge conflicts
+- ✅ **Commits** — Follow conventions
 
 ### Review Process
 
-- Initial review: within 48 hours
-- Follow-up: within 24 hours
-- All CI checks must pass
-- Keep branch updated with target branch
+- **Initial Review** — Within 48 hours
+- **Follow-up** — Within 24 hours
+- **CI Checks** — Must all pass
+- **Branch Status** — Keep updated with target
+
+> 💡 **Tip**: Address review comments promptly and keep your branch rebased
 
 ---
 
@@ -235,20 +248,22 @@ make test
 
 ### Before Reporting
 
-- Check existing issues for duplicates
-- Verify issue exists in latest `main` or `dev` branch
-- Ensure you're using the latest version
+- 🔍 **Duplicates** — Check existing issues
+- 🌿 **Branch** — Verify in latest `main` or `dev`
+- 📦 **Version** — Ensure using latest version
 
 ### Issue Template
 
-Include:
+When creating an issue, include:
 
-- **OS and Version**: Your environment
-- **Steps to Reproduce**: Clear, numbered steps
-- **Expected Behavior**: What should happen
-- **Actual Behavior**: What actually happens
-- **Logs**: Relevant error logs
-- **Screenshots**: If applicable
+- **OS and Version** — Your environment details
+- **Steps to Reproduce** — Clear, numbered steps
+- **Expected Behavior** — What should happen
+- **Actual Behavior** — What actually happens
+- **Logs** — Relevant error logs
+- **Screenshots** — If applicable
+
+> 📝 **Note**: The more details you provide, the faster we can help
 
 ---
 
@@ -256,11 +271,13 @@ Include:
 
 ### Security Issues
 
-**DO NOT** create public issues for security vulnerabilities.
+> ⚠️ **IMPORTANT**: **DO NOT** create public issues for security vulnerabilities.
 
-- Email: [support@dv.net](mailto:support@dv.net)
-- Include detailed vulnerability information
-- Allow time for fix before public disclosure
+- 📧 **Email** — [support@dv.net](mailto:support@dv.net)
+- 📋 **Details** — Include detailed vulnerability information
+- ⏱️ **Disclosure** — Allow time for fix before public disclosure
+
+> 🔐 Security issues are handled privately to protect users
 
 ---
 
@@ -268,18 +285,18 @@ Include:
 
 ### Review Criteria
 
-- Code quality and style
-- Test coverage
-- Documentation updates
-- Security considerations
-- Performance impact
-- Backward compatibility
+- ✅ **Code Quality** — Style and best practices
+- ✅ **Test Coverage** — Adequate test coverage
+- ✅ **Documentation** — Updated documentation
+- ✅ **Security** — Security considerations
+- ⚡ **Performance** — Performance impact
+- 🔄 **Compatibility** — Backward compatibility
 
 ### Timeline
 
-- Initial review: **48 hours**
-- Follow-up reviews: **24 hours**
-- Merge decision: **1 week** (for approved PRs)
+- **Initial Review** — **48 hours**
+- **Follow-up Reviews** — **24 hours**
+- **Merge Decision** — **1 week** (for approved PRs)
 
 ---
 
@@ -287,24 +304,30 @@ Include:
 
 ### Versioning
 
-Follows semantic versioning (MAJOR.MINOR.PATCH):
+Follows [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH):
 
-- **MAJOR**: Breaking changes
-- **MINOR**: New features (backward compatible)
-- **PATCH**: Bug fixes (backward compatible)
+- **MAJOR** — Breaking changes
+- **MINOR** — New features (backward compatible)
+- **PATCH** — Bug fixes (backward compatible)
 
 ### Release Tags
 
-- **Stable**: `vX.X.X` — production releases
-- **RC**: `vX.X.X-RC1` — release candidates
+- **Stable** — `vX.X.X` (production releases)
+- **RC** — `vX.X.X-RC1` (release candidates)
 
 ### Process
 
+```
 1. Development in `dev` branch
+   ↓
 2. Testing and stabilization
-3. Tag release candidate: `vX.X.X-RC1`
-4. Tag stable release: `vX.X.X`
+   ↓
+3. Tag release candidate: vX.X.X-RC1
+   ↓
+4. Tag stable release: vX.X.X
+   ↓
 5. Merge to `main`
+```
 
 ---
 
@@ -313,30 +336,30 @@ Follows semantic versioning (MAJOR.MINOR.PATCH):
 ### Database Migrations
 
 ```bash
-# Create migration
+# Create new migration
 make db-create-migration migration_name
 
-# Apply
+# Apply migrations
 make migrate up
 
-# Rollback
+# Rollback migrations
 make migrate down
 ```
 
 ### Code Generation
 
 ```bash
-# SQL code
+# Generate SQL code
 make gensql
 
-# Swagger docs
+# Generate Swagger documentation
 make swag-gen
 
-# Mocks
+# Generate mocks
 make genmocks
 ```
 
-**⚠️ Never edit generated files directly.** Update source files.
+> ⚠️ **Warning**: Never edit generated files directly. Always update source files.
 
 ### Running Server
 
@@ -344,7 +367,7 @@ make genmocks
 # Build and run
 make run start
 
-# Direct run
+# Or run directly
 go run ./cmd/app start
 ```
 
@@ -352,16 +375,19 @@ go run ./cmd/app start
 
 ## 📚 Resources
 
-- 📖 [Documentation](https://docs.dv.net)
-- 🔌 [API Reference](https://docs.dv.net/en/operations/post-v1-external-wallet.html)
-- 🧾 [Swagger](docs/swagger.yaml)
-- 💬 [Support](https://dv.net/#support) • [Telegram](https://t.me/dv_net_support_bot)
+- 📖 **Documentation** — [docs.dv.net](https://docs.dv.net)
+- 🔌 **API Reference** — [API Docs](https://docs.dv.net/en/operations/post-v1-external-wallet.html)
+- 🧾 **Swagger** — [swagger.yaml](docs/swagger.yaml)
+- 💬 **Support** — [dv.net/support](https://dv.net/#support)
+- 📱 **Telegram** — [@dv_net_support_bot](https://t.me/dv_net_support_bot)
 
 ---
 
 <div align="center">
 
-**Thank you for contributing!** 🙏
+**Thank you for contributing to DV.net Merchant Backend!** 🙏
+
+*Your contributions make this project better for everyone.*
 
 </div>
 
