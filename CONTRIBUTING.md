@@ -59,8 +59,7 @@ make test
 - 🌿 **`main`** — Production-ready stable code
 - 🔧 **`dev`** — Active development branch
 - 🌱 **`feature/*`** — New features (target: `dev`)
-- 🐛 **`fix/*`** — Bug fixes (target: `dev` or `main`)
-- 📚 **`docs/*`** — Documentation updates (target: `dev`)
+- 🐛 **`fix/*`** — Bug fixes (target: `dev`)
 
 ### Workflow
 
@@ -302,14 +301,6 @@ When creating an issue, include:
 
 ## 🏷️ Release Process
 
-### Versioning
-
-Follows [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH):
-
-- **MAJOR** — Breaking changes
-- **MINOR** — New features (backward compatible)
-- **PATCH** — Bug fixes (backward compatible)
-
 ### Release Tags
 
 - **Stable** — `vX.X.X` (production releases)
@@ -321,8 +312,8 @@ Follows [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH):
 1. Development in `dev` branch
 2. Testing and stabilization
 3. Tag release candidate: vX.X.X-RC1
-4. Tag stable release: vX.X.X
-5. Merge to `main`
+4. Merge to `main`
+5. Tag stable release: vX.X.X
 ```
 
 ---
