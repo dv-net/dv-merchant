@@ -319,13 +319,9 @@ Follows [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH):
 
 ```
 1. Development in `dev` branch
-   ↓
 2. Testing and stabilization
-   ↓
 3. Tag release candidate: vX.X.X-RC1
-   ↓
 4. Tag stable release: vX.X.X
-   ↓
 5. Merge to `main`
 ```
 
