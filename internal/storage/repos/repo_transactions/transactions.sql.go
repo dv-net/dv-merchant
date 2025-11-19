@@ -190,6 +190,7 @@ WITH tx AS ((SELECT true as is_confirmed,
              WHERE t.wallet_id = $1
                AND t.amount_usd >= 1
                AND t.type = $2
+             ORDER BY created_at_index DESC
              LIMIT $3)
             UNION
             (SELECT false as is_confirmed,
@@ -209,6 +210,7 @@ WITH tx AS ((SELECT true as is_confirmed,
                                WHERE t2.tx_hash = ut.tx_hash
                                  AND t2.currency_id = ut.currency_id
                                  AND t2.bc_uniq_key = ut.bc_uniq_key)
+             ORDER BY created_at DESC
              LIMIT $3)
             LIMIT $3)
 SELECT tx.is_confirmed, tx.wallet_id, tx.currency_id, tx.tx_hash, tx.amount, tx.amount_usd, tx.type, tx.created_at,
