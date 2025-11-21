@@ -332,6 +332,8 @@ type UserCryptoReceiptNotificationData struct {
 	PlatformFeeAmount    string `json:"platform_fee_amount"`
 	PlatformFeeUSD       string `json:"platform_fee_usd"`
 	PlatformFeeCurrency  string `json:"platform_fee_currency"`
+	StoreUserID          string `json:"store_user_id"`
+	StoreName            string `json:"store_name"`
 }
 
 func (d *UserCryptoReceiptNotificationData) Encode() ([]byte, error) {
