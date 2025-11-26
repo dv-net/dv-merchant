@@ -48,6 +48,8 @@ type SummarizeByCurrencyRow struct {
 	CountWithBalance int64              `db:"count_with_balance" json:"count_with_balance"`
 	RateSource       string             `db:"rate_source" json:"rate_source"`
 	AmountUsd        decimal.Decimal    `db:"amount_usd" json:"amount_usd"`
+	IsNative         bool               `db:"is_native" json:"is_native"`
+	ContractAddress  string             `db:"contract_address" json:"contract_address"`
 }
 
 type SummarizeByCurrencyParams struct {
@@ -77,6 +79,8 @@ func (s *CustomQuerier) SummarizeByCurrency(ctx context.Context, params Summariz
 			"currencies.name",
 			"currencies.blockchain",
 			"currencies.sort_order",
+			"currencies.is_native",
+			"currencies.contract_address",
 			"COUNT(wallet_addresses.id)",
 			fmt.Sprintf(
 				`SUM(CASE WHEN (wallet_addresses.amount * rate.exchange_rate)::decimal >= %s THEN 1 ELSE 0 END) AS count_with_balance`,

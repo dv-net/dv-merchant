@@ -39,11 +39,13 @@ func (s *Service) SummarizeUserWalletsByCurrency(ctx context.Context, userID uui
 	for _, val := range res {
 		existingCurrencies[val.ID] = SummaryDTO{
 			Currency: CurrencyDTO{
-				ID:         val.ID,
-				Code:       val.Code,
-				Name:       val.Name,
-				Blockchain: *val.Blockchain,
-				SortOrder:  val.SortOrder,
+				ID:              val.ID,
+				Code:            val.Code,
+				Name:            val.Name,
+				Blockchain:      *val.Blockchain,
+				SortOrder:       val.SortOrder,
+				IsNative:        val.IsNative,
+				ContractAddress: val.ContractAddress,
 			},
 			Balance:          val.Balance.String(),
 			BalanceUSD:       val.AmountUsd.String(),
