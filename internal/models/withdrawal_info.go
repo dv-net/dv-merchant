@@ -11,4 +11,4 @@ type PrefetchWithdrawAddressInfo struct {
 	Type        TransferKind    `json:"type"`
 	AddressFrom []string        `json:"address_from"`
 	AddressTo   []string        `json:"address_to"`
-} // @name PrefetchWithdrawAddressInfo
+} //	@name	PrefetchWithdrawAddressInfo

@@ -182,21 +182,21 @@ type Settings struct {
 	BaseURL             string `json:"base_url"`
 	ProcessingClientID  string `json:"processing_client_id"`
 	ProcessingClientKey string `json:"processing_client_key"`
-} // @name ProcessingRootSettings
+} //	@name	ProcessingRootSettings
 
 type TwoFactorAuthData struct {
 	Secret      string `json:"secret,omitempty"`
 	IsConfirmed bool   `json:"is_confirmed"`
-} // @name TwoFactorAuthData
+} //	@name	TwoFactorAuthData
 
 type GetOwnerPrivateKeysData struct {
 	Keys map[string]*KeyPairSequence `json:"keys"`
-} // @name GetOwnerPrivateKeysData
+} //	@name	GetOwnerPrivateKeysData
 
 type GetOwnerHotWalletKeysData struct {
 	Entries            []HotWalletKeyPair                                     `json:"entries"`
 	AllSelectedWallets []*repo_wallet_addresses.FilterOwnerWalletAddressesRow `json:"-"`
-} // @name GetOwnerHotWalletKeysData
+} //	@name	GetOwnerHotWalletKeysData
 
 type HotWalletKeyPair struct {
 	Name  string       `json:"name"`
@@ -211,29 +211,29 @@ type HotKeyPair struct {
 
 type KeyPairSequence struct {
 	Pairs []KeyPair `json:"pairs"`
-} // @name KeyPairSequence
+} //	@name	KeyPairSequence
 
 type KeyPair struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
 	Address    string `json:"address"`
 	Kind       string `json:"kind"`
-} // @name KeyPair
+} //	@name	KeyPair
 
 type OwnerSeedData struct {
 	Mnemonic   string `json:"mnemonic"`
 	PassPhrase string `json:"pass_phrase"`
-} // @name OwnerSeedData
+} //	@name	OwnerSeedData
 
 type Asset struct {
 	Identity  string `json:"identity"`
 	Amount    string `json:"amount"`
 	AmountUSD string `json:"amount_usd"`
-} // @name Asset
+} //	@name	Asset
 
 type BlockchainAdditionalData struct {
 	TronData *TronData `json:"tron_data"`
-} // @name BlockchainAdditionalData
+} //	@name	BlockchainAdditionalData
 
 type TronData struct {
 	AvailableEnergyForUse    string `json:"available_energy_for_use"`
@@ -247,14 +247,14 @@ type TronData struct {
 	StackedBandwidthTrx      string `json:"stacked_bandwidth_trx"`
 	TotalUsedEnergy          string `json:"total_used_energy"`
 	TotalUsedBandwidth       string `json:"total_used_bandwidth"`
-} // @name TronData
+} //	@name	TronData
 
 type WalletProcessing struct {
 	Address        string                    `json:"address"`
 	Blockchain     models.Blockchain         `json:"blockchain"`
 	Assets         []*Asset                  `json:"assets,omitempty"`
 	AdditionalData *BlockchainAdditionalData `json:"additional_data,omitempty"`
-} // @name WalletProcessing
+} //	@name	WalletProcessing
 
 type Info struct {
 	Version string
@@ -266,11 +266,11 @@ type NewVersion struct {
 	AvailableVersion string
 	InstalledVersion string
 	NeedForUpdate    bool
-} // @name NewVersion
+} //	@name	NewVersion
 
 type RegisterOwnerInfo struct {
 	OwnerID uuid.UUID `json:"owner_id"`
-} // @name RegisterOwnerInfo
+} //	@name	RegisterOwnerInfo
 
 type GetOwnerHotWalletKeysParams struct {
 	WalletAddressIDs           []uuid.UUID

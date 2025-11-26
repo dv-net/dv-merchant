@@ -1,6 +1,6 @@
 package models
 
-type UserRole string // @name UserRole
+type UserRole string //	@name	UserRole
 
 func (o UserRole) String() string { return string(o) }
 

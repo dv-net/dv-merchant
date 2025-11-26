@@ -8,7 +8,7 @@ type Result[T any] struct {
 	Code    int    `json:"code,omitempty"`
 	Message string `json:"message,omitempty"`
 	Data    T      `json:"data"`
-} // @name JSONResponse
+} //	@name	JSONResponse
 
 func Ok[T any](message string, data T) *Result[T] {
 	return &Result[T]{
@@ -57,4 +57,4 @@ func ValidationError(message string, errors map[string][]ValidationErrorDetail) 
 	}
 }
 
-type EmptyBodyResponse struct{} // @name EmptyBodyResponse
+type EmptyBodyResponse struct{} //	@name	EmptyBodyResponse

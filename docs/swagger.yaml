@@ -474,6 +474,21 @@ definitions:
     - store_external_id
     - store_id
     type: object
+  CurrenciesExtendedResponse:
+    properties:
+      blockchains:
+        items:
+          $ref: '#/definitions/BlockchainGroup'
+        type: array
+      currencies:
+        items:
+          $ref: '#/definitions/CurrencyExtendedItem'
+        type: array
+      tokens:
+        items:
+          $ref: '#/definitions/TokenGroup'
+        type: array
+    type: object
   CurrencyDTO:
     properties:
       blockchain:
@@ -486,6 +501,31 @@ definitions:
         type: string
       sort_order:
         type: integer
+    type: object
+  CurrencyExtendedItem:
+    properties:
+      blockchain:
+        type: string
+      blockchain_icon:
+        $ref: '#/definitions/CurrencyIcon'
+      code:
+        type: string
+      contract_address:
+        type: string
+      explorer_link:
+        type: string
+      has_balance:
+        type: boolean
+      icon:
+        $ref: '#/definitions/CurrencyIcon'
+      id:
+        type: string
+      min_confirmation:
+        type: integer
+      name:
+        type: string
+      token_icon:
+        $ref: '#/definitions/CurrencyIcon'
     type: object
   CurrencyIcon:
     properties:
@@ -1323,6 +1363,15 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/CreateWalletExternalResponse'
+      message:
+        type: string
+    type: object
+  JSONResponse-CurrenciesExtendedResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/CurrenciesExtendedResponse'
       message:
         type: string
     type: object
@@ -2917,6 +2966,21 @@ definitions:
       link:
         type: string
     type: object
+  TokenGroup:
+    properties:
+      blockchains:
+        items:
+          type: string
+        type: array
+      currencies:
+        items:
+          type: string
+        type: array
+      icon:
+        $ref: '#/definitions/CurrencyIcon'
+      name:
+        type: string
+    type: object
   TransactionInfoResponse:
     properties:
       amount:
@@ -4176,6 +4240,7 @@ definitions:
   pgtype.Int8:
     properties:
       int64:
+        format: int64
         type: integer
       valid:
         type: boolean
@@ -5417,10 +5482,12 @@ paths:
         filtering options
       parameters:
       - description: Page number
+        format: int32
         in: query
         name: page
         type: integer
       - description: Page size
+        format: int32
         in: query
         name: page_size
         type: integer
@@ -9491,6 +9558,34 @@ paths:
       security:
       - XApiKey: []
       summary: Get store currencies list
+      tags:
+      - Store
+  /v1/external/store/currencies-extended:
+    get:
+      consumes:
+      - application/json
+      description: Get extended list of store currencies grouped by tokens and blockchains
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-CurrenciesExtendedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Get extended list of store currencies
       tags:
       - Store
   /v1/external/store/currencies/{id}/rate:

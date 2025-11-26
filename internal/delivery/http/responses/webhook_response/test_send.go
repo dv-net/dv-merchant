@@ -5,4 +5,4 @@ type SendTestResult struct {
 	ResponseBody   string `json:"response_body"`
 	RequestBody    string `json:"request_body"`
 	ResponseCode   int    `json:"response_code"`
-} // @name SendTestResult
+} //	@name	SendTestResult

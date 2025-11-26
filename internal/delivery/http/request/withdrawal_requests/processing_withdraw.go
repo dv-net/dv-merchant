@@ -11,7 +11,7 @@ type CreateProcessingWithdrawRequest struct {
 	AddressTo  string          `json:"address_to" validate:"required,min=16,max=255"`
 	CurrencyID string          `json:"currency_id" validate:"required"`
 	RequestID  *string         `json:"request_id" validate:"required,min=1,max=255"`
-} // @name CreateProcessingWithdrawRequest
+} //	@name	CreateProcessingWithdrawRequest
 
 func (req *CreateProcessingWithdrawRequest) Validate() error {
 	if !req.Amount.GreaterThan(decimal.Zero) {
@@ -27,7 +27,7 @@ type CreateProcessingWithdrawInternalRequest struct {
 	CurrencyID string          `json:"currency_id" validate:"required"`
 	RequestID  *string         `json:"request_id" validate:"required"`
 	TOTP       string          `json:"totp" validate:"required,min=6,max=6"`
-} // @name CreateProcessingWithdrawalInternalRequest
+} //	@name	CreateProcessingWithdrawalInternalRequest
 
 func (req *CreateProcessingWithdrawInternalRequest) Validate() error {
 	if !req.Amount.GreaterThan(decimal.Zero) {

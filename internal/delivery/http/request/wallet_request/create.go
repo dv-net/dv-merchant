@@ -9,7 +9,7 @@ type CreateRequest struct {
 	Currency        *string         `json:"currency,omitempty" query:"currency" validate:"omitempty"`
 	Email           *string         `json:"email,omitempty" query:"email" validate:"omitempty,email" format:"email"`
 	Locale          *string         `json:"locale,omitempty" query:"locale" validate:"omitempty"`
-} // @name CreateWalletRequest
+} //	@name	CreateWalletRequest
 
 type ExternalCreateRequest struct {
 	StoreExternalID string          `json:"store_external_id" query:"store_external_id" validate:"required" format:"uuid"`
@@ -18,4 +18,4 @@ type ExternalCreateRequest struct {
 	Amount          decimal.Decimal `json:"amount" query:"amount" validate:"omitempty"`
 	Currency        *string         `json:"currency,omitempty" query:"currency" validate:"omitempty"`
 	Locale          *string         `json:"locale,omitempty" query:"locale" validate:"omitempty"`
-} // @name CreateWalletExternalRequest
+} //	@name	CreateWalletExternalRequest

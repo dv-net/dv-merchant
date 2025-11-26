@@ -8,4 +8,4 @@ type UserNotificationResponse struct {
 	Category     string    `json:"category"`
 	EmailEnabled bool      `json:"email_enabled"`
 	TgEnabled    bool      `json:"tg_enabled"`
-} // @name UserNotificationResponse
+} //	@name	UserNotificationResponse
