@@ -4,6 +4,7 @@ package mocks
 
 import (
 	context "context"
+
 	currconv "github.com/dv-net/dv-merchant/internal/service/currconv"
 
 	decimal "github.com/shopspring/decimal"

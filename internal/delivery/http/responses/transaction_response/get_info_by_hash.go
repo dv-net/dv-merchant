@@ -29,7 +29,7 @@ type TransactionInfoResponse struct {
 	WebhookHistory     []WhSendHistoryResponse `json:"webhook_history"`
 	CreatedAt          *time.Time              `json:"created_at"`
 	UpdatedAt          *time.Time              `json:"updated_at"`
-} // @name TransactionInfoResponse
+} //	@name	TransactionInfoResponse
 
 type WhSendHistoryResponse struct {
 	ID         uuid.UUID  `json:"id"`
@@ -41,7 +41,7 @@ type WhSendHistoryResponse struct {
 	Response   *string    `json:"response"`
 	StatusCode int        `json:"status_code"`
 	CreatedAt  *time.Time `json:"created_at"`
-} // @name WhSendHistoryResponse
+} //	@name	WhSendHistoryResponse
 
 type WalletInfoResponse struct {
 	ID              uuid.UUID  `json:"id"`
@@ -49,4 +49,4 @@ type WalletInfoResponse struct {
 	StoreExternalID string     `json:"store_external_id"`
 	WalletCreatedAt time.Time  `json:"wallet_created_at"`
 	WalletUpdatedAt *time.Time `json:"wallet_updated_at"`
-} // @name WalletInfoResponse
+} //	@name	WalletInfoResponse

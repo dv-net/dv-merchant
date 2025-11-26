@@ -1,6 +1,6 @@
 package models
 
-type TransferStatus string // @name TransferStatus
+type TransferStatus string //	@name	TransferStatus
 
 const (
 	TransferStatusNew         TransferStatus = "new"

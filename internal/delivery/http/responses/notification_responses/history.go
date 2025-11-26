@@ -18,11 +18,11 @@ type NotificationHistoryResponse struct {
 	SentAt      *time.Time              `json:"sent_at"`
 	Type        models.NotificationType `json:"type"`
 	Channel     models.DeliveryChannel  `json:"channel"`
-} // @name NotificationHistoryResponse
+} //	@name	NotificationHistoryResponse
 
 type NotificationTypeListResponse struct {
 	Types []struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
 	} `json:"types"`
-} // @name NotificationTypeListResponse
+} //	@name	NotificationTypeListResponse

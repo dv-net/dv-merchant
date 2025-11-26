@@ -20,7 +20,7 @@ type WalletAddressResponse struct {
 	UpdatedAt  time.Time `json:"updated_at" format:"date-time" swaggertype:"string"`
 	DeletedAt  time.Time `json:"deleted_at" format:"date-time" swaggertype:"string"`
 	Dirty      bool      `json:"dirty"`
-} // @name WalletAddressResponse
+} //	@name	WalletAddressResponse
 
 type CreateWalletExternalResponse struct {
 	ID              uuid.UUID                `json:"id,omitempty"`
@@ -32,21 +32,21 @@ type CreateWalletExternalResponse struct {
 	Rates           map[string]string        `json:"rates"`
 	CreatedAt       time.Time                `json:"created_at,omitempty" format:"date-time" swaggertype:"string"`
 	UpdatedAt       time.Time                `json:"updated_at,omitempty" format:"date-time" swaggertype:"string"`
-} // @name CreateWalletExternalResponse
+} //	@name	CreateWalletExternalResponse
 
 type WalletSeedResponse struct {
 	Mnemonic   string `json:"mnemonic"`
 	PassPhrase string `json:"pass_phrase"`
-} // @name WalletSeedResponse
+} //	@name	WalletSeedResponse
 
 type WalletAddressTotalUSDResponse struct {
 	TotalUSD  decimal.Decimal `json:"total_usd"`
 	TotalDust decimal.Decimal `json:"total_dust"`
-} // @name WalletAddressTotalUSDResponse
+} //	@name	WalletAddressTotalUSDResponse
 
 type ConvertedAddressResponse struct {
 	Address *string `json:"address"`
 	Legacy  *string `json:"legacy"`
-} // @name ConvertedAddressResponse
+} //	@name	ConvertedAddressResponse
 
-type ExternalProcessingWalletBalanceResponse []*wallet.ProcessingWalletWithAssets // @name ExternalProcessingWalletBalanceResponse
+type ExternalProcessingWalletBalanceResponse []*wallet.ProcessingWalletWithAssets //	@name	ExternalProcessingWalletBalanceResponse

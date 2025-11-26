@@ -23,7 +23,7 @@ type UnconfirmedTransactionResponse struct {
 	NetworkCreatedAt time.Time           `json:"network_created_at" format:"date-time"`
 	CreatedAt        time.Time           `json:"created_at" format:"date-time"`
 	UpdatedAt        *time.Time          `json:"updated_at,omitempty" format:"date-time"`
-} // @name UnconfirmedTransactionResponse
+} //	@name	UnconfirmedTransactionResponse
 
 func NewFromUnconfirmedTransactionModel(tx *models.UnconfirmedTransaction) *UnconfirmedTransactionResponse {
 	return &UnconfirmedTransactionResponse{

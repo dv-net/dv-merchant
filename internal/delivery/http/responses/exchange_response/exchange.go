@@ -13,7 +13,7 @@ type ExchangeListResponse struct {
 	CurrentExchange *string        `json:"current_exchange"`
 	SwapState       *string        `json:"swap_state"`
 	WithdrawalState *string        `json:"withdrawal_state"`
-} // @name ExchangeWithKeysResponse
+} //	@name	ExchangeWithKeysResponse
 
 type ExchangeData struct {
 	Exchange            string        `json:"exchange"`
@@ -25,33 +25,33 @@ type ExchangeData struct {
 type ExchangeKey struct {
 	Name  string  `json:"name"`
 	Value *string `json:"value"`
-} // @name ExchangeKeyData
+} //	@name	ExchangeKeyData
 
 type ExchangeAsset struct {
 	Currency  string          `json:"currency"`
 	Amount    decimal.Decimal `json:"amount"`
 	AmountUSD decimal.Decimal `json:"amount_usd"`
-} // @name ExchangeAsset
+} //	@name	ExchangeAsset
 
 type ExchangeBalanceResponse struct {
 	Balances []ExchangeAsset `json:"balances"`
 	TotalUSD decimal.Decimal `json:"total_usd"`
-} // @name ExchangeBalance
+} //	@name	ExchangeBalance
 
 type ExchangeTestConnectionResponse struct {
 	Exchange     string `json:"exchange"`
 	ErrorMessage string `json:"error_message"`
-} // @name ExchangeTestConnectionResponse
+} //	@name	ExchangeTestConnectionResponse
 
 type ExchangeUserPairResponse struct {
 	DisplayName string `json:"display_name"`
-} // @name ExchangeUserPairResponse
+} //	@name	ExchangeUserPairResponse
 
-type ExternalExchangeBalanceResponse ExchangeBalanceResponse // @name ExternalExchangeBalanceResponse
+type ExternalExchangeBalanceResponse ExchangeBalanceResponse //	@name	ExternalExchangeBalanceResponse
 
 type ExchangeCreateWithdrawalResponse struct {
 	InternalOrderID string `json:"internal_order_id"`
-} // @name ExchangeCreateWithdrawalResponse
+} //	@name	ExchangeCreateWithdrawalResponse
 
 type ExchangeWithdrawalHistoryResponse struct {
 	ID           string    `json:"id"`
@@ -66,7 +66,7 @@ type ExchangeWithdrawalHistoryResponse struct {
 	Status       string    `json:"status"`
 	FailReason   *string   `json:"fail_reason"`
 	CreatedAt    time.Time `json:"created_at" format:"date-time"`
-} // @name ExchangeWithdrawalHistoryResponse
+} //	@name	ExchangeWithdrawalHistoryResponse
 
 type ExchangeOrderHistoryResponse struct {
 	ID              string    `json:"id"`
@@ -82,7 +82,7 @@ type ExchangeOrderHistoryResponse struct {
 	Status          string    `json:"status"`
 	FailReason      string    `json:"fail_reason"`
 	CreatedAt       time.Time `json:"created_at" format:"date-time"`
-} // @name ExchangeOrderHistoryResponse
+} //	@name	ExchangeOrderHistoryResponse
 
 type ExchangeWithdrawalRulesResponse struct {
 	Currency            string  `json:"currency" structs:"currency"`
@@ -95,7 +95,7 @@ type ExchangeWithdrawalRulesResponse struct {
 	WithdrawPrecision   string  `json:"withdraw_precision" structs:"withdraw_precision"`
 	WithdrawQuotaPerDay *string `json:"withdraw_quota_per_day" structs:"withdraw_quota_per_day"`
 	Fee                 *string `json:"fee" structs:"fee"`
-} // @ExchangeWithdrawalRulesResponse
+} //	@ExchangeWithdrawalRulesResponse
 
 type ExchangeWithdrawalSettingResponse struct {
 	ID         string          `json:"id"`
@@ -105,7 +105,7 @@ type ExchangeWithdrawalSettingResponse struct {
 	MinAmount  decimal.Decimal `json:"min_amount"`
 	Enabled    bool            `json:"enabled"`
 	CreatedAt  time.Time       `json:"created_at"`
-} // @name ExchangeWithdrawalSettingResponse
+} //	@name	ExchangeWithdrawalSettingResponse
 
 type DepositUpdateResponse struct {
 	Address          string             `json:"address"`
@@ -113,10 +113,10 @@ type DepositUpdateResponse struct {
 	Chain            string             `json:"chain"`
 	AddressType      models.AddressType `json:"address_type"`
 	MinDepositAmount string             `json:"min_deposit_amount"`
-} // @name DepositUpdateResponse
+} //	@name	DepositUpdateResponse
 
 type GetDepositAddressesResponse struct {
 	Slug      string                  `json:"slug"`
 	Name      string                  `json:"name"`
 	Addresses []DepositUpdateResponse `json:"addresses"`
-} // @name GetDepositAddressesResponse
+} //	@name	GetDepositAddressesResponse

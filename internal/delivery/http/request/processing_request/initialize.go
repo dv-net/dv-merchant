@@ -6,4 +6,4 @@ type InitializeRequest struct {
 	CallbackDomain        string `json:"callback_domain" validate:"required"`
 	MerchantDomain        string `json:"merchant_domain" validate:"required"`
 	MerchantPayFormDomain string `json:"merchant_pay_form_domain" validate:"required"`
-} // @name InitializeProcessingRequest
+} //	@name	InitializeProcessingRequest

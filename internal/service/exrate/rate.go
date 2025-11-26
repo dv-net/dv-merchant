@@ -13,9 +13,9 @@ type ExRate struct {
 	Value      string     `json:"value"`
 	ValueScale string     `json:"value_scale"`
 	UpdatedAt  *time.Time `json:"updated_at" format:"date-time"`
-} // @name ExchangeRate
+} //	@name	ExchangeRate
 
 type Rates struct {
 	CurrencyIDs []string          `json:"currency_ids"` //nolint:tagliatelle
 	Rate        []decimal.Decimal `json:"rate"`
-} // @name ExchangeRates
+} //	@name	ExchangeRates

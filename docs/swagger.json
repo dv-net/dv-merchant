@@ -1929,12 +1929,14 @@
                 "parameters": [
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Page number",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Page size",
                         "name": "page_size",
                         "in": "query"
@@ -8287,6 +8289,51 @@
                 }
             }
         },
+        "/v1/external/store/currencies-extended": {
+            "get": {
+                "security": [
+                    {
+                        "XApiKey": []
+                    }
+                ],
+                "description": "Get extended list of store currencies grouped by tokens and blockchains",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store"
+                ],
+                "summary": "Get extended list of store currencies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store API key",
+                        "name": "api_key",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-CurrenciesExtendedResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/external/store/currencies/{id}/rate": {
             "get": {
                 "security": [
@@ -10208,6 +10255,29 @@
                 }
             }
         },
+        "CurrenciesExtendedResponse": {
+            "type": "object",
+            "properties": {
+                "blockchains": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/BlockchainGroup"
+                    }
+                },
+                "currencies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CurrencyExtendedItem"
+                    }
+                },
+                "tokens": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TokenGroup"
+                    }
+                }
+            }
+        },
         "CurrencyDTO": {
             "type": "object",
             "properties": {
@@ -10225,6 +10295,44 @@
                 },
                 "sort_order": {
                     "type": "integer"
+                }
+            }
+        },
+        "CurrencyExtendedItem": {
+            "type": "object",
+            "properties": {
+                "blockchain": {
+                    "type": "string"
+                },
+                "blockchain_icon": {
+                    "$ref": "#/definitions/CurrencyIcon"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
+                "explorer_link": {
+                    "type": "string"
+                },
+                "has_balance": {
+                    "type": "boolean"
+                },
+                "icon": {
+                    "$ref": "#/definitions/CurrencyIcon"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "min_confirmation": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "token_icon": {
+                    "$ref": "#/definitions/CurrencyIcon"
                 }
             }
         },
@@ -11471,6 +11579,20 @@
                 },
                 "data": {
                     "$ref": "#/definitions/CreateWalletExternalResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-CurrenciesExtendedResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/CurrenciesExtendedResponse"
                 },
                 "message": {
                     "type": "string"
@@ -13880,6 +14002,29 @@
                 }
             }
         },
+        "TokenGroup": {
+            "type": "object",
+            "properties": {
+                "blockchains": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "currencies": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "icon": {
+                    "$ref": "#/definitions/CurrencyIcon"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "TransactionInfoResponse": {
             "type": "object",
             "properties": {
@@ -15728,7 +15873,8 @@
             "type": "object",
             "properties": {
                 "int64": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "valid": {
                     "type": "boolean"

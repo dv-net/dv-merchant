@@ -23,7 +23,7 @@ type GetByUser struct {
 	PageSize      *uint32                  `json:"page_size" query:"page_size"`
 	SortBy        *string                  `json:"sort_by" query:"sort_by,default:created_at_index" enums:"created_at_index,amount_usd,tx_hash,user_email" oneof:"created_at_index,amount_usd,tx_hash,user_email"`
 	SortDirection *string                  `json:"sort_direction" query:"sort_direction,default:desc" enums:"asc,desc" oneof:"asc,desc"`
-} // @name GetTransactionsByUserRequest
+} //	@name	GetTransactionsByUserRequest
 
 type GetByUserExported struct {
 	Format        string                   `json:"format" query:"format" validate:"required,oneof=csv xlsx"`
@@ -40,4 +40,4 @@ type GetByUserExported struct {
 	DateTo        *string                  `json:"date_to" query:"date_to" format:"date"`
 	Page          *uint32                  `json:"page" query:"page"`
 	PageSize      *uint32                  `json:"page_size" query:"page_size"`
-} // @name GetTransactionsByUserExportedRequest
+} //	@name	GetTransactionsByUserExportedRequest

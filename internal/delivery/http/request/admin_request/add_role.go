@@ -9,4 +9,4 @@ import (
 type AddUserRoleRequest struct {
 	UserID   uuid.UUID       `json:"user_id" query:"user_id" validate:"required" format:"uuid"`
 	UserRole models.UserRole `json:"user_role" query:"user_role" validate:"required" enums:"root,user"`
-} // @name AddUserRoleRequest
+} //	@name	AddUserRoleRequest

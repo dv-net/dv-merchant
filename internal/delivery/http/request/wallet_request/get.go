@@ -8,12 +8,12 @@ import (
 type GetKeysRequest struct {
 	OwnerID uuid.UUID `json:"owner_id" validate:"required,uuid"`
 	TOTP    string    `json:"totp" validate:"required,len=6"`
-} // @name GetWalletPrivateKeysRequest
+} //	@name	GetWalletPrivateKeysRequest
 
 type GetSeedsRequest struct {
 	OwnerID uuid.UUID `json:"owner_id" validate:"required,uuid" format:"uuid"`
 	TOTP    string    `json:"totp" validate:"required,len=6"`
-} // @name GetWalletSeedsRequest
+} //	@name	GetWalletSeedsRequest
 
 type GetWalletByStoreRequest struct {
 	Amount          *decimal.Decimal `json:"amount"`
@@ -28,13 +28,13 @@ type GetWalletByStoreRequest struct {
 	StoreIDs        []uuid.UUID      `json:"store_ids" validate:"required,min=1,dive,uuid"` //nolint:tagliatelle
 	IsSortByAmount  bool             `json:"is_sort_by_amount"`
 	IsSortByBalance bool             `json:"is_sort_by_balance"`
-} // @name GetWalletByStoreRequest
+} //	@name	GetWalletByStoreRequest
 
-type GetHotWalletsTotalBalanceRequest struct{} // @name GetHotWalletsTotalBalanceRequest
+type GetHotWalletsTotalBalanceRequest struct{} //	@name	GetHotWalletsTotalBalanceRequest
 
 type GetHotWalletKeysRequest struct {
 	WalletAddressIDs         []uuid.UUID `json:"wallet_address_ids"`         //nolint:tagliatelle
 	ExcludedWalletAddressIDs []uuid.UUID `json:"exclude_wallet_address_ids"` //nolint:tagliatelle
 	TOTP                     string      `json:"totp" validate:"required,len=6"`
 	FileType                 string      `json:"file_type" validate:"required,oneof=csv json txt"`
-} // @name GetHotWalletKeysRequest
+} //	@name	GetHotWalletKeysRequest

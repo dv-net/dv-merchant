@@ -11,16 +11,16 @@ import (
 type AddUserRoleResponse struct {
 	UserID    uuid.UUID         `json:"user_id" validate:"required" format:"uuid"`
 	UserRoles []models.UserRole `json:"user_roles" validate:"required" enums:"root,user"`
-} // @name AddUserRoleResponse
+} //	@name	AddUserRoleResponse
 
 type RemoveUserRoleResponse struct {
 	UserRoles []models.UserRole `json:"user_roles" format:"enum" enums:"root,user"`
-} // @name RemoveUserRoleResponse
+} //	@name	RemoveUserRoleResponse
 
 type UnbanUserResponse struct {
 	UserID uuid.UUID `json:"user_id" validate:"required,uuid" format:"uuid"`
 	Banned bool      `json:"banned"`
-} // @name UnbanUserResponse
+} //	@name	UnbanUserResponse
 
 type GetUsersResponse struct {
 	Email     string    `json:"email" format:"email"`
@@ -28,15 +28,15 @@ type GetUsersResponse struct {
 	UserID    uuid.UUID `json:"user_id" format:"uuid"`
 	Roles     []string  `json:"roles" enums:"root,user"`
 	Banned    bool      `json:"banned"`
-} // @name GetUsersResponse
+} //	@name	GetUsersResponse
 
 type BanUserResponse struct {
 	UserID uuid.UUID `json:"user_id" format:"uuid"`
 	Banned bool      `json:"banned"`
-} // @name BanUserResponse
+} //	@name	BanUserResponse
 
 type InviteUserResponse struct {
 	UserID uuid.UUID `json:"user_id" format:"uuid"`
 	Email  string    `json:"email" format:"email"`
 	Token  uuid.UUID `json:"token" format:"uuid"`
-} // @name InviteUserResponse
+} //	@name	InviteUserResponse

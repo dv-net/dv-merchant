@@ -21,7 +21,7 @@ type LoadPrivateKeyDTO struct {
 type AddressesTotalBalance struct {
 	TotalUSD  decimal.Decimal `json:"total_usd"`
 	TotalDust decimal.Decimal `json:"total_dust"`
-} // @name AddressesTotalBalance
+} //	@name	AddressesTotalBalance
 
 type CalcBalanceDTO struct {
 	Address    string
@@ -64,7 +64,7 @@ type CombinedStats struct {
 	TotalTrxFee        decimal.Decimal `json:"total_trx_fee"`
 	TotalBandwidthUsed decimal.Decimal `json:"total_bandwidth_used"`
 	TotalEnergyUsed    decimal.Decimal `json:"total_energy_used"`
-} // @name CombinedStats
+} //	@name	CombinedStats
 
 type CreateStoreWalletWithAddressDTO struct {
 	StoreID         uuid.UUID `db:"store_id" json:"store_id"`
