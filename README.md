@@ -1,104 +1,171 @@
-# DV backend
+<div align="center">
 
-## Linters
+## 🚀 DV.net Merchant Backend
+<br>
 
-To format all the source texts of the project in accordance
-with the [Go](https://go.dev/) standard, you can use the command:
+[🇬🇧 English](README.md) • [🇷🇺 Русский](README.ru.md) • [🇨🇳 中文](README.zh.md)
 
-```shell
-go fmt ./...
+[Website](https://dv.net) • [Docs](https://docs.dv.net) • [API](https://docs.dv.net/en/operations/post-v1-external-wallet.html) • [Support](https://dv.net/#support)
+
+</div>
+
+---
+
+## 💡 Overview
+
+**DV.net Merchant Backend** is a high-load, self-hosted payments platform for accepting, processing, and sending cryptocurrency. The stack is fully open source, runs on your own infrastructure, and keeps you in control of every transaction.
+
+> 🔒 **Non-custodial** — private keys always stay on your side
+>
+> ⚡ **High-performance** — Go 1.24, Fiber v3, PostgreSQL & Redis
+>
+> 🌐 **Wide coverage** — multiple blockchains and centralized exchanges
+>
+> 🧱 **Modular** — clean architecture with delivery → service → storage
+
+---
+
+## ✨ Highlights
+
+**🎯 Business capabilities**
+- ✅ Accept and send crypto without mandatory KYC/KYB
+- ✅ Notifications, webhooks, and flexible event routing
+- ✅ Fee management plus TRON/EVM resource optimization
+- ✅ Integrations with major CEXs (Binance, OKX, HTX, KuCoin, Bybit, etc.)
+
+**🔧 Technical features**
+- ✅ Fiber v3 HTTP API with Casbin-based RBAC
+- ✅ Async workers and schedulers in `internal/app`
+- ✅ Service layer with DI and business logic (`internal/service`)
+- ✅ PostgreSQL / Redis repositories (`internal/storage`)
+- ✅ Automated SQL generation (`sqlc`, `pgxgen`)
+- ✅ Rich helper packages in `pkg` (clients, retry, OTP, AML)
+
+---
+
+## 🧭 Architecture at a Glance
+
+```text
+cmd/                CLI entrypoints (server, migrations, utilities)
+configs/            Config templates and Casbin policies
+internal/app        App bootstrap and background jobs
+internal/delivery   HTTP handlers, middleware, routing
+internal/service    Business logic, integrations, events
+internal/storage    PostgreSQL/Redis repositories
+pkg/                External clients and shared libraries
+sql/                SQL modules, migrations, code generation
 ```
 
-The following linters are used in the project:
+Diagrams and Swagger specs live in `docs/` (`swagger.yaml`, `swagger.json`).
 
-- [go vet](https://pkg.go.dev/cmd/vet)
-- [errcheck](https://github.com/kisielk/errcheck)  
-  command install linter: `go install github.com/kisielk/errcheck@latest`.
-- [staticcheck](https://staticcheck.io/)  
-  command install linter: `go install honnef.co/go/tools/cmd/staticcheck@latest`.
-- [usestdlibvars](https://github.com/sashamelentyev/usestdlibvars)  
-  command install linter: `go install github.com/sashamelentyev/usestdlibvars@latest`
+---
 
-All linters of the project can be run with the command:
+## 🚀 Getting Started
 
-```shell
-make lint
+**Self-hosted install (one command)**
+```bash
+sudo bash -c "$(curl -fsSL https://dv.net/install.sh)"
 ```
 
-## Testing
-
-To unit-tests, you need to run the command in the root of the project:
-
-```shell
-make test
+**Developer Docker bundle**
+```bash
+git clone --recursive https://github.com/dv-net/dv-bundle.git
+cd dv-bundle && cp .env.example .env
+docker compose up -d
 ```
 
-## Building
+**Manual backend build**
+```bash
+git clone https://github.com/dv-net/dv-merchant.git
+cd dv-merchant
 
-[Go](https://go.dev/) version 1.22.0 or higher is required for the build.
-
-To build, you need to run the command in the root of the project:
-
-```shell
 make build
 ```
 
-After completing the command, the binary file `github.com/dv-net/dv-merchant` will appear in the
-`.bin` folder.
+The binary `github.com/dv-net/dv-merchant` will appear in `.bin/` once the build finishes.
 
-## Running
+---
 
-Start project for developer
+## 🧪 Development & Testing
 
-```shell
-cd .docker/dev
-docker-compose up -d --no-deps --build github.com/dv-net/dv-merchant
-```
+**Pre-commit checklist**
+- Run linting and formatting to keep the codebase consistent.
+- Execute unit tests and make sure critical flows are covered.
+- Add or update tests when shipping new features or fixes.
 
-Or using `make run`.
-
-## SQL
-
-To generate SQL wrappers you need to install `pgxgen`:
-
-```shell
-go install github.com/tkcrm/pgxgen/cmd/pgxgen@latest
-```
-
-## CLI commands
-
-#### Start app server
 ```bash
-github.com/dv-net/dv-merchant start
+# Static analysis & formatting
+make lint
+go fmt ./...
+
+# Unit tests
+make test
 ```
 
-#### Show app version
+> ℹ️ Extended workflows (`make run`, Docker Compose, etc.) are documented in the [`dv-bundle`](https://github.com/dv-net/dv-bundle) repo (`README.md`) and on https://docs.dv.net.
+
+---
+
+## 🛠 CLI Commands
+
+- `.bin/dv-merchant start` — run the HTTP API server.
+- `.bin/dv-merchant migrate up|down` — apply or roll back DB migrations.
+- `.bin/dv-merchant seed up|down` — load or drop seed data.
+- `.bin/dv-merchant config` — validate config and generate env/flags.
+- `.bin/dv-merchant permission` — manage roles and Casbin policies.
+- `.bin/dv-merchant transactions` — tooling for transaction operations.
+- `.bin/dv-merchant users` — manage users from the console.
+
+---
+
+## 📚 Documentation
+
+- 📖 [Full guide](https://docs.dv.net) — installation, configuration, scenarios.
+- 🔌 [API reference](https://docs.dv.net/en/operations/post-v1-external-wallet.html) — request/response schemas.
+- 🧾 [Swagger spec](docs/swagger.yaml) — shipped with the repository.
+
+---
+
+## 🔐 Security Features
+
+1. 🔓 Non-custodial design — you control keys and addresses.
+2. 🧠 Multisig support and TRON resource delegation.
+3. 🛡️ Casbin RBAC with flexible `configs/rbac_*` policies.
+4. 📜 Full audit trail: events, logging, Prometheus metrics.
+
+---
+
+## 🤝 Contributing
+
 ```bash
-github.com/dv-net/dv-merchant version
-```
-#### Run db migrate
-```bash
-github.com/dv-net/dv-merchant migrate up/down
-```
-#### Run db seed
-```bash
-github.com/dv-net/dv-merchant seed up/down
-```
-#### Run config validate, gen envs and flags for config
-```bash
-github.com/dv-net/dv-merchant config 
-```
-#### Run permission command
-```bash
-github.com/dv-net/dv-merchant permission 
+# Before submitting a PR
+make lint
+go test ./...
 ```
 
-#### Transactions management
-```bash
-github.com/dv-net/dv-merchant transactions 
-```
+- ⭐ Star the repo if it helps your project.
+- 🐛 Report bugs via Issues.
+- 💡 Propose new features and use cases.
+- 🔧 Pull Requests are welcome!
 
-#### Users management
-```bash
-github.com/dv-net/dv-merchant users 
-```
+---
+
+## 📞 Contact
+
+<div align="center">
+
+**Telegram:** [@dv_net_support_bot](https://t.me/dv_net_support_bot) • **Email:** [support@dv.net](mailto:support@dv.net)
+
+**Website:** [dv.net](https://dv.net) • **Docs:** [docs.dv.net](https://docs.dv.net)
+
+</div>
+
+---
+
+<div align="center">
+
+**© 2025 DV.net** • [DV Technologies Ltd.](https://dv.net)
+
+*Built with ❤️ for the crypto community*
+
+</div>

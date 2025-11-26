@@ -254,6 +254,7 @@ SELECT tx.*,
        c.id as curr_code
 FROM tx
          INNER JOIN currencies c on c.id = tx.currency_id
+ORDER BY tx.created_at DESC
 LIMIT $3;
 
 -- name: GetWalletTransactions :many
