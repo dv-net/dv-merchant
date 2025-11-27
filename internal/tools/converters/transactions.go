@@ -68,27 +68,26 @@ func NewShortTransactionsListInfoFromDto(dtos []transactions.ShortTransactionInf
 	resConfirmed := make([]transaction_response.ShortTransactionResponse, 0, len(dtos))
 	resUnconfirmed := make([]transaction_response.ShortTransactionResponse, 0, len(dtos))
 	for _, dto := range dtos {
-		if dto.IsConfirmed {
-			resConfirmed = append(resConfirmed, transaction_response.ShortTransactionResponse{
-				CurrencyCode: dto.CurrencyCode,
-				Hash:         dto.Hash,
-				Amount:       dto.Amount,
-				AmountUSD:    dto.AmountUSD,
-				Type:         dto.Type,
-				CreatedAt:    dto.CreatedAt,
-			})
-
-			continue
+		resp := transaction_response.ShortTransactionResponse{
+			CurrencyCode:    dto.CurrencyCode,
+			CurrencyName:    dto.CurrencyName,
+			CurrencyLabel:   dto.CurrencyLabel,
+			TokenLabel:      dto.TokenLabel,
+			Blockchain:      dto.Blockchain,
+			IsNative:        dto.IsNative,
+			ContractAddress: dto.ContractAddress,
+			Hash:            dto.Hash,
+			Amount:          dto.Amount,
+			AmountUSD:       dto.AmountUSD,
+			Type:            dto.Type,
+			CreatedAt:       dto.CreatedAt,
 		}
 
-		resUnconfirmed = append(resUnconfirmed, transaction_response.ShortTransactionResponse{
-			CurrencyCode: dto.CurrencyCode,
-			Hash:         dto.Hash,
-			Amount:       dto.Amount,
-			AmountUSD:    dto.AmountUSD,
-			Type:         dto.Type,
-			CreatedAt:    dto.CreatedAt,
-		})
+		if dto.IsConfirmed {
+			resConfirmed = append(resConfirmed, resp)
+		} else {
+			resUnconfirmed = append(resUnconfirmed, resp)
+		}
 	}
 
 	return transaction_response.ShortTransactionInfoListResponse{

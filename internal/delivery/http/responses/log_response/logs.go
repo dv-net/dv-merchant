@@ -12,11 +12,11 @@ type LogTypeData struct {
 	Slug      string    `json:"slug"`
 	Title     string    `json:"title"`
 	CreatedAt time.Time `json:"created_at" format:"date-time"`
-} // @name MonitorTypeData
+} //	@name	MonitorTypeData
 
 type GetLogTypesResponse struct {
 	Items []LogTypeData `json:"items"`
-} // @name GetMonitorTypesResponse
+} //	@name	GetMonitorTypesResponse
 
 type LogData struct {
 	ProcessID uuid.UUID                `json:"process_id"`
@@ -27,8 +27,8 @@ type LogData struct {
 
 type GetLogsResponse struct {
 	Items []LogData `json:"items"`
-} // @name GetMonitorTypesResponse
+} //	@name	GetMonitorTypesResponse
 
 type GetLastLogsResponse struct {
 	Items []dto.LogDTO `json:"items"`
-} // @name GetLastLogsResponse
+} //	@name	GetLastLogsResponse

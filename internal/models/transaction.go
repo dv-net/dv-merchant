@@ -6,7 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type TransactionStatus string // @name TransactionStatus
+type TransactionStatus string //	@name	TransactionStatus
 
 func (o TransactionStatus) String() string { return string(o) }
 
@@ -17,7 +17,7 @@ const (
 	TransactionStatusFailed               TransactionStatus = "failed"
 )
 
-type TransactionsType string // @name TransactionsType
+type TransactionsType string //	@name	TransactionsType
 
 func (t TransactionsType) String() string { return string(t) }
 

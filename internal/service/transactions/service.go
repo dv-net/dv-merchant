@@ -21,6 +21,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/logger"
+	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 	"github.com/go-mods/excel"
 	"github.com/gocarina/gocsv"
 	"github.com/google/uuid"
@@ -397,14 +398,27 @@ func (s *Service) GetLastWalletDepositTransactions(ctx context.Context, walletID
 		if val.AmountUsd.Valid {
 			amountUsd = val.AmountUsd.Decimal.String()
 		}
+
+		var blockchain *string
+		if val.CurrBlockchain != nil {
+			bc := string(*val.CurrBlockchain)
+			blockchain = &bc
+		}
+
 		preparedRes = append(preparedRes, ShortTransactionInfo{
-			IsConfirmed:  val.IsConfirmed,
-			CurrencyCode: val.CurrCode,
-			Hash:         val.TxHash,
-			Amount:       val.Amount.String(),
-			AmountUSD:    amountUsd,
-			Type:         val.Type,
-			CreatedAt:    val.CreatedAt.Time,
+			IsConfirmed:     val.IsConfirmed,
+			CurrencyCode:    val.CurrCode,
+			CurrencyName:    val.CurrName,
+			CurrencyLabel:   pgtypeutils.DecodeText(val.CurrCurrencyLabel),
+			TokenLabel:      pgtypeutils.DecodeText(val.CurrTokenLabel),
+			Blockchain:      blockchain,
+			IsNative:        val.CurrIsNative,
+			ContractAddress: pgtypeutils.DecodeText(val.CurrContractAddress),
+			Hash:            val.TxHash,
+			Amount:          val.Amount.String(),
+			AmountUSD:       amountUsd,
+			Type:            val.Type,
+			CreatedAt:       val.CreatedAt.Time,
 		})
 	}
 

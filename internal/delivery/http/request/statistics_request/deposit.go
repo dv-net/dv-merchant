@@ -12,4 +12,4 @@ type GetDepositsSummaryRequest struct {
 	Resolution  *transactions.StatisticsResolution `json:"resolution" query:"resolution" validate:"omitempty,oneof=hour day week month quarter year"`
 	CurrencyIDs []string                           `json:"currency_ids" query:"currency_ids"` //nolint:tagliatelle
 	StoreUUIDs  []uuid.UUID                        `json:"store_uuids" query:"store_uuids"`   //nolint:tagliatelle
-} // @name GetDepositsSummaryRequest
+} //	@name	GetDepositsSummaryRequest

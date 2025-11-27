@@ -5,4 +5,4 @@ type ExchangeRateResponse struct {
 	From   string `json:"from"`
 	To     string `json:"to"`
 	Value  string `json:"value"`
-} // @name ExchangeRateResponse
+} //	@name	ExchangeRateResponse

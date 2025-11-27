@@ -26,7 +26,7 @@ type ProcessingWebhook struct {
 	ExternalWalletID string                   `json:"external_wallet_id,omitempty"`
 	WalletType       models.WalletType        `json:"wallet_type"`
 	Kind             models.WebhookKind       `json:"kind"`
-} // @name ProcessingWebhook
+} //	@name	ProcessingWebhook
 
 type TransferStatusWebhook struct {
 	Kind               models.WebhookKind           `json:"kind"`
@@ -35,7 +35,7 @@ type TransferStatusWebhook struct {
 	Step               string                       `json:"step"`
 	ErrorMessage       *string                      `json:"error_message,omitempty"`
 	RequestID          *uuid.UUID                   `json:"request_id,omitempty" format:"uuid"`
-} // @name TransferStatusWebhook
+} //	@name	TransferStatusWebhook
 
 type TransferSystemTransactions struct {
 	ID                uuid.UUID                         `json:"id"`
@@ -48,4 +48,4 @@ type TransferSystemTransactions struct {
 	TxType            models.TransferTransactionType    `json:"tx_type" validate:"required,oneof=resource_delegation resource_reclaim send_burn_base_asset account_activation transfer"`
 	Status            models.TransferTransactionsStatus `json:"status" validate:"required,oneof=pending unconfirmed confirmed failed"`
 	Step              string                            `json:"step"`
-} // @name TransferSystemTransactions
+} //	@name	TransferSystemTransactions

@@ -8,4 +8,4 @@ type GetHistoryRequest struct {
 	DateTo       *string         `json:"date_to,omitempty"`
 	Page         *uint32         `json:"page" validate:"omitempty,numeric,gte=1"`
 	PageSize     *uint32         `json:"page_size" validate:"omitempty,min=1,max=100"`
-} // @name GetHistoryRequest
+} //	@name	GetHistoryRequest

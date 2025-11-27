@@ -9,4 +9,4 @@ type SystemInfoResponse struct {
 	RegistrationState string            `json:"registration_state"`
 	IsCaptchaEnabled  bool              `json:"is_captcha_enabled"`
 	SiteKey           string            `json:"site_key"`
-} // @name SystemInfoResponse
+} //	@name	SystemInfoResponse

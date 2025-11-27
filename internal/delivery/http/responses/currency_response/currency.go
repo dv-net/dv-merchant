@@ -19,10 +19,10 @@ type GetCurrencyResponse struct {
 	Icon                 CurrencyIcon    `json:"icon"`
 	BlockchainIcon       CurrencyIcon    `json:"blockchain_icon"`
 	ExplorerLink         string          `json:"explorer_link"`
-} // @name GetCurrencyResponse
+} //	@name	GetCurrencyResponse
 
 type CurrencyIcon struct {
 	Icon128 string `json:"icon_128"` //nolint:tagliatelle
 	Icon512 string `json:"icon_512"` //nolint:tagliatelle
 	IconSVG string `json:"icon_svg"`
-} // @name CurrencyIcon
+} //	@name	CurrencyIcon

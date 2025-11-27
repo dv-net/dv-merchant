@@ -15,13 +15,13 @@ type AddressBookEntryResponse struct {
 	Blockchain           models.Blockchain `json:"blockchain,omitempty"`
 	SubmittedAt          string            `json:"submitted_at"`
 	WithdrawalRuleExists bool              `json:"withdrawal_rule_exists"`
-} // @name AddressBookEntryResponse
+} //	@name	AddressBookEntryResponse
 
 type AddressBookEntryResponseShort struct {
 	ID                   uuid.UUID `json:"id"`
 	CurrencyID           string    `json:"currency_id"`
 	WithdrawalRuleExists bool      `json:"withdrawal_rule_exists"`
-} // @name AddressBookEntryResponseShort
+} //	@name	AddressBookEntryResponseShort
 
 type UniversalAddressGroupResponse struct {
 	Address       string                           `json:"address"`
@@ -32,7 +32,7 @@ type UniversalAddressGroupResponse struct {
 	Currencies    []*AddressBookEntryResponseShort `json:"currencies"`
 	SubmittedAt   string                           `json:"submitted_at"`
 	CurrencyCount int                              `json:"currency_count"`
-} // @name UniversalAddressGroupResponse
+} //	@name	UniversalAddressGroupResponse
 
 type EVMAddressGroupResponse struct {
 	Address       string                           `json:"address"`
@@ -43,10 +43,10 @@ type EVMAddressGroupResponse struct {
 	Currencies    []*AddressBookEntryResponseShort `json:"currencies"`
 	SubmittedAt   string                           `json:"submitted_at"`
 	CurrencyCount int                              `json:"currency_count"`
-} // @name EVMAddressGroupResponse
+} //	@name	EVMAddressGroupResponse
 
 type AddressBookListResponse struct {
 	Addresses       []*AddressBookEntryResponse      `json:"addresses"`
 	UniversalGroups []*UniversalAddressGroupResponse `json:"universal_groups"`
 	EVMGroups       []*EVMAddressGroupResponse       `json:"evm_groups"`
-} // @name AddressBookListResponse
+} //	@name	AddressBookListResponse

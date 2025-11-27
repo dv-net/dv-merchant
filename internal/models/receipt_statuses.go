@@ -1,6 +1,6 @@
 package models
 
-type ReceiptStatus string // @name ReceiptStatus
+type ReceiptStatus string //	@name	ReceiptStatus
 
 const (
 	ReceiptStatusPaid     ReceiptStatus = "paid"

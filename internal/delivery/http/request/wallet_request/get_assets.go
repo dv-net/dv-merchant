@@ -9,8 +9,8 @@ import (
 type GetWalletAssetsRequest struct {
 	Blockchains []models.Blockchain `json:"blockchains" validate:"unique"`
 	Currencies  []string            `json:"currencies" validate:"unique"`
-} // @name GetWalletAssetsRequest
+} //	@name	GetWalletAssetsRequest
 
 type GetSummarizedUserWalletsRequest struct {
 	MinBalance decimal.Decimal `json:"min_balance" query:"min_balance"`
-} // @name GetSummarizedUserWalletsRequest
+} //	@name	GetSummarizedUserWalletsRequest

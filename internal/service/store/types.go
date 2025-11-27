@@ -15,7 +15,7 @@ type CurrencyRate struct {
 	Code       string `json:"code"`
 	RateSource string `json:"rate_source"`
 	Rate       string `json:"rate"`
-} // @name CurrencyRate
+} //	@name	CurrencyRate
 
 type ArchiveStoreDTO struct {
 	OTP     string       `json:"otp"`

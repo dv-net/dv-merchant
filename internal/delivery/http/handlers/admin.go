@@ -225,20 +225,20 @@ func (h *Handler) addUserRole(c fiber.Ctx) error {
 
 // inviteUserWithRole is a function invite support user
 //
-// @Summary		Invite user with role
-// @Description	Invite user with role
-// @Tags			Admin
-// @Accept			json
-// @Produce		json
-// @Param			register	body		admin_request.InviteUserWithRoleRequest	true	"Invite user with specific role"
-// @Success		200			{object}	response.Result[string]
-// @Failure		400			{object}	apierror.Errors
-// @Failure		401			{object}	apierror.Errors
-// @Failure		403			{object}	apierror.Errors
-// @Failure		422			{object}	apierror.Errors
-// @Failure		500			{object}	apierror.Errors
-// @Router			/v1/admin/invite [post]
-// @Security		BearerAuth
+//	@Summary		Invite user with role
+//	@Description	Invite user with role
+//	@Tags			Admin
+//	@Accept			json
+//	@Produce		json
+//	@Param			register	body		admin_request.InviteUserWithRoleRequest	true	"Invite user with specific role"
+//	@Success		200			{object}	response.Result[string]
+//	@Failure		400			{object}	apierror.Errors
+//	@Failure		401			{object}	apierror.Errors
+//	@Failure		403			{object}	apierror.Errors
+//	@Failure		422			{object}	apierror.Errors
+//	@Failure		500			{object}	apierror.Errors
+//	@Router			/v1/admin/invite [post]
+//	@Security		BearerAuth
 func (h Handler) inviteUser(c fiber.Ctx) error {
 	u, err := loadAuthUser(c)
 	if err != nil {

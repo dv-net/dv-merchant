@@ -15,7 +15,7 @@ type GetPrefetchDataResponse struct {
 	Type          models.TransferKind  `json:"type"`
 	FromAddresses []string             `json:"from_addresses"`
 	ToAddresses   []string             `json:"to_addresses"`
-} // @name GetPrefetchDataResponse
+} //	@name	GetPrefetchDataResponse
 
 type GetTransferResponse struct {
 	ID            string                `json:"id" format:"uuid"`
@@ -34,4 +34,4 @@ type GetTransferResponse struct {
 	Message       *string               `json:"message"`
 	CreatedAt     *time.Time            `json:"created_at" format:"date-time"`
 	UpdatedAt     *time.Time            `json:"updated_at" format:"date-time"`
-} // @name GetTransferResponse
+} //	@name	GetTransferResponse

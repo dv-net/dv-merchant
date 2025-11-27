@@ -9,4 +9,4 @@ type GetRootSettingsResponse struct {
 	Value     string    `json:"value"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
-} // @name GetRootSettingsResponse
+} //	@name	GetRootSettingsResponse

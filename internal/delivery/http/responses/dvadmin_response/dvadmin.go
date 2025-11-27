@@ -6,11 +6,11 @@ import (
 
 type AuthLinkResponse struct {
 	Link string `json:"link"`
-} // @name AuthLinkResponse
+} //	@name	AuthLinkResponse
 
 type OwnerData struct {
 	IsAuthorized bool            `json:"is_authorized"`
 	Balance      decimal.Decimal `json:"balance"`
 	OwnerID      string          `json:"owner_id"`
 	Telegram     *string         `json:"telegram"`
-} // @name OwnerData
+} //	@name	OwnerData

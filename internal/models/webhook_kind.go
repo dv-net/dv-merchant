@@ -1,6 +1,6 @@
 package models
 
-type WebhookKind string // @name WebhookKind
+type WebhookKind string //	@name	WebhookKind
 
 const (
 	WebhookKindTransfer       WebhookKind = "transfer"

@@ -22,8 +22,8 @@ type GetUserInfoResponse struct {
 	CreatedAt             time.Time         `json:"created_at" format:"date-time"`
 	UpdatedAt             time.Time         `json:"updated_at" format:"date-time"`
 	QuickStartGuideStatus string            `json:"quick_start_guide_status"`
-} // @name GetUserInfoResponse
+} //	@name	GetUserInfoResponse
 
 type TgLinkResponse struct {
 	Link string `json:"link"`
-} // @name TgLinkResponse
+} //	@name	TgLinkResponse

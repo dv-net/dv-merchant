@@ -16,4 +16,4 @@ type ProcessingWithdrawalResponse struct {
 	Amount      string     `json:"amount"`
 	AmountUsd   string     `json:"amount_usd"`
 	CreatedAt   time.Time  `json:"created_at" format:"date-time"`
-} // @name ProcessingWithdrawalResponse
+} //	@name	ProcessingWithdrawalResponse

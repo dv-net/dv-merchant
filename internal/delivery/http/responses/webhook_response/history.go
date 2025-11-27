@@ -9,7 +9,7 @@ import (
 type WhHistoryResponse struct {
 	Items          []WhHistory `json:"items"`
 	NextPageExists bool        `json:"next_page_exists"`
-} // @name WhHistoryResponse
+} //	@name	WhHistoryResponse
 
 type WhHistory struct {
 	ID            uuid.UUID     `json:"id"`
@@ -21,4 +21,4 @@ type WhHistory struct {
 	Response      *string       `json:"response"`
 	StatusCode    int           `json:"status_code"`
 	URL           string        `json:"url"`
-} // @name WhHistory
+} //	@name	WhHistory

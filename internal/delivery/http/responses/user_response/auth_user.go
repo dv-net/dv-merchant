@@ -19,7 +19,7 @@ type AuthUserResponse struct {
 	Roles             []models.UserRole `json:"roles"`
 	CreatedAt         time.Time         `json:"created_at,omitempty" format:"date-time"`
 	UpdatedAt         time.Time         `json:"updated_at,omitempty" format:"date-time"`
-} // @name AuthUserResponse
+} //	@name	AuthUserResponse
 
 func (o *AuthUserResponse) Encode(u *models.User, r []models.UserRole) {
 	o.ID = u.ID

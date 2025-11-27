@@ -15,4 +15,4 @@ type SystemInfo struct {
 	RegistrationState  string     `json:"registration_state"`
 	IsTurnstileEnabled bool       `json:"is_turnstile_enabled"`
 	TurnstileSiteKey   string     `json:"turnstile_site_key"`
-} // @name SystemInfo
+} //	@name	SystemInfo

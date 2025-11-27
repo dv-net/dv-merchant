@@ -5,7 +5,7 @@ import "github.com/google/uuid"
 type Update struct {
 	TgEnabled    bool `json:"tg_enabled"`
 	EmailEnabled bool `json:"email_enabled"`
-} // @name Update
+} //	@name	Update
 
 type UpdateList struct {
 	List []struct {
@@ -13,8 +13,8 @@ type UpdateList struct {
 		TgEnabled    bool      `json:"tg_enabled"`
 		EmailEnabled bool      `json:"email_enabled"`
 	} `json:"list" validate:"dive,required"`
-} // @name UpdateList
+} //	@name	UpdateList
 
 type TestNotificationRequest struct {
 	Recipient string `json:"recipient" validate:"required"`
-} // @name TestNotificationRequest
+} //	@name	TestNotificationRequest

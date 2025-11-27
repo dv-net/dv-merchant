@@ -1,6 +1,6 @@
 package models
 
-type ExchangeSlug string // @name ExchangeSlug
+type ExchangeSlug string //	@name	ExchangeSlug
 
 const (
 	ExchangeSlugHtx     ExchangeSlug = "htx"

@@ -15,4 +15,4 @@ type GetStatistics struct {
 	Blockchain   *models.Blockchain       `json:"blockchain" query:"blockchain"`
 	DateFrom     *string                  `json:"date_from" query:"date_from" format:"date-time"`
 	DateTo       *string                  `json:"date_to" query:"date_to" format:"date-time"`
-} // @name GetStatistics
+} //	@name	GetStatistics

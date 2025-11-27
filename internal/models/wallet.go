@@ -13,4 +13,4 @@ type WalletWithUSDBalance struct {
 	Amount          decimal.Decimal `json:"amount"`
 	AmountUSD       decimal.Decimal `json:"amount_usd"`
 	Dirty           bool            `json:"dirty"`
-} // @name WalletWithUSDBalance
+} //	@name	WalletWithUSDBalance
