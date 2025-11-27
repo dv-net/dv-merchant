@@ -29,7 +29,7 @@ type StatisticsParams struct {
 	StoreUUIDS  []uuid.UUID
 }
 
-type StatisticsResolution string // @name StatisticsResolution
+type StatisticsResolution string //	@name	StatisticsResolution
 
 func (b StatisticsResolution) String() string { return string(b) }
 
@@ -62,7 +62,7 @@ type StatisticsDTO struct {
 	SumUsd            string                        `json:"sum_usd"`
 	TransactionsCount int64                         `json:"transactions_count"`
 	DetailsByCurrency map[string]CurrencyDetailsDTO `json:"details_by_currency"`
-} // @name StatisticsDTO
+} //	@name	StatisticsDTO
 
 type CurrencyDetailsDTO struct {
 	TxCount int64           `json:"tx_count"`
@@ -93,13 +93,19 @@ type TransactionInfoDto struct {
 }
 
 type ShortTransactionInfo struct {
-	IsConfirmed  bool
-	CurrencyCode string
-	Hash         string
-	Amount       string
-	AmountUSD    string
-	Type         string
-	CreatedAt    time.Time
+	IsConfirmed     bool
+	CurrencyCode    string
+	CurrencyName    string
+	CurrencyLabel   *string
+	TokenLabel      *string
+	Blockchain      *string
+	IsNative        bool
+	ContractAddress *string
+	Hash            string
+	Amount          string
+	AmountUSD       string
+	Type            string
+	CreatedAt       time.Time
 }
 
 type TransactionWalletInfoDto struct {
@@ -129,7 +135,7 @@ type WalletWithTransactionsInfo struct {
 	StoreExternalID string                  `json:"store_external_id"`
 	Currencies      []string                `json:"currencies"`
 	Transactions    []WalletTransactionInfo `json:"transactions"`
-} // @name WalletWithTransactionsInfo
+} //	@name	WalletWithTransactionsInfo
 
 type WalletTransactionInfo struct {
 	CurrencyID string    `json:"currency_id"`
@@ -137,7 +143,7 @@ type WalletTransactionInfo struct {
 	From       string    `json:"from"`
 	To         string    `json:"to"`
 	CreatedAt  time.Time `json:"created_at"`
-} // @name WalletTransactionInfo
+} //	@name	WalletTransactionInfo
 
 type UserTransactionModel struct {
 	StoreName        string    `json:"store_name" csv:"store_name" excel:"store_name"`

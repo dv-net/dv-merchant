@@ -10,7 +10,7 @@ type TopUpFormByStoreRequest struct {
 	IP     *string `json:"ip,omitempty" query:"ip" validate:"omitempty,ip" format:"ipv4"`
 	Email  *string `json:"email,omitempty" query:"email" validate:"omitempty" format:"email"`
 	Locale *string `json:"locale,omitempty" query:"locale" validate:"omitempty"`
-} // @name TopUpFormByStoreRequest
+} //	@name	TopUpFormByStoreRequest
 
 type StoreDto struct {
 	ID             uuid.UUID `json:"id"`
@@ -21,7 +21,7 @@ type StoreDto struct {
 	SuccessURL     *string   `json:"success_url,omitempty"`
 	MinimalPayment string    `json:"minimal_payment"`
 	Status         bool      `json:"status"`
-} // @name PublicStore
+} //	@name	PublicStore
 
 type CurrencyDto struct {
 	ID              string            `json:"id"`
@@ -33,21 +33,21 @@ type CurrencyDto struct {
 	IsNative        bool              `json:"is_native"`
 	ContractAddress *string           `json:"contract_address"`
 	Order           int16             `json:"order"`
-} // @name PublicCurrency
+} //	@name	PublicCurrency
 
 type WalletAddressDto struct {
 	Currency CurrencyDto `json:"currency"`
 	Address  string      `json:"address"`
-} // @name PublicWalletAddress
+} //	@name	PublicWalletAddress
 
 type GetWalletRequest struct {
 	Locale     *string `json:"locale,omitempty" query:"locale" validate:"omitempty"`
 	CurrencyID *string `json:"currency_id,omitempty" query:"currency_id" validate:"omitempty"`
-} // @name GetWalletRequest
+} //	@name	GetWalletRequest
 
 type GetWalletDto struct {
 	Store     StoreDto           `json:"store"`
 	WalletID  uuid.UUID          `json:"wallet_id"`
 	Addresses []WalletAddressDto `json:"addresses"`
 	Rates     map[string]string  `json:"rates"`
-} // @name PublicGetWalletResponse
+} //	@name	PublicGetWalletResponse

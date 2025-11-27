@@ -8,4 +8,4 @@ type ScoreTxRequest struct {
 	ProviderSlug  models.AMLSlug `json:"provider_slug" validate:"required"`
 	Direction     string         `json:"direction" validate:"required,oneof=in out"`
 	OutputAddress string         `json:"output_address" validate:"required"`
-} // @name ScoreTxRequest
+} //	@name	ScoreTxRequest

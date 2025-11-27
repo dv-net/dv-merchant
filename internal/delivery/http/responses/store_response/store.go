@@ -23,7 +23,7 @@ type StoreResponse struct {
 	MinimalPayment           decimal.Decimal `json:"minimal_payment"`
 	PublicPaymentFormEnabled bool            `json:"public_payment_form_enabled"`
 	CreatedAt                time.Time       `json:"created_at" format:"date-time"`
-} // @name StoreResponse
+} //	@name	StoreResponse
 
 type StoreWithTransactionsResponse struct {
 	ID             uuid.UUID       `json:"id" format:"uuid"`
@@ -40,17 +40,17 @@ type StoreWithTransactionsResponse struct {
 	CreatedAt      time.Time       `json:"created_at" format:"date-time"`
 	// StoreResponse
 	TransactionCount int `json:"transaction_count"`
-} // @name StoreWithTransactionsResponse
+} //	@name	StoreWithTransactionsResponse
 
 type StoreAPIKeyResponse struct {
 	ID      string `json:"id" format:"uuid"`
 	Key     string `json:"key"`
 	Enabled bool   `json:"enabled"`
-} // @name StoreAPIKeyResponse
+} //	@name	StoreAPIKeyResponse
 
 type StoreSecretResponse struct {
 	Secret string `json:"secret"`
-} // @name StoreSecretResponse
+} //	@name	StoreSecretResponse
 
 type StoreWebhookResponse struct {
 	ID string `json:"id" format:"uuid"`
@@ -59,7 +59,7 @@ type StoreWebhookResponse struct {
 	Enabled bool     `json:"enabled"`
 	Events  []string `json:"events" enums:"PaymentReceived,PaymentNotConfirmed"`
 	// CreatedAt time.Time `json:"created_at" format:"date-time"`
-} // @name StoreWebhookResponse
+} //	@name	StoreWebhookResponse
 
 type StoreTransactionResponse struct {
 	ID                 string                  `json:"id" format:"uuid"`
@@ -79,8 +79,8 @@ type StoreTransactionResponse struct {
 	Fee                decimal.Decimal         `json:"fee"`
 	WithdrawalIsManual bool                    `json:"withdrawal_is_manual"`
 	NetworkCreatedAt   time.Time               `json:"network_created_at" format:"date-time"`
-} // @name StoreTransactionResponse
+} //	@name	StoreTransactionResponse
 
-type StoreCurrencyResponse []string // @name StoreCurrencyResponse
+type StoreCurrencyResponse []string //	@name	StoreCurrencyResponse
 
-type StoreWhitelistResponse []string // @name StoreWhitelistResponse
+type StoreWhitelistResponse []string //	@name	StoreWhitelistResponse

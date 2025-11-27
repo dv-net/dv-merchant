@@ -16,4 +16,4 @@ type GetWalletBalanceResponse struct {
 	Amount     decimal.Decimal   `json:"amount"`
 	AmountUSD  decimal.Decimal   `json:"amount_usd"`
 	Dirty      bool              `json:"dirty"`
-} // @name GetWalletBalanceResponse
+} //	@name	GetWalletBalanceResponse

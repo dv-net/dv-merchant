@@ -1,6 +1,6 @@
 package models
 
-type TransferStage string // @name TransferStage
+type TransferStage string //	@name	TransferStage
 
 func (t TransferStage) String() string {
 	return string(t)

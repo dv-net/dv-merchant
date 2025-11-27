@@ -15,4 +15,4 @@ type UpdateRequest struct {
 	RateScale                decimal.Decimal `db:"rate_scale" json:"rate_scale"`
 	Status                   bool            `db:"status" json:"status"`
 	MinimalPayment           decimal.Decimal `db:"minimal_payment" json:"minimal_payment"`
-} // @name UpdateStoreRequest
+} //	@name	UpdateStoreRequest

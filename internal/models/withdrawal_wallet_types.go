@@ -1,6 +1,6 @@
 package models
 
-type WithdrawalWalletType string // @name WithdrawalWalletType
+type WithdrawalWalletType string //	@name	WithdrawalWalletType
 
 const (
 	WithdrawalTypeBalanceLimit     WithdrawalWalletType = "balance"
