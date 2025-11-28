@@ -154,9 +154,9 @@ go test ./...
 
 <div align="center">
 
-**Telegram:** [@dv_net_support_bot](https://t.me/dv_net_support_bot) • **Email:** [support@dv.net](mailto:support@dv.net)
+**Telegram:** [@dv_net_support_bot](https://t.me/dv_net_support_bot) • **Telegram Chat:** [@dv_net_support_chat](https://t.me/dv_net_support_chat) • **Discord:** [discord.gg/Szy2XGsr](https://discord.gg/Szy2XGsr)
 
-**Website:** [dv.net](https://dv.net) • **Docs:** [docs.dv.net](https://docs.dv.net)
+**Email:** [support@dv.net](https://dv.net/#support) • **Website:** [dv.net](https://dv.net) • **Documentation:** [docs.dv.net](https://docs.dv.net)
 
 </div>
 
