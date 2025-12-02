@@ -7,4 +7,4 @@ type RegisterRequest struct {
 	Language    string `db:"language" json:"language" validate:"required,min=2,max=2"`
 	CfTurnstile string `json:"cf-turnstile-response"` //nolint:tagliatelle
 	Mnemonic    string `json:"mnemonic"`
-} // @name RegisterRequest
+} //	@name	RegisterRequest

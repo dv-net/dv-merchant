@@ -19,4 +19,4 @@ type GetNotificationHistoryRequest struct {
 	CreatedTo    *time.Time                `json:"created_to" query:"created_to" validate:"omitempty"`
 	SentFrom     *time.Time                `json:"sent_from" query:"sent_from" validate:"omitempty"`
 	SentTo       *time.Time                `json:"sent_to" query:"sent_to" validate:"omitempty"`
-} // @name GetNotificationHistoryRequest
+} //	@name	GetNotificationHistoryRequest

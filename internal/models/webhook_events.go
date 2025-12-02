@@ -1,6 +1,6 @@
 package models
 
-type WebhookEvent string // @name WebhookEvent
+type WebhookEvent string //	@name	WebhookEvent
 
 const (
 	WebhookEventPaymentReceived                  WebhookEvent = "PaymentReceived"

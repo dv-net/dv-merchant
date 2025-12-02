@@ -4,6 +4,7 @@ package mocks
 
 import (
 	context "context"
+
 	models "github.com/dv-net/dv-merchant/internal/models"
 
 	mock "github.com/stretchr/testify/mock"

@@ -4,7 +4,7 @@ package models
 
 import "errors"
 
-type Blockchain string // @name Blockchain
+type Blockchain string //	@name	Blockchain
 
 const (
 	BlockchainArbitrum          Blockchain = "arbitrum"

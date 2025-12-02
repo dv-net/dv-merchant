@@ -19,7 +19,7 @@ type GetAllByStoreIDResponse struct {
 	Addresses           []*models.WalletAddress
 	AvailableCurrencies []*models.Currency
 	Rates               map[string]string
-} // @name GetAllByStoreIDResponse
+} //	@name	GetAllByStoreIDResponse
 
 type ProcessingWalletWithAssets struct {
 	Address        string                    `json:"address"`
@@ -28,19 +28,19 @@ type ProcessingWalletWithAssets struct {
 	Balance        *Balance                  `json:"balance,omitempty"`
 	Assets         []*Asset                  `json:"assets"`
 	AdditionalData *BlockchainAdditionalData `json:"additional_data,omitempty"`
-} // @name ProcessingWalletWithAssets
+} //	@name	ProcessingWalletWithAssets
 
 type Balance struct {
 	NativeToken    string `json:"native_token"`
 	NativeTokenUSD string `json:"native_token_usd"`
-} // @name Balance
+} //	@name	Balance
 
 type Asset struct {
 	CurrencyID string `json:"currency_id"`
 	Identity   string `json:"identity"`
 	Amount     string `json:"amount"`
 	AmountUSD  string `json:"amount_usd"`
-} // @name Asset
+} //	@name	Asset
 
 func (a *Asset) IsNativeTokenByBlockChain(blockchain models.Blockchain) bool {
 	nativeCurr, _ := blockchain.NativeCurrency()
@@ -60,7 +60,7 @@ type EVMData struct {
 type BlockchainAdditionalData struct {
 	TronData *TronData `json:"tron_data,omitempty"`
 	EVMData  *EVMData  `json:"evm_data,omitempty"`
-} // @name BlockchainAdditionalData
+} //	@name	BlockchainAdditionalData
 
 type TronData struct {
 	TronTransferData         `json:"tron_transfer_data"`
@@ -75,12 +75,12 @@ type TronData struct {
 	StackedEnergyTrx         string `json:"stacked_energy_trx"`
 	TotalUsedEnergy          string `json:"total_used_energy"`
 	TotalUsedBandwidth       string `json:"total_used_bandwidth"`
-} // @name TronData
+} //	@name	TronData
 
 type TronTransferData struct {
 	MaxTransfersTRC20  string `json:"max_transfers_trc20"`
 	MaxTransfersNative string `json:"max_transfers_native"`
-} // @name TronTransferData
+} //	@name	TronTransferData
 
 type WithAddressDto struct {
 	ID              uuid.UUID               `json:"id,omitempty"`
@@ -92,7 +92,7 @@ type WithAddressDto struct {
 	AmountUSD       string                  `json:"amount_usd"`
 	CreatedAt       pgtype.Timestamp        `json:"created_at,omitempty"`
 	UpdatedAt       pgtype.Timestamp        `json:"updated_at,omitempty"`
-} // @name WithAddressDto
+} //	@name	WithAddressDto
 
 func (o *WithAddressDto) Encode(m *models.Wallet, frontendBaseURL string) (err error) {
 	o.ID = m.ID
@@ -116,7 +116,7 @@ type CurrencyDTO struct {
 	Name       string            `json:"name"`
 	Blockchain models.Blockchain `json:"blockchain"`
 	SortOrder  int64             `json:"sort_order"`
-} // @name CurrencyDTO
+} //	@name	CurrencyDTO
 
 type SummaryDTO struct {
 	Currency         CurrencyDTO `json:"currency"`
@@ -124,12 +124,12 @@ type SummaryDTO struct {
 	BalanceUSD       string      `json:"balance_usd"`
 	Count            int64       `json:"count"`
 	CountWithBalance int64       `json:"count_with_balance"`
-} // @name SummaryDTO
+} //	@name	SummaryDTO
 
 type BlockchainGroup struct {
 	Blockchain models.Blockchain `json:"blockchain"`
 	Assets     []AssetWallet     `json:"assets"`
-} // @name BlockchainGroup
+} //	@name	BlockchainGroup
 
 type AssetWallet struct {
 	Currency     string          `json:"currency"`
@@ -137,14 +137,14 @@ type AssetWallet struct {
 	AmountUSD    decimal.Decimal `json:"amount_usd"`
 	TxCount      decimal.Decimal `json:"tx_count"`
 	TotalDeposit decimal.Decimal `json:"total_deposit"`
-} // @name AssetWallet
+} //	@name	AssetWallet
 
 type AddressLog struct {
 	Text          string                 `json:"text"`
 	TextVariables map[string]interface{} `json:"text_variables"`
 	CreatedAt     *time.Time             `json:"created_at"`
 	UpdatedAt     *time.Time             `json:"updated_at"`
-} // @name WalletAddressLog
+} //	@name	WalletAddressLog
 
 type WithBlockchains struct {
 	WalletCreatedAt time.Time         `json:"wallet_created_at"`
@@ -157,7 +157,7 @@ type WithBlockchains struct {
 	TotalTx         decimal.Decimal   `json:"total_tx"`
 	Blockchains     []BlockchainGroup `json:"blockchains"`
 	Logs            []*AddressLog     `json:"logs"`
-} // @name WalletWithBlockchains
+} //	@name	WalletWithBlockchains
 
 type HotKeyCsv struct {
 	Blockchain string `json:"blockchain" csv:"blockchain"`

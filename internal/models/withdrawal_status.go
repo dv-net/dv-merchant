@@ -1,6 +1,6 @@
 package models
 
-type WithdrawalStatus string // @name WithdrawalStatus
+type WithdrawalStatus string //	@name	WithdrawalStatus
 
 const (
 	WithdrawalStatusEnabled  WithdrawalStatus = "enabled"

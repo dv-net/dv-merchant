@@ -5,12 +5,12 @@ import "github.com/goccy/go-json"
 type Error struct {
 	Message string `json:"message"`
 	Field   string `json:"field,omitempty"`
-} // @name APIError
+} //	@name	APIError
 
 type Errors struct {
 	Errors   []Error `json:"errors"`
 	HttpCode int     `json:"code"`
-} // @name APIErrors
+} //	@name	APIErrors
 
 func New(errs ...Error) *Errors {
 	if len(errs) == 0 {
