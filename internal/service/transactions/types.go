@@ -93,13 +93,19 @@ type TransactionInfoDto struct {
 }
 
 type ShortTransactionInfo struct {
-	IsConfirmed  bool
-	CurrencyCode string
-	Hash         string
-	Amount       string
-	AmountUSD    string
-	Type         string
-	CreatedAt    time.Time
+	IsConfirmed     bool
+	CurrencyCode    string
+	CurrencyName    string
+	CurrencyLabel   *string
+	TokenLabel      *string
+	Blockchain      *string
+	IsNative        bool
+	ContractAddress *string
+	Hash            string
+	Amount          string
+	AmountUSD       string
+	Type            string
+	CreatedAt       time.Time
 }
 
 type TransactionWalletInfoDto struct {

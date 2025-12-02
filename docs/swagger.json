@@ -13684,13 +13684,31 @@
                 "amount_usd": {
                     "type": "string"
                 },
+                "blockchain": {
+                    "type": "string"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
                 "currency_code": {
                     "type": "string"
                 },
+                "currency_label": {
+                    "type": "string"
+                },
+                "currency_name": {
+                    "type": "string"
+                },
                 "hash": {
+                    "type": "string"
+                },
+                "is_native": {
+                    "type": "boolean"
+                },
+                "token_label": {
                     "type": "string"
                 },
                 "type": {

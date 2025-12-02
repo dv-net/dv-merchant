@@ -39,10 +39,16 @@ type ShortTransactionInfoListResponse struct {
 } //	@name	ShortTransactionInfoListResponse
 
 type ShortTransactionResponse struct {
-	CurrencyCode string    `json:"currency_code"`
-	Hash         string    `json:"hash"`
-	Amount       string    `json:"amount"`
-	AmountUSD    string    `json:"amount_usd"`
-	Type         string    `json:"type"`
-	CreatedAt    time.Time `json:"created_at"`
+	CurrencyCode    string    `json:"currency_code"`
+	CurrencyName    string    `json:"currency_name"`
+	CurrencyLabel   *string   `json:"currency_label"`
+	TokenLabel      *string   `json:"token_label"`
+	Blockchain      *string   `json:"blockchain"`
+	IsNative        bool      `json:"is_native"`
+	ContractAddress *string   `json:"contract_address"`
+	Hash            string    `json:"hash"`
+	Amount          string    `json:"amount"`
+	AmountUSD       string    `json:"amount_usd"`
+	Type            string    `json:"type"`
+	CreatedAt       time.Time `json:"created_at"`
 } //	@name	ShortTransactionResponse
