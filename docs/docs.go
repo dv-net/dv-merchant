@@ -1936,12 +1936,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Page number",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Page size",
                         "name": "page_size",
                         "in": "query"
@@ -13569,13 +13571,31 @@ const docTemplate = `{
                 "amount_usd": {
                     "type": "string"
                 },
+                "blockchain": {
+                    "type": "string"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
                 "currency_code": {
                     "type": "string"
                 },
+                "currency_label": {
+                    "type": "string"
+                },
+                "currency_name": {
+                    "type": "string"
+                },
                 "hash": {
+                    "type": "string"
+                },
+                "is_native": {
+                    "type": "boolean"
+                },
+                "token_label": {
                     "type": "string"
                 },
                 "type": {
@@ -15735,7 +15755,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "int64": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "valid": {
                     "type": "boolean"

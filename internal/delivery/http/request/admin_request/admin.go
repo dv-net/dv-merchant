@@ -11,4 +11,4 @@ type InviteUserWithRoleRequest struct {
 	Role     models.UserRole `json:"role" validate:"required"`
 	StoreIDs []uuid.UUID     `json:"store_ids" validate:"required"` //nolint:tagliatelle
 	Mnemonic string          `json:"mnemonic" validate:"required,mnemonic"`
-} // @name InviteUserWithRoleRequest
+} //	@name	InviteUserWithRoleRequest

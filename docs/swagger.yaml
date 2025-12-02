@@ -2699,11 +2699,23 @@ definitions:
         type: string
       amount_usd:
         type: string
+      blockchain:
+        type: string
+      contract_address:
+        type: string
       created_at:
         type: string
       currency_code:
         type: string
+      currency_label:
+        type: string
+      currency_name:
+        type: string
       hash:
+        type: string
+      is_native:
+        type: boolean
+      token_label:
         type: string
       type:
         type: string
@@ -4176,6 +4188,7 @@ definitions:
   pgtype.Int8:
     properties:
       int64:
+        format: int64
         type: integer
       valid:
         type: boolean
@@ -5417,10 +5430,12 @@ paths:
         filtering options
       parameters:
       - description: Page number
+        format: int32
         in: query
         name: page
         type: integer
       - description: Page size
+        format: int32
         in: query
         name: page_size
         type: integer

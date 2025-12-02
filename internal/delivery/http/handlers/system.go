@@ -33,15 +33,15 @@ func (h Handler) info(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(resp))
 }
 
-//	updater processing on server
+// updater processing on server
 //
-// @Summary		Update processing
-// @Description	Update processing
-// @Tags			System
-// @Produce		json
-// @Success		200	{object}	response.Result[string]
-// @Failure		400	{object}	apierror.Errors	"Bad request"
-// @Router			/v1/dv-admin/system/update/processing [post]
+//	@Summary		Update processing
+//	@Description	Update processing
+//	@Tags			System
+//	@Produce		json
+//	@Success		200	{object}	response.Result[string]
+//	@Failure		400	{object}	apierror.Errors	"Bad request"
+//	@Router			/v1/dv-admin/system/update/processing [post]
 func (h Handler) updateProcessing(c fiber.Ctx) error {
 	ctx := context.Background()
 	go func() {
@@ -53,15 +53,15 @@ func (h Handler) updateProcessing(c fiber.Ctx) error {
 	return c.JSON(response.OkByMessage("Success start processing update"))
 }
 
-//	updater backend on server
+// updater backend on server
 //
-// @Summary		Update backend
-// @Description	Update backend
-// @Tags			System
-// @Produce		json
-// @Success		200	{object}	response.Result[string]
-// @Failure		400	{object}	apierror.Errors	"Bad request"
-// @Router			/v1/dv-admin/system/update/backend [post]
+//	@Summary		Update backend
+//	@Description	Update backend
+//	@Tags			System
+//	@Produce		json
+//	@Success		200	{object}	response.Result[string]
+//	@Failure		400	{object}	apierror.Errors	"Bad request"
+//	@Router			/v1/dv-admin/system/update/backend [post]
 func (h Handler) updateBackend(c fiber.Ctx) error {
 	ctx := context.Background()
 

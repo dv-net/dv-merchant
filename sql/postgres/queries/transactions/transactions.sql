@@ -251,7 +251,13 @@ WITH tx AS ((SELECT true as is_confirmed,
              LIMIT $3)
             LIMIT $3)
 SELECT tx.*,
-       c.id as curr_code
+       c.id               as curr_code,
+       c.name             as curr_name,
+       c.currency_label   as curr_currency_label,
+       c.token_label      as curr_token_label,
+       c.blockchain       as curr_blockchain,
+       c.is_native        as curr_is_native,
+       c.contract_address as curr_contract_address
 FROM tx
          INNER JOIN currencies c on c.id = tx.currency_id
 ORDER BY tx.created_at DESC

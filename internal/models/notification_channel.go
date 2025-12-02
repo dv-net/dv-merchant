@@ -1,6 +1,6 @@
 package models
 
-type DeliveryChannel string // @name DeliveryChannel
+type DeliveryChannel string //	@name	DeliveryChannel
 
 func (o DeliveryChannel) String() string { return string(o) }
 

@@ -214,7 +214,13 @@ WITH tx AS ((SELECT true as is_confirmed,
              LIMIT $3)
             LIMIT $3)
 SELECT tx.is_confirmed, tx.wallet_id, tx.currency_id, tx.tx_hash, tx.amount, tx.amount_usd, tx.type, tx.created_at,
-       c.id as curr_code
+       c.id               as curr_code,
+       c.name             as curr_name,
+       c.currency_label   as curr_currency_label,
+       c.token_label      as curr_token_label,
+       c.blockchain       as curr_blockchain,
+       c.is_native        as curr_is_native,
+       c.contract_address as curr_contract_address
 FROM tx
          INNER JOIN currencies c on c.id = tx.currency_id
 ORDER BY tx.created_at DESC
@@ -228,15 +234,21 @@ type FindLastWalletTransactionsParams struct {
 }
 
 type FindLastWalletTransactionsRow struct {
-	IsConfirmed bool                `db:"is_confirmed" json:"is_confirmed"`
-	WalletID    uuid.NullUUID       `db:"wallet_id" json:"wallet_id"`
-	CurrencyID  string              `db:"currency_id" json:"currency_id"`
-	TxHash      string              `db:"tx_hash" json:"tx_hash"`
-	Amount      decimal.Decimal     `db:"amount" json:"amount"`
-	AmountUsd   decimal.NullDecimal `db:"amount_usd" json:"amount_usd"`
-	Type        string              `db:"type" json:"type"`
-	CreatedAt   pgtype.Timestamp    `db:"created_at" json:"created_at"`
-	CurrCode    string              `db:"curr_code" json:"curr_code"`
+	IsConfirmed         bool                `db:"is_confirmed" json:"is_confirmed"`
+	WalletID            uuid.NullUUID       `db:"wallet_id" json:"wallet_id"`
+	CurrencyID          string              `db:"currency_id" json:"currency_id"`
+	TxHash              string              `db:"tx_hash" json:"tx_hash"`
+	Amount              decimal.Decimal     `db:"amount" json:"amount"`
+	AmountUsd           decimal.NullDecimal `db:"amount_usd" json:"amount_usd"`
+	Type                string              `db:"type" json:"type"`
+	CreatedAt           pgtype.Timestamp    `db:"created_at" json:"created_at"`
+	CurrCode            string              `db:"curr_code" json:"curr_code"`
+	CurrName            string              `db:"curr_name" json:"curr_name"`
+	CurrCurrencyLabel   pgtype.Text         `db:"curr_currency_label" json:"curr_currency_label"`
+	CurrTokenLabel      pgtype.Text         `db:"curr_token_label" json:"curr_token_label"`
+	CurrBlockchain      *models.Blockchain  `db:"curr_blockchain" json:"curr_blockchain"`
+	CurrIsNative        bool                `db:"curr_is_native" json:"curr_is_native"`
+	CurrContractAddress pgtype.Text         `db:"curr_contract_address" json:"curr_contract_address"`
 }
 
 func (q *Queries) FindLastWalletTransactions(ctx context.Context, arg FindLastWalletTransactionsParams) ([]*FindLastWalletTransactionsRow, error) {
@@ -258,6 +270,12 @@ func (q *Queries) FindLastWalletTransactions(ctx context.Context, arg FindLastWa
 			&i.Type,
 			&i.CreatedAt,
 			&i.CurrCode,
+			&i.CurrName,
+			&i.CurrCurrencyLabel,
+			&i.CurrTokenLabel,
+			&i.CurrBlockchain,
+			&i.CurrIsNative,
+			&i.CurrContractAddress,
 		); err != nil {
 			return nil, err
 		}

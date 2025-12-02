@@ -1,6 +1,6 @@
 package models
 
-type TransferKind string // @name TransferKind
+type TransferKind string //	@name	TransferKind
 
 const (
 	TransferKindFromAddress    TransferKind = "from_address"

@@ -17,4 +17,4 @@ type ReceiptResponse struct {
 	WalletID   string               `json:"wallet_id"`
 	CreatedAt  time.Time            `json:"created_at" format:"date-time"`
 	UpdatedAt  time.Time            `json:"updated_at" format:"date-time"`
-} // @name ReceiptResponse
+} //	@name	ReceiptResponse

@@ -17,7 +17,7 @@ type WithdrawalWalletAddressResponse struct {
 	CreatedAt          time.Time `json:"created_at" format:"date-time"`
 	UpdatedAt          time.Time `json:"updated_at" format:"date-time"`
 	DeletedAt          time.Time `json:"deleted_at" format:"date-time"`
-} // @name WithdrawalWalletWithAddress
+} //	@name	WithdrawalWalletWithAddress
 
 type WithdrawalWithAddressResponse struct {
 	ID              uuid.UUID                          `json:"id" format:"uuid"`
@@ -29,7 +29,7 @@ type WithdrawalWithAddressResponse struct {
 	Currency        models.CurrencyShort               `json:"currency"`
 	Rate            decimal.Decimal                    `json:"rate"`
 	LowBalanceRules LowBalanceWithdrawalRuleResponse   `json:"low_balance_rules"`
-} // @name WithdrawalWalletWithAddress
+} //	@name	WithdrawalWalletWithAddress
 
 type WithdrawalRulesByCurrencyResponse struct {
 	ID              uuid.UUID                         `json:"id"`
@@ -41,11 +41,11 @@ type WithdrawalRulesByCurrencyResponse struct {
 	Currency        models.CurrencyShort              `json:"currency"`
 	Rate            decimal.Decimal                   `json:"rate"`
 	LowBalanceRules LowBalanceWithdrawalRuleResponse  `json:"low_balance_rules"`
-} // @name WithdrawalRulesByCurrencyResponse
+} //	@name	WithdrawalRulesByCurrencyResponse
 
 type LowBalanceWithdrawalRuleResponse struct {
 	Mode          models.MultiWithdrawalMode `json:"mode"`
 	ManualAddress *string                    `json:"manual_address"`
-} // @name LowBalanceWithdrawalRuleResponse
+} //	@name	LowBalanceWithdrawalRuleResponse
 
-type WithdrawalRuleResponse struct{} // @name WithdrawalRule
+type WithdrawalRuleResponse struct{} //	@name	WithdrawalRule
