@@ -52,7 +52,7 @@ SELECT EXISTS (SELECT 1
                WHERE wfpw.request_id = $1
                  AND (
                    wfpw.transfer_id IS NULL
-                       OR t.stage = 'failed'
+                       OR t.stage != 'failed'
                    ));
 
 -- name: GetByID :one
