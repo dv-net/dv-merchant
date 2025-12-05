@@ -48,20 +48,26 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Update git
+      - name: Check environment
         run: |
-          sudo add-apt-repository ppa:git-core/ppa -y
-          sudo apt-get update
-          sudo apt-get install git -y
+          echo "Git version:"
+          git --version
+          echo "Go version:"
+          go version
 
-      - name: Install latest golangci-lint
+      - name: Install golangci-lint
         run: |
           echo "Installing golangci-lint v2.7.1..."
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.7.1
-          golangci-lint --version
-          golangci-lint cache clean
+          echo "Installed golangci-lint version:"
+          $(go env GOPATH)/bin/golangci-lint --version
 
       - name: Build custom linter plugins
+        env:
+          PATH: ${{ env.GOPATH }}/bin:${{ env.PATH }}
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: advice.detachedHead
+          GIT_CONFIG_VALUE_0: false
         run: |
           echo "Building custom golangci-lint plugins..."
           make build_plugins
