@@ -5,10 +5,11 @@ on:
     branches: [ main, dev ]
 
 env:
-  GO_VERSION: '1.25.4'
+  GO_VERSION: '1.25.1'
+
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout code
@@ -48,26 +49,7 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Check environment
-        run: |
-          echo "Git version:"
-          git --version
-          echo "Go version:"
-          go version
-
-      - name: Install golangci-lint
-        run: |
-          echo "Installing golangci-lint v2.7.1..."
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.7.1
-          echo "Installed golangci-lint version:"
-          $(go env GOPATH)/bin/golangci-lint --version
-
       - name: Build custom linter plugins
-        env:
-          PATH: ${{ env.GOPATH }}/bin:${{ env.PATH }}
-          GIT_CONFIG_COUNT: 1
-          GIT_CONFIG_KEY_0: advice.detachedHead
-          GIT_CONFIG_VALUE_0: false
         run: |
           echo "Building custom golangci-lint plugins..."
           make build_plugins
