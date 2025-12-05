@@ -278,7 +278,7 @@ func (o *Service) GetDepositAddresses(ctx context.Context, currency string, netw
 }
 
 func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.CreateWithdrawalOrderParams) (*models.ExchangeWithdrawalDTO, error) {
-	precision := int32(args.WithdrawalPrecision) //nolint:gosec
+	precision := int32(args.WithdrawalPrecision)
 
 	args.NativeAmount = args.NativeAmount.RoundDown(precision).Sub(args.NativeAmount.Div(decimal.NewFromInt(100)).Mul(decimal.NewFromInt(1))).RoundDown(precision)
 
@@ -566,10 +566,10 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 
 	switch spotOrderRequest.Side {
 	case kucoinmodels.OrderSideSell:
-		maxAmount = maxAmount.Sub(maxAmount.Copy().Mul(decimal.NewFromFloat(0.001))).Div(tradingSymbol.Symbol.BaseIncrement).Floor().Mul(tradingSymbol.Symbol.BaseIncrement).RoundDown(int32(rule.AmountPrecision)) //nolint:gosec
+		maxAmount = maxAmount.Sub(maxAmount.Copy().Mul(decimal.NewFromFloat(0.001))).Div(tradingSymbol.Symbol.BaseIncrement).Floor().Mul(tradingSymbol.Symbol.BaseIncrement).RoundDown(int32(rule.AmountPrecision))
 		spotOrderRequest.Size = maxAmount.String()
 	case kucoinmodels.OrderSideBuy:
-		maxAmount = maxAmount.Sub(maxAmount.Copy().Mul(decimal.NewFromFloat(0.001))).Div(tradingSymbol.Symbol.QuoteIncrement).Floor().Mul(tradingSymbol.Symbol.QuoteIncrement).RoundDown(int32(rule.ValuePrecision)) //nolint:gosec
+		maxAmount = maxAmount.Sub(maxAmount.Copy().Mul(decimal.NewFromFloat(0.001))).Div(tradingSymbol.Symbol.QuoteIncrement).Floor().Mul(tradingSymbol.Symbol.QuoteIncrement).RoundDown(int32(rule.ValuePrecision))
 		spotOrderRequest.Funds = maxAmount.String()
 	}
 
@@ -825,7 +825,7 @@ func (o *Service) GetWithdrawalRules(ctx context.Context, coins ...string) ([]*m
 							// If the converted amount is around 1, set it to 1
 							minDepositAmount = decimal.NewFromFloat(1)
 						} else {
-							minDepositAmount = minDepositAmount.RoundUp(int32(chain.WithdrawPrecision)) //nolint:gosec
+							minDepositAmount = minDepositAmount.RoundUp(int32(chain.WithdrawPrecision))
 						}
 						rule.MinDepositAmount = minDepositAmount.String()
 					}

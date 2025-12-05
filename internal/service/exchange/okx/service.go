@@ -635,7 +635,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		"connection_hash", o.connHash,
 	)
 
-	precision := int32(args.WithdrawalPrecision) //nolint:gosec
+	precision := int32(args.WithdrawalPrecision)
 
 	args.NativeAmount = args.NativeAmount.RoundDown(precision).Sub(args.NativeAmount.Div(decimal.NewFromInt(100)).Mul(decimal.NewFromInt(1))).RoundDown(precision)
 

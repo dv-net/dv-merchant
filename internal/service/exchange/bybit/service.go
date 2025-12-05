@@ -460,7 +460,7 @@ func (o *Service) GetOrderRule(ctx context.Context, ticker string) (*models.Orde
 
 	// Calculate minimum amount based on minimum notional value and current price
 	// minOrderValue is in quote currency, divide by price to get base currency amount
-	calculatedMinAmount := minOrderValue.Div(currentPrice).RoundUp(int32(basePrecision.IntPart())) //nolint:gosec
+	calculatedMinAmount := minOrderValue.Div(currentPrice).RoundUp(int32(basePrecision.IntPart()))
 
 	// Use the larger of the calculated minimum or the exchange's minimum quantity
 	if calculatedMinAmount.GreaterThan(minOrderAmount) {
@@ -913,10 +913,10 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 	maxAmount := totalBalance
 	switch spotOrderRequest.Side {
 	case bybitmodels.SideSell.String():
-		spotOrderRequest.Qty = maxAmount.RoundDown(int32(rule.AmountPrecision)).String() //nolint:gosec
+		spotOrderRequest.Qty = maxAmount.RoundDown(int32(rule.AmountPrecision)).String()
 		// MarketUnit defaults to baseCoin for sell orders, so we don't need to set it
 	case bybitmodels.SideBuy.String():
-		spotOrderRequest.Qty = maxAmount.RoundDown(int32(rule.ValuePrecision)).String() //nolint:gosec
+		spotOrderRequest.Qty = maxAmount.RoundDown(int32(rule.ValuePrecision)).String()
 		spotOrderRequest.MarketUnit = bybitmodels.MarketUnitQuoteCoin.String()
 	}
 
@@ -936,7 +936,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 }
 
 func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.CreateWithdrawalOrderParams) (*models.ExchangeWithdrawalDTO, error) {
-	precision := int32(args.WithdrawalPrecision) //nolint:gosec
+	precision := int32(args.WithdrawalPrecision)
 
 	args.NativeAmount = args.NativeAmount.RoundDown(precision)
 
