@@ -48,6 +48,12 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Install latest golangci-lint
+        run: |
+          echo "Installing golangci-lint v2.7.1..."
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.7.1
+          golangci-lint --version
+
       - name: Build custom linter plugins
         run: |
           echo "Building custom golangci-lint plugins..."
