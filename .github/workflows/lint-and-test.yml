@@ -30,6 +30,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - name: Update Git to latest version
+        run: |
+          sudo add-apt-repository ppa:git-core/ppa -y
+          sudo apt-get update
+          sudo apt-get install git -y
+          git --version
+
       - name: Create .bin directory
         run: mkdir -p .bin
 
