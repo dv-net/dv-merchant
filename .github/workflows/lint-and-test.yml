@@ -48,6 +48,12 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Update git
+        run: |
+          sudo add-apt-repository ppa:git-core/ppa -y
+          sudo apt-get update
+          sudo apt-get install git -y
+
       - name: Install latest golangci-lint
         run: |
           echo "Installing golangci-lint v2.7.1..."
