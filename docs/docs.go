@@ -1936,14 +1936,12 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
-                        "format": "int32",
                         "description": "Page number",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "format": "int32",
                         "description": "Page size",
                         "name": "page_size",
                         "in": "query"
@@ -8735,7 +8733,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Withdrawal ID",
+                        "description": "Withdrawal ID or Request ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -10294,8 +10292,14 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
+                "contract_address": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
+                },
+                "is_native": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
@@ -15898,8 +15902,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "int64": {
-                    "type": "integer",
-                    "format": "int64"
+                    "type": "integer"
                 },
                 "valid": {
                     "type": "boolean"
