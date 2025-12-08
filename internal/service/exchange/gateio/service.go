@@ -450,9 +450,9 @@ func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side 
 
 	switch spotOrderRequest.Side {
 	case gateio.OrderSideSell.String():
-		spotOrderRequest.Amount = amount.RoundDown(int32(rule.AmountPrecision)).String() //nolint:gosec
+		spotOrderRequest.Amount = amount.RoundDown(int32(rule.AmountPrecision)).String()
 	case gateio.OrderSideBuy.String():
-		spotOrderRequest.Amount = amount.RoundDown(int32(rule.ValuePrecision)).String() //nolint:gosec
+		spotOrderRequest.Amount = amount.RoundDown(int32(rule.ValuePrecision)).String()
 	}
 
 	placedOrder, err := o.exClient.Spot().CreateSpotOrder(ctx, &spotOrderRequest)
@@ -471,7 +471,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side 
 }
 
 func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.CreateWithdrawalOrderParams) (*models.ExchangeWithdrawalDTO, error) {
-	args.NativeAmount = args.NativeAmount.RoundDown(int32(args.WithdrawalPrecision)) //nolint:gosec
+	args.NativeAmount = args.NativeAmount.RoundDown(int32(args.WithdrawalPrecision))
 
 	internalCurrency, err := o.storage.ExchangeChains().GetTickerByCurrencyID(ctx, repo_exchange_chains.GetTickerByCurrencyIDParams{
 		CurrencyID: args.Currency,

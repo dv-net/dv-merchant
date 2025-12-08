@@ -1,6 +1,6 @@
 package models
 
-type NotificationType string // @name NotificationType
+type NotificationType string //	@name	NotificationType
 
 func (o NotificationType) String() string { return string(o) }
 

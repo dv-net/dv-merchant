@@ -1,6 +1,6 @@
 package models
 
-type WithdrawalInterval string // @name WithdrawalInterval
+type WithdrawalInterval string //	@name	WithdrawalInterval
 
 const (
 	WithdrawalIntervalNever        WithdrawalInterval = "never"

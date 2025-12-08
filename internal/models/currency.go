@@ -9,4 +9,4 @@ type CurrencyShort struct {
 	IsBitcoinLike bool        `db:"is_bitcoin_like" json:"is_bitcoin_like"`
 	IsEVMLike     bool        `db:"is_evm_like" json:"is_evm_like"`
 	IsStableCoin  bool        `db:"is_stable_coin" json:"is_stable_coin"`
-} // @name CurrencyShort
+} //	@name	CurrencyShort

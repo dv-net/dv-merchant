@@ -1936,12 +1936,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Page number",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Page size",
                         "name": "page_size",
                         "in": "query"
@@ -8294,6 +8296,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/external/store/currencies-extended": {
+            "get": {
+                "security": [
+                    {
+                        "XApiKey": []
+                    }
+                ],
+                "description": "Get extended list of store currencies grouped by tokens and blockchains",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store"
+                ],
+                "summary": "Get extended list of store currencies",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store API key",
+                        "name": "api_key",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-CurrenciesExtendedResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/external/store/currencies/{id}/rate": {
             "get": {
                 "security": [
@@ -10215,6 +10262,29 @@ const docTemplate = `{
                 }
             }
         },
+        "CurrenciesExtendedResponse": {
+            "type": "object",
+            "properties": {
+                "blockchains": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/BlockchainGroup"
+                    }
+                },
+                "currencies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CurrencyExtendedItem"
+                    }
+                },
+                "tokens": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/TokenGroup"
+                    }
+                }
+            }
+        },
         "CurrencyDTO": {
             "type": "object",
             "properties": {
@@ -10232,6 +10302,44 @@ const docTemplate = `{
                 },
                 "sort_order": {
                     "type": "integer"
+                }
+            }
+        },
+        "CurrencyExtendedItem": {
+            "type": "object",
+            "properties": {
+                "blockchain": {
+                    "type": "string"
+                },
+                "blockchain_icon": {
+                    "$ref": "#/definitions/CurrencyIcon"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
+                "explorer_link": {
+                    "type": "string"
+                },
+                "has_balance": {
+                    "type": "boolean"
+                },
+                "icon": {
+                    "$ref": "#/definitions/CurrencyIcon"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "min_confirmation": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "token_icon": {
+                    "$ref": "#/definitions/CurrencyIcon"
                 }
             }
         },
@@ -11478,6 +11586,20 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/CreateWalletExternalResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-CurrenciesExtendedResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/CurrenciesExtendedResponse"
                 },
                 "message": {
                     "type": "string"
@@ -13569,13 +13691,31 @@ const docTemplate = `{
                 "amount_usd": {
                     "type": "string"
                 },
+                "blockchain": {
+                    "type": "string"
+                },
+                "contract_address": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
                 "currency_code": {
                     "type": "string"
                 },
+                "currency_label": {
+                    "type": "string"
+                },
+                "currency_name": {
+                    "type": "string"
+                },
                 "hash": {
+                    "type": "string"
+                },
+                "is_native": {
+                    "type": "boolean"
+                },
+                "token_label": {
                     "type": "string"
                 },
                 "type": {
@@ -13883,6 +14023,29 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "link": {
+                    "type": "string"
+                }
+            }
+        },
+        "TokenGroup": {
+            "type": "object",
+            "properties": {
+                "blockchains": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "currencies": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "icon": {
+                    "$ref": "#/definitions/CurrencyIcon"
+                },
+                "name": {
                     "type": "string"
                 }
             }
@@ -15735,7 +15898,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "int64": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "valid": {
                     "type": "boolean"

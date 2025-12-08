@@ -6,9 +6,9 @@ import (
 
 type DeleteAddressRequest struct {
 	TOTP string `json:"totp" validate:"required,len=6"`
-} // @name DeleteWithdrawalAddressRequest
+} //	@name	DeleteWithdrawalAddressRequest
 
 type BatchDeleteAddressRequest struct {
 	TOTP       string      `json:"totp" validate:"required,len=6"`
 	AddressIDs []uuid.UUID `json:"address_ids" validate:"required"` //nolint:tagliatelle
-} // @name BatchDeleteWithdrawalAddressRequest
+} //	@name	BatchDeleteWithdrawalAddressRequest

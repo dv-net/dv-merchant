@@ -15,4 +15,4 @@ type GetDictionariesResponse struct {
 	AvailableAMLProviders []models.AMLSlug                     `json:"available_aml_providers"`
 	BackendAddress        string                               `json:"backend_address" format:"ipv4"`
 	GeneralSettings       []*settings_response.SettingResponse `json:"general_settings"`
-} // @name GetDictionariesResponse
+} //	@name	GetDictionariesResponse

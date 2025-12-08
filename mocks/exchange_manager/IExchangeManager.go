@@ -4,6 +4,7 @@ package mocks
 
 import (
 	context "context"
+
 	exchange_manager "github.com/dv-net/dv-merchant/internal/service/exchange_manager"
 
 	mock "github.com/stretchr/testify/mock"

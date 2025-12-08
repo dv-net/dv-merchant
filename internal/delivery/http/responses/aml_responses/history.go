@@ -21,7 +21,7 @@ type AmlHistoryResponse struct {
 	CreatedAt      *time.Time            `json:"created_at"`
 	UpdatedAt      *time.Time            `json:"updated_at"`
 	RequestHistory []CheckHistory        `json:"request_history"`
-} // @name AmlHistoryResponse
+} //	@name	AmlHistoryResponse
 
 type CheckHistory struct {
 	ID              uuid.UUID  `db:"id" json:"id"`
@@ -32,4 +32,4 @@ type CheckHistory struct {
 	AttemptNumber   int32      `db:"attempt_number" json:"attempt_number"`
 	CreatedAt       *time.Time `json:"created_at"`
 	UpdatedAt       *time.Time `json:"updated_at"`
-} // @name CheckHistory
+} //	@name	CheckHistory
