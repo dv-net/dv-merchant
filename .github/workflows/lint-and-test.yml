@@ -61,7 +61,7 @@ jobs:
           GIT: /usr/bin/git
         run: |
           echo "Building custom golangci-lint plugins..."
-          hich git
+          which git
           git --version
           echo "Using GIT=$GIT"
           make build_plugins
