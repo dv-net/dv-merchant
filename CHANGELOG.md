@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 - Currency reference data about it being native, and contract address for external routes [DV-3761]
 - fix: duplicates withdrawal from processing on 'in_progress' transfer stage [DV-3933]
+- feat: add find withdrawal request by id and request_id [DV-3948]
 
 ## [0.9.14] - 2025-13-04
 - feat: added extended tx info in search response [DV-3827]
