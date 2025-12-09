@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- feat: added clickjacking protection middleware [DV-3955]
+
 ## [0.9.14] - 2025-13-04
 
 - feat: added extended tx info in search response [DV-3827]
