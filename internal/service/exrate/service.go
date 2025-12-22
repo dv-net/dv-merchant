@@ -46,43 +46,50 @@ func New(
 		logger:          logger,
 	}
 
-	f := NewBinanceFetcher("https://api.binance.com/api/v3/ticker/price", http.DefaultClient, logger)
+	// Create HTTP client with timeout
+	httpClient := &http.Client{
+		Timeout: cfg.Exrate.Timeout,
+	}
+
+	proxies := cfg.Exrate.Proxies
+
+	f := NewBinanceFetcher("https://api.binance.com/api/v3/ticker/price", proxies, httpClient, logger)
 	srv.fetchers[f.Source()] = fetcherData{
 		fetcher: f,
 		cfChan:  make(chan CurrencyFilter),
 	}
 
-	f = NewHtxFetcher("https://api.huobi.pro/market/tickers", http.DefaultClient, logger)
+	f = NewHtxFetcher("https://api.huobi.pro/market/tickers", proxies, httpClient, logger)
 	srv.fetchers[f.Source()] = fetcherData{
 		fetcher: f,
 		cfChan:  make(chan CurrencyFilter),
 	}
 
-	f = NewOkxFetcher("https://www.okx.com/api/v5/market/index-tickers", http.DefaultClient, logger)
+	f = NewOkxFetcher("https://www.okx.com/api/v5/market/index-tickers", proxies, httpClient, logger)
 	srv.fetchers[f.Source()] = fetcherData{
 		fetcher: f,
 		cfChan:  make(chan CurrencyFilter),
 	}
 
-	f = NewBitgetFetcher("https://api.bitget.com/api/v2/spot/market/tickers", http.DefaultClient, logger)
+	f = NewBitgetFetcher("https://api.bitget.com/api/v2/spot/market/tickers", proxies, httpClient, logger)
 	srv.fetchers[f.Source()] = fetcherData{
 		fetcher: f,
 		cfChan:  make(chan CurrencyFilter),
 	}
 
-	f = NewKucoinFetcher("https://api.kucoin.com/api/v1/market/allTickers", http.DefaultClient, logger)
+	f = NewKucoinFetcher("https://api.kucoin.com/api/v1/market/allTickers", proxies, httpClient, logger)
 	srv.fetchers[f.Source()] = fetcherData{
 		fetcher: f,
 		cfChan:  make(chan CurrencyFilter),
 	}
 
-	f = NewGateioFetcher("https://api.gateio.ws/api/v4/spot/tickers", http.DefaultClient, logger)
+	f = NewGateioFetcher("https://api.gateio.ws/api/v4/spot/tickers", proxies, httpClient, logger)
 	srv.fetchers[f.Source()] = fetcherData{
 		fetcher: f,
 		cfChan:  make(chan CurrencyFilter),
 	}
 
-	f = NewBybitFetcher("https://api.bybit.com/v5/market/tickers?category=spot", http.DefaultClient, logger)
+	f = NewBybitFetcher("https://api.bybit.com/v5/market/tickers?category=spot", proxies, httpClient, logger)
 	srv.fetchers[f.Source()] = fetcherData{
 		fetcher: f,
 		cfChan:  make(chan CurrencyFilter),

@@ -5,17 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"math"
+	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/dv-net/dv-merchant/pkg/logger"
 )
-
-// https://api.huobi.pro/market/detail?symbol=btcusdt
-// https://api.huobi.pro/market/tickers
 
 var ErrInvalidResponseFromHtx = errors.New("invalid response from htx")
 
@@ -52,13 +52,14 @@ func parseHtxResponse(rc io.ReadCloser) (*HtxResponse, error) {
 	return r, nil
 }
 
-func NewHtxFetcher(url string, httpClient *http.Client, log logger.Logger) IFetcher {
-	return &htxFetcher{url: url, httpClient: httpClient, log: log}
+func NewHtxFetcher(url string, proxies []string, httpClient *http.Client, log logger.Logger) IFetcher {
+	return &htxFetcher{url: url, proxies: proxies, httpClient: httpClient, log: log}
 }
 
 type htxFetcher struct {
 	url        string
 	httpClient *http.Client
+	proxies    []string
 	log        logger.Logger
 }
 
@@ -67,16 +68,74 @@ func (o *htxFetcher) Source() string {
 }
 
 func (o *htxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error {
-	var req *http.Request
+	err := o.fetchWithClient(ctx, o.httpClient, currencyFilter, out)
+	if err == nil {
+		return nil // Success with direct connection
+	}
+
+	o.log.Debugw("direct request failed, trying proxies", "error", err)
+
+	if len(o.proxies) == 0 {
+		return err
+	}
+
+	shuffledProxies := make([]string, len(o.proxies))
+	copy(shuffledProxies, o.proxies)
+	rand.Shuffle(len(shuffledProxies), func(i, j int) {
+		shuffledProxies[i], shuffledProxies[j] = shuffledProxies[j], shuffledProxies[i]
+	})
+
+	var lastErr error = err
+
+	for _, proxyURL := range shuffledProxies {
+		client, err := o.createProxyClient(proxyURL)
+		if err != nil {
+			o.log.Debugw("failed to create proxy client", "proxy", proxyURL, "error", err)
+			lastErr = err
+			continue
+		}
+
+		err = o.fetchWithClient(ctx, client, currencyFilter, out)
+		if err == nil {
+			o.log.Debugw("request succeeded with proxy", "proxy", proxyURL)
+			return nil // Success
+		}
+
+		o.log.Debugw("request failed with proxy, trying next", "proxy", proxyURL, "error", err)
+		lastErr = err
+	}
+
+	return fmt.Errorf("all proxies exhausted, last error: %w", lastErr)
+}
+
+func (o *htxFetcher) createProxyClient(proxyURL string) (*http.Client, error) {
+	parsedProxy, err := url.Parse(proxyURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid proxy URL: %w", err)
+	}
+
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(parsedProxy),
+	}
+
+	return &http.Client{
+		Transport: transport,
+		Timeout:   o.httpClient.Timeout,
+	}, nil
+}
+
+func (o *htxFetcher) fetchWithClient(ctx context.Context, client *http.Client, currencyFilter CurrencyFilter, out chan<- ExRate) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, o.url, nil)
 	if err != nil {
 		return err
 	}
-	resp, err := o.httpClient.Do(req)
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
+
 	body, err := parseHtxResponse(resp.Body)
 	if err != nil {
 		return err
