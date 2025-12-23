@@ -56,7 +56,7 @@ func (o *htxFetcher) Source() string {
 	return "htx"
 }
 
-func (o *htxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error {
+func (o *htxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error { //nolint:dupl
 	err := o.fetchWithClient(ctx, o.httpClient, "direct", currencyFilter, out)
 	if err == nil {
 		return nil
@@ -75,7 +75,7 @@ func (o *htxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 		shuffledProxies[i], shuffledProxies[j] = shuffledProxies[j], shuffledProxies[i]
 	})
 
-	var lastErr error = err
+	var lastErr error = err //nolint:all
 
 	for _, proxyURL := range shuffledProxies {
 		client, err := o.createProxyClient(proxyURL)

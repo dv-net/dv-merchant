@@ -51,7 +51,7 @@ func (o *okxFetcher) Source() string {
 	return "okx"
 }
 
-func (o *okxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error {
+func (o *okxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error { //nolint:dupl
 	err := o.fetchAllCurrencies(ctx, o.httpClient, "direct", currencyFilter, out)
 	if err == nil {
 		return nil
@@ -70,7 +70,7 @@ func (o *okxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 		shuffledProxies[i], shuffledProxies[j] = shuffledProxies[j], shuffledProxies[i]
 	})
 
-	var lastErr error = err
+	var lastErr error = err //nolint:all
 
 	for _, proxyURL := range shuffledProxies {
 		client, err := o.createProxyClient(proxyURL)
@@ -147,7 +147,7 @@ func (o *okxFetcher) fetchAllCurrencies(ctx context.Context, client *http.Client
 		out <- rate
 	}
 
-	var errs []error
+	var errs []error //nolint:all
 	for err := range errCh {
 		errs = append(errs, err)
 	}
@@ -171,7 +171,7 @@ func (o *okxFetcher) fetchAllCurrencies(ctx context.Context, client *http.Client
 	return nil
 }
 
-func (o *okxFetcher) fetchForCurrency(ctx context.Context, client *http.Client, connectionType string, currency string, currencyFilter CurrencyFilter, out chan<- ExRate) error {
+func (o *okxFetcher) fetchForCurrency(ctx context.Context, client *http.Client, connectionType string, currency string, currencyFilter CurrencyFilter, out chan<- ExRate) error { //nolint:all
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, o.url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)

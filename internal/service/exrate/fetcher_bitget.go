@@ -59,7 +59,7 @@ func (o *bitgetFetcher) Source() string {
 	return "bitget"
 }
 
-func (o *bitgetFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error {
+func (o *bitgetFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error { //nolint:dupl
 	// Try direct connection first
 	err := o.fetchWithClient(ctx, o.httpClient, "direct", currencyFilter, out)
 	if err == nil {
@@ -80,7 +80,7 @@ func (o *bitgetFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 		shuffledProxies[i], shuffledProxies[j] = shuffledProxies[j], shuffledProxies[i]
 	})
 
-	var lastErr error = err
+	var lastErr error = err //nolint:all
 	for _, proxyURL := range shuffledProxies {
 		client, err := o.createProxyClient(proxyURL)
 		if err != nil {

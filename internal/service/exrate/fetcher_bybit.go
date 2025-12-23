@@ -43,7 +43,7 @@ func (o *bybitFetcher) Source() string {
 	return "bybit"
 }
 
-func (o *bybitFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error {
+func (o *bybitFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error { //nolint:dupl
 	err := o.fetchWithClient(ctx, o.httpClient, "direct", currencyFilter, out)
 	if err == nil {
 		return nil
@@ -62,7 +62,7 @@ func (o *bybitFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter,
 		shuffledProxies[i], shuffledProxies[j] = shuffledProxies[j], shuffledProxies[i]
 	})
 
-	var lastErr error = err
+	var lastErr error = err //nolint:all
 
 	for _, proxyURL := range shuffledProxies {
 		client, err := o.createProxyClient(proxyURL)

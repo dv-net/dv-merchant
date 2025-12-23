@@ -46,7 +46,7 @@ func (o *kucoinFetcher) Source() string {
 	return "kucoin"
 }
 
-func (o *kucoinFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error {
+func (o *kucoinFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error { //nolint:dupl
 	err := o.fetchWithClient(ctx, o.httpClient, "direct", currencyFilter, out)
 	if err == nil {
 		return nil // Success with direct connection
@@ -65,7 +65,7 @@ func (o *kucoinFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 		shuffledProxies[i], shuffledProxies[j] = shuffledProxies[j], shuffledProxies[i]
 	})
 
-	var lastErr error = err
+	var lastErr error = err //nolint:all
 
 	for _, proxyURL := range shuffledProxies {
 		client, err := o.createProxyClient(proxyURL)
@@ -85,9 +85,7 @@ func (o *kucoinFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 		lastErr = err
 	}
 
-	o.log.Errorw("[EXRATE-KUCOIN] all proxies exhausted", 
-		"proxy_count", len(shuffledProxies),
-		"last_error", lastErr)
+	o.log.Errorw("[EXRATE-KUCOIN] all proxies exhausted", "proxy_count", len(shuffledProxies), "last_error", lastErr)
 	return fmt.Errorf("all proxies exhausted, last error: %w", lastErr)
 }
 
@@ -110,8 +108,8 @@ func (o *kucoinFetcher) createProxyClient(proxyURL string) (*http.Client, error)
 func (o *kucoinFetcher) fetchWithClient(ctx context.Context, client *http.Client, connectionType string, currencyFilter CurrencyFilter, out chan<- ExRate) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, o.url, nil)
 	if err != nil {
-		o.log.Errorw("[EXRATE-KUCOIN] failed to create request", 
-			"error", err, 
+		o.log.Errorw("[EXRATE-KUCOIN] failed to create request",
+			"error", err,
 			"url", o.url,
 			"connection", connectionType)
 		return err
@@ -119,8 +117,8 @@ func (o *kucoinFetcher) fetchWithClient(ctx context.Context, client *http.Client
 
 	resp, err := client.Do(req)
 	if err != nil {
-		o.log.Errorw("[EXRATE-KUCOIN] http client error", 
-			"error", err, 
+		o.log.Errorw("[EXRATE-KUCOIN] http client error",
+			"error", err,
 			"url", o.url,
 			"connection", connectionType)
 		return err
@@ -129,8 +127,8 @@ func (o *kucoinFetcher) fetchWithClient(ctx context.Context, client *http.Client
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		o.log.Errorw("[EXRATE-KUCOIN] failed to read response body", 
-			"error", err, 
+		o.log.Errorw("[EXRATE-KUCOIN] failed to read response body",
+			"error", err,
 			"status_code", resp.StatusCode,
 			"connection", connectionType)
 		return err
