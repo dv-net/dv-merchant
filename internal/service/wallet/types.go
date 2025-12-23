@@ -111,12 +111,14 @@ func (o *WithAddressDto) Encode(m *models.Wallet, frontendBaseURL string) (err e
 }
 
 type CurrencyDTO struct {
-	ID         string            `json:"id"`
-	Code       string            `json:"code"`
-	Name       string            `json:"name"`
-	Blockchain models.Blockchain `json:"blockchain"`
-	SortOrder  int64             `json:"sort_order"`
-} //	@name	CurrencyDTO
+	ID              string            `json:"id"`
+	Code            string            `json:"code"`
+	Name            string            `json:"name"`
+	Blockchain      models.Blockchain `json:"blockchain"`
+	SortOrder       int64             `json:"sort_order"`
+	IsNative        bool              `json:"is_native"`
+	ContractAddress string            `json:"contract_address"`
+} // @name CurrencyDTO
 
 type SummaryDTO struct {
 	Currency         CurrencyDTO `json:"currency"`

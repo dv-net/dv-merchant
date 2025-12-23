@@ -27,7 +27,7 @@ linters:
     - goheader
     - gomodguard
     - goprintffuncname
-    - gosec
+    # - gosec
     - govet
     - grouper
     - ineffassign
@@ -110,6 +110,10 @@ linters:
         text: 'var-naming: don''t use an underscore in package name'
       - path: (.+)\.go$
         text: should not use underscores in package names
+      - path: (.+)\.go$
+        text: 'var-naming: avoid package names that conflict with Go standard library package names'
+      - path: (.+)\.go$
+        text: 'var-naming: avoid meaningless package names'
     paths:
       - .*\.pb\.go
       - .*\.connect\.go

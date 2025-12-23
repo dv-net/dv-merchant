@@ -54,6 +54,7 @@ func (r *Router) Init(app *fiber.App) {
 	}
 
 	app.Use(middleware.CacheControlMiddleware())
+	app.Use(middleware.ClickjackingMiddleware())
 
 	app.Get("/ping", func(c fiber.Ctx) error {
 		return c.SendString("pong")

@@ -495,8 +495,12 @@ definitions:
         $ref: '#/definitions/Blockchain'
       code:
         type: string
+      contract_address:
+        type: string
       id:
         type: string
+      is_native:
+        type: boolean
       name:
         type: string
       sort_order:
@@ -4252,7 +4256,6 @@ definitions:
   pgtype.Int8:
     properties:
       int64:
-        format: int64
         type: integer
       valid:
         type: boolean
@@ -5494,12 +5497,10 @@ paths:
         filtering options
       parameters:
       - description: Page number
-        format: int32
         in: query
         name: page
         type: integer
       - description: Page size
-        format: int32
         in: query
         name: page_size
         type: integer
@@ -9883,7 +9884,7 @@ paths:
         name: api_key
         required: true
         type: string
-      - description: Withdrawal ID
+      - description: Withdrawal ID or Request ID
         in: path
         name: id
         required: true

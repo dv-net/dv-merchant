@@ -6,10 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
 - feat: added exrate debug logging [DV-4033]
+- feat: added clickjacking protection middleware [DV-3955]
+- Currency reference data about it being native, and contract address for external routes [DV-3761]
+- fix: duplicates withdrawal from processing on 'in_progress' transfer stage [DV-3933]
+- feat: add find withdrawal request by id and request_id [DV-3948]
 
 ## [0.9.14] - 2025-13-04
-
 - feat: added extended tx info in search response [DV-3827]
 - feat: added endpoint to retrieve extended information about store enabled currencies [DV-3857]
 
@@ -19,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.12] - 2025-11-18
 - Fix transaction ordering at `tx-find` method  [DV-3808]
 - The readme has been updated and translated into Russian and Chinese [DV-3708]
+
 
 ## [0.9.11] - 2025-10-15
 - fix: fixed universal groups separation by blockchain [DV-3645]

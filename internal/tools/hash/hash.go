@@ -1,4 +1,4 @@
-package hash //nolint:revive
+package hash
 
 import (
 	"crypto/sha256"

@@ -1,4 +1,4 @@
-package errors //nolint:all
+package errors
 
 import (
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
