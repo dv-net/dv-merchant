@@ -62,6 +62,8 @@ type (
 
 	ExrateConfig struct {
 		FetchInterval time.Duration `yaml:"fetch_interval" env:"FETCH_INTERVAL" default:"1m"`
+		Proxies       []string      `yaml:"proxies" example:"http://user:pass@proxy1.example.com:8080"`
+		Timeout       time.Duration `yaml:"timeout" default:"10s"`
 	}
 
 	AdminConfig struct {
