@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -35,21 +36,10 @@ type HtxSymbol struct {
 }
 
 type HtxResponse struct {
-	Status    string      `json:"status,omitempty"`
-	Data      []HtxSymbol `json:"data,omitempty"`
-	Timestamp int64       `json:"ts,omitempty"` //nolint:tagliatelle
-}
-
-func parseHtxResponse(rc io.ReadCloser) (*HtxResponse, error) {
-	b, err := io.ReadAll(rc)
-	if err != nil {
-		return nil, err
-	}
-	r := &HtxResponse{}
-	if err := json.Unmarshal(b, r); err != nil {
-		return nil, err
-	}
-	return r, nil
+	Status  string      `json:"status,omitempty"`
+	Data    []HtxSymbol `json:"data,omitempty"`
+	ErrCode string      `json:"err-code,omitempty"`
+	ErrMsg  string      `json:"err-msg,omitempty"`
 }
 
 func NewHtxFetcher(url string, httpClient *http.Client, log logger.Logger) IFetcher {
@@ -70,27 +60,75 @@ func (o *htxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 	var req *http.Request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, o.url, nil)
 	if err != nil {
+		o.log.Errorw("[EXRATE-HTX] failed to create request",
+			"error", err,
+			"url", o.url)
 		return err
 	}
+
 	resp, err := o.httpClient.Do(req)
 	if err != nil {
+		o.log.Errorw("[EXRATE-HTX] http client error",
+			"error", err,
+			"url", o.url)
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	body, err := parseHtxResponse(resp.Body)
+
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
+		o.log.Errorw("[EXRATE-HTX] failed to read response body",
+			"error", err,
+			"status_code", resp.StatusCode)
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		o.log.Errorw("[EXRATE-HTX] non-OK HTTP status",
+			"status_code", resp.StatusCode,
+			"status", resp.Status,
+			"raw_response", string(bodyBytes))
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := parseHtxResponseBytes(bodyBytes)
+	if err != nil {
+		o.log.Errorw("[EXRATE-HTX] response parsing error",
+			"error", err,
+			"raw_response", string(bodyBytes),
+			"status_code", resp.StatusCode)
 		return err
 	}
 
 	if body.Status != "ok" {
-		o.log.Debugw(
-			"currency exchange service response not OK",
+		o.log.Errorw(
+			"[EXRATE-HTX] currency exchange service response not OK",
 			"status", body.Status,
-		)
-		return ErrInvalidResponseFromHtx
+			"err_code", body.ErrCode,
+			"err_msg", body.ErrMsg,
+			"raw_response", string(bodyBytes))
+		return fmt.Errorf("%w: %s - %s", ErrInvalidResponseFromHtx, body.ErrCode, body.ErrMsg)
 	}
 
-	return filterHtxResponse(body, currencyFilter, out)
+	if err := filterHtxResponse(body, currencyFilter, out); err != nil {
+		o.log.Errorw("[EXRATE-HTX] failed to filter response",
+			"error", err,
+			"symbol_count", len(body.Data))
+		return err
+	}
+
+	o.log.Infow("[EXRATE-HTX] successfully fetched exchange rates",
+		"symbol_count", len(body.Data))
+
+	return nil
+}
+
+func parseHtxResponseBytes(b []byte) (*HtxResponse, error) {
+	r := &HtxResponse{}
+	if err := json.Unmarshal(b, r); err != nil {
+		return nil, fmt.Errorf("json unmarshal failed: %w", err)
+	}
+	return r, nil
 }
 
 func filterHtxResponse(r *HtxResponse, currencyFilter CurrencyFilter, out chan<- ExRate) error { //nolint:unparam

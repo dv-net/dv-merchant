@@ -3,6 +3,7 @@ package exrate
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -41,29 +42,63 @@ func (o *gateioFetcher) Source() string {
 func (o *gateioFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) (err error) {
 	var req *http.Request
 	if req, err = http.NewRequestWithContext(ctx, http.MethodGet, o.url, nil); err != nil {
+		o.log.Errorw("[EXRATE-GATE] failed to create request",
+			"error", err,
+			"url", o.url)
 		return err
 	}
+
 	var resp *http.Response
 	if resp, err = o.httpClient.Do(req); err != nil {
+		o.log.Errorw("[EXRATE-GATE] http client error",
+			"error", err,
+			"url", o.url)
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	body, err := parseGateioResponse(resp.Body)
+
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
+		o.log.Errorw("[EXRATE-GATE] failed to read response body",
+			"error", err,
+			"status_code", resp.StatusCode)
 		return err
 	}
 
-	return filterGateioResponse(body, currencyFilter, out)
+	if resp.StatusCode != http.StatusOK {
+		o.log.Errorw("[EXRATE-GATE] non-OK HTTP status",
+			"status_code", resp.StatusCode,
+			"status", resp.Status,
+			"raw_response", string(bodyBytes))
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := parseGateioResponseBytes(bodyBytes)
+	if err != nil {
+		o.log.Errorw("[EXRATE-GATE] response parsing error",
+			"error", err,
+			"raw_response", string(bodyBytes),
+			"status_code", resp.StatusCode)
+		return err
+	}
+
+	if err := filterGateioResponse(body, currencyFilter, out); err != nil {
+		o.log.Errorw("[EXRATE-GATE] failed to filter response",
+			"error", err,
+			"symbol_count", len(body.Data))
+		return err
+	}
+
+	o.log.Infow("[EXRATE-GATE] successfully fetched exchange rates",
+		"symbol_count", len(body.Data))
+
+	return nil
 }
 
-func parseGateioResponse(rc io.ReadCloser) (*GateioResponse, error) {
-	b, err := io.ReadAll(rc)
-	if err != nil {
-		return nil, err
-	}
+func parseGateioResponseBytes(b []byte) (*GateioResponse, error) {
 	r := &GateioResponse{}
 	if err := json.Unmarshal(b, &r.Data); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("json unmarshal failed: %w", err)
 	}
 	return r, nil
 }

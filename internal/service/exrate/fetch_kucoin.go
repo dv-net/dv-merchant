@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -45,37 +46,55 @@ func (o *kucoinFetcher) Source() string {
 func (o *kucoinFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) (err error) {
 	var req *http.Request
 	if req, err = http.NewRequestWithContext(ctx, http.MethodGet, o.url, nil); err != nil {
+		o.log.Errorw("[EXRATE-KUCOIN] failed to create request", "error", err, "url", o.url)
 		return err
 	}
+
 	var resp *http.Response
 	if resp, err = o.httpClient.Do(req); err != nil {
+		o.log.Errorw("[EXRATE-KUCOIN] http client error", "error", err, "url", o.url)
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	body, err := parseKucoinResponse(resp.Body)
+
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
+		o.log.Errorw("[EXRATE-KUCOIN] failed to read response body", "error", err, "status_code", resp.StatusCode)
+		return err
+	}
+
+	body, err := parseKucoinResponseBytes(bodyBytes)
+	if err != nil {
+		o.log.Errorw("[EXRATE-KUCOIN] response parsing error",
+			"error", err,
+			"raw_response", string(bodyBytes),
+			"status_code", resp.StatusCode)
 		return err
 	}
 
 	if body.Code != "200000" {
-		o.log.Debugw(
-			"currency exchange service response not OK",
+		o.log.Errorw(
+			"[EXRATE-KUCOIN] currency exchange service response not OK",
+			"raw_response", string(bodyBytes),
 			"status", body.Code,
 		)
 		return ErrInvalidResponseFromKucoin
 	}
 
-	return filterKucoinResponse(body, currencyFilter, out)
+	if err := filterKucoinResponse(body, currencyFilter, out); err != nil {
+		o.log.Errorw("[EXRATE-KUCOIN] failed to filter response",
+			"error", err,
+			"ticker_count", len(body.Data.Ticker))
+		return err
+	}
+
+	return nil
 }
 
-func parseKucoinResponse(rc io.ReadCloser) (*KucoinResponse, error) {
-	b, err := io.ReadAll(rc)
-	if err != nil {
-		return nil, err
-	}
+func parseKucoinResponseBytes(b []byte) (*KucoinResponse, error) {
 	r := &KucoinResponse{}
 	if err := json.Unmarshal(b, &r); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("json unmarshal failed: %w", err)
 	}
 	return r, nil
 }

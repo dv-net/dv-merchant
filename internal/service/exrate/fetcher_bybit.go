@@ -4,6 +4,7 @@ package exrate
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -43,29 +44,63 @@ func (o *bybitFetcher) Source() string {
 func (o *bybitFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) (err error) {
 	var req *http.Request
 	if req, err = http.NewRequestWithContext(ctx, http.MethodGet, o.url, http.NoBody); err != nil {
+		o.log.Errorw("[EXRATE-BYBIT] failed to create request",
+			"error", err,
+			"url", o.url)
 		return err
 	}
+
 	var resp *http.Response
 	if resp, err = o.httpClient.Do(req); err != nil {
+		o.log.Errorw("[EXRATE-BYBIT] http client error",
+			"error", err,
+			"url", o.url)
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	body, err := parseBybitResponse(resp.Body)
+
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
+		o.log.Errorw("[EXRATE-BYBIT] failed to read response body",
+			"error", err,
+			"status_code", resp.StatusCode)
 		return err
 	}
 
-	return filterBybitResponse(body, currencyFilter, out)
+	if resp.StatusCode != http.StatusOK {
+		o.log.Errorw("[EXRATE-BYBIT] non-OK HTTP status",
+			"status_code", resp.StatusCode,
+			"status", resp.Status,
+			"raw_response", string(bodyBytes))
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := parseBybitResponseBytes(bodyBytes)
+	if err != nil {
+		o.log.Errorw("[EXRATE-BYBIT] response parsing error",
+			"error", err,
+			"raw_response", string(bodyBytes),
+			"status_code", resp.StatusCode)
+		return err
+	}
+
+	if err := filterBybitResponse(body, currencyFilter, out); err != nil {
+		o.log.Errorw("[EXRATE-BYBIT] failed to filter response",
+			"error", err,
+			"symbol_count", len(body.Result.List))
+		return err
+	}
+
+	o.log.Infow("[EXRATE-BYBIT] successfully fetched exchange rates",
+		"symbol_count", len(body.Result.List))
+
+	return nil
 }
 
-func parseBybitResponse(rc io.ReadCloser) (*BybitResponse, error) {
-	b, err := io.ReadAll(rc)
-	if err != nil {
-		return nil, err
-	}
+func parseBybitResponseBytes(b []byte) (*BybitResponse, error) {
 	r := &BybitResponse{}
-	if err := json.Unmarshal(b, &r); err != nil {
-		return nil, err
+	if err := json.Unmarshal(b, r); err != nil {
+		return nil, fmt.Errorf("json unmarshal failed: %w", err)
 	}
 	return r, nil
 }
