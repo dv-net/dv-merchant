@@ -35,21 +35,10 @@ type HtxSymbol struct {
 }
 
 type HtxResponse struct {
-	Status    string      `json:"status,omitempty"`
-	Data      []HtxSymbol `json:"data,omitempty"`
-	Timestamp int64       `json:"ts,omitempty"` //nolint:tagliatelle
-}
-
-func parseHtxResponse(rc io.ReadCloser) (*HtxResponse, error) {
-	b, err := io.ReadAll(rc)
-	if err != nil {
-		return nil, err
-	}
-	r := &HtxResponse{}
-	if err := json.Unmarshal(b, r); err != nil {
-		return nil, err
-	}
-	return r, nil
+	Status  string      `json:"status,omitempty"`
+	Data    []HtxSymbol `json:"data,omitempty"`
+	ErrCode string      `json:"err-code,omitempty"`
+	ErrMsg  string      `json:"err-msg,omitempty"`
 }
 
 func NewHtxFetcher(url string, proxies []string, httpClient *http.Client, log logger.Logger) IFetcher {
@@ -68,14 +57,15 @@ func (o *htxFetcher) Source() string {
 }
 
 func (o *htxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error {
-	err := o.fetchWithClient(ctx, o.httpClient, currencyFilter, out)
+	err := o.fetchWithClient(ctx, o.httpClient, "direct", currencyFilter, out)
 	if err == nil {
-		return nil // Success with direct connection
+		return nil
 	}
 
-	o.log.Debugw("direct request failed, trying proxies", "error", err)
+	o.log.Warnw("[EXRATE-HTX] direct request failed, trying proxies", "error", err)
 
 	if len(o.proxies) == 0 {
+		o.log.Errorw("[EXRATE-HTX] no proxies available after direct failure", "error", err)
 		return err
 	}
 
@@ -90,21 +80,24 @@ func (o *htxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 	for _, proxyURL := range shuffledProxies {
 		client, err := o.createProxyClient(proxyURL)
 		if err != nil {
-			o.log.Debugw("failed to create proxy client", "proxy", proxyURL, "error", err)
+			o.log.Warnw("[EXRATE-HTX] failed to create proxy client", "proxy", proxyURL, "error", err)
 			lastErr = err
 			continue
 		}
 
-		err = o.fetchWithClient(ctx, client, currencyFilter, out)
+		err = o.fetchWithClient(ctx, client, proxyURL, currencyFilter, out)
 		if err == nil {
-			o.log.Debugw("request succeeded with proxy", "proxy", proxyURL)
-			return nil // Success
+			o.log.Infow("[EXRATE-HTX] request succeeded with proxy", "proxy", proxyURL)
+			return nil
 		}
 
-		o.log.Debugw("request failed with proxy, trying next", "proxy", proxyURL, "error", err)
+		o.log.Warnw("[EXRATE-HTX] request failed with proxy, trying next", "proxy", proxyURL, "error", err)
 		lastErr = err
 	}
 
+	o.log.Errorw("[EXRATE-HTX] all proxies exhausted",
+		"proxy_count", len(shuffledProxies),
+		"last_error", lastErr)
 	return fmt.Errorf("all proxies exhausted, last error: %w", lastErr)
 }
 
@@ -124,37 +117,103 @@ func (o *htxFetcher) createProxyClient(proxyURL string) (*http.Client, error) {
 	}, nil
 }
 
-func (o *htxFetcher) fetchWithClient(ctx context.Context, client *http.Client, currencyFilter CurrencyFilter, out chan<- ExRate) error {
+func (o *htxFetcher) fetchWithClient(ctx context.Context, client *http.Client, connectionType string, currencyFilter CurrencyFilter, out chan<- ExRate) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, o.url, nil)
 	if err != nil {
+		o.log.Errorw("[EXRATE-HTX] failed to create request",
+			"error", err,
+			"url", o.url,
+			"connection", connectionType)
 		return err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
+		o.log.Errorw("[EXRATE-HTX] http client error",
+			"error", err,
+			"url", o.url,
+			"connection", connectionType)
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	body, err := parseHtxResponse(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
+		o.log.Errorw("[EXRATE-HTX] failed to read response body",
+			"error", err,
+			"status_code", resp.StatusCode,
+			"connection", connectionType)
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		o.log.Errorw("[EXRATE-HTX] non-OK HTTP status",
+			"status_code", resp.StatusCode,
+			"status", resp.Status,
+			"raw_response", string(bodyBytes),
+			"connection", connectionType)
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := parseHtxResponseBytes(bodyBytes)
+	if err != nil {
+		o.log.Errorw("[EXRATE-HTX] response parsing error",
+			"error", err,
+			"raw_response", string(bodyBytes),
+			"status_code", resp.StatusCode,
+			"connection", connectionType)
 		return err
 	}
 
 	if body.Status != "ok" {
-		o.log.Debugw(
-			"currency exchange service response not OK",
+		o.log.Errorw(
+			"[EXRATE-HTX] currency exchange service response not OK",
 			"status", body.Status,
-		)
-		return ErrInvalidResponseFromHtx
+			"err_code", body.ErrCode,
+			"err_msg", body.ErrMsg,
+			"raw_response", string(bodyBytes),
+			"connection", connectionType)
+		return fmt.Errorf("%w: %s - %s", ErrInvalidResponseFromHtx, body.ErrCode, body.ErrMsg)
 	}
 
-	return filterHtxResponse(body, currencyFilter, out)
+	if err := filterHtxResponse(body, currencyFilter, out); err != nil {
+		o.log.Errorw("[EXRATE-HTX] failed to filter response",
+			"error", err,
+			"symbol_count", len(body.Data),
+			"connection", connectionType)
+		return err
+	}
+
+	o.log.Infow("[EXRATE-HTX] successfully fetched exchange rates",
+		"symbol_count", len(body.Data),
+		"connection", connectionType)
+
+	return nil
 }
 
-func filterHtxResponse(r *HtxResponse, currencyFilter CurrencyFilter, out chan<- ExRate) error { //nolint:unparam
+func parseHtxResponseBytes(b []byte) (*HtxResponse, error) {
+	r := &HtxResponse{}
+	if err := json.Unmarshal(b, r); err != nil {
+		return nil, fmt.Errorf("json unmarshal failed: %w", err)
+	}
+	return r, nil
+}
+
+func filterHtxResponse(r *HtxResponse, currencyFilter CurrencyFilter, out chan<- ExRate) error {
+	if r == nil || len(r.Data) == 0 {
+		return fmt.Errorf("empty response data")
+	}
+
 	for _, symbol := range r.Data {
 		if s, ok := currencyFilter.symbols[strings.ToUpper(symbol.Symbol)]; ok {
+			if symbol.Ask <= 0 {
+				return fmt.Errorf("invalid Ask price for symbol %s: %f", symbol.Symbol, symbol.Ask)
+			}
+
+			if math.IsNaN(symbol.Ask) || math.IsInf(symbol.Ask, 0) {
+				return fmt.Errorf("invalid Ask price (NaN/Inf) for symbol %s", symbol.Symbol)
+			}
+
 			askRounded := strconv.FormatFloat(roundToSixDecimalPlaces(symbol.Ask), 'f', 6, 64)
 			out <- ExRate{
 				Source: "htx",
