@@ -42,18 +42,6 @@ type BitgetResponse struct {
 	Data        []BitgetSymbol `json:"data,omitempty"`
 }
 
-func parseBitgetResponse(rc io.ReadCloser) (*BitgetResponse, error) {
-	b, err := io.ReadAll(rc)
-	if err != nil {
-		return nil, err
-	}
-	r := &BitgetResponse{}
-	if err := json.Unmarshal(b, r); err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
 func NewBitgetFetcher(url string, httpClient *http.Client, log logger.Logger) IFetcher {
 	return &bitgetFetcher{url: url, httpClient: httpClient, log: log}
 }

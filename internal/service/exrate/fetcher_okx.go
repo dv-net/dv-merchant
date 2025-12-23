@@ -38,18 +38,6 @@ type OkxResponse struct {
 	Data    []OkxSymbol `json:"data,omitempty"`
 }
 
-func parseOkxResponse(rc io.ReadCloser) (*OkxResponse, error) {
-	b, err := io.ReadAll(rc)
-	if err != nil {
-		return nil, err
-	}
-	r := &OkxResponse{}
-	if err := json.Unmarshal(b, r); err != nil {
-		return nil, err
-	}
-	return r, nil
-}
-
 func NewOkxFetcher(url string, httpClient *http.Client, log logger.Logger) IFetcher {
 	return &okxFetcher{url: url, httpClient: httpClient, log: log}
 }
@@ -97,7 +85,7 @@ func (o *okxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 		out <- rate
 	}
 
-	var errs []error
+	var errs []error //nolint:prealloc
 	for err := range errCh {
 		errs = append(errs, err)
 	}
