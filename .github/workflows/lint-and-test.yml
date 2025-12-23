@@ -25,7 +25,7 @@ jobs:
       - name: Cache Go modules
         uses: actions/cache@v4
         with:
-          path: ${{ github.go.gopath }}/pkg/mod
+          path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
@@ -45,6 +45,10 @@ jobs:
           key: ${{ runner.os }}-custom-linter-${{ hashFiles('.custom-gcl.yml', 'pkg/linters/**/*.go') }}
           restore-keys: |
             ${{ runner.os }}-custom-linter-
+
+      - name: Configure Git for custom linter build
+        run: |
+          git config --global advice.detachedHead false || true
 
       - name: Download dependencies
         run: go mod download
@@ -111,7 +115,6 @@ jobs:
           echo "Building application..."
           make build
           
-          # Verify binary was created
           if [ -f ".bin/dv-merchant" ]; then
             echo "✅ Binary built successfully"
             ls -la .bin/
