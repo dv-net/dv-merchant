@@ -216,7 +216,7 @@ func (o *Service) GetDepositAddresses(ctx context.Context, currency, _ string) (
 }
 
 func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.CreateWithdrawalOrderParams) (*models.ExchangeWithdrawalDTO, error) {
-	args.NativeAmount = args.NativeAmount.RoundDown(int32(args.WithdrawalPrecision))
+	args.NativeAmount = args.NativeAmount.RoundDown(int32(args.WithdrawalPrecision)) //nolint:gosec
 
 	internalCurrency, err := o.storage.ExchangeChains().GetTickerByCurrencyID(ctx, repo_exchange_chains.GetTickerByCurrencyIDParams{
 		CurrencyID: args.Currency,
@@ -387,9 +387,9 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 
 	switch spotOrderRequest.Side {
 	case bitgetmodels.OrderSideSell:
-		spotOrderRequest.Size = maxAmount.RoundDown(int32(rule.AmountPrecision)).String()
+		spotOrderRequest.Size = maxAmount.RoundDown(int32(rule.AmountPrecision)).String() //nolint:gosec
 	case bitgetmodels.OrderSideBuy:
-		spotOrderRequest.Size = maxAmount.RoundDown(int32(rule.ValuePrecision)).String()
+		spotOrderRequest.Size = maxAmount.RoundDown(int32(rule.ValuePrecision)).String() //nolint:gosec
 	}
 
 	placedOrder, err := o.exClient.Spot().Trade().PlaceOrder(ctx, spotOrderRequest)

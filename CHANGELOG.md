@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+- feat: added exrate debug logging [DV-4033]
 - feat: added clickjacking protection middleware [DV-3955]
 - Currency reference data about it being native, and contract address for external routes [DV-3761]
 - fix: duplicates withdrawal from processing on 'in_progress' transfer stage [DV-3933]

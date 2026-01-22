@@ -38,8 +38,13 @@ endif
 build:
 	 go build $(GO_OPT_BASE) -o $(OUT_BIN) ./cmd/app
 
-build_plugins:
-	go tool golangci-lint custom -v
+build_custom_linter:
+	@echo "Building custom golangci-lint..."
+	@mkdir -p .bin
+	@if [ ! -f "$(CUSTOM_CI_LINTER)" ]; then \
+		GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
+		golangci-lint custom -v; \
+	fi
 
 run: build
 	$(OUT_BIN) $(filter-out $@,$(MAKECMDGOALS))
@@ -53,12 +58,12 @@ test:
 version: ## Version of the project to built
 	echo $(VERSION)
 
-version-number: ## Version number of the project to be built
+version-number:
 	echo $(VERSION_NUMBER)
 
 ## Lint:
-lint: build_plugins
-	$(CUSTOM_CI_LINTER) run --show-stats
+lint: build_custom_linter
+	$(CUSTOM_CI_LINTER) run --timeout=10m --show-stats --config .golangci.yml
 
 fmt:
 	go tool gofumpt -l -w .

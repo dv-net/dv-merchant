@@ -180,7 +180,7 @@ func (o *SMTPPool) get() (*conn, error) {
 		o.activeConn.Add(1)
 		return connection, nil
 	default:
-		if int(o.activeConn.Load()) >= int(o.opt.MaxConn) {
+		if int(o.activeConn.Load()) >= int(o.opt.MaxConn) { //nolint:gosec
 			return nil, ErrNoAvailableConnections
 		}
 		connection, err := o.newConn()

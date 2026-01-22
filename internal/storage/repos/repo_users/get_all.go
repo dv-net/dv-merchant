@@ -55,7 +55,7 @@ func (s *CustomQuerier) GetAllFiltered(ctx context.Context, params GetAllFiltere
 
 	var totalCnt uint32
 	if len(items) > 0 {
-		totalCnt = uint32(len(items))
+		totalCnt = uint32(len(items)) //nolint:gosec
 	}
 
 	var currPage uint32

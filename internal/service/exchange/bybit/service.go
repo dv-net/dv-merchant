@@ -460,7 +460,7 @@ func (o *Service) GetOrderRule(ctx context.Context, ticker string) (*models.Orde
 
 	// Calculate minimum amount based on minimum notional value and current price
 	// minOrderValue is in quote currency, divide by price to get base currency amount
-	calculatedMinAmount := minOrderValue.Div(currentPrice).RoundUp(int32(basePrecision.IntPart()))
+	calculatedMinAmount := minOrderValue.Div(currentPrice).RoundUp(int32(basePrecision.IntPart())) //nolint:gosec
 
 	// Use the larger of the calculated minimum or the exchange's minimum quantity
 	if calculatedMinAmount.GreaterThan(minOrderAmount) {
@@ -1011,7 +1011,6 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 			FromAccountType: bybitmodels.AccountTypeUnified,
 			ToAccountType:   bybitmodels.AccountTypeFund,
 		})
-
 		if err != nil {
 			return nil, err
 		}

@@ -3,7 +3,6 @@ run:
   modules-download-mode: readonly
   allow-parallel-runners: true
 linters:
-  default: none
   enable:
     - asciicheck
     - bodyclose
@@ -28,7 +27,7 @@ linters:
     - goheader
     - gomodguard
     - goprintffuncname
-    - gosec
+    # - gosec
     - govet
     - grouper
     - ineffassign

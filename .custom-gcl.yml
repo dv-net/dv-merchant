@@ -1,9 +1,6 @@
 version: v2.7.2
-
 name: dv-golangci-lint
-
 destination: .bin/
-
 plugins:
   - module: 'github.com/dv-net/dv-merchant/pkg/linters/dbtxcheck'
     path: ./pkg/linters/dbtxcheck
