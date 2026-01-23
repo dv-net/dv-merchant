@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.9.15] - 2026-01-23
+
 - feat: added exrate debug logging [DV-4033]
 - feat: added clickjacking protection middleware [DV-3955]
 - Currency reference data about it being native, and contract address for external routes [DV-3761]
 - fix: duplicates withdrawal from processing on 'in_progress' transfer stage [DV-3933]
 - feat: add find withdrawal request by id and request_id [DV-3948]
 
-## [0.9.14] - 2025-13-04
+## [0.9.14] - 2025-12-02
 - feat: added extended tx info in search response [DV-3827]
 - feat: added endpoint to retrieve extended information about store enabled currencies [DV-3857]
 
