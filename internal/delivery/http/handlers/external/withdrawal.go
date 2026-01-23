@@ -73,7 +73,7 @@ func (h Handler) createWithdrawalFromProcessingWallet(c fiber.Ctx) error {
 //	@Tags			Withdrawal
 //	@Produce		json
 //	@Param			api_key	query		string	true	"Store API key"
-//	@Param			id		path		string	true	"Withdrawal ID"
+//	@Param			id		path		string	true	"Withdrawal ID or Request ID"
 //	@Success		200		{object}	response.Result[withdraw.WithdrawalFromProcessingDto]
 //	@Failure		400		{object}	apierror.Errors
 //	@Failure		401		{object}	apierror.Errors
@@ -89,10 +89,7 @@ func (h Handler) getWithdrawalFromProcessingWallet(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	whID, err := tools.ValidateUUID(c.Params("id"))
-	if err != nil {
-		return err
-	}
+	whID := c.Params("id")
 
 	res, err := h.services.WithdrawService.GetProcessingWithdrawalWithTransfer(c.Context(), whID, store.ID)
 	if err != nil {

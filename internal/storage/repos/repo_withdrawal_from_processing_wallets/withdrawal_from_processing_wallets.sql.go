@@ -284,13 +284,15 @@ SELECT wfpw.id, wfpw.currency_id, wfpw.store_id, wfpw.transfer_id, wfpw.address_
        coalesce(t.message, '')
 FROM withdrawal_from_processing_wallets wfpw
          LEFT JOIN transfers t ON wfpw.transfer_id = t.id
-WHERE wfpw.id = $1
+WHERE (wfpw.request_id = $1::text OR wfpw.id::text = $1::text)
   AND wfpw.store_id = $2
+ORDER BY wfpw.created_at DESC
+LIMIT 1
 `
 
 type GetWithdrawalWithTransferParams struct {
-	ID      uuid.UUID `db:"id" json:"id"`
-	StoreID uuid.UUID `db:"store_id" json:"store_id"`
+	RequestID string    `db:"request_id" json:"request_id"`
+	StoreID   uuid.UUID `db:"store_id" json:"store_id"`
 }
 
 type GetWithdrawalWithTransferRow struct {
@@ -303,7 +305,7 @@ type GetWithdrawalWithTransferRow struct {
 }
 
 func (q *Queries) GetWithdrawalWithTransfer(ctx context.Context, arg GetWithdrawalWithTransferParams) (*GetWithdrawalWithTransferRow, error) {
-	row := q.db.QueryRow(ctx, getWithdrawalWithTransfer, arg.ID, arg.StoreID)
+	row := q.db.QueryRow(ctx, getWithdrawalWithTransfer, arg.RequestID, arg.StoreID)
 	var i GetWithdrawalWithTransferRow
 	err := row.Scan(
 		&i.WithdrawalFromProcessingWallet.ID,
@@ -333,7 +335,7 @@ SELECT EXISTS (SELECT 1
                WHERE wfpw.request_id = $1
                  AND (
                    wfpw.transfer_id IS NULL
-                       OR t.status = 'completed'
+                       OR t.stage != 'failed'
                    ))
 `
 

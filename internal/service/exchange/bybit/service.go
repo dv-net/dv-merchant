@@ -913,10 +913,10 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 	maxAmount := totalBalance
 	switch spotOrderRequest.Side {
 	case bybitmodels.SideSell.String():
-		spotOrderRequest.Qty = maxAmount.RoundDown(int32(rule.AmountPrecision)).String() //nolint:gosec
+		spotOrderRequest.Qty = maxAmount.RoundDown(int32(rule.AmountPrecision)).String()
 		// MarketUnit defaults to baseCoin for sell orders, so we don't need to set it
 	case bybitmodels.SideBuy.String():
-		spotOrderRequest.Qty = maxAmount.RoundDown(int32(rule.ValuePrecision)).String() //nolint:gosec
+		spotOrderRequest.Qty = maxAmount.RoundDown(int32(rule.ValuePrecision)).String()
 		spotOrderRequest.MarketUnit = bybitmodels.MarketUnitQuoteCoin.String()
 	}
 
@@ -936,7 +936,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 }
 
 func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.CreateWithdrawalOrderParams) (*models.ExchangeWithdrawalDTO, error) {
-	precision := int32(args.WithdrawalPrecision) //nolint:gosec
+	precision := int32(args.WithdrawalPrecision)
 
 	args.NativeAmount = args.NativeAmount.RoundDown(precision)
 
@@ -1011,7 +1011,6 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 			FromAccountType: bybitmodels.AccountTypeUnified,
 			ToAccountType:   bybitmodels.AccountTypeFund,
 		})
-
 		if err != nil {
 			return nil, err
 		}

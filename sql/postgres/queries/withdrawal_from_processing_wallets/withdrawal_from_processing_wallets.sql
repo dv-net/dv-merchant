@@ -32,8 +32,10 @@ SELECT sqlc.embed(wfpw),
        coalesce(t.message, '')
 FROM withdrawal_from_processing_wallets wfpw
          LEFT JOIN transfers t ON wfpw.transfer_id = t.id
-WHERE wfpw.id = $1
-  AND wfpw.store_id = $2;
+WHERE (wfpw.request_id = sqlc.arg(request_id)::text OR wfpw.id::text = sqlc.arg(request_id)::text)
+  AND wfpw.store_id = sqlc.arg(store_id)
+ORDER BY wfpw.created_at DESC
+LIMIT 1;
 
 -- name: FindByTransferID :one
 SELECT sqlc.embed(wfpw),
@@ -52,7 +54,7 @@ SELECT EXISTS (SELECT 1
                WHERE wfpw.request_id = $1
                  AND (
                    wfpw.transfer_id IS NULL
-                       OR t.status = 'completed'
+                       OR t.stage != 'failed'
                    ));
 
 -- name: GetByID :one

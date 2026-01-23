@@ -26,7 +26,7 @@ type IWithdrawalService interface {
 	WithdrawToProcessingWallet(ctx context.Context, user *models.User, dto WithdrawalToProcessingDTO) error
 	CreateWithdrawalFromProcessing(ctx context.Context, dto CreateWithdrawalFromProcessingDTO) (*models.WithdrawalFromProcessingWallet, error)
 	DeleteWithdrawalFromProcessing(ctx context.Context, id uuid.UUID, storeID uuid.UUID) error
-	GetProcessingWithdrawalWithTransfer(ctx context.Context, id uuid.UUID, storeID uuid.UUID) (*WithdrawalFromProcessingDto, error)
+	GetProcessingWithdrawalWithTransfer(ctx context.Context, requestID string, storeID uuid.UUID) (*WithdrawalFromProcessingDto, error)
 }
 
 func (s *service) WithdrawFromAddress(
@@ -369,14 +369,14 @@ func (s *service) DeleteWithdrawalFromProcessing(ctx context.Context, id uuid.UU
 
 func (s *service) GetProcessingWithdrawalWithTransfer(
 	ctx context.Context,
-	id uuid.UUID,
+	requestID string,
 	storeID uuid.UUID,
 ) (*WithdrawalFromProcessingDto, error) {
 	res, err := s.storage.WithdrawalsFromProcessing().GetWithdrawalWithTransfer(
 		ctx,
 		repo_withdrawal_from_processing_wallets.GetWithdrawalWithTransferParams{
-			ID:      id,
-			StoreID: storeID,
+			RequestID: requestID,
+			StoreID:   storeID,
 		},
 	)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {

@@ -31,6 +31,11 @@ redis:
   db_index: 0
 exrate:
   fetch_interval: 1m0s
+  timeout: 10s
+  proxies:
+    - http://user:pass@proxy1.example.com:8080
+    - https://user:pass@proxy2.example.com:443
+    - socks5://user:pass@proxy3.example.com:9050
 admin:
   base_url: https://api.dv.net/
   ping_version_interval: 1h0m0s

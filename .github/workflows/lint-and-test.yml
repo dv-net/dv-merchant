@@ -9,7 +9,7 @@ env:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
@@ -25,50 +25,32 @@ jobs:
       - name: Cache Go modules
         uses: actions/cache@v4
         with:
-          path: ${{ github.go.gopath }}/pkg/mod
+          path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-
-      - name: Create .bin directory
-        run: mkdir -p .bin
 
       - name: Create frontend dist directory
         run: |
           mkdir -p frontend/dist
           echo "/* Empty file for CI build */" > frontend/dist/dummy.txt
 
-      - name: Cache custom linter binary
-        uses: actions/cache@v4
-        with:
-          path: .bin/dv-golangci-lint
-          key: ${{ runner.os }}-custom-linter-${{ hashFiles('.custom-gcl.yml', 'pkg/linters/**/*.go') }}
-          restore-keys: |
-            ${{ runner.os }}-custom-linter-
-
       - name: Download dependencies
         run: go mod download
 
-      - name: Build custom linter plugins
+      - name: Install golangci-lint
         run: |
-          echo "Building custom golangci-lint plugins..."
-          make build_plugins
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.7.2
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Verify custom linter
+      - name: Build custom linter
         run: |
-          if [ -f ".bin/dv-golangci-lint" ]; then
-            echo "✅ Custom linter built successfully"
-            ./.bin/dv-golangci-lint --version || echo "Custom linter version check failed"
-          else
-            echo "❌ Custom linter binary not found"
-            ls -la .bin/ || echo ".bin directory not found"
-            exit 1
-          fi
+          mkdir -p .bin
+          GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
+          golangci-lint custom -v
 
-      - name: Run custom linters
-        run: |
-          echo "Running custom linters with plugins..."
-          make lint
+      - name: Run linters
+        run: ./.bin/dv-golangci-lint run --timeout=5m --show-stats --config .golangci.yml
 
       - name: Run tests
         run: make test
