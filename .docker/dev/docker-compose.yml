@@ -78,7 +78,8 @@ services:
 
 networks:
   server-side:
-    driver: bridge
+    driver: bridge,
+    external: true
 
 volumes:
   pgdata:
