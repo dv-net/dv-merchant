@@ -79,6 +79,7 @@ docker compose up -d
 git clone https://github.com/dv-net/dv-merchant.git
 cd dv-merchant
 
+make update-frontend
 make build
 ```
 
