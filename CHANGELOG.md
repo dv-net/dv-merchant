@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- docs: update README and dev docker-compose [DV-4116]
+
 ## [0.9.15] - 2026-01-23
 
 - feat: added exrate debug logging [DV-4033]
