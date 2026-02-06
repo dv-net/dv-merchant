@@ -19,24 +19,43 @@ GO_OPT_BASE := -ldflags "-X main.version=$(VERSION) $(GO_LDFLAGS) -X main.commit
 BUILD_ENV := CGO_ENABLED=0
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S), Linux)
-	BUILD_ENV += GOOS=linux
+    BUILD_ENV += GOOS=linux
 endif
 ifeq ($(UNAME_S), Darwin)
-	BUILD_ENV += GOOS=darwin
+    BUILD_ENV += GOOS=darwin
 endif
 
 UNAME_P := $(shell uname -p)
 ifeq ($(UNAME_P),x86_64)
-	BUILD_ENV += GOARCH=amd64
+    BUILD_ENV += GOARCH=amd64
 endif
 ifneq ($(filter arm%,$(UNAME_P)),)
-	BUILD_ENV += GOARCH=arm64
+    BUILD_ENV += GOARCH=arm64
 endif
 
 ## Build:
 
 build:
-	 go build $(GO_OPT_BASE) -o $(OUT_BIN) ./cmd/app
+	go build $(GO_OPT_BASE) -o $(OUT_BIN) ./cmd/app
+
+build-linux: ## Build for Linux (cross-compile from any OS)
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build $(GO_OPT_BASE) -o $(OUT_BIN)-linux-amd64 ./cmd/app
+	@echo "Built: $(OUT_BIN)-linux-amd64"
+
+build-linux-arm64: ## Build for Linux ARM64 (cross-compile from any OS)
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build $(GO_OPT_BASE) -o $(OUT_BIN)-linux-arm64 ./cmd/app
+	@echo "Built: $(OUT_BIN)-linux-arm64"
+
+build-darwin: ## Build for macOS (cross-compile from any OS)
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build $(GO_OPT_BASE) -o $(OUT_BIN)-darwin-amd64 ./cmd/app
+	@echo "Built: $(OUT_BIN)-darwin-amd64"
+
+build-darwin-arm64: ## Build for macOS ARM64 (cross-compile from any OS)
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build $(GO_OPT_BASE) -o $(OUT_BIN)-darwin-arm64 ./cmd/app
+	@echo "Built: $(OUT_BIN)-darwin-arm64"
+
+build-all: build-linux build-linux-arm64 build-darwin build-darwin-arm64 ## Build for all platforms
+	@echo "All builds completed"
 
 build_custom_linter:
 	@echo "Building custom golangci-lint..."
