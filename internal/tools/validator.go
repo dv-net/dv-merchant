@@ -4,7 +4,6 @@ import (
 	"errors"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 	enTranslations "github.com/go-playground/validator/v10/translations/en"
@@ -19,36 +18,6 @@ import (
 )
 
 var defaultStructValidator *StructValidator
-
-// deprecatedTimezones maps deprecated IANA timezone names to their canonical equivalents.
-// Some OS distributions (e.g., Ubuntu 24.04) remove deprecated aliases from tzdata.
-var deprecatedTimezones = map[string]string{
-	"Asia/Calcutta":        "Asia/Kolkata",
-	"Asia/Saigon":          "Asia/Ho_Chi_Minh",
-	"Asia/Katmandu":        "Asia/Kathmandu",
-	"Asia/Rangoon":         "Asia/Yangon",
-	"Asia/Dacca":           "Asia/Dhaka",
-	"Asia/Thimbu":          "Asia/Thimphu",
-	"Asia/Ujung_Pandang":   "Asia/Makassar",
-	"Asia/Ulan_Bator":      "Asia/Ulaanbaatar",
-	"Asia/Chungking":       "Asia/Chongqing",
-	"Asia/Macao":           "Asia/Macau",
-	"Asia/Tel_Aviv":        "Asia/Jerusalem",
-	"Asia/Ashkhabad":       "Asia/Ashgabat",
-	"Europe/Kiev":          "Europe/Kyiv",
-	"Atlantic/Faeroe":      "Atlantic/Faroe",
-	"Pacific/Ponape":       "Pacific/Pohnpei",
-	"Pacific/Truk":         "Pacific/Chuuk",
-	"Pacific/Samoa":        "Pacific/Pago_Pago",
-	"America/Buenos_Aires": "America/Argentina/Buenos_Aires",
-	"America/Indianapolis": "America/Indiana/Indianapolis",
-	"America/Louisville":   "America/Kentucky/Louisville",
-	"America/Porto_Acre":   "America/Rio_Branco",
-	"America/Santa_Isabel": "America/Tijuana",
-	"America/Virgin":       "America/St_Thomas",
-	"Africa/Asmera":        "Africa/Asmara",
-	"Africa/Timbuktu":      "Africa/Bamako",
-}
 
 type StructValidator struct {
 	validate *validator.Validate
@@ -156,22 +125,6 @@ func newStruckValidator() *StructValidator {
 	}
 
 	_ = enTranslations.RegisterDefaultTranslations(validate, trans)
-
-	// Custom timezone validator that supports both canonical and deprecated timezone names
-	// (e.g., both Asia/Kolkata and Asia/Calcutta)
-	if err := validate.RegisterValidation("timezone", func(fl validator.FieldLevel) bool {
-		location := fl.Field().String()
-		_, err := time.LoadLocation(location)
-		if err != nil {
-			// Try canonical name if deprecated alias not found in system tzdata
-			if canonical, ok := deprecatedTimezones[location]; ok {
-				_, err = time.LoadLocation(canonical)
-			}
-		}
-		return err == nil
-	}); err != nil {
-		panic(err)
-	}
 
 	return &StructValidator{
 		validate: validate,

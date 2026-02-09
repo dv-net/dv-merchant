@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/user_response"
+	"github.com/dv-net/dv-merchant/internal/delivery/middleware"
 	"github.com/dv-net/dv-merchant/internal/dto"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/service/user"
@@ -334,7 +335,7 @@ func (h *Handler) tgUnlinkConfirm(c fiber.Ctx) error {
 func (h *Handler) initUserRoute(v1 fiber.Router) {
 	users := v1.Group("/user")
 	users.Get("/", h.authUser)
-	users.Put("/", h.updateUser)
+	users.Put("/", h.updateUser, middleware.TimezoneNormalizer())
 	users.Post("/change-password", h.changePassword)
 	users.Post("/confirm-email", h.confirmEmail)
 	users.Post("/init-email-confirmation", h.initEmailConfirmation)
