@@ -181,7 +181,7 @@ go test ./...
 
 <div align="center">
 
-**© 2025 DV.net** • [DV Technologies Ltd.](https://dv.net)
+**© 2026 DV.net** • [DV Technologies Ltd.](https://dv.net)
 
 *以热忱与初心服务加密社区*
 
