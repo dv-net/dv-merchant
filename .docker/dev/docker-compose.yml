@@ -49,7 +49,7 @@ services:
       - "${APP_DB__PORT}:${APP_DB__PORT}"
     command: ["postgres", "-c", "log_statement=all", "-c", "max_connections=200"]
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql
 
   redis-db:
     image: "redis:latest"
@@ -77,10 +77,9 @@ services:
       - "1025:1025"
 
 networks:
-  server-side: {
+  server-side:
     driver: bridge,
-    external: true,
-  }
+    external: true
 
 volumes:
   pgdata:
