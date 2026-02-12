@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.9.16] - 2026-02-12
+
 - feat: add donations section [DV-4180]
 - feat: update README and dev docker-compose [DV-4116]
+- fix: add deprecated IANA timezone names support [DV-4134]
 
 ## [0.9.15] - 2026-01-23
 

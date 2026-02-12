@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
+	enTranslations "github.com/go-playground/validator/v10/translations/en"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
-	enTranslations "github.com/go-playground/validator/v10/translations/en"
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
@@ -125,6 +125,7 @@ func newStruckValidator() *StructValidator {
 	}
 
 	_ = enTranslations.RegisterDefaultTranslations(validate, trans)
+
 	return &StructValidator{
 		validate: validate,
 		trans:    trans,
