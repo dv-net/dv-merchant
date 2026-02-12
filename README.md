@@ -3,7 +3,7 @@
 ## 🚀 DV.net Merchant Backend
 <br>
 
-[🇬🇧 English](README.md) • [🇷🇺 Русский](README.ru.md) • [🇨🇳 中文](README.zh.md)
+[🇬🇧 English](README.md) • [🇷🇺 Русский](docs/README.ru.md) • [🇨🇳 中文](docs/README.zh.md)
 
 [Website](https://dv.net) • [Docs](https://docs.dv.net) • [API](https://docs.dv.net/en/operations/post-v1-external-wallet.html) • [Support](https://dv.net/#support)
 
@@ -151,6 +151,22 @@ go test ./...
 
 ---
 
+## 💝 Donations
+
+Support the development of the project with crypto:
+
+> <img src="docs/assets/icons/coins/IconUsdt.png" width="17"> **USDT (Tron)** — `TCB4bYYN5x1z9Z4bBZ7p3XxcMwdtCfmNdN`
+
+> <img src="docs/assets/icons/coins/IconBtcBitcoin.png" width="17"> **Bitcoin** — `bc1qemvhkgzr4r7ksgxl8lv0lw7mnnthfc6990v3c2`
+
+> <img src="docs/assets/icons/coins/IconTrxTron.png" width="17"> **TRON (TRX)** — `TCB4bYYN5x1z9Z4bBZ7p3XxcMwdtCfmNdN`
+
+> <img src="docs/assets/icons/coins/IconEthEthereum.png" width="17"> **Ethereum** — `0xf1e4c7b968a20aae891cc18b1d5836b806691d47`
+
+🔗 Other networks and tokens (BNB Chain, Arbitrum, Polygon, Litecoin, Dogecoin, Bitcoin Cash, etc.) are available at **[payment form](https://cloud.dv.net/pay/store/208ec77f-d516-46b9-b280-3c12e1a75071/donate)**
+
+---
+
 ## 📞 Contact
 
 <div align="center">
@@ -165,7 +181,7 @@ go test ./...
 
 <div align="center">
 
-**© 2025 DV.net** • [DV Technologies Ltd.](https://dv.net)
+**© 2026 DV.net** • [DV Technologies Ltd.](https://dv.net)
 
 *Built with ❤️ for the crypto community*
 
