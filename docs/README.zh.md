@@ -3,7 +3,7 @@
 ## 🚀 DV.net Merchant Backend
 <br>
 
-[🇬🇧 English](README.md) • [🇷🇺 Русский](README.ru.md) • [🇨🇳 中文](README.zh.md)
+[🇬🇧 English](../README.md) • [🇷🇺 Русский](README.ru.md) • [🇨🇳 中文](README.zh.md)
 
 [官网](https://dv.net) • [文档](https://docs.dv.net) • [API](https://docs.dv.net/en/operations/post-v1-external-wallet.html) • [支持](https://dv.net/#support)
 
@@ -123,7 +123,7 @@ make test
 
 - 📖 [完整指南](https://docs.dv.net) — 安装、配置与常见场景
 - 🔌 [API 参考](https://docs.dv.net/en/operations/post-v1-external-wallet.html) — 请求/响应格式
-- 🧾 [Swagger](docs/swagger.yaml) — 仓库内的接口定义
+- 🧾 [Swagger](swagger.yaml) — 仓库内的接口定义
 
 ---
 
@@ -151,6 +151,22 @@ go test ./...
 
 ---
 
+## 💝 捐赠
+
+用加密货币支持项目发展：
+
+> <img src="assets/icons/coins/IconUsdt.png" width="17"> **USDT (Tron)** — `TCB4bYYN5x1z9Z4bBZ7p3XxcMwdtCfmNdN`
+
+> <img src="assets/icons/coins/IconBtcBitcoin.png" width="17"> **Bitcoin** — `bc1qemvhkgzr4r7ksgxl8lv0lw7mnnthfc6990v3c2`
+
+> <img src="assets/icons/coins/IconTrxTron.png" width="17"> **TRON (TRX)** — `TCB4bYYN5x1z9Z4bBZ7p3XxcMwdtCfmNdN`
+
+> <img src="assets/icons/coins/IconEthEthereum.png" width="17"> **Ethereum** — `0xf1e4c7b968a20aae891cc18b1d5836b806691d47`
+
+🔗 其他网络和代币（BNB Chain、Arbitrum、Polygon、Litecoin、Dogecoin、Bitcoin Cash 等）可通过 **[支付表单](https://cloud.dv.net/pay/store/208ec77f-d516-46b9-b280-3c12e1a75071/donate)** 捐赠
+
+---
+
 ## 📞 联系我们
 
 <div align="center">
@@ -165,7 +181,7 @@ go test ./...
 
 <div align="center">
 
-**© 2025 DV.net** • [DV Technologies Ltd.](https://dv.net)
+**© 2026 DV.net** • [DV Technologies Ltd.](https://dv.net)
 
 *以热忱与初心服务加密社区*
 
