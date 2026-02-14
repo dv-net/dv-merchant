@@ -376,6 +376,8 @@ func (svc *Service) handleUserCryptoReceipt(_ context.Context, email string, enc
 		NetworkFeeAmount:     pBody.NetworkFeeAmount,
 		NetworkFeeCurrency:   pBody.NetworkFeeCurrency,
 		NetworkFeeUSD:        pBody.NetworkFeeUSD,
+		StoreName:            pBody.StoreName,
+		StoreUserID:          pBody.StoreUserID,
 	}
 
 	body, err := svc.templateSvc.AssembleEmail(emailParams)

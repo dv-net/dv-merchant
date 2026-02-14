@@ -22,7 +22,7 @@ require (
 	github.com/cbroglie/mustache v1.4.0
 	github.com/dv-net/dv-processing v0.9.5-RC01
 	github.com/dv-net/dv-proto v0.5.1
-	github.com/dv-net/email-template v0.1.4
+	github.com/dv-net/email-template v0.1.5-0.20251010104137-d269cfd03a5f
 	github.com/dv-net/go-bip39 v1.1.1
 	github.com/dv-net/mx v0.1.3
 	github.com/dv-net/xconfig v0.1.0
