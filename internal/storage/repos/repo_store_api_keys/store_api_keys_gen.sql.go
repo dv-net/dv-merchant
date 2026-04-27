@@ -75,7 +75,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.StoreApiKe
 const updateStatus = `-- name: UpdateStatus :one
 UPDATE store_api_keys
 	SET enabled=$1, updated_at=$2
-	WHERE id=$3
+WHERE id=$3
 	RETURNING id, store_id, key, enabled, created_at, updated_at
 `
 

@@ -8,4 +8,3 @@ SELECT * FROM transfers ORDER BY created_at DESC LIMIT $1 OFFSET $2;
 
 -- name: GetById :one
 SELECT * FROM transfers WHERE id=$1 LIMIT 1;
-

@@ -5,4 +5,3 @@ INSERT INTO user_notifications (user_id, notification_id, email_enabled, tg_enab
 
 -- name: GetByID :one
 SELECT * FROM user_notifications WHERE id=$1 LIMIT 1;
-

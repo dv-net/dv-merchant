@@ -5,4 +5,3 @@ INSERT INTO unconfirmed_transactions (user_id, store_id, wallet_id, currency_id,
 
 -- name: GetById :one
 SELECT * FROM unconfirmed_transactions WHERE id=$1 LIMIT 1;
-

@@ -14,7 +14,7 @@ import (
 )
 
 const getForMultiWithdrawal = `-- name: GetForMultiWithdrawal :many
-SELECT u.id, u.email, u.email_verified_at, u.password, u.remember_token, u.processing_owner_id, u.location, u.language, u.rate_source, u.created_at, u.updated_at, u.deleted_at, u.banned, u.exchange_slug, u.rate_scale, u.dvnet_token,
+SELECT u.id, u.email, u.email_verified_at, u.password, u.remember_token, u.processing_owner_id, u.location, u.language, u.rate_source, u.created_at, u.updated_at, u.deleted_at, u.banned, u.exchange_slug, u.rate_scale, u.dvnet_token, u.two_fa_reset_expires_at,
        mwr.id, mwr.withdrawal_wallet_id, mwr.mode, mwr.manual_address, mwr.created_at, mwr.updated_at,
        curr.id, curr.code, curr.name, curr.precision, curr.is_fiat, curr.blockchain, curr.contract_address, curr.withdrawal_min_balance, curr.has_balance, curr.status, curr.sort_order, curr.min_confirmation, curr.created_at, curr.updated_at, curr.is_stablecoin, curr.currency_label, curr.token_label, curr.is_native, curr.is_new_store_default,
        ww.id, ww.user_id, ww.blockchain, ww.currency_id, ww.withdrawal_min_balance, ww.withdrawal_interval, ww.created_at, ww.deleted_at, ww.updated_at, ww.withdrawal_enabled, ww.withdrawal_min_balance_usd,
@@ -69,6 +69,7 @@ func (q *Queries) GetForMultiWithdrawal(ctx context.Context, userID uuid.NullUUI
 			&i.User.ExchangeSlug,
 			&i.User.RateScale,
 			&i.User.DvnetToken,
+			&i.User.TwoFaResetExpiresAt,
 			&i.MultiWithdrawalRule.ID,
 			&i.MultiWithdrawalRule.WithdrawalWalletID,
 			&i.MultiWithdrawalRule.Mode,

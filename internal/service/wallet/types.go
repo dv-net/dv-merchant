@@ -118,7 +118,7 @@ type CurrencyDTO struct {
 	SortOrder       int64             `json:"sort_order"`
 	IsNative        bool              `json:"is_native"`
 	ContractAddress string            `json:"contract_address"`
-} // @name CurrencyDTO
+} //	@name	CurrencyDTO
 
 type SummaryDTO struct {
 	Currency         CurrencyDTO `json:"currency"`

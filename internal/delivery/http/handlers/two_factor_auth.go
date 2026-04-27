@@ -162,9 +162,73 @@ func (h *Handler) disableTwoFactor(c fiber.Ctx) error {
 	return c.JSON(response.OkByMessage("2FA successfully disabled"))
 }
 
+// resetInitTwoFactor initiates the 2FA reset process with a 14-day hold period.
+//
+//	@Summary		Initiate 2FA reset
+//	@Description	Starts a 14-day hold period after which 2FA can be forcefully disabled. Cannot be called again while a reset is already pending.
+//	@Tags			2fa
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	response.Result[string]
+//	@Failure		400	{object}	apierror.Errors
+//	@Failure		401	{object}	apierror.Errors
+//	@Failure		403	{object}	apierror.Errors
+//	@Failure		422	{object}	apierror.Errors
+//	@Router			/v1/dv-admin/2fa/reset/init [post]
+//	@Security		BearerAuth
+func (h *Handler) resetInitTwoFactor(c fiber.Ctx) error {
+	user, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+	if !user.ProcessingOwnerID.Valid {
+		return apierror.New().AddError(fmt.Errorf("user have no owner")).SetHttpCode(fiber.StatusUnprocessableEntity)
+	}
+
+	err = h.services.UserCredentialsService.InitResetTwoFactor(c.Context(), user)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByMessage("2FA reset successfully started"))
+}
+
+// deleteResetInitTwoFactor cancels a pending 2FA reset.
+//
+//	@Summary		Cancel 2FA reset
+//	@Description	Cancels an in-progress 2FA reset, clearing the hold period.
+//	@Tags			2fa
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	response.Result[string]
+//	@Failure		400	{object}	apierror.Errors
+//	@Failure		401	{object}	apierror.Errors
+//	@Failure		403	{object}	apierror.Errors
+//	@Failure		422	{object}	apierror.Errors
+//	@Router			/v1/dv-admin/2fa/reset [delete]
+//	@Security		BearerAuth
+func (h *Handler) deleteResetInitTwoFactor(c fiber.Ctx) error {
+	user, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+	if !user.ProcessingOwnerID.Valid {
+		return apierror.New().AddError(fmt.Errorf("user have no owner")).SetHttpCode(fiber.StatusUnprocessableEntity)
+	}
+
+	err = h.services.UserCredentialsService.DeleteResetTwoFactor(c.Context(), user)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByMessage("2FA reset successfully deleted"))
+}
+
 func (h *Handler) init2faRoutes(v1 fiber.Router) {
 	ffa := v1.Group("/2fa")
 	ffa.Get("/", h.getTwoFactorSecret)
 	ffa.Post("/confirm", h.confirmTwoFactor)
 	ffa.Post("/disable", h.disableTwoFactor)
+	ffa.Post("/reset/init", h.resetInitTwoFactor)
+	ffa.Delete("/reset", h.deleteResetInitTwoFactor)
 }

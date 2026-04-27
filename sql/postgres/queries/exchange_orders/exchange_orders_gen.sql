@@ -5,4 +5,3 @@ INSERT INTO exchange_orders (exchange_id, exchange_order_id, client_order_id, sy
 
 -- name: GetByID :one
 SELECT * FROM exchange_orders WHERE id=$1 LIMIT 1;
-

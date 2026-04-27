@@ -5,4 +5,3 @@ INSERT INTO withdrawal_wallet_addresses (withdrawal_wallet_id, name, address, cr
 
 -- name: GetById :one
 SELECT * FROM withdrawal_wallet_addresses WHERE deleted_at IS NULL AND id=$1 LIMIT 1;
-

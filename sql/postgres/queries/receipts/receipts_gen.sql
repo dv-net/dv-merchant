@@ -8,4 +8,3 @@ SELECT * FROM receipts ORDER BY created_at DESC LIMIT $1 OFFSET $2;
 
 -- name: GetByID :one
 SELECT * FROM receipts WHERE id=$1 LIMIT 1;
-

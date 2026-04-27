@@ -5,4 +5,3 @@ INSERT INTO personal_access_tokens (tokenable_type, tokenable_id, name, token, e
 
 -- name: Delete :exec
 DELETE FROM personal_access_tokens WHERE id=$1;
-

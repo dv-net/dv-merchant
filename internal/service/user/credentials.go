@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/dv-net/dv-merchant/internal/dto"
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -13,6 +14,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_personal_access_tokens"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_users"
 	"github.com/dv-net/dv-merchant/internal/tools"
+	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -26,6 +28,9 @@ type IUserCredentials interface {
 	ConfirmEmail(ctx context.Context, user *models.User, confirmationCode int) error
 	InitEmailChange(ctx context.Context, usr *models.User) error
 	ConfirmEmailChange(ctx context.Context, user *models.User, dto ChangeEmailConfirmationDto) error
+
+	InitResetTwoFactor(ctx context.Context, usr *models.User) error
+	DeleteResetTwoFactor(ctx context.Context, user *models.User) error
 }
 
 var _ IUserCredentials = (*Service)(nil)
@@ -246,5 +251,31 @@ func (s *Service) ConfirmEmail(ctx context.Context, user *models.User, confirmat
 
 	go s.notificationService.SendUser(ctx, models.NotificationTypeUserRegistration, user, payload, &models.NotificationArgs{UserID: &user.ID})
 
+	return nil
+}
+
+func (s *Service) InitResetTwoFactor(ctx context.Context, usr *models.User) error {
+	if usr.TwoFaResetExpiresAt.Valid && usr.TwoFaResetExpiresAt.Time.After(time.Now()) {
+		return errors.New("2fa reset already initiated")
+	}
+
+	newExpiration := time.Now().AddDate(0, 0, 14)
+
+	err := s.storage.Users().UpdateTwoFactorExpiredAt(ctx, repo_users.UpdateTwoFactorExpiredAtParams{
+		ID:                  usr.ID,
+		TwoFaResetExpiresAt: pgtypeutils.EncodeTime(newExpiration),
+	})
+	if err != nil {
+		s.logger.Errorw("failed to set 2fa reset expiration", "error", err)
+		return errors.New("failed to set 2fa reset expiration")
+	}
+	return nil
+}
+
+func (s *Service) DeleteResetTwoFactor(ctx context.Context, usr *models.User) error {
+	if err := s.storage.Users().ClearTwoFactorResetExpiresAt(ctx, usr.ID); err != nil {
+		s.logger.Errorw("failed to clear 2fa reset expiration", "error", err)
+		return errors.New("failed to clear 2fa reset expiration")
+	}
 	return nil
 }

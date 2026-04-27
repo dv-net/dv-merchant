@@ -8,4 +8,3 @@ SELECT * FROM exchanges;
 
 -- name: GetByID :one
 SELECT * FROM exchanges WHERE id=$1 LIMIT 1;
-

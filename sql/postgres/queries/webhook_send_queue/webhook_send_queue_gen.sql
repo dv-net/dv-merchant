@@ -5,4 +5,3 @@ INSERT INTO webhook_send_queue (webhook_id, seconds_delay, transaction_id, paylo
 
 -- name: GetById :one
 SELECT * FROM webhook_send_queue WHERE id=$1 LIMIT 1;
-

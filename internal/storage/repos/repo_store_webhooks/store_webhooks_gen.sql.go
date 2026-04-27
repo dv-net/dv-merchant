@@ -77,7 +77,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.StoreWebho
 const update = `-- name: Update :one
 UPDATE store_webhooks
 	SET url=$1, enabled=$2, events=$3, updated_at=$4
-	WHERE id=$5
+WHERE id=$5
 	RETURNING id, store_id, url, enabled, events, created_at, updated_at
 `
 

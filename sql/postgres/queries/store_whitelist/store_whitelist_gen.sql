@@ -5,4 +5,3 @@ INSERT INTO store_whitelist (ip, store_id)
 
 -- name: Find :many
 SELECT * FROM store_whitelist WHERE store_id=$1;
-

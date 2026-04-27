@@ -8,6 +8,5 @@ SELECT * FROM notification_send_history WHERE id=$1 LIMIT 1;
 -- name: Update :one
 UPDATE notification_send_history
 	SET updated_at=now(), sent_at=$1, notification_send_queue_id=$2, store_id=$3, user_id=$4
-	WHERE destination=$5 AND id=$6
+WHERE destination=$5 AND id=$6
 	RETURNING *;
-

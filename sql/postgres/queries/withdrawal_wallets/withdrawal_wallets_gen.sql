@@ -5,4 +5,3 @@ INSERT INTO withdrawal_wallets (user_id, blockchain, currency_id, withdrawal_min
 
 -- name: GetById :one
 SELECT * FROM withdrawal_wallets WHERE deleted_at IS NULL AND id=$1 LIMIT 1;
-

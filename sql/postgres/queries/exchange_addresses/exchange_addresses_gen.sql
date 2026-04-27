@@ -5,4 +5,3 @@ INSERT INTO exchange_addresses (address, chain, currency, address_type, user_id,
 
 -- name: GetAllByUser :many
 SELECT * FROM exchange_addresses WHERE exchange_id=$1 AND user_id=$2;
-
