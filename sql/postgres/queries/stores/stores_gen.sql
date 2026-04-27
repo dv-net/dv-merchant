@@ -11,8 +11,6 @@ SELECT * FROM stores WHERE id=$1 LIMIT 1;
 
 -- name: Update :one
 UPDATE stores
-	SET name=$1, site=$2, currency_id=$3, rate_source=$4, return_url=$5, success_url=$6, 
-		rate_scale=$7, status=$8, minimal_payment=$9, updated_at=$10, public_payment_form_enabled=$11
-	WHERE id=$12
+	SET name=$1, site=$2, currency_id=$3, rate_source=$4, return_url=$5, success_url=$6, rate_scale=$7, status=$8, minimal_payment=$9, updated_at=$10, public_payment_form_enabled=$11
+WHERE id=$12
 	RETURNING *;
-

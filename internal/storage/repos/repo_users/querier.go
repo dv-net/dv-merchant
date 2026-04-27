@@ -14,6 +14,7 @@ import (
 type Querier interface {
 	ChangeEmail(ctx context.Context, arg ChangeEmailParams) error
 	ChangePassword(ctx context.Context, arg ChangePasswordParams) (*models.User, error)
+	ClearTwoFactorResetExpiresAt(ctx context.Context, id uuid.UUID) error
 	Create(ctx context.Context, arg CreateParams) (*models.User, error)
 	Delete(ctx context.Context, id uuid.UUID) error
 	GetActiveProcessingOwnersWithTronDelegate(ctx context.Context, arg GetActiveProcessingOwnersWithTronDelegateParams) ([]uuid.NullUUID, error)
@@ -30,6 +31,7 @@ type Querier interface {
 	UpdateExchange(ctx context.Context, arg UpdateExchangeParams) (*models.User, error)
 	UpdateProcessingOwnerId(ctx context.Context, arg UpdateProcessingOwnerIdParams) (*models.User, error)
 	UpdateRate(ctx context.Context, arg UpdateRateParams) error
+	UpdateTwoFactorExpiredAt(ctx context.Context, arg UpdateTwoFactorExpiredAtParams) error
 }
 
 var _ Querier = (*Queries)(nil)

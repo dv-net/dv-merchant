@@ -538,6 +538,110 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/2fa/reset": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels an in-progress 2FA reset, clearing the hold period.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "2fa"
+                ],
+                "summary": "Cancel 2FA reset",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/2fa/reset/init": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Starts a 14-day hold period after which 2FA can be forcefully disabled. Cannot be called again while a reset is already pending.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "2fa"
+                ],
+                "summary": "Initiate 2FA reset",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/aml/history": {
             "get": {
                 "description": "Get AML-provider checks history",
@@ -1936,12 +2040,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Page number",
                         "name": "page",
                         "in": "query"
                     },
                     {
                         "type": "integer",
+                        "format": "int32",
                         "description": "Page size",
                         "name": "page_size",
                         "in": "query"
@@ -14602,6 +14708,69 @@ const docTemplate = `{
                 }
             }
         },
+        "User": {
+            "type": "object",
+            "required": [
+                "email",
+                "location",
+                "password"
+            ],
+            "properties": {
+                "banned": {
+                    "$ref": "#/definitions/pgtype.Bool"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "dvnet_token": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "email_verified_at": {
+                    "type": "string"
+                },
+                "exchange_slug": {
+                    "$ref": "#/definitions/ExchangeSlug"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "maxLength": 32,
+                    "minLength": 8
+                },
+                "processing_owner_id": {
+                    "type": "string"
+                },
+                "rate_scale": {
+                    "type": "number"
+                },
+                "rate_source": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.RateSource"
+                },
+                "remember_token": {
+                    "type": "string"
+                },
+                "two_fa_reset_expires_at": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "UserAMLKey": {
             "type": "object",
             "required": [
@@ -15060,7 +15229,7 @@ const docTemplate = `{
                 "addressees": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.WithdrawalWalletAddress"
+                        "$ref": "#/definitions/WithdrawalWalletAddress"
                     }
                 },
                 "currency": {
@@ -15111,6 +15280,32 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "wallet_address_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "WithdrawalWalletAddress": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "withdrawal_wallet_id": {
                     "type": "string"
                 }
             }
@@ -15568,66 +15763,6 @@ const docTemplate = `{
                 "RateSourceGateio"
             ]
         },
-        "github_com_dv-net_dv-merchant_internal_models.User": {
-            "type": "object",
-            "required": [
-                "email",
-                "location",
-                "password"
-            ],
-            "properties": {
-                "banned": {
-                    "$ref": "#/definitions/pgtype.Bool"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "dvnet_token": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "email_verified_at": {
-                    "type": "string"
-                },
-                "exchange_slug": {
-                    "$ref": "#/definitions/ExchangeSlug"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "language": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string",
-                    "maxLength": 32,
-                    "minLength": 8
-                },
-                "processing_owner_id": {
-                    "type": "string"
-                },
-                "rate_scale": {
-                    "type": "number"
-                },
-                "rate_source": {
-                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.RateSource"
-                },
-                "remember_token": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
         "github_com_dv-net_dv-merchant_internal_models.WalletType": {
             "type": "string",
             "enum": [
@@ -15640,32 +15775,6 @@ const docTemplate = `{
                 "WalletTypeHot",
                 "WalletTypeProcessing"
             ]
-        },
-        "github_com_dv-net_dv-merchant_internal_models.WithdrawalWalletAddress": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "withdrawal_wallet_id": {
-                    "type": "string"
-                }
-            }
         },
         "github_com_dv-net_dv-merchant_internal_service_setting.Dto": {
             "type": "object",
@@ -15725,7 +15834,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/RegisterOwnerInfo"
                 },
                 "user": {
-                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.User"
+                    "$ref": "#/definitions/User"
                 }
             }
         },
@@ -15902,7 +16011,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "int64": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int64"
                 },
                 "valid": {
                     "type": "boolean"

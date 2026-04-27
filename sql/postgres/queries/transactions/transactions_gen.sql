@@ -5,4 +5,3 @@ INSERT INTO transactions (user_id, store_id, receipt_id, wallet_id, currency_id,
 
 -- name: GetById :one
 SELECT * FROM transactions WHERE id=$1 LIMIT 1;
-

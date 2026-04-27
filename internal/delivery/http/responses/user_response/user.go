@@ -19,6 +19,7 @@ type GetUserInfoResponse struct {
 	RateScale             decimal.Decimal   `json:"rate_scale"`
 	ProcessingOwnerID     uuid.NullUUID     `json:"processing_owner_id" format:"uuid"`
 	Roles                 []models.UserRole `json:"roles"`
+	TwoFaResetExpiresAt   *time.Time        `json:"two_fa_reset_expires_at" format:"date-time"`
 	CreatedAt             time.Time         `json:"created_at" format:"date-time"`
 	UpdatedAt             time.Time         `json:"updated_at" format:"date-time"`
 	QuickStartGuideStatus string            `json:"quick_start_guide_status"`

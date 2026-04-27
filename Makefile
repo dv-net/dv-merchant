@@ -92,8 +92,7 @@ genmocks:
 
 gensql:
 	@go run generators/blockchain/main.go
-	cd sql && pgxgen -pgxgen-config=pgxgen-postgres.yaml -sqlc-config=sqlc-postgres.yaml crud
-	cd sql && pgxgen -pgxgen-config=pgxgen-postgres.yaml -sqlc-config=sqlc-postgres.yaml sqlc generate
+	cd sql && pgxgen -config=pgxgen-postgres.yaml generate
 
 migrate:
 	go run ./cmd/app migrate $(filter-out $@,$(MAKECMDGOALS))

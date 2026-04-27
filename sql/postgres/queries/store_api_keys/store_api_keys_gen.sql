@@ -12,6 +12,5 @@ SELECT * FROM store_api_keys WHERE id=$1 LIMIT 1;
 -- name: UpdateStatus :one
 UPDATE store_api_keys
 	SET enabled=$1, updated_at=$2
-	WHERE id=$3
+WHERE id=$3
 	RETURNING *;
-

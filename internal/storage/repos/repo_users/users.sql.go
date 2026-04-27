@@ -36,7 +36,7 @@ UPDATE users
 SET password=$1,
     updated_at=now()
 WHERE id = $2
-RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 `
 
 type ChangePasswordParams struct {
@@ -64,8 +64,21 @@ func (q *Queries) ChangePassword(ctx context.Context, arg ChangePasswordParams) 
 		&i.ExchangeSlug,
 		&i.RateScale,
 		&i.DvnetToken,
+		&i.TwoFaResetExpiresAt,
 	)
 	return &i, err
+}
+
+const clearTwoFactorResetExpiresAt = `-- name: ClearTwoFactorResetExpiresAt :exec
+UPDATE users
+SET two_fa_reset_expires_at = NULL,
+    updated_at = now()
+WHERE id = $1
+`
+
+func (q *Queries) ClearTwoFactorResetExpiresAt(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, clearTwoFactorResetExpiresAt, id)
+	return err
 }
 
 const getActiveProcessingOwnersWithTronDelegate = `-- name: GetActiveProcessingOwnersWithTronDelegate :many
@@ -105,7 +118,7 @@ func (q *Queries) GetActiveProcessingOwnersWithTronDelegate(ctx context.Context,
 }
 
 const getAllWithExchangeEnabled = `-- name: GetAllWithExchangeEnabled :many
-SELECT id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+SELECT id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 FROM users
 WHERE exchange_slug IS NOT NULL
 `
@@ -136,6 +149,7 @@ func (q *Queries) GetAllWithExchangeEnabled(ctx context.Context) ([]*models.User
 			&i.ExchangeSlug,
 			&i.RateScale,
 			&i.DvnetToken,
+			&i.TwoFaResetExpiresAt,
 		); err != nil {
 			return nil, err
 		}
@@ -148,7 +162,7 @@ func (q *Queries) GetAllWithExchangeEnabled(ctx context.Context) ([]*models.User
 }
 
 const getByEmail = `-- name: GetByEmail :one
-SELECT id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+SELECT id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 FROM users
 WHERE email = $1
 LIMIT 1
@@ -174,12 +188,13 @@ func (q *Queries) GetByEmail(ctx context.Context, email string) (*models.User, e
 		&i.ExchangeSlug,
 		&i.RateScale,
 		&i.DvnetToken,
+		&i.TwoFaResetExpiresAt,
 	)
 	return &i, err
 }
 
 const getByID = `-- name: GetByID :one
-SELECT id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+SELECT id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 FROM users
 WHERE id = $1
 LIMIT 1
@@ -205,12 +220,13 @@ func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.User, erro
 		&i.ExchangeSlug,
 		&i.RateScale,
 		&i.DvnetToken,
+		&i.TwoFaResetExpiresAt,
 	)
 	return &i, err
 }
 
 const getUnverifed = `-- name: GetUnverifed :many
-SELECT id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+SELECT id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 FROM users
 WHERE email_verified_at IS NULL
   AND created_at < NOW() - INTERVAL '30 day'
@@ -242,6 +258,7 @@ func (q *Queries) GetUnverifed(ctx context.Context) ([]*models.User, error) {
 			&i.ExchangeSlug,
 			&i.RateScale,
 			&i.DvnetToken,
+			&i.TwoFaResetExpiresAt,
 		); err != nil {
 			return nil, err
 		}
@@ -275,7 +292,7 @@ UPDATE users
 SET banned=$1,
     updated_at=now()
 WHERE id = $2
-RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 `
 
 type UpdateBannedParams struct {
@@ -303,6 +320,7 @@ func (q *Queries) UpdateBanned(ctx context.Context, arg UpdateBannedParams) (*mo
 		&i.ExchangeSlug,
 		&i.RateScale,
 		&i.DvnetToken,
+		&i.TwoFaResetExpiresAt,
 	)
 	return &i, err
 }
@@ -328,7 +346,7 @@ UPDATE users
 SET email_verified_at=now(),
     updated_at=now()
 WHERE id = $1
-RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 `
 
 func (q *Queries) UpdateEmailVerifiedAt(ctx context.Context, id uuid.UUID) (*models.User, error) {
@@ -351,6 +369,7 @@ func (q *Queries) UpdateEmailVerifiedAt(ctx context.Context, id uuid.UUID) (*mod
 		&i.ExchangeSlug,
 		&i.RateScale,
 		&i.DvnetToken,
+		&i.TwoFaResetExpiresAt,
 	)
 	return &i, err
 }
@@ -360,7 +379,7 @@ UPDATE users
 SET exchange_slug=$1,
     updated_at=now()
 WHERE id = $2
-RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 `
 
 type UpdateExchangeParams struct {
@@ -388,6 +407,7 @@ func (q *Queries) UpdateExchange(ctx context.Context, arg UpdateExchangeParams) 
 		&i.ExchangeSlug,
 		&i.RateScale,
 		&i.DvnetToken,
+		&i.TwoFaResetExpiresAt,
 	)
 	return &i, err
 }
@@ -397,7 +417,7 @@ UPDATE users
 SET processing_owner_id=$1,
     updated_at=now()
 WHERE id = $2
-RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 `
 
 type UpdateProcessingOwnerIdParams struct {
@@ -425,6 +445,7 @@ func (q *Queries) UpdateProcessingOwnerId(ctx context.Context, arg UpdateProcess
 		&i.ExchangeSlug,
 		&i.RateScale,
 		&i.DvnetToken,
+		&i.TwoFaResetExpiresAt,
 	)
 	return &i, err
 }
@@ -445,5 +466,22 @@ type UpdateRateParams struct {
 
 func (q *Queries) UpdateRate(ctx context.Context, arg UpdateRateParams) error {
 	_, err := q.db.Exec(ctx, updateRate, arg.RateScale, arg.RateSource, arg.ID)
+	return err
+}
+
+const updateTwoFactorExpiredAt = `-- name: UpdateTwoFactorExpiredAt :exec
+UPDATE users
+SET two_fa_reset_expires_at = $2,
+    updated_at = now()
+WHERE id = $1
+`
+
+type UpdateTwoFactorExpiredAtParams struct {
+	ID                  uuid.UUID        `db:"id" json:"id"`
+	TwoFaResetExpiresAt pgtype.Timestamp `db:"two_fa_reset_expires_at" json:"two_fa_reset_expires_at"`
+}
+
+func (q *Queries) UpdateTwoFactorExpiredAt(ctx context.Context, arg UpdateTwoFactorExpiredAtParams) error {
+	_, err := q.db.Exec(ctx, updateTwoFactorExpiredAt, arg.ID, arg.TwoFaResetExpiresAt)
 	return err
 }

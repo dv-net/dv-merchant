@@ -24,7 +24,7 @@ func (q *Queries) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 const fetchPending = `-- name: FetchPending :many
-SELECT u.id, u.email, u.email_verified_at, u.password, u.remember_token, u.processing_owner_id, u.location, u.language, u.rate_source, u.created_at, u.updated_at, u.deleted_at, u.banned, u.exchange_slug, u.rate_scale, u.dvnet_token,
+SELECT u.id, u.email, u.email_verified_at, u.password, u.remember_token, u.processing_owner_id, u.location, u.language, u.rate_source, u.created_at, u.updated_at, u.deleted_at, u.banned, u.exchange_slug, u.rate_scale, u.dvnet_token, u.two_fa_reset_expires_at,
        ac.id, ac.user_id, ac.service_id, ac.external_id, ac.status, ac.score, ac.risk_level, ac.created_at, ac.updated_at,
        acq.id, acq.user_id, acq.aml_check_id, acq.attempts, acq.created_at, acq.updated_at,
        amls.id, amls.slug, amls.created_at, amls.updated_at,
@@ -70,6 +70,7 @@ func (q *Queries) FetchPending(ctx context.Context, maxQueueAttempts int32, pend
 			&i.User.ExchangeSlug,
 			&i.User.RateScale,
 			&i.User.DvnetToken,
+			&i.User.TwoFaResetExpiresAt,
 			&i.AmlCheck.ID,
 			&i.AmlCheck.UserID,
 			&i.AmlCheck.ServiceID,

@@ -89,3 +89,15 @@ FROM users u
 WHERE (u.banned IS NULL OR u.banned = false)
   AND u.deleted_at IS NULL
   AND u.processing_owner_id IS NOT NULL;
+
+-- name: UpdateTwoFactorExpiredAt :exec
+UPDATE users
+SET two_fa_reset_expires_at = $2,
+    updated_at = now()
+WHERE id = $1;
+
+-- name: ClearTwoFactorResetExpiresAt :exec
+UPDATE users
+SET two_fa_reset_expires_at = NULL,
+    updated_at = now()
+WHERE id = $1;
