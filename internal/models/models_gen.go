@@ -2,11 +2,10 @@
 package models
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
+	"time"
 )
 
 type AmlCheck struct {
@@ -19,7 +18,7 @@ type AmlCheck struct {
 	RiskLevel  *AmlRiskLevel    `db:"risk_level" json:"risk_level"`
 	CreatedAt  pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt  pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	AmlCheck
+} // @name AmlCheck
 
 type AmlCheckHistory struct {
 	ID              uuid.UUID        `db:"id" json:"id"`
@@ -30,7 +29,7 @@ type AmlCheckHistory struct {
 	AttemptNumber   int32            `db:"attempt_number" json:"attempt_number"`
 	CreatedAt       pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt       pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	AmlCheckHistory
+} // @name AmlCheckHistory
 
 type AmlCheckQueue struct {
 	ID         uuid.UUID        `db:"id" json:"id"`
@@ -39,14 +38,14 @@ type AmlCheckQueue struct {
 	Attempts   int32            `db:"attempts" json:"attempts"`
 	CreatedAt  pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt  pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	AmlCheckQueue
+} // @name AmlCheckQueue
 
 type AmlService struct {
 	ID        uuid.UUID        `db:"id" json:"id"`
 	Slug      AMLSlug          `db:"slug" json:"slug"`
 	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	AmlService
+} // @name AmlService
 
 type AmlServiceKey struct {
 	ID          uuid.UUID        `db:"id" json:"id"`
@@ -55,14 +54,14 @@ type AmlServiceKey struct {
 	Description string           `db:"description" json:"description"`
 	CreatedAt   pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt   pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	AmlServiceKey
+} // @name AmlServiceKey
 
 type AmlSupportedAsset struct {
 	ServiceSlug    AMLSlug `db:"service_slug" json:"service_slug"`
 	CurrencyID     string  `db:"currency_id" json:"currency_id"`
 	AssetIdentity  string  `db:"asset_identity" json:"asset_identity"`
 	BlockchainName string  `db:"blockchain_name" json:"blockchain_name"`
-} //	@name	AmlSupportedAsset
+} // @name AmlSupportedAsset
 
 type AmlUserKey struct {
 	ID        uuid.UUID        `db:"id" json:"id"`
@@ -71,7 +70,7 @@ type AmlUserKey struct {
 	Value     string           `db:"value" json:"value"`
 	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	AmlUserKey
+} // @name AmlUserKey
 
 type Currency struct {
 	ID                   string           `db:"id" json:"id"`
@@ -93,7 +92,7 @@ type Currency struct {
 	TokenLabel           pgtype.Text      `db:"token_label" json:"token_label"`
 	IsNative             bool             `db:"is_native" json:"is_native"`
 	IsNewStoreDefault    bool             `db:"is_new_store_default" json:"is_new_store_default"`
-} //	@name	Currency
+} // @name Currency
 
 type Exchange struct {
 	ID        uuid.UUID        `db:"id" json:"id"`
@@ -103,7 +102,7 @@ type Exchange struct {
 	Url       string           `db:"url" json:"url"`
 	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	Exchange
+} // @name Exchange
 
 type ExchangeAddress struct {
 	ID          uuid.UUID        `db:"id" json:"id"`
@@ -115,7 +114,7 @@ type ExchangeAddress struct {
 	CreateType  string           `db:"create_type" json:"create_type"`
 	CreatedAt   pgtype.Timestamp `db:"created_at" json:"created_at"`
 	ExchangeID  uuid.UUID        `db:"exchange_id" json:"exchange_id"`
-} //	@name	ExchangeAddress
+} // @name ExchangeAddress
 
 type ExchangeChain struct {
 	ID         uuid.UUID    `db:"id" json:"id"`
@@ -123,7 +122,7 @@ type ExchangeChain struct {
 	CurrencyID string       `db:"currency_id" json:"currency_id"`
 	Ticker     string       `db:"ticker" json:"ticker"`
 	Chain      string       `db:"chain" json:"chain"`
-} //	@name	ExchangeChain
+} // @name ExchangeChain
 
 type ExchangeKey struct {
 	ID         uuid.UUID        `db:"id" json:"id"`
@@ -132,7 +131,7 @@ type ExchangeKey struct {
 	Title      string           `db:"title" json:"title"`
 	CreatedAt  pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt  pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	ExchangeKey
+} // @name ExchangeKey
 
 type ExchangeOrder struct {
 	ID                     uuid.UUID           `db:"id" json:"id"`
@@ -150,7 +149,7 @@ type ExchangeOrder struct {
 	UserID                 uuid.UUID           `db:"user_id" json:"user_id"`
 	AmountUsd              decimal.NullDecimal `db:"amount_usd" json:"amount_usd"`
 	ExchangeConnectionHash pgtype.Text         `db:"exchange_connection_hash" json:"exchange_connection_hash"`
-} //	@name	ExchangeOrder
+} // @name ExchangeOrder
 
 type ExchangeUserKey struct {
 	ID            uuid.UUID        `db:"id" json:"id"`
@@ -159,7 +158,7 @@ type ExchangeUserKey struct {
 	Value         string           `db:"value" json:"value"`
 	CreatedAt     pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt     pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	ExchangeUserKey
+} // @name ExchangeUserKey
 
 type ExchangeWithdrawalHistory struct {
 	ID                     uuid.UUID               `db:"id" json:"id"`
@@ -177,7 +176,7 @@ type ExchangeWithdrawalHistory struct {
 	UpdatedAt              pgtype.Timestamp        `db:"updated_at" json:"updated_at"`
 	FailReason             pgtype.Text             `db:"fail_reason" json:"fail_reason"`
 	ExchangeConnectionHash pgtype.Text             `db:"exchange_connection_hash" json:"exchange_connection_hash"`
-} //	@name	ExchangeWithdrawalHistory
+} // @name ExchangeWithdrawalHistory
 
 type ExchangeWithdrawalSetting struct {
 	ID         uuid.UUID        `db:"id" json:"id"`
@@ -190,7 +189,7 @@ type ExchangeWithdrawalSetting struct {
 	CreatedAt  pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt  pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 	IsEnabled  bool             `db:"is_enabled" json:"is_enabled"`
-} //	@name	ExchangeWithdrawalSetting
+} // @name ExchangeWithdrawalSetting
 
 type Log struct {
 	ID          uuid.UUID        `db:"id" json:"id"`
@@ -200,7 +199,7 @@ type Log struct {
 	Status      string           `db:"status" json:"status"`
 	Message     string           `db:"message" json:"message"`
 	CreatedAt   pgtype.Timestamp `db:"created_at" json:"created_at"`
-} //	@name	Log
+} // @name Log
 
 type LogType struct {
 	ID                    int32            `db:"id" json:"id"`
@@ -212,7 +211,7 @@ type LogType struct {
 	NotifyParams          []byte           `db:"notify_params" json:"notify_params"`
 	CreatedAt             pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt             pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	LogType
+} // @name LogType
 
 type MultiWithdrawalRule struct {
 	ID                 uuid.UUID           `db:"id" json:"id"`
@@ -221,13 +220,13 @@ type MultiWithdrawalRule struct {
 	ManualAddress      pgtype.Text         `db:"manual_address" json:"manual_address"`
 	CreatedAt          pgtype.Timestamp    `db:"created_at" json:"created_at"`
 	UpdatedAt          pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
-} //	@name	MultiWithdrawalRule
+} // @name MultiWithdrawalRule
 
 type Notification struct {
 	ID       uuid.UUID             `db:"id" json:"id"`
 	Category *NotificationCategory `db:"category" json:"category"`
 	Type     NotificationType      `db:"type" json:"type"`
-} //	@name	Notification
+} // @name Notification
 
 type NotificationSendHistory struct {
 	ID                      uuid.UUID        `db:"id" json:"id"`
@@ -242,7 +241,7 @@ type NotificationSendHistory struct {
 	NotificationSendQueueID uuid.UUID        `db:"notification_send_queue_id" json:"notification_send_queue_id"`
 	StoreID                 uuid.NullUUID    `db:"store_id" json:"store_id"`
 	UserID                  uuid.NullUUID    `db:"user_id" json:"user_id"`
-} //	@name	NotificationSendHistory
+} // @name NotificationSendHistory
 
 type NotificationSendQueue struct {
 	ID          uuid.UUID         `db:"id" json:"id"`
@@ -254,7 +253,7 @@ type NotificationSendQueue struct {
 	CreatedAt   pgtype.Timestamp  `db:"created_at" json:"created_at"`
 	UpdatedAt   pgtype.Timestamp  `db:"updated_at" json:"updated_at"`
 	Args        *NotificationArgs `db:"args" json:"args"`
-} //	@name	NotificationSendQueue
+} // @name NotificationSendQueue
 
 type PersonalAccessToken struct {
 	ID            uuid.UUID        `db:"id" json:"id"`
@@ -266,7 +265,7 @@ type PersonalAccessToken struct {
 	ExpiresAt     *time.Time       `db:"expires_at" json:"expires_at"`
 	CreatedAt     pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt     pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	PersonalAccessToken
+} // @name PersonalAccessToken
 
 type Receipt struct {
 	ID         uuid.UUID        `db:"id" json:"id"`
@@ -277,7 +276,7 @@ type Receipt struct {
 	WalletID   uuid.NullUUID    `db:"wallet_id" json:"wallet_id"`
 	CreatedAt  pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt  pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	Receipt
+} // @name Receipt
 
 type Setting struct {
 	ID        uuid.UUID        `db:"id" json:"id"`
@@ -288,7 +287,7 @@ type Setting struct {
 	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 	IsMutable bool             `db:"is_mutable" json:"is_mutable"`
-} //	@name	Setting
+} // @name Setting
 
 type Store struct {
 	ID                       uuid.UUID        `db:"id" json:"id"`
@@ -306,7 +305,7 @@ type Store struct {
 	UpdatedAt                pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 	DeletedAt                pgtype.Timestamp `db:"deleted_at" json:"deleted_at"`
 	PublicPaymentFormEnabled bool             `db:"public_payment_form_enabled" json:"public_payment_form_enabled"`
-} //	@name	Store
+} // @name Store
 
 type StoreApiKey struct {
 	ID        uuid.UUID        `db:"id" json:"id"`
@@ -315,12 +314,12 @@ type StoreApiKey struct {
 	Enabled   bool             `db:"enabled" json:"enabled"`
 	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	StoreApiKey
+} // @name StoreApiKey
 
 type StoreCurrency struct {
 	CurrencyID string    `db:"currency_id" json:"currency_id"`
 	StoreID    uuid.UUID `db:"store_id" json:"store_id"`
-} //	@name	StoreCurrency
+} // @name StoreCurrency
 
 type StoreSecret struct {
 	ID        uuid.UUID        `db:"id" json:"id"`
@@ -328,7 +327,7 @@ type StoreSecret struct {
 	Secret    string           `db:"secret" json:"secret"`
 	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	StoreSecret
+} // @name StoreSecret
 
 type StoreWebhook struct {
 	ID        uuid.UUID        `db:"id" json:"id"`
@@ -338,12 +337,12 @@ type StoreWebhook struct {
 	Events    []*WebhookEvent  `db:"events" json:"events"`
 	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	StoreWebhook
+} // @name StoreWebhook
 
 type StoreWhitelist struct {
 	Ip      string    `db:"ip" json:"ip"`
 	StoreID uuid.UUID `db:"store_id" json:"store_id"`
-} //	@name	StoreWhitelist
+} // @name StoreWhitelist
 
 type Transaction struct {
 	ID                 uuid.UUID           `db:"id" json:"id"`
@@ -367,7 +366,7 @@ type Transaction struct {
 	UpdatedAt          pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
 	CreatedAtIndex     pgtype.Int8         `db:"created_at_index" json:"created_at_index"`
 	IsSystem           bool                `db:"is_system" json:"is_system"`
-} //	@name	Transaction
+} // @name Transaction
 
 type Transfer struct {
 	ID            uuid.UUID        `db:"id" json:"id"`
@@ -387,7 +386,7 @@ type Transfer struct {
 	ToAddresses   []string         `db:"to_addresses" json:"to_addresses"`
 	Step          *string          `db:"step" json:"step"`
 	TxHash        *string          `db:"tx_hash" json:"tx_hash"`
-} //	@name	Transfer
+} // @name Transfer
 
 type TransferTransaction struct {
 	ID                uuid.UUID                  `db:"id" json:"id"`
@@ -402,7 +401,7 @@ type TransferTransaction struct {
 	Step              string                     `db:"step" json:"step"`
 	CreatedAt         pgtype.Timestamptz         `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz         `db:"updated_at" json:"updated_at"`
-} //	@name	TransferTransaction
+} // @name TransferTransaction
 
 type TronWalletBalanceStatistic struct {
 	ID                 uuid.UUID          `db:"id" json:"id"`
@@ -415,7 +414,7 @@ type TronWalletBalanceStatistic struct {
 	AvailableBandwidth decimal.Decimal    `db:"available_bandwidth" json:"available_bandwidth"`
 	AvailableEnergy    decimal.Decimal    `db:"available_energy" json:"available_energy"`
 	CreatedAt          pgtype.Timestamptz `db:"created_at" json:"created_at"`
-} //	@name	TronWalletBalanceStatistic
+} // @name TronWalletBalanceStatistic
 
 type UnconfirmedTransaction struct {
 	ID               uuid.UUID           `db:"id" json:"id"`
@@ -434,7 +433,7 @@ type UnconfirmedTransaction struct {
 	CreatedAt        pgtype.Timestamp    `db:"created_at" json:"created_at"`
 	UpdatedAt        pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
 	Blockchain       Blockchain          `db:"blockchain" json:"blockchain"`
-} //	@name	UnconfirmedTransaction
+} // @name UnconfirmedTransaction
 
 type UpdateBalanceQueue struct {
 	ID                       uuid.UUID        `db:"id" json:"id"`
@@ -443,7 +442,7 @@ type UpdateBalanceQueue struct {
 	NativeTokenBalanceUpdate bool             `db:"native_token_balance_update" json:"native_token_balance_update"`
 	CreatedAt                pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt                pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	UpdateBalanceQueue
+} // @name UpdateBalanceQueue
 
 type User struct {
 	ID                  uuid.UUID        `db:"id" json:"id"`
@@ -463,7 +462,7 @@ type User struct {
 	RateScale           decimal.Decimal  `db:"rate_scale" json:"rate_scale"`
 	DvnetToken          pgtype.Text      `db:"dvnet_token" json:"dvnet_token"`
 	TwoFaResetExpiresAt pgtype.Timestamp `db:"two_fa_reset_expires_at" json:"two_fa_reset_expires_at"`
-} //	@name	User
+} // @name User
 
 type UserAddressBook struct {
 	ID          uuid.UUID          `db:"id" json:"id"`
@@ -478,7 +477,7 @@ type UserAddressBook struct {
 	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	DeletedAt   pgtype.Timestamptz `db:"deleted_at" json:"deleted_at"`
-} //	@name	UserAddressBook
+} // @name UserAddressBook
 
 type UserExchange struct {
 	ID              uuid.UUID               `db:"id" json:"id"`
@@ -486,7 +485,7 @@ type UserExchange struct {
 	UserID          uuid.UUID               `db:"user_id" json:"user_id"`
 	WithdrawalState ExchangeWithdrawalState `db:"withdrawal_state" json:"withdrawal_state"`
 	SwapState       ExchangeSwapState       `db:"swap_state" json:"swap_state"`
-} //	@name	UserExchange
+} // @name UserExchange
 
 type UserExchangePair struct {
 	ID           uuid.UUID `db:"id" json:"id"`
@@ -496,7 +495,7 @@ type UserExchangePair struct {
 	CurrencyTo   string    `db:"currency_to" json:"currency_to"`
 	Symbol       string    `db:"symbol" json:"symbol"`
 	Type         OrderSide `db:"type" json:"type"`
-} //	@name	UserExchangePair
+} // @name UserExchangePair
 
 type UserNotification struct {
 	ID             uuid.UUID        `db:"id" json:"id"`
@@ -506,14 +505,14 @@ type UserNotification struct {
 	TgEnabled      bool             `db:"tg_enabled" json:"tg_enabled"`
 	CreatedAt      pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt      pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	UserNotification
+} // @name UserNotification
 
 type UserStore struct {
 	ID        uuid.UUID        `db:"id" json:"id"`
 	UserID    uuid.UUID        `db:"user_id" json:"user_id"`
 	StoreID   uuid.UUID        `db:"store_id" json:"store_id"`
 	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
-} //	@name	UserStore
+} // @name UserStore
 
 type Wallet struct {
 	ID              uuid.UUID        `db:"id" json:"id"`
@@ -526,7 +525,7 @@ type Wallet struct {
 	IpAddress       pgtype.Text      `db:"ip_address" json:"ip_address"`
 	UntrustedEmail  pgtype.Text      `db:"untrusted_email" json:"untrusted_email"`
 	Locale          string           `db:"locale" json:"locale"`
-} //	@name	Wallet
+} // @name Wallet
 
 type WalletAddress struct {
 	ID         uuid.UUID        `db:"id" json:"id"`
@@ -540,7 +539,7 @@ type WalletAddress struct {
 	UpdatedAt  pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 	DeletedAt  pgtype.Timestamp `db:"deleted_at" json:"deleted_at"`
 	Dirty      bool             `db:"dirty" json:"dirty"`
-} //	@name	WalletAddress
+} // @name WalletAddress
 
 type WalletAddressesActivityLog struct {
 	ID                uuid.UUID        `db:"id" json:"id"`
@@ -549,7 +548,7 @@ type WalletAddressesActivityLog struct {
 	TextVariables     []byte           `db:"text_variables" json:"text_variables"`
 	CreatedAt         pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-} //	@name	WalletAddressesActivityLog
+} // @name WalletAddressesActivityLog
 
 type WebhookSendHistory struct {
 	ID                 uuid.UUID        `db:"id" json:"id"`
@@ -565,7 +564,7 @@ type WebhookSendHistory struct {
 	UpdatedAt          pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 	IsManual           pgtype.Bool      `db:"is_manual" json:"is_manual"`
 	StoreID            uuid.NullUUID    `db:"store_id" json:"store_id"`
-} //	@name	WebhookSendHistory
+} // @name WebhookSendHistory
 
 type WebhookSendQueue struct {
 	ID            uuid.UUID        `db:"id" json:"id"`
@@ -577,7 +576,7 @@ type WebhookSendQueue struct {
 	Event         string           `db:"event" json:"event"`
 	LastSentAt    pgtype.Timestamp `db:"last_sent_at" json:"last_sent_at"`
 	CreatedAt     pgtype.Timestamp `db:"created_at" json:"created_at"`
-} //	@name	WebhookSendQueue
+} // @name WebhookSendQueue
 
 type WithdrawalFromProcessingWallet struct {
 	ID          uuid.UUID        `db:"id" json:"id"`
@@ -591,7 +590,7 @@ type WithdrawalFromProcessingWallet struct {
 	CreatedAt   pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt   pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 	RequestID   *string          `db:"request_id" json:"request_id"`
-} //	@name	WithdrawalFromProcessingWallet
+} // @name WithdrawalFromProcessingWallet
 
 type WithdrawalWallet struct {
 	ID                      uuid.UUID           `db:"id" json:"id"`
@@ -605,7 +604,7 @@ type WithdrawalWallet struct {
 	UpdatedAt               pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
 	WithdrawalEnabled       string              `db:"withdrawal_enabled" json:"withdrawal_enabled"`
 	WithdrawalMinBalanceUsd decimal.NullDecimal `db:"withdrawal_min_balance_usd" json:"withdrawal_min_balance_usd"`
-} //	@name	WithdrawalWallet
+} // @name WithdrawalWallet
 
 type WithdrawalWalletAddress struct {
 	ID                 uuid.UUID        `db:"id" json:"id"`
@@ -615,4 +614,4 @@ type WithdrawalWalletAddress struct {
 	CreatedAt          pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt          pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 	DeletedAt          pgtype.Timestamp `db:"deleted_at" json:"deleted_at"`
-} //	@name	WithdrawalWalletAddress
+} // @name WithdrawalWalletAddress

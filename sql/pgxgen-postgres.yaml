@@ -859,6 +859,9 @@ schemas:
                             - remember_token
                             - processing_owner_id
                             - dvnet_token
+                            - two_fa_reset_expires_at
+                            - banned
+                            - rate_scale
                             - deleted_at
                             - created_at
                         column_values:
