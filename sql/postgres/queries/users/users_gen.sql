@@ -11,6 +11,6 @@ SELECT * FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT $1 O
 
 -- name: Update :one
 UPDATE users
-	SET location=$1, language=$2, rate_source=$3, updated_at=now(), banned=$4, exchange_slug=$5, rate_scale=$6, two_fa_reset_expires_at=$7
-WHERE id=$8
+	SET location=$1, language=$2, rate_source=$3, updated_at=now(), exchange_slug=$4
+WHERE id=$5
 	RETURNING *;

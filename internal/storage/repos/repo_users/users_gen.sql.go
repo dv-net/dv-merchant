@@ -135,20 +135,17 @@ func (q *Queries) GetAll(ctx context.Context, arg GetAllParams) ([]*models.User,
 
 const update = `-- name: Update :one
 UPDATE users
-	SET location=$1, language=$2, rate_source=$3, updated_at=now(), banned=$4, exchange_slug=$5, rate_scale=$6, two_fa_reset_expires_at=$7
-WHERE id=$8
+	SET location=$1, language=$2, rate_source=$3, updated_at=now(), exchange_slug=$4
+WHERE id=$5
 	RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 `
 
 type UpdateParams struct {
-	Location            string               `db:"location" json:"location" validate:"required,timezone"`
-	Language            string               `db:"language" json:"language"`
-	RateSource          models.RateSource    `db:"rate_source" json:"rate_source"`
-	Banned              pgtype.Bool          `db:"banned" json:"banned"`
-	ExchangeSlug        *models.ExchangeSlug `db:"exchange_slug" json:"exchange_slug"`
-	RateScale           decimal.Decimal      `db:"rate_scale" json:"rate_scale"`
-	TwoFaResetExpiresAt pgtype.Timestamp     `db:"two_fa_reset_expires_at" json:"two_fa_reset_expires_at"`
-	ID                  uuid.UUID            `db:"id" json:"id"`
+	Location     string               `db:"location" json:"location" validate:"required,timezone"`
+	Language     string               `db:"language" json:"language"`
+	RateSource   models.RateSource    `db:"rate_source" json:"rate_source"`
+	ExchangeSlug *models.ExchangeSlug `db:"exchange_slug" json:"exchange_slug"`
+	ID           uuid.UUID            `db:"id" json:"id"`
 }
 
 func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.User, error) {
@@ -156,10 +153,7 @@ func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.User, e
 		arg.Location,
 		arg.Language,
 		arg.RateSource,
-		arg.Banned,
 		arg.ExchangeSlug,
-		arg.RateScale,
-		arg.TwoFaResetExpiresAt,
 		arg.ID,
 	)
 	var i models.User
