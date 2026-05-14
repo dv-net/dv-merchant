@@ -183,7 +183,7 @@ func NewServices(
 
 	notificationDrivers := make(map[models.DeliveryChannel]notification_sender.IInternalSender, 2)
 	templaterService := templater.New(ctx, logger, settingService)
-	mailSender, err := mail_sender.New(logger, eventListener, templaterService, settingService)
+	mailSender, err := mail_sender.New(ctx, logger, eventListener, templaterService, settingService)
 	if err != nil {
 		logger.Errorw("initialize mailer", "error", err)
 	}

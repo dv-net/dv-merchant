@@ -158,9 +158,22 @@ func (s *CustomQuerier) GetByUser(
 		return nil, err
 	}
 
+	var allowedOrderBy = map[string]string{
+		"created_at_index": "transactions.created_at_index",
+		"amount_usd":       "transactions.amount_usd",
+		"tx_hash":          "transactions.tx_hash",
+		"user_email":       "wallets.email",
+	}
+
 	if params.OrderBy == "" {
 		params.OrderBy = "transactions.created_at_index"
 		params.IsAscOrdering = false
+	} else {
+		safe, err := storecmn.SafeOrderBy(params.OrderBy, allowedOrderBy)
+		if err != nil {
+			return nil, fmt.Errorf("invalid sort parameter: %w", err)
+		}
+		params.OrderBy = safe
 	}
 
 	sb.OrderBy(params.OrderBy)

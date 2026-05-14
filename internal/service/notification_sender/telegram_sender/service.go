@@ -1,12 +1,11 @@
 package telegram_sender
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/notify"
-
-	"golang.org/x/net/context"
 )
 
 // Service TODO implement for internal telegram notifications support

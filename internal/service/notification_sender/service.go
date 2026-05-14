@@ -1,12 +1,12 @@
 package notification_sender
 
 import (
+	"context"
+
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/pkg/logger"
-
-	"golang.org/x/net/context"
 )
 
 type Service struct {

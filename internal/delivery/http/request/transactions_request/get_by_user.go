@@ -21,8 +21,8 @@ type GetByUser struct {
 	DateTo        *string                  `json:"date_to" query:"date_to" format:"date-time"`
 	Page          *uint32                  `json:"page" query:"page"`
 	PageSize      *uint32                  `json:"page_size" query:"page_size"`
-	SortBy        *string                  `json:"sort_by" query:"sort_by,default:created_at_index" enums:"created_at_index,amount_usd,tx_hash,user_email" oneof:"created_at_index,amount_usd,tx_hash,user_email"`
-	SortDirection *string                  `json:"sort_direction" query:"sort_direction,default:desc" enums:"asc,desc" oneof:"asc,desc"`
+	SortBy        *string                  `json:"sort_by" query:"sort_by,default:created_at_index" validate:"omitempty,oneof=created_at_index amount_usd tx_hash user_email" enums:"created_at_index,amount_usd,tx_hash,user_email"`
+	SortDirection *string                  `json:"sort_direction" query:"sort_direction,default:desc" validate:"omitempty,oneof=asc desc" enums:"asc,desc"`
 } //	@name	GetTransactionsByUserRequest
 
 type GetByUserExported struct {

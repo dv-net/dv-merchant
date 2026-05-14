@@ -198,10 +198,10 @@ func TestRequiresPermission(t *testing.T) {
 		})
 
 		app.Post("/blog",
+			authz.RequiresPermissions(tC.permissions, tC.opts...),
 			func(c fiber.Ctx) error {
 				return c.SendStatus(fiber.StatusOK)
 			},
-			authz.RequiresPermissions(tC.permissions, tC.opts...),
 		)
 
 		t.Run(tC.desc, func(t *testing.T) {
@@ -297,10 +297,10 @@ func TestRequiresRoles(t *testing.T) {
 		})
 
 		app.Post("/blog",
+			authz.RequiresRoles(tC.roles, tC.opts...),
 			func(c fiber.Ctx) error {
 				return c.SendStatus(fiber.StatusOK)
 			},
-			authz.RequiresRoles(tC.roles, tC.opts...),
 		)
 
 		t.Run(tC.desc, func(t *testing.T) {

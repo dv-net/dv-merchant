@@ -1,11 +1,10 @@
 package admin_gateway
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
-
-	"golang.org/x/net/context"
 
 	admin_errors "github.com/dv-net/dv-merchant/pkg/admin_gateway/errors"
 	admin_requests "github.com/dv-net/dv-merchant/pkg/admin_gateway/requests"

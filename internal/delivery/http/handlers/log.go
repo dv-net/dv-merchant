@@ -33,7 +33,7 @@ func (h *Handler) getLogsType(c fiber.Ctx) error {
 
 	logs, err := h.services.LogService.GetAllTypes(c.Context())
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusServiceUnavailable)
+		return apierror.New().AddError(errors.New("failed get types")).SetHttpCode(fiber.StatusServiceUnavailable)
 	}
 
 	return c.JSON(response.OkByData(converters.GetAllLogTypesResponse(logs)))

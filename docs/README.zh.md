@@ -171,7 +171,7 @@ go test ./...
 
 <div align="center">
 
-**Telegram:** [@dv_net_support_bot](https://t.me/dv_net_support_bot) • **Telegram 群组:** [@dv_net_support_chat](https://t.me/dv_net_support_chat) • **Discord:** [discord.gg/Szy2XGsr](https://discord.gg/Szy2XGsr)
+**Telegram:** [@dv_net_support_bot](https://t.me/dv_net_support_bot) • **Telegram 群组:** [@dv_net_support_chat](https://t.me/dv_net_support_chat) • **Discord:** [discord.gg/QUXNWZdy](https://discord.gg/QUXNWZdy)
 
 **邮箱:** [support@dv.net](https://dv.net/#support) • **网站:** [dv.net](https://dv.net) • **文档:** [docs.dv.net](https://docs.dv.net)
 

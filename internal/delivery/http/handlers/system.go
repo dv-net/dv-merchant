@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/system_response"
 	"github.com/dv-net/dv-merchant/internal/delivery/middleware"
@@ -26,7 +27,7 @@ import (
 func (h Handler) info(c fiber.Ctx) error {
 	info, err := h.services.SystemService.GetInfo(c.Context())
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		return apierror.New().AddError(errors.New("failed get info")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	resp := converters.SystemInfoModelToResponse(info)
@@ -106,18 +107,21 @@ func (h Handler) initPublicSystemRoutes(v3 fiber.Router) {
 	public := v3.Group("/system")
 	public.Get("/info", h.info)
 
-	public.Post("/update/processing", h.updateProcessing,
+	public.Post("/update/processing",
 		middleware.AuthMiddleware(h.services.AuthService),
 		middleware.CasbinMiddleware(h.services.PermissionService, []models.UserRole{models.UserRoleRoot}),
+		h.updateProcessing,
 	)
 
-	public.Post("/update/backend", h.updateBackend,
+	public.Post("/update/backend",
 		middleware.AuthMiddleware(h.services.AuthService),
 		middleware.CasbinMiddleware(h.services.PermissionService, []models.UserRole{models.UserRoleRoot}),
+		h.updateBackend,
 	)
 
-	public.Get("/versions", h.loadNewVersions,
+	public.Get("/versions",
 		middleware.AuthMiddleware(h.services.AuthService),
 		middleware.CasbinMiddleware(h.services.PermissionService, []models.UserRole{models.UserRoleDefault, models.UserRoleRoot, models.UserRoleSupport}),
+		h.loadNewVersions,
 	)
 }

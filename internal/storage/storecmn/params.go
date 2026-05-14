@@ -1,5 +1,20 @@
 package storecmn
 
+import "fmt"
+
+// SafeOrderBy validates the column against an allowlist and returns the safe value.
+// Returns an error if the column is not in the allowlist.
+func SafeOrderBy(column string, allowlist map[string]string) (string, error) {
+	if column == "" {
+		return "", nil
+	}
+	safe, ok := allowlist[column]
+	if !ok {
+		return "", fmt.Errorf("invalid sort column: %q", column)
+	}
+	return safe, nil
+}
+
 type CommonFindParams struct {
 	IsAscOrdering bool   `json:"is_asc_ordering"`
 	OrderBy       string `json:"order_by"`

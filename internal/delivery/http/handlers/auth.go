@@ -142,11 +142,15 @@ func (h *Handler) login(c fiber.Ctx) error {
 
 func (h *Handler) initAuthRoutes(v1 fiber.Router) {
 	auth := v1.Group("/auth")
-	auth.Post("/register", h.register,
+	auth.Post("/register",
 		middleware.TurnstileMiddleware(h.services.TurnstileVerifier),
-		middleware.TimezoneNormalizer())
-	auth.Post("/register-root", h.registerRoot,
+		middleware.TimezoneNormalizer(),
+		h.register,
+	)
+	auth.Post("/register-root",
 		middleware.TurnstileMiddleware(h.services.TurnstileVerifier),
-		middleware.TimezoneNormalizer())
+		middleware.TimezoneNormalizer(),
+		h.registerRoot,
+	)
 	auth.Post("/login", h.login)
 }

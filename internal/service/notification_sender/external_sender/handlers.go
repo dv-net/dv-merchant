@@ -1,6 +1,7 @@
 package external_sender
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -10,8 +11,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/tools/url"
 	admin_requests "github.com/dv-net/dv-merchant/pkg/admin_gateway/requests"
-
-	"golang.org/x/net/context"
 )
 
 func (svc *Service) handleUserVerification(ctx context.Context, encodedVariables []byte, dest string, channel models.DeliveryChannel) error {

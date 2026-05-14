@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/setting_request"
@@ -59,7 +60,7 @@ func (h Handler) createOrUpdateRootSetting(c fiber.Ctx) error {
 		Name:  request.Name,
 		Value: request.Value,
 	}); err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		return apierror.New().AddError(errors.New("failed setting update")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByMessage("success"))
@@ -88,7 +89,7 @@ func (h Handler) createOrUpdateUserSetting(c fiber.Ctx) error {
 
 	request := &setting_request.CreateRequest{}
 	if err := c.Bind().Body(request); err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		return err
 	}
 
 	var code string
@@ -102,7 +103,8 @@ func (h Handler) createOrUpdateUserSetting(c fiber.Ctx) error {
 		Value: request.Value,
 		Model: setting.IModelSetting(usr),
 	}); err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		h.logger.Errorw("failed setting update", "user_id", usr.ID, "error", err)
+		return apierror.New().AddError(errors.New("failed update settings")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByMessage("success"))

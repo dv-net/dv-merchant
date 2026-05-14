@@ -1,7 +1,7 @@
 package admin_gateway
 
 import (
-	"golang.org/x/net/context"
+	"context"
 )
 
 type ServiceContextKey string
