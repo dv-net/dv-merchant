@@ -2,13 +2,12 @@ package mail_sender
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strconv"
 
 	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/service/templater"
-
-	"golang.org/x/net/context"
 )
 
 func (svc *Service) handleUserVerificationEmail(_ context.Context, email string, encodedVariables []byte) ([]byte, error) {

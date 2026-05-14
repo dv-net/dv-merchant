@@ -1,10 +1,11 @@
 package repo_webhook_send_histories
 
 import (
+	"context"
+
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 
 	"github.com/jackc/pgx/v5"
-	"golang.org/x/net/context"
 )
 
 type ICustomQuerier interface {

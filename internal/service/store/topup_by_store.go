@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/wallet"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"golang.org/x/net/context"
 )
 
 type TopUpData struct {
