@@ -58,10 +58,11 @@ func (s *CustomQuerier) GetStatistics(
 	)
 
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	resolutionVar := sb.Var(string(params.Resolution))
 	sb.Select(
 		fmt.Sprintf("%s AS \"date\"", dateCond),
 		"SUM(COALESCE(transactions.amount_usd, 0)) AS \"amount_usd\"",
-		fmt.Sprintf("'%s' AS \"resolution\"", params.Resolution),
+		fmt.Sprintf("%s AS \"resolution\"", resolutionVar),
 		"array_agg(distinct transactions.currency_id) AS \"currency_ids\"",
 	).
 		From("transactions").

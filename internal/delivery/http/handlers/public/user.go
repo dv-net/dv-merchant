@@ -88,13 +88,15 @@ func (h *Handler) acceptInvite(c fiber.Ctx) error {
 
 func (h *Handler) initUserRoutes(v1 fiber.Router) {
 	user := v1.Group("/user")
-	user.Post("/forgot-password", h.forgotPassword,
+	user.Post("/forgot-password",
 		middleware.LimiterMiddleware(3, 60, middleware.WithSlidingWindow),
 		middleware.FakeDelayMiddleware(2*time.Second),
+		h.forgotPassword,
 	)
-	user.Post("/reset-password", h.resetPassword,
+	user.Post("/reset-password",
 		middleware.LimiterMiddleware(3, 60, middleware.WithSlidingWindow),
 		middleware.FakeDelayMiddleware(2*time.Second),
+		h.resetPassword,
 	)
 	user.Post("/accept-invite", h.acceptInvite)
 }
