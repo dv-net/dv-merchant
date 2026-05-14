@@ -5,4 +5,3 @@ INSERT INTO wallets (store_id, store_external_id, created_at, email, ip_address,
 
 -- name: GetById :one
 SELECT * FROM wallets WHERE deleted_at IS NULL AND id=$1 LIMIT 1;
-

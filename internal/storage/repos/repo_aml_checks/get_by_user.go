@@ -55,9 +55,11 @@ func (s *CustomQuerier) GetByUser(ctx context.Context, usr *models.User, params 
 		countSb.Where(countSb.Equal("aml_services.slug", string(*params.ServiceSlug)))
 	}
 
-	timezone := usr.Location
-	if timezone == "" {
-		timezone = time.UTC.String()
+	timezone := time.UTC.String()
+	if usr.Location != "" {
+		if loc, err := time.LoadLocation(usr.Location); err == nil {
+			timezone = loc.String()
+		}
 	}
 
 	if params.DateFrom != nil {

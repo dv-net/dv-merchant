@@ -15,25 +15,26 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO users (email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9, $10, $11, $12, $13)
-	RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+INSERT INTO users (email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9, $10, $11, $12, $13, $14)
+	RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 `
 
 type CreateParams struct {
-	Email             string               `db:"email" json:"email" validate:"required,email"`
-	EmailVerifiedAt   pgtype.Timestamp     `db:"email_verified_at" json:"email_verified_at"`
-	Password          string               `db:"password" json:"password" validate:"required,min=8,max=32"`
-	RememberToken     pgtype.Text          `db:"remember_token" json:"remember_token"`
-	ProcessingOwnerID uuid.NullUUID        `db:"processing_owner_id" json:"processing_owner_id"`
-	Location          string               `db:"location" json:"location" validate:"required,timezone"`
-	Language          string               `db:"language" json:"language"`
-	RateSource        models.RateSource    `db:"rate_source" json:"rate_source"`
-	DeletedAt         pgtype.Timestamp     `db:"deleted_at" json:"deleted_at"`
-	Banned            pgtype.Bool          `db:"banned" json:"banned"`
-	ExchangeSlug      *models.ExchangeSlug `db:"exchange_slug" json:"exchange_slug"`
-	RateScale         decimal.Decimal      `db:"rate_scale" json:"rate_scale"`
-	DvnetToken        pgtype.Text          `db:"dvnet_token" json:"dvnet_token"`
+	Email               string               `db:"email" json:"email" validate:"required,email"`
+	EmailVerifiedAt     pgtype.Timestamp     `db:"email_verified_at" json:"email_verified_at"`
+	Password            string               `db:"password" json:"password" validate:"required,min=8,max=32"`
+	RememberToken       pgtype.Text          `db:"remember_token" json:"remember_token"`
+	ProcessingOwnerID   uuid.NullUUID        `db:"processing_owner_id" json:"processing_owner_id"`
+	Location            string               `db:"location" json:"location" validate:"required,timezone"`
+	Language            string               `db:"language" json:"language"`
+	RateSource          models.RateSource    `db:"rate_source" json:"rate_source"`
+	DeletedAt           pgtype.Timestamp     `db:"deleted_at" json:"deleted_at"`
+	Banned              pgtype.Bool          `db:"banned" json:"banned"`
+	ExchangeSlug        *models.ExchangeSlug `db:"exchange_slug" json:"exchange_slug"`
+	RateScale           decimal.Decimal      `db:"rate_scale" json:"rate_scale"`
+	DvnetToken          pgtype.Text          `db:"dvnet_token" json:"dvnet_token"`
+	TwoFaResetExpiresAt pgtype.Timestamp     `db:"two_fa_reset_expires_at" json:"two_fa_reset_expires_at"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.User, error) {
@@ -51,6 +52,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.User, e
 		arg.ExchangeSlug,
 		arg.RateScale,
 		arg.DvnetToken,
+		arg.TwoFaResetExpiresAt,
 	)
 	var i models.User
 	err := row.Scan(
@@ -70,6 +72,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.User, e
 		&i.ExchangeSlug,
 		&i.RateScale,
 		&i.DvnetToken,
+		&i.TwoFaResetExpiresAt,
 	)
 	return &i, err
 }
@@ -84,7 +87,7 @@ func (q *Queries) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 const getAll = `-- name: GetAll :many
-SELECT id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at FROM users WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type GetAllParams struct {
@@ -118,6 +121,7 @@ func (q *Queries) GetAll(ctx context.Context, arg GetAllParams) ([]*models.User,
 			&i.ExchangeSlug,
 			&i.RateScale,
 			&i.DvnetToken,
+			&i.TwoFaResetExpiresAt,
 		); err != nil {
 			return nil, err
 		}
@@ -131,19 +135,16 @@ func (q *Queries) GetAll(ctx context.Context, arg GetAllParams) ([]*models.User,
 
 const update = `-- name: Update :one
 UPDATE users
-	SET location=$1, language=$2, rate_source=$3, updated_at=now(), banned=$4, exchange_slug=$5, 
-		rate_scale=$6
-	WHERE id=$7
-	RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token
+	SET location=$1, language=$2, rate_source=$3, updated_at=now(), exchange_slug=$4
+WHERE id=$5
+	RETURNING id, email, email_verified_at, password, remember_token, processing_owner_id, location, language, rate_source, created_at, updated_at, deleted_at, banned, exchange_slug, rate_scale, dvnet_token, two_fa_reset_expires_at
 `
 
 type UpdateParams struct {
 	Location     string               `db:"location" json:"location" validate:"required,timezone"`
 	Language     string               `db:"language" json:"language"`
 	RateSource   models.RateSource    `db:"rate_source" json:"rate_source"`
-	Banned       pgtype.Bool          `db:"banned" json:"banned"`
 	ExchangeSlug *models.ExchangeSlug `db:"exchange_slug" json:"exchange_slug"`
-	RateScale    decimal.Decimal      `db:"rate_scale" json:"rate_scale"`
 	ID           uuid.UUID            `db:"id" json:"id"`
 }
 
@@ -152,9 +153,7 @@ func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.User, e
 		arg.Location,
 		arg.Language,
 		arg.RateSource,
-		arg.Banned,
 		arg.ExchangeSlug,
-		arg.RateScale,
 		arg.ID,
 	)
 	var i models.User
@@ -175,6 +174,7 @@ func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.User, e
 		&i.ExchangeSlug,
 		&i.RateScale,
 		&i.DvnetToken,
+		&i.TwoFaResetExpiresAt,
 	)
 	return &i, err
 }

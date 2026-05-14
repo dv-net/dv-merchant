@@ -69,7 +69,7 @@ func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.Log, error
 const update = `-- name: Update :one
 UPDATE logs
 	SET log_type_slug=$1, process_id=$2, level=$3, status=$4, message=$5
-	WHERE id=$6
+WHERE id=$6
 	RETURNING id, log_type_slug, process_id, level, status, message, created_at
 `
 

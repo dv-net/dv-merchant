@@ -136,10 +136,20 @@ func (s *CustomQuerier) GetHistoryByUser(ctx context.Context, userID uuid.UUID, 
 		return nil, err
 	}
 
+	var allowedOrderBy = map[string]string{
+		"created_at": "nsh.created_at",
+		"sent_at":    "nsh.sent_at",
+		"type":       "nsh.type",
+	}
+
 	if params.OrderBy == "" {
 		params.OrderBy = "nsh.created_at"
 	} else {
-		params.OrderBy = "nsh." + params.OrderBy
+		safe, err := storecmn.SafeOrderBy(params.OrderBy, allowedOrderBy)
+		if err != nil {
+			return nil, fmt.Errorf("invalid sort parameter: %w", err)
+		}
+		params.OrderBy = safe
 	}
 	sb.OrderBy(params.OrderBy)
 	if !params.IsAscOrdering {

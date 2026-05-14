@@ -1,11 +1,10 @@
 package rate
 
 import (
+	"context"
 	"time"
 
 	"github.com/dv-net/dv-merchant/pkg/key_value"
-
-	"golang.org/x/net/context"
 )
 
 type Limiter interface {

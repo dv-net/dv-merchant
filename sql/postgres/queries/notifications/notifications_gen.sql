@@ -5,4 +5,3 @@ INSERT INTO notifications (category, type)
 
 -- name: GetByID :one
 SELECT * FROM notifications WHERE id=$1 LIMIT 1;
-

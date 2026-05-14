@@ -72,6 +72,7 @@ func (s *CustomQuerier) SummarizeByCurrency(ctx context.Context, params Summariz
 			),
 		)
 
+	minBalanceVar := sb.Var(params.MinBalance)
 	sb.With(rateCte).
 		Select(
 			"currencies.id",
@@ -84,15 +85,15 @@ func (s *CustomQuerier) SummarizeByCurrency(ctx context.Context, params Summariz
 			"COUNT(wallet_addresses.id)",
 			fmt.Sprintf(
 				`SUM(CASE WHEN (wallet_addresses.amount * rate.exchange_rate)::decimal >= %s THEN 1 ELSE 0 END) AS count_with_balance`,
-				params.MinBalance,
+				minBalanceVar,
 			),
 			fmt.Sprintf(
 				`SUM(CASE WHEN (wallet_addresses.amount * rate.exchange_rate)::decimal >= %s THEN wallet_addresses.amount ELSE 0 END)::numeric(90,50) AS balance`,
-				params.MinBalance,
+				minBalanceVar,
 			),
 			fmt.Sprintf(
 				`SUM(CASE WHEN (wallet_addresses.amount * rate.exchange_rate)::decimal >= %s THEN wallet_addresses.amount * rate.exchange_rate ELSE 0 END)::numeric(90,50) AS amount_usd`,
-				params.MinBalance,
+				minBalanceVar,
 			),
 		).
 		From("wallet_addresses").

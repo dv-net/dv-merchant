@@ -3373,6 +3373,49 @@ definitions:
     required:
     - interval
     type: object
+  User:
+    properties:
+      banned:
+        $ref: '#/definitions/pgtype.Bool'
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      dvnet_token:
+        type: string
+      email:
+        type: string
+      email_verified_at:
+        type: string
+      exchange_slug:
+        $ref: '#/definitions/ExchangeSlug'
+      id:
+        type: string
+      language:
+        type: string
+      location:
+        type: string
+      password:
+        maxLength: 32
+        minLength: 8
+        type: string
+      processing_owner_id:
+        type: string
+      rate_scale:
+        type: number
+      rate_source:
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.RateSource'
+      remember_token:
+        type: string
+      two_fa_reset_expires_at:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - email
+    - location
+    - password
+    type: object
   UserAMLKey:
     properties:
       name:
@@ -3683,7 +3726,7 @@ definitions:
     properties:
       addressees:
         items:
-          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.WithdrawalWalletAddress'
+          $ref: '#/definitions/WithdrawalWalletAddress'
         type: array
       currency:
         $ref: '#/definitions/CurrencyShort'
@@ -3719,6 +3762,23 @@ definitions:
     required:
     - currency_id
     - wallet_address_id
+    type: object
+  WithdrawalWalletAddress:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+      withdrawal_wallet_id:
+        type: string
     type: object
   WithdrawalWalletWithAddress:
     properties:
@@ -4032,47 +4092,6 @@ definitions:
     - RateSourceKucoin
     - RateSourceBybit
     - RateSourceGateio
-  github_com_dv-net_dv-merchant_internal_models.User:
-    properties:
-      banned:
-        $ref: '#/definitions/pgtype.Bool'
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      dvnet_token:
-        type: string
-      email:
-        type: string
-      email_verified_at:
-        type: string
-      exchange_slug:
-        $ref: '#/definitions/ExchangeSlug'
-      id:
-        type: string
-      language:
-        type: string
-      location:
-        type: string
-      password:
-        maxLength: 32
-        minLength: 8
-        type: string
-      processing_owner_id:
-        type: string
-      rate_scale:
-        type: number
-      rate_source:
-        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.RateSource'
-      remember_token:
-        type: string
-      updated_at:
-        type: string
-    required:
-    - email
-    - location
-    - password
-    type: object
   github_com_dv-net_dv-merchant_internal_models.WalletType:
     enum:
     - cold
@@ -4083,23 +4102,6 @@ definitions:
     - WalletTypeCold
     - WalletTypeHot
     - WalletTypeProcessing
-  github_com_dv-net_dv-merchant_internal_models.WithdrawalWalletAddress:
-    properties:
-      address:
-        type: string
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      id:
-        type: string
-      name:
-        type: string
-      updated_at:
-        type: string
-      withdrawal_wallet_id:
-        type: string
-    type: object
   github_com_dv-net_dv-merchant_internal_service_setting.Dto:
     properties:
       available_values:
@@ -4138,7 +4140,7 @@ definitions:
       owner_info:
         $ref: '#/definitions/RegisterOwnerInfo'
       user:
-        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.User'
+        $ref: '#/definitions/User'
     type: object
   github_com_dv-net_dv-merchant_internal_service_wallet.EVMData:
     properties:
@@ -4256,6 +4258,7 @@ definitions:
   pgtype.Int8:
     properties:
       int64:
+        format: int64
         type: integer
       valid:
         type: boolean
@@ -4599,6 +4602,73 @@ paths:
       security:
       - BearerAuth: []
       summary: Disable 2FA authentication
+      tags:
+      - 2fa
+  /v1/dv-admin/2fa/reset:
+    delete:
+      consumes:
+      - application/json
+      description: Cancels an in-progress 2FA reset, clearing the hold period.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Cancel 2FA reset
+      tags:
+      - 2fa
+  /v1/dv-admin/2fa/reset/init:
+    post:
+      consumes:
+      - application/json
+      description: Starts a 14-day hold period after which 2FA can be forcefully disabled.
+        Cannot be called again while a reset is already pending.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Initiate 2FA reset
       tags:
       - 2fa
   /v1/dv-admin/aml/{aml_provider_slug}/currencies:
@@ -5497,10 +5567,12 @@ paths:
         filtering options
       parameters:
       - description: Page number
+        format: int32
         in: query
         name: page
         type: integer
       - description: Page size
+        format: int32
         in: query
         name: page_size
         type: integer

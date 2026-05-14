@@ -5,4 +5,3 @@ INSERT INTO user_exchange_pairs (exchange_id, user_id, currency_from, currency_t
 
 -- name: Find :many
 SELECT * FROM user_exchange_pairs WHERE exchange_id=$1 AND user_id=$2;
-

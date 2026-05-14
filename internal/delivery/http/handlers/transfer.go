@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/setting_request"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/transfer_requests"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
@@ -35,14 +37,15 @@ import (
 //	@Router			/v1/dv-admin/transfer/prefetch [Get]
 //	@Security		BearerAuth
 func (h Handler) getPrefetchData(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
 
-	data, err := h.services.WithdrawService.GetPrefetchWithdrawalAddress(c.Context(), user)
+	data, err := h.services.WithdrawService.GetPrefetchWithdrawalAddress(c.Context(), usr)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		h.logger.Errorw("failed update prefetch data", "user_id", usr.ID, "error", err)
+		return apierror.New().AddError(errors.New("failed update prefetch data")).SetHttpCode(fiber.StatusBadRequest)
 	}
 	return c.JSON(response.OkByData(converters.FromTransferPrefetchModelToResponses(data...)))
 }
@@ -63,7 +66,7 @@ func (h Handler) getPrefetchData(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/transfer/ [Get]
 //	@Security		BearerAuth
 func (h Handler) getTransfer(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
@@ -72,9 +75,10 @@ func (h Handler) getTransfer(c fiber.Ctx) error {
 		return err
 	}
 
-	data, err := h.services.WithdrawService.GetTransfers(c.Context(), user.ID, req)
+	data, err := h.services.WithdrawService.GetTransfers(c.Context(), usr.ID, req)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		h.logger.Errorw("failed update prefetch data", "user_id", usr.ID, "error", err)
+		return apierror.New().AddError(errors.New("failed get transfers")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(data))
@@ -96,7 +100,7 @@ func (h Handler) getTransfer(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/transfer/history [Get]
 //	@Security		BearerAuth
 func (h Handler) getTransferHistory(c fiber.Ctx) error {
-	user, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
@@ -105,9 +109,9 @@ func (h Handler) getTransferHistory(c fiber.Ctx) error {
 		return err
 	}
 
-	data, err := h.services.WithdrawService.GetTransfersHistory(c.Context(), user.ID, req)
+	data, err := h.services.WithdrawService.GetTransfersHistory(c.Context(), usr.ID, req)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		return apierror.New().AddError(errors.New("failed get transfers history")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(data))
@@ -144,7 +148,7 @@ func (h Handler) transferToggle(c fiber.Ctx) error {
 		Value: &req.Mode,
 		Model: setting.IModelSetting(usr),
 	}); err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		return apierror.New().AddError(errors.New("failed settings update")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByMessage("success"))

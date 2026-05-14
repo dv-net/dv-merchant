@@ -5,4 +5,3 @@ INSERT INTO webhook_send_histories (tx_id, send_queue_job_id, type, url, status,
 
 -- name: GetById :one
 SELECT * FROM webhook_send_histories WHERE id=$1 LIMIT 1;
-

@@ -335,7 +335,7 @@ func (h *Handler) tgUnlinkConfirm(c fiber.Ctx) error {
 func (h *Handler) initUserRoute(v1 fiber.Router) {
 	users := v1.Group("/user")
 	users.Get("/", h.authUser)
-	users.Put("/", h.updateUser, middleware.TimezoneNormalizer())
+	users.Put("/", middleware.TimezoneNormalizer(), h.updateUser)
 	users.Post("/change-password", h.changePassword)
 	users.Post("/confirm-email", h.confirmEmail)
 	users.Post("/init-email-confirmation", h.initEmailConfirmation)

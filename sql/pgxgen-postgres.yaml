@@ -1,836 +1,988 @@
-version: 1
-sqlc:
-  - schema_dir: postgres/migrations
-    models:
-      replace_sqlc_nullable_types: true
-      move:
+version: "2"
+schemas:
+    - name: main
+      engine: postgresql
+      schema_dir: postgres/migrations
+      models:
         output_dir: ../internal/models
         output_file_name: models_gen.go
         package_name: models
         package_path: github.com/dv-net/dv-merchant/internal/models
-        imports:
-          - paths: github.com/dv-net/dv-merchant/internal/models
-            go_type: Blockchain
-          - paths: github.com/dv-net/dv-merchant/internal/models
-            go_type: TransferKind
-          - paths: github.com/dv-net/dv-merchant/internal/models
-            go_type: TransferStatus
-          - paths: github.com/dv-net/dv-merchant/internal/models
-            go_type: TransferStage
-          - paths: github.com/dv-net/dv-merchant/internal/models
-            go_type: WebhookEvent
-          - paths: github.com/dv-net/dv-merchant/internal/models
-            go_type: ReceiptStatus
-          - paths: github.com/dv-net/dv-merchant/internal/models
-            go_type: TransactionsType
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: ExchangeSlug
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: ExchangeKeyName
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: NotificationType
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: NotificationCategory
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: DeliveryChannel
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: MessageLogLevel
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: OrderSide
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: WithdrawalHistoryStatus
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: ExchangeOrderStatus
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: ExchangeWithdrawalState
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: ExchangeSwapState
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: RateSource
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: MultiWithdrawalMode
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: TransferTransactionType
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: TransferTransactionsStatus
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: AMLSlug
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: AmlKeyType
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: AMLCheckStatus
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: AmlRiskLevel
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: NotificationArgs
-          - path: github.com/dv-net/dv-merchant/internal/models
-            go_type: AddressBookType
-    crud:
-      auto_remove_generated_files: true
-      exclude_table_name_from_methods: true
+        include_struct_comments: true
+        custom_types:
+            - Blockchain
+            - TransferKind
+            - TransferStatus
+            - TransferStage
+            - WebhookEvent
+            - ReceiptStatus
+            - TransactionsType
+            - ExchangeSlug
+            - ExchangeKeyName
+            - NotificationType
+            - NotificationCategory
+            - DeliveryChannel
+            - MessageLogLevel
+            - OrderSide
+            - WithdrawalHistoryStatus
+            - ExchangeOrderStatus
+            - ExchangeWithdrawalState
+            - ExchangeSwapState
+            - RateSource
+            - MultiWithdrawalMode
+            - TransferTransactionType
+            - TransferTransactionsStatus
+            - AMLSlug
+            - AmlKeyType
+            - AMLCheckStatus
+            - AmlRiskLevel
+            - NotificationArgs
+            - AddressBookType
+        emit_json_tags: true
+        emit_db_tags: true
+      sqlc:
+        defaults:
+            sql_package: pgx/v5
+            emit_prepared_queries: false
+            emit_interface: true
+            emit_json_tags: true
+            emit_db_tags: true
+            emit_exported_queries: false
+            emit_exact_table_names: false
+            emit_empty_slices: true
+            emit_result_struct_pointers: true
+            emit_params_struct_pointers: false
+            emit_enum_valid_method: true
+            emit_all_enum_values: true
+        overrides:
+            types:
+                - db_type: uuid
+                  go_type: github.com/google/uuid.UUID
+                - db_type: uuid
+                  go_type: github.com/google/uuid.NullUUID
+                  nullable: true
+                - db_type: pg_catalog.numeric
+                  go_type: github.com/shopspring/decimal.Decimal
+                - db_type: pg_catalog.numeric
+                  go_type: github.com/shopspring/decimal.NullDecimal
+                  nullable: true
+            columns:
+                - column: currencies.blockchain
+                  go_type:
+                    type: '*Blockchain'
+                - column: currencies.withdrawal_min_balance
+                  go_type:
+                    type: '*decimal.Decimal'
+                - column: users.email
+                  go_struct_tag: validate:"required,email"
+                - column: users.password
+                  go_struct_tag: validate:"required,min=8,max=32"
+                - column: users.location
+                  go_type:
+                    type: string
+                  go_struct_tag: validate:"required,timezone"
+                - column: users.exchange_slug
+                  go_type:
+                    type: '*ExchangeSlug'
+                - column: users.rate_source
+                  go_type:
+                    type: RateSource
+                - column: personal_access_tokens.expires_at
+                  go_type:
+                    type: '*time.Time'
+                - column: stores.site
+                  go_type:
+                    type: '*string'
+                - column: stores.return_url
+                  go_type:
+                    type: '*string'
+                - column: stores.success_url
+                  go_type:
+                    type: '*string'
+                - column: stores.rate_scale
+                  go_type:
+                    type: decimal.Decimal
+                - column: stores.minimal_payment
+                  go_type:
+                    type: decimal.Decimal
+                - column: stores.public_payment_form_enabled
+                  go_type:
+                    type: bool
+                - column: stores.rate_source
+                  go_type:
+                    type: RateSource
+                - column: store_webhooks.events
+                  go_type:
+                    type: '[]*WebhookEvent'
+                - column: webhook_send_histories.type
+                  go_type:
+                    type: string
+                - column: webhook_send_histories.status
+                  go_type:
+                    type: string
+                - column: webhook_send_histories.response
+                  go_type:
+                    type: '*string'
+                - column: webhook_send_histories.response_status_code
+                  go_type:
+                    type: int
+                - column: wallet_addresses.blockchain
+                  go_type:
+                    type: Blockchain
+                - column: wallet_addresses.amount
+                  go_type:
+                    type: decimal.Decimal
+                - column: withdrawal_wallets.type
+                  go_type:
+                    type: WithdrawalWalletType
+                - column: withdrawal_wallets.blockchain
+                  go_type:
+                    type: Blockchain
+                - column: withdrawal_wallets.withdrawal_min_balance
+                  go_type:
+                    type: decimal.NullDecimal
+                - column: withdrawal_wallet_addresses.name
+                  go_type:
+                    type: '*string'
+                - column: multi_withdrawal_rules.mode
+                  go_type:
+                    type: MultiWithdrawalMode
+                - column: receipts.status
+                  go_type:
+                    type: ReceiptStatus
+                - column: transfers.kind
+                  go_type:
+                    type: TransferKind
+                - column: transfers.status
+                  go_type:
+                    type: TransferStatus
+                - column: transfers.stage
+                  go_type:
+                    type: TransferStage
+                - column: transfers.blockchain
+                  go_type:
+                    type: Blockchain
+                - column: transfers.message
+                  go_type:
+                    type: '*string'
+                - column: transfers.step
+                  go_type:
+                    type: '*string'
+                - column: transfers.tx_hash
+                  go_type:
+                    type: '*string'
+                - column: transfer_transactions.tx_type
+                  go_type:
+                    type: TransferTransactionType
+                - column: transfer_transactions.status
+                  go_type:
+                    type: TransferTransactionsStatus
+                - column: transactions.bc_uniq_key
+                  go_type:
+                    type: '*string'
+                - column: transactions.type
+                  go_type:
+                    type: TransactionsType
+                - column: transactions.from_address
+                  go_type:
+                    type: string
+                - column: transactions.blockchain
+                  go_type:
+                    type: Blockchain
+                - column: exchange_withdrawal_history.status
+                  go_type:
+                    type: WithdrawalHistoryStatus
+                - column: unconfirmed_transactions.bc_uniq_key
+                  go_type:
+                    type: '*string'
+                - column: unconfirmed_transactions.type
+                  go_type:
+                    type: TransactionsType
+                - column: unconfirmed_transactions.from_address
+                  go_type:
+                    type: string
+                - column: unconfirmed_transactions.blockchain
+                  go_type:
+                    type: Blockchain
+                - column: settings.model_type
+                  go_type:
+                    type: '*string'
+                - column: exchanges.slug
+                  go_type:
+                    type: ExchangeSlug
+                - column: exchange_keys.name
+                  go_type:
+                    type: ExchangeKeyName
+                - column: notification_send_history.type
+                  go_type:
+                    type: NotificationType
+                - column: notification_send_history.channel
+                  go_type:
+                    type: DeliveryChannel
+                - column: notification_send_queue.channel
+                  go_type:
+                    type: DeliveryChannel
+                - column: notification_send_queue.type
+                  go_type:
+                    type: NotificationType
+                - column: notification_send_queue.args
+                  go_type:
+                    type: '*NotificationArgs'
+                - column: notifications.type
+                  go_type:
+                    type: NotificationType
+                - column: notifications.category
+                  go_type:
+                    type: '*NotificationCategory'
+                - column: exchange_orders.side
+                  go_type:
+                    type: OrderSide
+                - column: exchange_orders.status
+                  go_type:
+                    type: ExchangeOrderStatus
+                - column: user_exchange_pairs.type
+                  go_type:
+                    type: OrderSide
+                - column: exchange_chains.slug
+                  go_type:
+                    type: ExchangeSlug
+                - column: user_exchanges.withdrawal_state
+                  go_type:
+                    type: ExchangeWithdrawalState
+                - column: user_exchanges.swap_state
+                  go_type:
+                    type: ExchangeSwapState
+                - column: withdrawal_from_processing_wallets.request_id
+                  go_type:
+                    type: '*string'
+                - column: aml_services.slug
+                  go_type:
+                    type: AMLSlug
+                - column: aml_service_keys.name
+                  go_type:
+                    type: AmlKeyType
+                - column: aml_checks.status
+                  go_type:
+                    type: AMLCheckStatus
+                - column: aml_checks.risk_level
+                  go_type:
+                    type: '*AmlRiskLevel'
+                - column: aml_supported_assets.service_slug
+                  go_type:
+                    type: AMLSlug
+                - column: user_address_book.blockchain
+                  go_type:
+                    type: '*Blockchain'
+                - column: user_address_book.type
+                  go_type:
+                    type: AddressBookType
+      defaults:
+        queries_dir_prefix: postgres/queries
+        output_dir_prefix: ../internal/storage/repos
+        package_prefix: "repo_"
+        crud:
+            auto_clean: true
+            exclude_table_name: true
       tables:
-        # Currencies
-        currencies:
-          output_dir: postgres/queries/currencies
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - updated_at
-              returning: "*"
-            get:
-              name: GetByID
-            find:
-              name: GetAll
-        # Users
-        users:
-          output_dir: postgres/queries/users
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              returning: "*"
-              column_values:
-                created_at: now()
-            find:
-              name: GetAll
-              skip_columns:
-                - password
-              where:
-                deleted_at:
-                  value: "IS NULL"
-              order:
-                by: created_at
-              limit: true
-              offset: true
-            update:
-              skip_columns:
-                - id
-                - email
-                - email_verified_at
-                - password
-                - remember_token
-                - processing_owner_id
-                - dvnet_token
-                - deleted_at
-                - created_at
-              column_values:
-                updated_at: now()
-              returning: "*"
-
-            delete:
-        # PersonalAccessTokens
-        personal_access_tokens:
-          output_dir: postgres/queries/personal_access_tokens
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-                - last_used_at
-              returning: "*"
-            delete:
-        # Stores
-        stores:
-          output_dir: postgres/queries/stores
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - minimal_payment
-                - rate_scale
-                - deleted_at
-                - updated_at
-                - slug
-              column_values:
-                created_at: now()
-              returning: "*"
-            get:
-              name: GetByID
-            find:
-              name: GetAll
-              where:
-                deleted_at:
-                  value: "IS NULL"
-              order:
-                by: created_at
-              limit: true
-              offset: true
-            update:
-              skip_columns:
-                - id
-                - user_id
-                - created_at
-                - deleted_at
-              returning: "*"
-        # user_stores
-        user_stores:
-          output_dir: postgres/queries/user_stores
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-              column_values:
-                created_at: now()
-              returning: "*"
-        # store_api_keys
-        store_api_keys:
-          output_dir: postgres/queries/store_api_keys
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              returning: "*"
-            update:
-              name: UpdateStatus
-              skip_columns:
-                - id
-                - key
-                - store_id
-                - created_at
-              returning: "*"
-            delete:
-        # store_webhooks
-        store_webhooks:
-          output_dir: postgres/queries/store_webhooks
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-            update:
-              skip_columns:
-                - id
-                - store_id
-                - secret
-                - created_at
-              returning: "*"
-            delete:
-
-        # webhook_send_queue
-        webhook_send_queue:
-          output_dir: postgres/queries/webhook_send_queue
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-            create:
-              skip_columns:
-                - id
-              column_values:
-                created_at: now()
-              returning: "*"
-
-        # store_currencies
-        store_currencies:
-          output_dir: postgres/queries/store_currencies
-        # store_whitelist
-        store_whitelist:
-          output_dir: postgres/queries/store_whitelist
-          methods:
-            create:
-              returning: "*"
-            find:
-              where:
-                store_id:
-
-        # transactions
-        transactions:
-          output_dir: postgres/queries/transactions
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-                created_at_index: extract(epoch from now()) * 1000
-              returning: "*"
-
-        # transactions
-        unconfirmed_transactions:
-          output_dir: postgres/queries/unconfirmed_transactions
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-                created_at_index: extract(epoch from now()) * 1000
-              returning: "*"
-
-        # wallets
-        wallets:
-          output_dir: postgres/queries/wallets
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-              where:
-                deleted_at:
-                  value: "IS NULL"
-            create:
-              skip_columns:
-                - id
-                - updated_at
-                - deleted_at
-              column_values:
-                created_at: now()
-              returning: "*"
-
-        # wallets
-        wallet_addresses:
-          output_dir: postgres/queries/wallet_addresses
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-              where:
-                deleted_at:
-                  value: "IS NULL"
-            create:
-              skip_columns:
-                - id
-                - amount
-                - updated_at
-                - deleted_at
-              column_values:
-                created_at: now()
-              returning: "*"
-
-        wallet_addresses_activity_logs:
-          output_dir: postgres/queries/wallet_addresses_activity_logs
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-        # Withdrawal wallets
-        withdrawal_wallets:
-          output_dir: postgres/queries/withdrawal_wallets
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-              where:
-                deleted_at:
-                  value: "IS NULL"
-            create:
-              skip_columns:
-                - id
-                - updated_at
-                - deleted_at
-              column_values:
-                created_at: now()
-              returning: "*"
-
-        # Withdrawal wallet addresses
-        withdrawal_wallet_addresses:
-          output_dir: postgres/queries/withdrawal_wallet_addresses
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-              where:
-                deleted_at:
-                  value: "IS NULL"
-            create:
-              skip_columns:
-                - id
-                - updated_at
-                - deleted_at
-              column_values:
-                created_at: now()
-              returning: "*"
-        # Receipts
-        receipts:
-          output_dir: postgres/queries/receipts
-          primary_column: id
-          methods:
-            get:
-              name: GetByID
-            find:
-              name: GetAll
-              order:
-                by: created_at
-              limit: true
-              offset: true
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-        # settings
-        settings:
-          output_dir: postgres/queries/settings
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              returning: "*"
-              column_values:
-                created_at: now()
-            update:
-              skip_columns:
-                - id
-                - created_at
-              returning: "*"
-
-        # Transfers
-        transfers:
-          output_dir: postgres/queries/transfers
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-            find:
-              name: GetAll
-              order:
-                by: created_at
-              limit: true
-              offset: true
-            create:
-              skip_columns:
-                - number
-              column_values:
-                created_at: now()
-                updated_at: now()
-              returning: "*"
-
-        # webhook_send_histories
-        webhook_send_histories:
-          output_dir: postgres/queries/webhook_send_histories
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-
-        # exchange_user_keys
-        exchanges:
-          output_dir: postgres/queries/exchanges
-          primary_column: id
-          methods:
-            get:
-              name: GetByID
-            find:
-              name: GetAll
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-
-        # exchange_user_keys
-        exchange_user_keys:
-          output_dir: postgres/queries/exchange_user_keys
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-
-        # notification_send_history
-        notification_send_history:
-          output_dir: postgres/queries/notification_send_history
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-            create:
-                skip_columns:
-                    - id
-                    - updated_at
-                    - sent_at
-                column_values:
-                    created_at: now()
-            update:
-                skip_columns:
-                    - id
-                    - destination
-                    - created_at
-                    - type
-                    - channel
-                    - message_text
-                    - sender
-                column_values:
-                    updated_at: now()
-                where:
-                  destination:
-                returning: "*"
-
-        # notification_send_queue
-        notification_send_queue:
-          output_dir: postgres/queries/notification_send_queue
-          primary_column: id
-          methods:
-            get:
-              name: GetById
-            create:
-              skip_columns:
-                - id
-                - updated_at
-                - attempts
-              column_values:
-                created_at: now()
-              returning: "*"
-            delete:
-
-        # WithdrawalFromProcessingWallets
-        withdrawal_from_processing_wallets:
-          output_dir: postgres/queries/withdrawal_from_processing_wallets
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-                - created_at
-                - transfer_id
-              returning: "*"
-
-        # UserExchangePairs
-        user_exchange_pairs:
-          output_dir: postgres/queries/user_exchange_pairs
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-            find:
-              where:
-                user_id:
-                exchange_id:
-
-        # ExchangeOrders
-        exchange_orders:
-          output_dir: postgres/queries/exchange_orders
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-            get:
-              name: GetByID
-
-        # ExchangeAddresses
-        exchange_addresses:
-          output_dir: postgres/queries/exchange_addresses
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-            find:
-              name: GetAllByUser
-              where:
-                user_id:
-                exchange_id:
-
-        # ExchangeWithdrawalHistory
-        exchange_withdrawal_history:
-          output_dir: postgres/queries/exchange_withdrawal_history
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-                - txid
-              column_values:
-                created_at: now()
-              returning: "*"
-
-        # ExchangeWithdrawalSettings
-        exchange_withdrawal_settings:
-          output_dir: postgres/queries/exchange_withdrawal_settings
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - is_enabled
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-
-        # ExchangeChains
-        exchange_chains:
-            output_dir: postgres/queries/exchange_chains
-            primary_column: id
-            methods:
-                get:
-                  name: GetByID
-                  returning: "*"
-
-        # log types
-        log_types:
-          output_dir: postgres/queries/log_types
-          primary_column: id
-          methods:
-            get:
-              name: GetByID
-              where:
-                id:
-              returning: "*"
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-            update:
-              name: Update
-              skip_columns:
-                - id
-                - created_at
-              column_values:
-                updated_at: now()
-              returning: "*"
-        # logs
-        logs:
-          output_dir: postgres/queries/logs
-          primary_column: id
-          methods:
-            get:
-              name: GetByID
-              where:
-                id:
-              returning: "*"
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              column_values:
-                created_at: now()
-              returning: "*"
-            update:
-              name: Update
-              skip_columns:
-                - id
-                - created_at
-              column_values:
-                updated_at: now()
-              returning: "*"
-        # user_exchanges
-        user_exchanges:
-          output_dir: postgres/queries/user_exchanges
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-              returning: "*"
-
-        # notifications
-        notifications:
-          output_dir: postgres/queries/notifications
-          primary_column: id
-          methods:
-            get:
-              name: GetByID
-              where:
-                id:
-              returning: "*"
-            create:
-              skip_columns:
-                - id
-              returning: "*"
-
-        # user_notifications
-        user_notifications:
-          output_dir: postgres/queries/user_notifications
-          primary_column: id
-          methods:
-            get:
-              name: GetByID
-              where:
-                id:
-              returning: "*"
-            create:
-              skip_columns:
-                - id
-              returning: "*"
-
-        # update_balance_queue
-        update_balance_queue:
-          output_dir: postgres/queries/update_balance_queue
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - created_at
-                - updated_at
-              returning: "*"
-            delete:
-
-        # multi_withdrawal_rules
-        multi_withdrawal_rules:
-          output_dir: postgres/queries/multi_withdrawal_rules
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-              returning: "*"
-
-        # transfer_transactions
-        transfer_transactions:
-          output_dir: postgres/queries/transfer_transactions
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-              returning: "*"
-              column_values:
-                created_at: now()
-
-        # tron_wallet_balance_statistics
-        tron_wallet_balance_statistics:
-          output_dir: postgres/queries/tron_wallet_balance_statistics
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-              returning: "*"
-              column_values:
-                created_at: now()
-
-        # aml_services
-        aml_services:
-          output_dir: postgres/queries/aml_services
-          primary_column: id
-          methods:
-            get:
-              name: GetByID
-              where:
-                id:
-              returning: "*"
-
-        # aml_service_keys
-        aml_service_keys:
-          output_dir: postgres/queries/aml_service_keys
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-              returning: "*"
-              column_values:
-                created_at: now()
-
-        # aml_user_keys
-        aml_user_keys:
-          output_dir: postgres/queries/aml_user_keys
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-              returning: "*"
-              column_values:
-                created_at: now()
-
-        # aml_checks_history
-        aml_checks:
-          output_dir: postgres/queries/aml_checks
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-              returning: "*"
-              column_values:
-                created_at: now()
-
-        # aml_check_queue
-        aml_check_queue:
-          output_dir: postgres/queries/aml_check_queue
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-                - attempts
-              column_values:
-                created_at: now()
-
-        # aml_check_history
         aml_check_history:
-          output_dir: postgres/queries/aml_check_history
-          primary_column: id
-          methods:
-            create:
-              skip_columns:
-                - id
-                - updated_at
-              returning: "*"
-              column_values:
-                created_at: now()
-
-        # aml_supported_assets
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 3
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+        aml_check_queue:
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 3
+            crud:
+                methods:
+                    create:
+                        skip_columns:
+                            - id
+                            - updated_at
+                            - attempts
+                        column_values:
+                            created_at: now()
+        aml_checks:
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 3
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                        column_values:
+                            created_at: now()
+        aml_service_keys:
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 3
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                        column_values:
+                            created_at: now()
+        aml_services:
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 3
+            crud:
+                methods:
+                    get:
+                        name: GetByID
+                        returning: '*'
+                        where:
+                            id: {}
         aml_supported_assets:
-          output_dir: postgres/queries/aml_supported_assets
-          primary_column: id
-          methods:
-            find:
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 3
+            crud:
+                methods:
+                    find: {}
+        aml_user_keys:
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 3
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                        column_values:
+                            created_at: now()
+        currencies:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - updated_at
+                    find:
+                        name: GetAll
+                    get:
+                        name: GetByID
+        exchange_addresses:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    find:
+                        name: GetAllByUser
+                        where:
+                            exchange_id: {}
+                            user_id: {}
+        exchange_chains:
+            primary_column: id
+            crud:
+                methods:
+                    get:
+                        name: GetByID
+                        returning: '*'
+        exchange_orders:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    get:
+                        name: GetByID
+        exchange_user_keys:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+        exchange_withdrawal_history:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                            - txid
+                        column_values:
+                            created_at: now()
+        exchange_withdrawal_settings:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - is_enabled
+                            - updated_at
+                        column_values:
+                            created_at: now()
+        exchanges:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    find:
+                        name: GetAll
+                    get:
+                        name: GetByID
+        log_types:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    get:
+                        name: GetByID
+                        returning: '*'
+                        where:
+                            id: {}
+                    update:
+                        name: Update
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - created_at
+                        column_values:
+                            updated_at: now()
+        logs:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    get:
+                        name: GetByID
+                        returning: '*'
+                        where:
+                            id: {}
+                    update:
+                        name: Update
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - created_at
+                        column_values:
+                            updated_at: now()
+        multi_withdrawal_rules:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+        notification_send_history:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        skip_columns:
+                            - id
+                            - updated_at
+                            - sent_at
+                        column_values:
+                            created_at: now()
+                    get:
+                        name: GetById
+                    update:
+                        returning: '*'
+                        where:
+                            destination: {}
+                        skip_columns:
+                            - id
+                            - destination
+                            - created_at
+                            - type
+                            - channel
+                            - message_text
+                            - sender
+                        column_values:
+                            updated_at: now()
+        notification_send_queue:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                            - attempts
+                        column_values:
+                            created_at: now()
+                    delete: {}
+                    get:
+                        name: GetById
+        notifications:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                    get:
+                        name: GetByID
+                        returning: '*'
+                        where:
+                            id: {}
+        personal_access_tokens:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                            - last_used_at
+                    delete: {}
+        receipts:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    find:
+                        name: GetAll
+                        limit: true
+                        order:
+                            by: created_at
+                    get:
+                        name: GetByID
+        settings:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    update:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - created_at
+        store_api_keys:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                    delete: {}
+                    get:
+                        name: GetById
+                    update:
+                        name: UpdateStatus
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - key
+                            - store_id
+                            - created_at
+        store_currencies: {}
+        store_webhooks:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    delete: {}
+                    get:
+                        name: GetById
+                    update:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - store_id
+                            - secret
+                            - created_at
+        store_whitelist:
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                    find:
+                        where:
+                            store_id: {}
+        stores:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - minimal_payment
+                            - rate_scale
+                            - deleted_at
+                            - updated_at
+                            - slug
+                        column_values:
+                            created_at: now()
+                    find:
+                        name: GetAll
+                        where:
+                            deleted_at:
+                                value: IS NULL
+                        limit: true
+                        order:
+                            by: created_at
+                    get:
+                        name: GetByID
+                    update:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - user_id
+                            - created_at
+                            - deleted_at
+        transactions:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                            created_at_index: extract(epoch from now()) * 1000
+                    get:
+                        name: GetById
+        transfer_transactions:
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 3
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                        column_values:
+                            created_at: now()
+        transfers:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - number
+                        column_values:
+                            created_at: now()
+                            updated_at: now()
+                    find:
+                        name: GetAll
+                        limit: true
+                        order:
+                            by: created_at
+                    get:
+                        name: GetById
+        tron_wallet_balance_statistics:
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 3
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                        column_values:
+                            created_at: now()
+        unconfirmed_transactions:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                            created_at_index: extract(epoch from now()) * 1000
+                    get:
+                        name: GetById
+        update_balance_queue:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - created_at
+                            - updated_at
+                    delete: {}
+        user_exchange_pairs:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    find:
+                        where:
+                            exchange_id: {}
+                            user_id: {}
+        user_exchanges:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+        user_notifications:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                    get:
+                        name: GetByID
+                        returning: '*'
+                        where:
+                            id: {}
+        user_stores:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                        column_values:
+                            created_at: now()
+        users:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    delete: {}
+                    find:
+                        name: GetAll
+                        where:
+                            deleted_at:
+                                value: IS NULL
+                        skip_columns:
+                            - password
+                        limit: true
+                        order:
+                            by: created_at
+                    update:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - email
+                            - email_verified_at
+                            - password
+                            - remember_token
+                            - processing_owner_id
+                            - dvnet_token
+                            - two_fa_reset_expires_at
+                            - banned
+                            - rate_scale
+                            - deleted_at
+                            - created_at
+                        column_values:
+                            updated_at: now()
+        wallet_addresses:
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 2
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - amount
+                            - updated_at
+                            - deleted_at
+                        column_values:
+                            created_at: now()
+                    get:
+                        name: GetById
+                        where:
+                            deleted_at:
+                                value: IS NULL
+        wallet_addresses_activity_logs:
+            primary_column: id
+            sqlc:
+                query_parameter_limit: 2
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+        wallets:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                            - deleted_at
+                        column_values:
+                            created_at: now()
+                    get:
+                        name: GetById
+                        where:
+                            deleted_at:
+                                value: IS NULL
+        webhook_send_histories:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                        column_values:
+                            created_at: now()
+                    get:
+                        name: GetById
+        webhook_send_queue:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                        column_values:
+                            created_at: now()
+                    get:
+                        name: GetById
+        withdrawal_from_processing_wallets:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                            - created_at
+                            - transfer_id
+        withdrawal_wallet_addresses:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                            - deleted_at
+                        column_values:
+                            created_at: now()
+                    get:
+                        name: GetById
+                        where:
+                            deleted_at:
+                                value: IS NULL
+        withdrawal_wallets:
+            primary_column: id
+            crud:
+                methods:
+                    create:
+                        returning: '*'
+                        skip_columns:
+                            - id
+                            - updated_at
+                            - deleted_at
+                        column_values:
+                            created_at: now()
+                    get:
+                        name: GetById
+                        where:
+                            deleted_at:
+                                value: IS NULL

@@ -1,13 +1,13 @@
 package processing
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/dv-net/dv-merchant/internal/dto"
 	systemv1 "github.com/dv-net/dv-processing/api/processing/system/v1"
-	"golang.org/x/net/context"
 )
 
 type IProcessingSystem interface {

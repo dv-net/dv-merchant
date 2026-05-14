@@ -466,9 +466,9 @@ func (h Handler) initProcessingRoutes(v1 fiber.Router) {
 	processing := v1.Group("/processing")
 	processing.Post(
 		"/init",
-		h.initProcessing,
 		middleware.AuthMiddleware(h.services.AuthService),
 		middleware.CasbinMiddleware(h.services.PermissionService, []models.UserRole{models.UserRoleRoot}),
+		h.initProcessing,
 	)
 	processing.Get(
 		"/list",
@@ -476,26 +476,26 @@ func (h Handler) initProcessingRoutes(v1 fiber.Router) {
 	)
 	processing.Post(
 		"/callback-url",
-		h.updateProcessingCallback,
 		middleware.AuthMiddleware(h.services.AuthService),
 		middleware.CasbinMiddleware(h.services.PermissionService, []models.UserRole{models.UserRoleRoot}),
+		h.updateProcessingCallback,
 	)
 	processing.Get(
 		"/callback-url",
-		h.getProcessingCallback,
 		middleware.AuthMiddleware(h.services.AuthService),
 		middleware.CasbinMiddleware(h.services.PermissionService, []models.UserRole{models.UserRoleRoot}),
+		h.getProcessingCallback,
 	)
 
 	processing.Post(
 		"/register-owner",
-		h.registerOwner,
 		middleware.AuthMiddleware(h.services.AuthService),
+		h.registerOwner,
 	)
 
-	processing.Post("/callback", h.processingCallback, middleware.SignMiddleware(h.services.SettingService)).Name("processing_callback")
+	processing.Post("/callback", middleware.SignMiddleware(h.services.SettingService), h.processingCallback).Name("processing_callback")
 
-	processing.Get("/wallets", h.processingWallets,
+	processing.Get("/wallets",
 		middleware.AuthMiddleware(h.services.AuthService),
 		middleware.CasbinMiddleware(
 			h.services.PermissionService,
@@ -505,5 +505,6 @@ func (h Handler) initProcessingRoutes(v1 fiber.Router) {
 				models.UserRoleSupport,
 			},
 		),
+		h.processingWallets,
 	)
 }

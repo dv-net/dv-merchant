@@ -12,6 +12,5 @@ SELECT * FROM store_webhooks WHERE id=$1 LIMIT 1;
 -- name: Update :one
 UPDATE store_webhooks
 	SET url=$1, enabled=$2, events=$3, updated_at=$4
-	WHERE id=$5
+WHERE id=$5
 	RETURNING *;
-

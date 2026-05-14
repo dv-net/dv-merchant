@@ -5,4 +5,3 @@ INSERT INTO wallet_addresses (wallet_id, user_id, currency_id, blockchain, addre
 
 -- name: GetById :one
 SELECT * FROM wallet_addresses WHERE deleted_at IS NULL AND id=$1 LIMIT 1;
-

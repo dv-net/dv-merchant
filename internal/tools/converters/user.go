@@ -24,6 +24,10 @@ func FromUserModelToInfoResponse(o *models.User, quickStartGuideStatus string, r
 	if o.EmailVerifiedAt.Valid {
 		userResponse.EmailVerifiedAt = &o.EmailVerifiedAt.Time
 	}
+
+	if o.TwoFaResetExpiresAt.Valid {
+		userResponse.TwoFaResetExpiresAt = &o.TwoFaResetExpiresAt.Time
+	}
 	return userResponse
 }
 

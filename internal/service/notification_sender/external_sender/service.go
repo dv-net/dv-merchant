@@ -1,13 +1,13 @@
 package external_sender
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/pkg/admin_gateway"
-	"golang.org/x/net/context"
 )
 
 type ExternalNotificationHandlerFunc func(ctx context.Context, params []byte, dest string, channel models.DeliveryChannel) error

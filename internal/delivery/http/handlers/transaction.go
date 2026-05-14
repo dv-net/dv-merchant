@@ -41,14 +41,15 @@ func (h Handler) loadUserTransaction(c fiber.Ctx) error {
 
 	req := &transactions_request.GetByUser{}
 	if err := c.Bind().Query(req); err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		return err
 	}
 
 	dto := transactions.RequestToGetUserTransactionsDTO(req)
 
 	res, err := h.services.TransactionService.GetUserTransactions(c.Context(), user.ID, dto)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		h.logger.Errorw("GetUserTransactions failed", "user_id", user.ID, "error", err)
+		return apierror.New().AddError(fmt.Errorf("failed get transaction")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(res))
@@ -80,7 +81,8 @@ func (h Handler) loadUserTransactionStatistics(c fiber.Ctx) error {
 
 	res, err := h.services.TransactionService.GetTransactionStats(c.Context(), user, *request)
 	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		h.logger.Errorf("GetTransactionStats failed", "user_id", user.ID, "error", err)
+		return apierror.New().AddError(errors.New("failed get transactions stats")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(res))
@@ -106,7 +108,7 @@ func (h Handler) downloadUserTranscations(c fiber.Ctx) error {
 
 	request := &transactions_request.GetByUserExported{}
 	if err := c.Bind().Query(request); err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		return err
 	}
 
 	res, err := h.services.TransactionService.DownloadUserTransactions(c.Context(), user.ID, *request)
@@ -115,7 +117,7 @@ func (h Handler) downloadUserTranscations(c fiber.Ctx) error {
 	}
 
 	c.Response().Header.Set("Content-Type", "application/octet-stream")
-	c.Response().Header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s.%s", "export_user_transactions", request.Format))
+	c.Response().Header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"export_user_transactions.%s\"", request.Format))
 	return c.SendStream(res, res.Len())
 }
 
@@ -143,7 +145,7 @@ func (h Handler) searchTransaction(c fiber.Ctx) error {
 		if errors.Is(err, transactions.ErrTransactionNotFound) {
 			return apierror.New().AddError(errors.New("not found")).SetHttpCode(fiber.StatusNotFound)
 		}
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		return apierror.New().AddError(errors.New("error fail found")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
 	return c.JSON(response.OkByData(converters.NewTransactionInfoResponseFromDto(txInfo)))

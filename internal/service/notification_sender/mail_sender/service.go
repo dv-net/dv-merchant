@@ -1,6 +1,7 @@
 package mail_sender
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -13,8 +14,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/settings"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/dv-net/dv-merchant/pkg/mailer"
-
-	"golang.org/x/net/context"
 )
 
 type MailerProvider string
@@ -54,14 +53,14 @@ type Service struct {
 	settingsSrv setting.ISettingService
 }
 
-func New(log logger.Logger, eventListener event.IListener, templateSvc templater.ITemplaterService, settingSrv setting.ISettingService) (*Service, error) {
+func New(ctx context.Context, log logger.Logger, eventListener event.IListener, templateSvc templater.ITemplaterService, settingSrv setting.ISettingService) (*Service, error) {
 	svc := &Service{
 		settingsSrv: settingSrv,
 		log:         log,
 		templateSvc: templateSvc,
 	}
 
-	if err := svc.initServices(); err != nil {
+	if err := svc.initServices(ctx); err != nil {
 		svc.log.Errorw("failed to initialize mailer", "error", fmt.Errorf("init services: %w", err))
 		return nil, err
 	}
@@ -91,7 +90,7 @@ func New(log logger.Logger, eventListener event.IListener, templateSvc templater
 
 func (svc *Service) handleMailerSettingsChanged(e event.IEvent) error {
 	if _, ok := e.(*setting.MailerSettingChangedEvent); ok {
-		return svc.initServices()
+		return svc.initServices(context.Background())
 	}
 
 	return fmt.Errorf("invalid event-type [%s] fired", e.String())
@@ -126,8 +125,7 @@ func (svc *Service) Send(
 	return sendRes, nil
 }
 
-func (svc *Service) initServices() error {
-	ctx := context.Background()
+func (svc *Service) initServices(ctx context.Context) error {
 	mailSettings, err := svc.settingsSrv.GetMailerSettings(ctx)
 	if err != nil || mailSettings == nil {
 		return fmt.Errorf("fetch mailer settings")

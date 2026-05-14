@@ -70,7 +70,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Notificati
 const update = `-- name: Update :one
 UPDATE notification_send_history
 	SET updated_at=now(), sent_at=$1, notification_send_queue_id=$2, store_id=$3, user_id=$4
-	WHERE destination=$5 AND id=$6
+WHERE destination=$5 AND id=$6
 	RETURNING id, destination, message_text, sender, created_at, updated_at, sent_at, type, channel, notification_send_queue_id, store_id, user_id
 `
 
