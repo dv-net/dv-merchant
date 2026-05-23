@@ -62,6 +62,8 @@ func (s *Service) handleDepositReceiptSent(ev event.IEvent) error {
 		PlatformFeeAmount:    decimal.Zero.String(),
 		PlatformFeeUSD:       decimal.Zero.String(),
 		PlatformFeeCurrency:  currency.Code,
+		StoreName:            storeData.Name,
+		StoreUserID:          convertedEv.GetStoreExternalID(),
 	}, &models.NotificationArgs{
 		StoreID: util.Pointer(storeData.ID),
 	})
