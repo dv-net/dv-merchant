@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [0.9.18] - 2026-06-31
+- fix error calculate evm gas price
+  
+## [0.9.17] - 2026-05-22
 - Add reset 2fa handler [DV-4312]
+- Fix erorr get history tx [DV-4322]
 
 ## [0.9.16] - 2026-02-12
 
