@@ -690,8 +690,13 @@ func (s *Service) calculateEVMTransfers(evmData *EVMData, nativeTokenBalance, ga
 		evmData.L1DataFeeEstimate = l1DataFeeNative.String()
 	}
 
-	maxNativeTransfers := balance.Div(nativeTransferCost).IntPart()
-	maxERC20Transfers := balance.Div(erc20TransferCost).IntPart()
+	var maxNativeTransfers, maxERC20Transfers int64
+	if !nativeTransferCost.IsZero() {
+		maxNativeTransfers = balance.Div(nativeTransferCost).IntPart()
+	}
+	if !erc20TransferCost.IsZero() {
+		maxERC20Transfers = balance.Div(erc20TransferCost).IntPart()
+	}
 
 	evmData.IsL2 = chainConfig.IsL2
 	evmData.MaxTransfersNative = strconv.FormatInt(maxNativeTransfers, 10)
