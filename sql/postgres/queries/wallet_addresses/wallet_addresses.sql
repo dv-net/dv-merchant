@@ -13,7 +13,7 @@ WHERE deleted_at IS NULL
   and currency_id = $3
 limit 1;
 
--- name: MarkAddressDirty :one
+-- name: MarkAddressDirty :many
 UPDATE wallet_addresses
 SET updated_at=now(),
     dirty= true
@@ -68,6 +68,7 @@ FROM wallet_addresses
 WHERE wallet_id = $1
   AND dirty = false
   AND deleted_at IS NULL
+  AND dirty = false
   and currency_id = ANY (sqlc.arg('currency_ids')::varchar[]);
 
 -- name: GetByWalletIDAndCurrencyID :one
@@ -75,8 +76,9 @@ SELECT *
 FROM wallet_addresses
 WHERE wallet_id = $1
   AND currency_id = $2
+  AND dirty = false
   AND deleted_at IS NULL
-ORDER BY created_at DESC
+ORDER BY updated_at DESC
 LIMIT 1;
 
 -- name: GetPrefetchWalletAddressByUserID :many

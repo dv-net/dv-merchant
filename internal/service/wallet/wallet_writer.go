@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallets"
+	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -136,16 +138,39 @@ func (s *Service) updateWalletMeta(ctx context.Context, wallet *models.Wallet, p
 }
 
 func (s *Service) generateWalletAddresses(ctx context.Context, tx pgx.Tx, owner *models.User, wallet *models.Wallet, str *models.Store, currencies []*models.Currency, amount string) ([]*models.WalletAddress, error) {
-	result := make([]*models.WalletAddress, 0, len(currencies))
+	currencyIDs := make([]string, 0, len(currencies))
+	for _, c := range currencies {
+		if !c.IsFiat {
+			currencyIDs = append(currencyIDs, c.ID)
+		}
+	}
 
+	cleanAddresses, err := s.storage.WalletAddresses(repos.WithTx(tx)).GetAllClearByWalletID(ctx, wallet.ID, currencyIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get wallet addresses: %w", err)
+	}
+
+	result := make([]*models.WalletAddress, 0, len(currencies))
 	for _, c := range currencies {
 		if c.IsFiat {
 			continue
 		}
 
-		addr, err := s.getOrCreateWalletAddress(ctx, tx, owner, wallet, c)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get or create wallet address: %w", err)
+		idx := slices.IndexFunc(cleanAddresses, func(wa *models.WalletAddress) bool {
+			return wa.CurrencyID == c.ID
+		})
+
+		var addr *models.WalletAddress
+		if idx >= 0 {
+			addr = cleanAddresses[idx]
+			if logErr := s.logProcessingAddressReceived(ctx, addr, pgtypeutils.DecodeText(wallet.IpAddress)); logErr != nil {
+				s.logger.Errorw("failed create log to process processing addresses", "error", logErr)
+			}
+		} else {
+			addr, err = s.getOrCreateWalletAddress(ctx, tx, owner, wallet, c)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get or create wallet address: %w", err)
+			}
 		}
 
 		amt, err := s.currConvService.Convert(ctx, currconv.ConvertDTO{

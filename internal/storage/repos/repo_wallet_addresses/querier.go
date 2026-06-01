@@ -22,14 +22,13 @@ type Querier interface {
 	GetHotWalletsTotalBalanceWithDust(ctx context.Context, arg GetHotWalletsTotalBalanceWithDustParams) (*GetHotWalletsTotalBalanceWithDustRow, error)
 	GetListByCurrencyWithAmount(ctx context.Context, arg GetListByCurrencyWithAmountParams) (*GetListByCurrencyWithAmountRow, error)
 	GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetPrefetchWalletAddressByUserIDParams) ([]*GetPrefetchWalletAddressByUserIDRow, error)
-	GetWalletAddressByBlockchainAndWalletId(ctx context.Context, blockchain models.Blockchain, walletID uuid.UUID) (*models.WalletAddress, error)
 	GetWalletAddressesByAddress(ctx context.Context, arg GetWalletAddressesByAddressParams) (*models.WalletAddress, error)
 	GetWalletAddressesByUserID(ctx context.Context, userID uuid.UUID) ([]*models.WalletAddress, error)
 	GetWalletAddressesByWalletId(ctx context.Context, walletID uuid.UUID) ([]*models.WalletAddress, error)
 	GetWalletAddressesTotalWithCurrencyID(ctx context.Context, userID uuid.UUID) ([]*GetWalletAddressesTotalWithCurrencyIDRow, error)
 	GetWalletsDataForRestoreByBlockchains(ctx context.Context, blockchains []string) ([]*GetWalletsDataForRestoreByBlockchainsRow, error)
 	IsWalletExistsByAddress(ctx context.Context, address string) (bool, error)
-	MarkAddressDirty(ctx context.Context, address string, userID uuid.UUID) (*models.WalletAddress, error)
+	MarkAddressDirty(ctx context.Context, address string, userID uuid.UUID) ([]*models.WalletAddress, error)
 	RestoreByWallets(ctx context.Context, dollar_1 []uuid.UUID) error
 	SoftDeleteByWallets(ctx context.Context, dollar_1 []uuid.UUID) error
 	UpdateWalletBalance(ctx context.Context, address string, currencyID string) error

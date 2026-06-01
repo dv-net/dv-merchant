@@ -43,20 +43,34 @@ func (s *Service) RefreshWalletAddress(ctx context.Context, walletID uuid.UUID, 
 
 // MarkAddressDirty TODO refactoring add marking address on processing and change logic get new wallets
 func (s *Service) MarkAddressDirty(ctx context.Context, usr *models.User, address string) error {
-	hasTransactions, err := s.storage.Transactions().HasTransactionsByAddress(ctx, address)
+	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+		hasTransactions, err := s.storage.Transactions().HasTransactionsByAddress(ctx, address)
+		if err != nil {
+			return fmt.Errorf("failed to check transactions for address: %w", err)
+		}
+		if !hasTransactions {
+			return ErrAddressHasNoTransactions
+		}
+
+		wa, err := s.storage.WalletAddresses(repos.WithTx(tx)).MarkAddressDirty(ctx, address, usr.ID)
+		if err != nil {
+			parsedErr := pgerror.ParseError(err)
+			s.logger.Debug("error mark address is dirty", parsedErr)
+			return parsedErr
+		}
+		for _, walletAddress := range wa {
+			if err := s.processingService.MarkDirtyHotWallet(ctx, usr.ProcessingOwnerID.UUID, walletAddress.Blockchain, address); err != nil {
+				return fmt.Errorf("failed to mark dirty in processing: %w", err)
+			}
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return fmt.Errorf("failed to check transactions for address: %w", err)
-	}
-	if !hasTransactions {
-		return ErrAddressHasNoTransactions
+		return err
 	}
 
-	_, err = s.storage.WalletAddresses().MarkAddressDirty(ctx, address, usr.ID)
-	if err != nil {
-		parsedErr := pgerror.ParseError(err)
-		s.logger.Debug("error mark address is dirty", parsedErr)
-		return parsedErr
-	}
 	return nil
 }
 
@@ -203,12 +217,6 @@ func (s *Service) createNewWalletAddress(
 	c *models.Currency,
 	oldWalletAddress *models.WalletAddress,
 ) (*models.WalletAddress, error) {
-	if oldWalletAddress != nil {
-		if err := s.processingService.MarkDirtyHotWallet(ctx, storeOwner.ProcessingOwnerID.UUID, *c.Blockchain, oldWalletAddress.Address); err != nil {
-			return nil, fmt.Errorf("failed to mark dirty hot wallet: %w", err)
-		}
-	}
-
 	params := processing.CreateOwnerHotWalletParams{
 		OwnerID:    storeOwner.ProcessingOwnerID.UUID,
 		CustomerID: wallet.ID.String(),

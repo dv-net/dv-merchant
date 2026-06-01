@@ -261,6 +261,7 @@ FROM wallet_addresses
 WHERE wallet_id = $1
   AND dirty = false
   AND deleted_at IS NULL
+  AND dirty = false
   and currency_id = ANY ($2::varchar[])
 `
 
@@ -301,8 +302,9 @@ SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created
 FROM wallet_addresses
 WHERE wallet_id = $1
   AND currency_id = $2
+  AND dirty = false
   AND deleted_at IS NULL
-ORDER BY created_at DESC
+ORDER BY updated_at DESC
 LIMIT 1
 `
 
@@ -519,34 +521,6 @@ func (q *Queries) GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetP
 		return nil, err
 	}
 	return items, nil
-}
-
-const getWalletAddressByBlockchainAndWalletId = `-- name: GetWalletAddressByBlockchainAndWalletId :one
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
-FROM wallet_addresses
-WHERE deleted_at IS NULL
-  AND blockchain = $1
-  AND wallet_id = $2
-limit 1
-`
-
-func (q *Queries) GetWalletAddressByBlockchainAndWalletId(ctx context.Context, blockchain models.Blockchain, walletID uuid.UUID) (*models.WalletAddress, error) {
-	row := q.db.QueryRow(ctx, getWalletAddressByBlockchainAndWalletId, blockchain, walletID)
-	var i models.WalletAddress
-	err := row.Scan(
-		&i.ID,
-		&i.WalletID,
-		&i.UserID,
-		&i.CurrencyID,
-		&i.Blockchain,
-		&i.Address,
-		&i.Amount,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-		&i.Dirty,
-	)
-	return &i, err
 }
 
 const getWalletAddressesByAddress = `-- name: GetWalletAddressesByAddress :one
@@ -789,7 +763,7 @@ func (q *Queries) IsWalletExistsByAddress(ctx context.Context, address string) (
 	return exists, err
 }
 
-const markAddressDirty = `-- name: MarkAddressDirty :one
+const markAddressDirty = `-- name: MarkAddressDirty :many
 UPDATE wallet_addresses
 SET updated_at=now(),
     dirty= true
@@ -797,23 +771,36 @@ WHERE address = $1 AND user_id = $2
 RETURNING id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
 `
 
-func (q *Queries) MarkAddressDirty(ctx context.Context, address string, userID uuid.UUID) (*models.WalletAddress, error) {
-	row := q.db.QueryRow(ctx, markAddressDirty, address, userID)
-	var i models.WalletAddress
-	err := row.Scan(
-		&i.ID,
-		&i.WalletID,
-		&i.UserID,
-		&i.CurrencyID,
-		&i.Blockchain,
-		&i.Address,
-		&i.Amount,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-		&i.Dirty,
-	)
-	return &i, err
+func (q *Queries) MarkAddressDirty(ctx context.Context, address string, userID uuid.UUID) ([]*models.WalletAddress, error) {
+	rows, err := q.db.Query(ctx, markAddressDirty, address, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*models.WalletAddress{}
+	for rows.Next() {
+		var i models.WalletAddress
+		if err := rows.Scan(
+			&i.ID,
+			&i.WalletID,
+			&i.UserID,
+			&i.CurrencyID,
+			&i.Blockchain,
+			&i.Address,
+			&i.Amount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Dirty,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const restoreByWallets = `-- name: RestoreByWallets :exec
