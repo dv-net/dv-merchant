@@ -239,7 +239,7 @@ func (h *Handler) addUserRole(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors
 //	@Router			/v1/admin/invite [post]
 //	@Security		BearerAuth
-func (h Handler) inviteUser(c fiber.Ctx) error {
+func (h *Handler) inviteUser(c fiber.Ctx) error {
 	u, err := loadAuthUser(c)
 	if err != nil {
 		return err

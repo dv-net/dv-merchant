@@ -97,7 +97,7 @@ func (h *Handler) getAllCurrencyRates(c fiber.Ctx) error {
 //	@Failure		422			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/currencies/rate/ [put]
 //	@Security		BearerAuth
-func (h Handler) updateRate(c fiber.Ctx) error {
+func (h *Handler) updateRate(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err

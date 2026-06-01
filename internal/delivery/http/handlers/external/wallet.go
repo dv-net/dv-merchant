@@ -170,9 +170,45 @@ func (h *Handler) getHotWalletBalances(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(summary))
 }
 
+// markIsDirty marks a wallet address as dirty.
+//
+//	@Summary		Mark wallet address as dirty
+//	@Description	Marks the given wallet address as dirty so it will not be used for new payments
+//	@Tags			Wallet
+//	@Accept			json
+//	@Produce		json
+//	@Param			json	body		wallet_request.MarkIsDirtyRequest	true	"MarkIsDirtyRequest"
+//	@Success		200		{object}	response.Result[string]
+//	@Failure		400		{object}	apierror.Errors
+//	@Failure		401		{object}	apierror.Errors
+//	@Router			/v1/external/wallet/addresses/dirty [post]
+//	@Security		BearerAuth
+func (h *Handler) markIsDirty(c fiber.Ctx) error {
+	store, err := loadAuthStore(c)
+	if err != nil {
+		return err
+	}
+	req := &wallet_request.MarkIsDirtyRequest{}
+	if err := c.Bind().Body(req); err != nil {
+		return err
+	}
+
+	usr, err := h.services.UserService.GetUserByID(c.Context(), store.UserID)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	err = h.services.WalletService.MarkAddressDirty(c.Context(), usr, req.Address)
+	if err != nil {
+		return h.handleError(err, "wallet")
+	}
+	return c.JSON(response.OkByMessage("success mark dirty"))
+}
+
 func (h *Handler) initWalletRoutes(v1 fiber.Router) {
 	w := v1.Group("/wallet")
 	w.Post("/", h.createWalletWithAddressByBody)
 	w.Get("/", h.createWalletWithAddressByQuery)
 	w.Get("/balance/hot", h.getHotWalletBalances)
+	w.Post("/addresses/dirty", h.markIsDirty)
 }

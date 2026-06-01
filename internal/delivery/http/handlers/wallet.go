@@ -55,7 +55,7 @@ type AddressFull struct {
 //	@Failure		500		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/wallet/addresses [post]
 //	@Security		BearerAuth
-func (h Handler) createWalletWithAddresses(c fiber.Ctx) error {
+func (h *Handler) createWalletWithAddresses(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ type WalletBalance struct {
 //	@Failure		500		{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/wallet/addresses/keys [get]
 //	@Security		BearerAuth
-func (h Handler) getWalletAddressesKeys(c fiber.Ctx) error {
+func (h *Handler) getWalletAddressesKeys(c fiber.Ctx) error {
 	u, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -165,7 +165,7 @@ func (h Handler) getWalletAddressesKeys(c fiber.Ctx) error {
 //	@Failure		500		{object}	apierror.Errors										"Internal Server Error"
 //	@Router			/v1/dv-admin/wallet/addresses/seeds [get]
 //	@Security		BearerAuth
-func (h Handler) getWalletSeeds(c fiber.Ctx) error {
+func (h *Handler) getWalletSeeds(c fiber.Ctx) error {
 	u, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -206,7 +206,7 @@ func (h Handler) getWalletSeeds(c fiber.Ctx) error {
 //	@Failure		500		{object}	apierror.Errors																						"Internal Server Error"
 //	@Router			/v1/dv-admin/wallet [post]
 //	@Security		BearerAuth
-func (h Handler) getWallets(c fiber.Ctx) error {
+func (h *Handler) getWallets(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -508,7 +508,40 @@ func (h *Handler) addressConverter(c fiber.Ctx) error {
 	}))
 }
 
-func (h Handler) initWalletRoutes(v1 fiber.Router) {
+// markIsDirty marks a wallet address as dirty.
+//
+//	@Summary		Mark wallet address as dirty
+//	@Description	Marks the given wallet address as dirty so it will not be used for new payments
+//	@Tags			Wallet
+//	@Accept			json
+//	@Produce		json
+//	@Param			json	body		wallet_request.MarkIsDirtyRequest	true	"MarkIsDirtyRequest"
+//	@Success		200		{object}	response.Result[string]
+//	@Failure		400		{object}	apierror.Errors
+//	@Failure		401		{object}	apierror.Errors
+//	@Router			/v1/dv-admin/wallet/addresses/dirty [post]
+//	@Security		BearerAuth
+func (h *Handler) markIsDirty(c fiber.Ctx) error {
+	usr, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+	req := &wallet_request.MarkIsDirtyRequest{}
+	if err := c.Bind().Body(req); err != nil {
+		return err
+	}
+
+	err = h.services.WalletService.MarkAddressDirty(c.Context(), usr, req.Address)
+	if err != nil {
+		if errors.Is(err, wallet.ErrAddressHasNoTransactions) {
+			return apierror.New().AddError(err).SetHttpCode(fiber.StatusUnprocessableEntity)
+		}
+		return h.handleError(err, "wallet")
+	}
+	return c.JSON(response.OkByMessage("success mark dirty"))
+}
+
+func (h *Handler) initWalletRoutes(v1 fiber.Router) {
 	walletRouter := v1.Group("/wallet")
 	walletRouter.Post("/", h.getWallets)
 	walletRouter.Get("/summary", h.getSummary)
@@ -520,6 +553,7 @@ func (h Handler) initWalletRoutes(v1 fiber.Router) {
 	walletRouter.Get("/balances/cold", h.getColdWalletBalances)
 	walletRouter.Get("/balances/exchange-settings", h.getWithdrawalWalletBalances)
 	walletRouter.Get("/info/:searchParam", h.getWalletInfo)
+	walletRouter.Post("/addresses/dirty", h.markIsDirty)
 	walletRouter.Post("/restore/:walletId", h.restoreTx)
 	walletRouter.Get("/:searchParam", h.findWalletsWithTransactions)
 	walletRouter.Post("/keys/hot", h.getHotWalletKeys)

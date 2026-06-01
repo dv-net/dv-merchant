@@ -521,6 +521,34 @@ func (q *Queries) GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetP
 	return items, nil
 }
 
+const getWalletAddressByBlockchainAndWalletId = `-- name: GetWalletAddressByBlockchainAndWalletId :one
+SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+FROM wallet_addresses
+WHERE deleted_at IS NULL
+  AND blockchain = $1
+  AND wallet_id = $2
+limit 1
+`
+
+func (q *Queries) GetWalletAddressByBlockchainAndWalletId(ctx context.Context, blockchain models.Blockchain, walletID uuid.UUID) (*models.WalletAddress, error) {
+	row := q.db.QueryRow(ctx, getWalletAddressByBlockchainAndWalletId, blockchain, walletID)
+	var i models.WalletAddress
+	err := row.Scan(
+		&i.ID,
+		&i.WalletID,
+		&i.UserID,
+		&i.CurrencyID,
+		&i.Blockchain,
+		&i.Address,
+		&i.Amount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Dirty,
+	)
+	return &i, err
+}
+
 const getWalletAddressesByAddress = `-- name: GetWalletAddressesByAddress :one
 SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
 FROM wallet_addresses
@@ -765,12 +793,12 @@ const markAddressDirty = `-- name: MarkAddressDirty :one
 UPDATE wallet_addresses
 SET updated_at=now(),
     dirty= true
-WHERE address = $1
+WHERE address = $1 AND user_id = $2
 RETURNING id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
 `
 
-func (q *Queries) MarkAddressDirty(ctx context.Context, address string) (*models.WalletAddress, error) {
-	row := q.db.QueryRow(ctx, markAddressDirty, address)
+func (q *Queries) MarkAddressDirty(ctx context.Context, address string, userID uuid.UUID) (*models.WalletAddress, error) {
+	row := q.db.QueryRow(ctx, markAddressDirty, address, userID)
 	var i models.WalletAddress
 	err := row.Scan(
 		&i.ID,

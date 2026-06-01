@@ -71,7 +71,7 @@ func (h *Handler) updateWalletAddresses(c fiber.Ctx) error {
 	return c.JSON(response.OkByMessage("Wallet addresses updated successfully"))
 }
 
-func (h Handler) ensureAddrListIsValid(blockchain models.Blockchain, addresses []withdrawal_wallets_request.WalletAddress) error {
+func (h *Handler) ensureAddrListIsValid(blockchain models.Blockchain, addresses []withdrawal_wallets_request.WalletAddress) error {
 	if len(addresses) == 0 {
 		return nil
 	}
@@ -96,7 +96,7 @@ func (h Handler) ensureAddrListIsValid(blockchain models.Blockchain, addresses [
 	return nil
 }
 
-func (h Handler) initWithdrawalWalletsRoutes(v1 fiber.Router) {
+func (h *Handler) initWithdrawalWalletsRoutes(v1 fiber.Router) {
 	withdrawal := v1.Group("/withdrawal-wallet")
 	withdrawal.Patch("/:walletID/addresses", h.updateWalletAddresses)
 }

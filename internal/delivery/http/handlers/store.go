@@ -38,7 +38,7 @@ import (
 //	@Failure		503			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/ [post]
 //	@Security		BearerAuth
-func (h Handler) createStore(c fiber.Ctx) error {
+func (h *Handler) createStore(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (h Handler) createStore(c fiber.Ctx) error {
 //	@Failure		503			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/ [get]
 //	@Security		BearerAuth
-func (h Handler) loadUserStore(c fiber.Ctx) error {
+func (h *Handler) loadUserStore(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (h Handler) loadUserStore(c fiber.Ctx) error {
 //	@Failure		503			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id} [put]
 //	@Security		BearerAuth
-func (h Handler) updateStore(c fiber.Ctx) error {
+func (h *Handler) updateStore(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func (h Handler) updateStore(c fiber.Ctx) error {
 //	@Failure		404	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id} [get]
 //	@Security		BearerAuth
-func (h Handler) loadStoreByID(c fiber.Ctx) error {
+func (h *Handler) loadStoreByID(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (h Handler) loadStoreByID(c fiber.Ctx) error {
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/unarchive [post]
 //	@Security		BearerAuth
-func (h Handler) storeUnarchive(c fiber.Ctx) error {
+func (h *Handler) storeUnarchive(c fiber.Ctx) error {
 	targetStore, usr, err := h.validateAndLoadStoreWithUser(c)
 	if err != nil {
 		return err
@@ -186,7 +186,7 @@ func (h Handler) storeUnarchive(c fiber.Ctx) error {
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/archived/list [get]
 //	@Security		BearerAuth
-func (h Handler) archivedStoresList(c fiber.Ctx) error {
+func (h *Handler) archivedStoresList(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -213,7 +213,7 @@ func (h Handler) archivedStoresList(c fiber.Ctx) error {
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/archive [post]
 //	@Security		BearerAuth
-func (h Handler) storeArchive(c fiber.Ctx) error {
+func (h *Handler) storeArchive(c fiber.Ctx) error {
 	targetStore, usr, err := h.validateAndLoadStoreWithUser(c)
 	if err != nil {
 		return err
@@ -248,7 +248,7 @@ func (h Handler) storeArchive(c fiber.Ctx) error {
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/apikey [post]
 //	@Security		BearerAuth
-func (h Handler) generateStoreAPIKey(c fiber.Ctx) error {
+func (h *Handler) generateStoreAPIKey(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -297,7 +297,7 @@ func (h Handler) generateStoreAPIKey(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/apikey/{apiKeyId}/status [put]
 //	@Security		BearerAuth
-func (h Handler) updateStatusStoreAPIKey(c fiber.Ctx) error {
+func (h *Handler) updateStatusStoreAPIKey(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -345,7 +345,7 @@ func (h Handler) updateStatusStoreAPIKey(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/apikey/{apiKeyId} [delete]
 //	@Security		BearerAuth
-func (h Handler) deleteStoreAPIKeys(c fiber.Ctx) error {
+func (h *Handler) deleteStoreAPIKeys(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -385,7 +385,7 @@ func (h Handler) deleteStoreAPIKeys(c fiber.Ctx) error {
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/apikey/ [get]
 //	@Security		BearerAuth
-func (h Handler) loadStoreAPIKeys(c fiber.Ctx) error {
+func (h *Handler) loadStoreAPIKeys(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -413,7 +413,7 @@ func (h Handler) loadStoreAPIKeys(c fiber.Ctx) error {
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/webhooks/ [get]
 //	@Security		BearerAuth
-func (h Handler) loadStoreWebhooks(c fiber.Ctx) error {
+func (h *Handler) loadStoreWebhooks(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -441,7 +441,7 @@ func (h Handler) loadStoreWebhooks(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/webhooks/{webhookId} [get]
 //	@Security		BearerAuth
-func (h Handler) loadStoreWebhook(c fiber.Ctx) error {
+func (h *Handler) loadStoreWebhook(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -478,7 +478,7 @@ func (h Handler) loadStoreWebhook(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/webhooks/ [post]
 //	@Security		BearerAuth
-func (h Handler) createStoreWebhooks(c fiber.Ctx) error {
+func (h *Handler) createStoreWebhooks(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -512,7 +512,7 @@ func (h Handler) createStoreWebhooks(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/webhooks/{webhookId} [put]
 //	@Security		BearerAuth
-func (h Handler) updateStoreWebhooks(c fiber.Ctx) error {
+func (h *Handler) updateStoreWebhooks(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -558,7 +558,7 @@ func (h Handler) updateStoreWebhooks(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/webhooks/{webhookId} [delete]
 //	@Security		BearerAuth
-func (h Handler) deleteStoreWebhooks(c fiber.Ctx) error {
+func (h *Handler) deleteStoreWebhooks(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -598,7 +598,7 @@ func (h Handler) deleteStoreWebhooks(c fiber.Ctx) error {
 //	@Failure		404		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/transactions/ [get]
 //	@Security		BearerAuth
-func (h Handler) loadStoreTransaction(c fiber.Ctx) error {
+func (h *Handler) loadStoreTransaction(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -643,7 +643,7 @@ func (h Handler) loadStoreTransaction(c fiber.Ctx) error {
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/currencies/ [get]
 //	@Security		BearerAuth
-func (h Handler) loadStoreCurrencies(c fiber.Ctx) error {
+func (h *Handler) loadStoreCurrencies(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -674,7 +674,7 @@ func (h Handler) loadStoreCurrencies(c fiber.Ctx) error {
 //	@Failure		400			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/currencies/ [put]
 //	@Security		BearerAuth
-func (h Handler) updateStoreCurrency(c fiber.Ctx) error {
+func (h *Handler) updateStoreCurrency(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -706,7 +706,7 @@ func (h Handler) updateStoreCurrency(c fiber.Ctx) error {
 //	@Failure		400	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/whitelists/ [get]
 //	@Security		BearerAuth
-func (h Handler) loadStoreWhitelist(c fiber.Ctx) error {
+func (h *Handler) loadStoreWhitelist(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -734,7 +734,7 @@ func (h Handler) loadStoreWhitelist(c fiber.Ctx) error {
 //	@Failure		400			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/whitelists/ [put]
 //	@Security		BearerAuth
-func (h Handler) updateStoreWhitelist(c fiber.Ctx) error {
+func (h *Handler) updateStoreWhitelist(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -754,7 +754,7 @@ func (h Handler) updateStoreWhitelist(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(res))
 }
 
-func (h Handler) validateAndLoadStore(c fiber.Ctx) (*models.Store, error) {
+func (h *Handler) validateAndLoadStore(c fiber.Ctx) (*models.Store, error) {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return nil, err
@@ -774,7 +774,7 @@ func (h Handler) validateAndLoadStore(c fiber.Ctx) (*models.Store, error) {
 	return targetStore, nil
 }
 
-func (h Handler) validateAndLoadStoreWithUser(c fiber.Ctx) (*models.Store, *models.User, error) {
+func (h *Handler) validateAndLoadStoreWithUser(c fiber.Ctx) (*models.Store, *models.User, error) {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return nil, nil, err
@@ -807,7 +807,7 @@ func (h Handler) validateAndLoadStoreWithUser(c fiber.Ctx) (*models.Store, *mode
 //	@Failure		400			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/whitelists/ [patch]
 //	@Security		BearerAuth
-func (h Handler) patchStoreWhitelist(c fiber.Ctx) error {
+func (h *Handler) patchStoreWhitelist(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -841,7 +841,7 @@ func (h Handler) patchStoreWhitelist(c fiber.Ctx) error {
 //	@Failure		400	{object}	apierror.Errors
 //	@Router			/v1/store/{id}/whitelists/{ip} [delete]
 //	@Security		BearerAuth
-func (h Handler) deleteStoreWhitelist(c fiber.Ctx) error {
+func (h *Handler) deleteStoreWhitelist(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -926,7 +926,7 @@ func (h *Handler) getStoreSecret(c fiber.Ctx) error {
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/secret [post]
 //	@Security		BearerAuth
-func (h Handler) generateStoreSecret(c fiber.Ctx) error {
+func (h *Handler) generateStoreSecret(c fiber.Ctx) error {
 	st, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err

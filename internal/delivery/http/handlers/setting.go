@@ -33,7 +33,7 @@ import (
 //	@Failure		422			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/root-setting/ [post]
 //	@Security		BearerAuth
-func (h Handler) createOrUpdateRootSetting(c fiber.Ctx) error {
+func (h *Handler) createOrUpdateRootSetting(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (h Handler) createOrUpdateRootSetting(c fiber.Ctx) error {
 //	@Failure		422			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/user-setting/ [post]
 //	@Security		BearerAuth
-func (h Handler) createOrUpdateUserSetting(c fiber.Ctx) error {
+func (h *Handler) createOrUpdateUserSetting(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -121,7 +121,7 @@ func (h Handler) createOrUpdateUserSetting(c fiber.Ctx) error {
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/setting/ [get]
 //	@Security		BearerAuth
-func (h Handler) getRootSettings(c fiber.Ctx) error {
+func (h *Handler) getRootSettings(c fiber.Ctx) error {
 	settings, err := h.services.SettingService.GetRootSettings(c.Context())
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusUnprocessableEntity)
@@ -141,7 +141,7 @@ func (h Handler) getRootSettings(c fiber.Ctx) error {
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/setting/list [get]
 //	@Security		BearerAuth
-func (h Handler) listRootSettings(c fiber.Ctx) error {
+func (h *Handler) listRootSettings(c fiber.Ctx) error {
 	availableSettings, err := h.services.SettingService.GetRootSettingsList(c.Context())
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
@@ -185,7 +185,7 @@ func (h *Handler) getSettingByName(c fiber.Ctx) error {
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/user-setting/list [get]
 //	@Security		BearerAuth
-func (h Handler) getUserSettingList(c fiber.Ctx) error {
+func (h *Handler) getUserSettingList(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -208,7 +208,7 @@ func (h Handler) getUserSettingList(c fiber.Ctx) error {
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store-setting/list/{id} [get]
 //	@Security		BearerAuth
-func (h Handler) getStoreSettingList(c fiber.Ctx) error {
+func (h *Handler) getStoreSettingList(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -236,7 +236,7 @@ func (h Handler) getStoreSettingList(c fiber.Ctx) error {
 //	@Failure		422			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store-setting/{id} [post]
 //	@Security		BearerAuth
-func (h Handler) createOrUpdateStoreSetting(c fiber.Ctx) error {
+func (h *Handler) createOrUpdateStoreSetting(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -268,7 +268,7 @@ func (h Handler) createOrUpdateStoreSetting(c fiber.Ctx) error {
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store-setting/{id}/{setting_name} [get]
 //	@Security		BearerAuth
-func (h Handler) getStoreSettingByName(c fiber.Ctx) error {
+func (h *Handler) getStoreSettingByName(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
 	if err != nil {
 		return err
@@ -282,7 +282,7 @@ func (h Handler) getStoreSettingByName(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(converters.FromSettingModelToResponse(res)))
 }
 
-func (h Handler) initSettingRoutes(v1 fiber.Router) {
+func (h *Handler) initSettingRoutes(v1 fiber.Router) {
 	rootSettings := v1.Group("/root-setting", h.services.PermissionService.FiberMiddleware(models.UserRoleRoot))
 	rootSettings.Post("/", h.createOrUpdateRootSetting)
 	rootSettings.Get("/", h.getRootSettings)

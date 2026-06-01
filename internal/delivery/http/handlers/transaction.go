@@ -33,7 +33,7 @@ import (
 //	@Failure		404		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/transaction/ [get]
 //	@Security		BearerAuth
-func (h Handler) loadUserTransaction(c fiber.Ctx) error {
+func (h *Handler) loadUserTransaction(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func (h Handler) loadUserTransaction(c fiber.Ctx) error {
 //	@Failure		404		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/transaction/stats [get]
 //	@Security		BearerAuth
-func (h Handler) loadUserTransactionStatistics(c fiber.Ctx) error {
+func (h *Handler) loadUserTransactionStatistics(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -100,7 +100,7 @@ func (h Handler) loadUserTransactionStatistics(c fiber.Ctx) error {
 //	@Failure		404		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/transaction/export [get]
 //	@Security		BearerAuth
-func (h Handler) downloadUserTranscations(c fiber.Ctx) error {
+func (h *Handler) downloadUserTranscations(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func (h Handler) downloadUserTranscations(c fiber.Ctx) error {
 //	@Failure		404	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/transaction/{hash} [get]
 //	@Security		BearerAuth
-func (h Handler) searchTransaction(c fiber.Ctx) error {
+func (h *Handler) searchTransaction(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err

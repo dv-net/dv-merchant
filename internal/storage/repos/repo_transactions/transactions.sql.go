@@ -805,3 +805,17 @@ func (q *Queries) GetWalletTransactions(ctx context.Context, arg GetWalletTransa
 	}
 	return items, nil
 }
+
+const hasTransactionsByAddress = `-- name: HasTransactionsByAddress :one
+SELECT EXISTS(
+    SELECT 1 FROM transactions
+    WHERE to_address = $1 OR from_address = $1
+) AS exists
+`
+
+func (q *Queries) HasTransactionsByAddress(ctx context.Context, toAddress string) (bool, error) {
+	row := q.db.QueryRow(ctx, hasTransactionsByAddress, toAddress)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}

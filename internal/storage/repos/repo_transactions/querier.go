@@ -28,6 +28,7 @@ type Querier interface {
 	GetTransactionsByStoreId(ctx context.Context, arg GetTransactionsByStoreIdParams) ([]*models.Transaction, error)
 	GetTransactionsByUserId(ctx context.Context, arg GetTransactionsByUserIdParams) ([]*models.Transaction, error)
 	GetWalletTransactions(ctx context.Context, arg GetWalletTransactionsParams) ([]*models.Transaction, error)
+	HasTransactionsByAddress(ctx context.Context, toAddress string) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

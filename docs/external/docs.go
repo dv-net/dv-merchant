@@ -472,6 +472,57 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/external/wallet/addresses/dirty": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks the given wallet address as dirty so it will not be used for new payments",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wallet"
+                ],
+                "summary": "Mark wallet address as dirty",
+                "parameters": [
+                    {
+                        "description": "MarkIsDirtyRequest",
+                        "name": "json",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MarkIsDirtyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/external/wallet/balance/hot": {
             "get": {
                 "security": [
@@ -629,7 +680,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Withdrawal ID",
+                        "description": "Withdrawal ID or Request ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -991,8 +1042,14 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
+                "contract_address": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
+                },
+                "is_native": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"
@@ -1331,6 +1388,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "MarkIsDirtyRequest": {
+            "type": "object",
+            "required": [
+                "address"
+            ],
+            "properties": {
+                "address": {
                     "type": "string"
                 }
             }

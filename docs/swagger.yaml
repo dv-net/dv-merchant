@@ -1155,6 +1155,9 @@ definitions:
         items:
           $ref: '#/definitions/UserRole'
         type: array
+      two_fa_reset_expires_at:
+        format: date-time
+        type: string
       updated_at:
         format: date-time
         type: string
@@ -2219,6 +2222,13 @@ definitions:
       wallet_address_id:
         type: string
     type: object
+  MarkIsDirtyRequest:
+    properties:
+      address:
+        type: string
+    required:
+    - address
+    type: object
   MonitorTypeData:
     properties:
       created_at:
@@ -2576,6 +2586,13 @@ definitions:
     x-enum-varnames:
     - ReceiptStatusPaid
     - ReceiptStatusCanceled
+  RefreshWalletAddressRequest:
+    properties:
+      address:
+        type: string
+    required:
+    - address
+    type: object
   RegisterOwnerInfo:
     properties:
       owner_id:
@@ -8188,6 +8205,39 @@ paths:
       summary: Convert wallet's address
       tags:
       - Wallet
+  /v1/dv-admin/wallet/addresses/dirty:
+    post:
+      consumes:
+      - application/json
+      description: Marks the given wallet address as dirty so it will not be used
+        for new payments
+      parameters:
+      - description: MarkIsDirtyRequest
+        in: body
+        name: json
+        required: true
+        schema:
+          $ref: '#/definitions/MarkIsDirtyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Mark wallet address as dirty
+      tags:
+      - Wallet
   /v1/dv-admin/wallet/addresses/keys:
     get:
       consumes:
@@ -9823,6 +9873,39 @@ paths:
       summary: Create wallet with address
       tags:
       - Wallet
+  /v1/external/wallet/addresses/dirty:
+    post:
+      consumes:
+      - application/json
+      description: Marks the given wallet address as dirty so it will not be used
+        for new payments
+      parameters:
+      - description: MarkIsDirtyRequest
+        in: body
+        name: json
+        required: true
+        schema:
+          $ref: '#/definitions/MarkIsDirtyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Mark wallet address as dirty
+      tags:
+      - Wallet
   /v1/external/wallet/balance/hot:
     get:
       description: Get external hot wallet balances
@@ -10391,6 +10474,47 @@ paths:
           schema:
             $ref: '#/definitions/APIErrors'
       summary: Notify wallet email
+      tags:
+      - Wallet
+      - Public
+  /v1/public/wallet/{id}/refresh-address:
+    post:
+      consumes:
+      - application/json
+      description: Marks the current address for the given blockchain as dirty so
+        a new one will be generated
+      parameters:
+      - description: Wallet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Blockchain
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/RefreshWalletAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Refresh wallet address
       tags:
       - Wallet
       - Public

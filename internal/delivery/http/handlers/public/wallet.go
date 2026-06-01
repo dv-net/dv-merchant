@@ -4,10 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	// Blank import for swaggen
 	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/transaction_response"
-	_ "github.com/dv-net/dv-merchant/internal/service/wallet"
+	"github.com/dv-net/dv-merchant/internal/delivery/middleware"
+
+	"github.com/dv-net/dv-merchant/internal/service/wallet"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/public_request"
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -215,9 +218,60 @@ func (h *Handler) notifyWalletEmail(c fiber.Ctx) error {
 	return c.JSON(response.OkByMessage("wallet confirmed successfully"))
 }
 
+// refreshWalletAddress marks the current address as dirty,
+// so a new address will be issued on the next wallet load.
+//
+//	@Summary		Refresh wallet address
+//	@Description	Marks the current address as dirty so a new one will be generated
+//	@Tags			Wallet,Public
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		string										true	"Wallet ID"
+//	@Param			request body		public_request.RefreshWalletAddressRequest	true	"RefreshWalletAddressRequest"
+//	@Success		200		{object}	response.Result[string]
+//	@Failure		400		{object}	apierror.Errors
+//	@Failure		404		{object}	apierror.Errors
+//	@Failure		422		{object}	apierror.Errors
+//	@Router			/v1/public/wallet/{id}/refresh-address [post]
+func (h *Handler) refreshWalletAddress(c fiber.Ctx) error {
+	walletID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return apierror.New().AddError(fmt.Errorf("bad wallet id")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	req := &public_request.RefreshWalletAddressRequest{}
+	if err := c.Bind().Body(req); err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	_, err = h.services.StoreService.GetStoreByWalletID(c.Context(), walletID)
+	if err != nil {
+		if errors.Is(err, store.ErrStoreNotFound) {
+			return apierror.New().AddError(errors.New("store not found")).SetHttpCode(fiber.StatusNotFound)
+		}
+		if errors.Is(err, store.ErrStoreDisabled) {
+			return apierror.New().AddError(errors.New("store is disabled")).SetHttpCode(fiber.StatusGone)
+		}
+		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	if err := h.services.WalletService.RefreshWalletAddress(c.Context(), walletID, req.Address); err != nil {
+		if errors.Is(err, wallet.ErrAddressHasNoTransactions) {
+			return apierror.New().AddError(errors.New("failed update address")).SetHttpCode(fiber.StatusUnprocessableEntity)
+		}
+		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByMessage("address refreshed"))
+}
+
 func (h *Handler) initWalletRoutes(v1 fiber.Router) {
-	wallet := v1.Group("/wallet")
-	wallet.Get("/:id", h.getWalletData)
-	wallet.Get("/:id/tx-find", h.findTransactionsByWallet)
-	wallet.Get("/:id/confirm", h.notifyWalletEmail)
+	w := v1.Group("/wallet")
+	w.Get("/:id", h.getWalletData)
+	w.Get("/:id/tx-find", h.findTransactionsByWallet)
+	w.Get("/:id/confirm", h.notifyWalletEmail)
+	w.Post("/:id/refresh-address",
+		middleware.LimiterMiddleware(3, 60, middleware.WithSlidingWindow),
+		middleware.FakeDelayMiddleware(2*time.Second),
+		h.refreshWalletAddress)
 }

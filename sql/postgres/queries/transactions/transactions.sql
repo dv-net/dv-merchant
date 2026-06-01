@@ -270,3 +270,9 @@ WHERE t.wallet_id = $1
   AND t.to_address = $2
 ORDER BY network_created_at DESC
 LIMIT 500;
+
+-- name: HasTransactionsByAddress :one
+SELECT EXISTS(
+    SELECT 1 FROM transactions
+    WHERE to_address = $1 OR from_address = $1
+) AS exists;

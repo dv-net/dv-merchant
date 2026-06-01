@@ -27,7 +27,7 @@ import (
 //	@Failure		404	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/receipts/{id} [get]
 //	@Security		BearerAuth
-func (h Handler) loadReceiptByID(c fiber.Ctx) error {
+func (h *Handler) loadReceiptByID(c fiber.Ctx) error {
 	_, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (h Handler) loadReceiptByID(c fiber.Ctx) error {
 //	@Failure		404		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/receipts/ [get]
 //	@Security		BearerAuth
-func (h Handler) loadReceipts(c fiber.Ctx) error {
+func (h *Handler) loadReceipts(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func (h Handler) loadReceipts(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(res))
 }
 
-func (h Handler) initReceiptRoutes(group fiber.Router) {
+func (h *Handler) initReceiptRoutes(group fiber.Router) {
 	receipt := group.Group("/receipts")
 	receipt.Get("/", h.loadReceipts)
 	receipt.Get("/:id", h.loadReceiptByID)

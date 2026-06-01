@@ -29,7 +29,7 @@ import (
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/notifications/list [get]
 //	@Security		BearerAuth
-func (h Handler) notificationsList(c fiber.Ctx) error {
+func (h *Handler) notificationsList(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (h Handler) notificationsList(c fiber.Ctx) error {
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/notifications/{id} [put]
 //	@Security		BearerAuth
-func (h Handler) updateUserNotification(c fiber.Ctx) error {
+func (h *Handler) updateUserNotification(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -93,7 +93,7 @@ func (h Handler) updateUserNotification(c fiber.Ctx) error {
 //	@Failure		401			{object}	apierror.Errors
 //	@Router			/v1/notifications/list/update [patch]
 //	@Security		BearerAuth
-func (h Handler) notificationsListUpdate(c fiber.Ctx) error {
+func (h *Handler) notificationsListUpdate(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -131,7 +131,7 @@ func (h Handler) notificationsListUpdate(c fiber.Ctx) error {
 //	@Failure	401					{object}	apierror.Errors
 //	@Router		/v1/notifications/test [post]
 //	@Security	BearerAuth
-func (h Handler) testNotification(c fiber.Ctx) error {
+func (h *Handler) testNotification(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -172,7 +172,7 @@ func (h Handler) testNotification(c fiber.Ctx) error {
 //	@Failure		401				{object}	apierror.Errors
 //	@Router			/v1/dv-admin/notifications/history [get]
 //	@Security		BearerAuth
-func (h Handler) getNotificationHistory(c fiber.Ctx) error {
+func (h *Handler) getNotificationHistory(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -208,7 +208,7 @@ func (h Handler) getNotificationHistory(c fiber.Ctx) error {
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/notifications/types [get]
 //	@Security		BearerAuth
-func (h Handler) notificationsTypeList(c fiber.Ctx) error {
+func (h *Handler) notificationsTypeList(c fiber.Ctx) error {
 	_, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -222,7 +222,7 @@ func (h Handler) notificationsTypeList(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(converters.FromNotificationTypeList(types)))
 }
 
-func (h Handler) initNotificationRoutes(v1 fiber.Router) {
+func (h *Handler) initNotificationRoutes(v1 fiber.Router) {
 	notifications := v1.Group("/notifications")
 	notifications.Put("/:notification_id", h.updateUserNotification)
 	notifications.Get("/list", h.notificationsList)
