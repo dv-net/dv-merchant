@@ -32,7 +32,7 @@ import (
 //	@Failure		500	{object}	apierror.Errors															"Internal Server Error"
 //	@Router			/v1/dv-admin/withdrawal/rules [get]
 //	@Security		BearerAuth
-func (h Handler) getWithdrawalRule(c fiber.Ctx) error {
+func (h *Handler) getWithdrawalRule(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -58,7 +58,7 @@ func (h Handler) getWithdrawalRule(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors															"Internal Server Error"
 //	@Router			/v1/dv-admin/withdrawal/{currencyID}/rules [get]
 //	@Security		BearerAuth
-func (h Handler) getWithdrawalCurrencyRule(c fiber.Ctx) error {
+func (h *Handler) getWithdrawalCurrencyRule(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -93,7 +93,7 @@ func (h Handler) getWithdrawalCurrencyRule(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/withdrawal/{currencyID}/rules [patch]
 //	@Security		BearerAuth
-func (h Handler) updateWithdrawalRule(c fiber.Ctx) error {
+func (h *Handler) updateWithdrawalRule(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -157,7 +157,7 @@ func (h Handler) updateWithdrawalRule(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/withdrawal/withdraw-manual [Post]
 //	@Security		BearerAuth
-func (h Handler) manualWithdraw(c fiber.Ctx) error {
+func (h *Handler) manualWithdraw(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -195,7 +195,7 @@ func (h Handler) manualWithdraw(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/withdrawal/withdraw-multiple-manual [Post]
 //	@Security		BearerAuth
-func (h Handler) manualWithdrawMultiple(c fiber.Ctx) error {
+func (h *Handler) manualWithdrawMultiple(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -238,7 +238,7 @@ func (h Handler) manualWithdrawMultiple(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/withdrawal/withdraw-to-processing [Post]
 //	@Security		BearerAuth
-func (h Handler) withdrawToProcessing(c fiber.Ctx) error {
+func (h *Handler) withdrawToProcessing(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -274,7 +274,7 @@ func (h Handler) withdrawToProcessing(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/withdraw-multiple-to-processing [Post]
 //	@Security		BearerAuth
-func (h Handler) withdrawToProcessingMultiple(c fiber.Ctx) error {
+func (h *Handler) withdrawToProcessingMultiple(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -313,7 +313,7 @@ func (h Handler) withdrawToProcessingMultiple(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/withdrawal/withdrawal-from-processing [post]
 //	@Security		BearerAuth
-func (h Handler) createWithdrawalFromProcessingWallet(c fiber.Ctx) error {
+func (h *Handler) createWithdrawalFromProcessingWallet(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -348,7 +348,7 @@ func (h Handler) createWithdrawalFromProcessingWallet(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(converters.FromProcessingWithdrawalToResponse(*res)))
 }
 
-func (h Handler) initWithdrawalRoutes(v1 fiber.Router) {
+func (h *Handler) initWithdrawalRoutes(v1 fiber.Router) {
 	withdrawal := v1.Group("/withdrawal")
 	withdrawal.Get("/rules", h.getWithdrawalRule)
 	withdrawal.Get("/:currencyID/rules", h.getWithdrawalCurrencyRule)
@@ -405,7 +405,7 @@ func prepareWithdrawalHTTPError(err error) error {
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/withdrawal/address-book [get]
 //	@Security		BearerAuth
-func (h Handler) getUserAddressBook(c fiber.Ctx) error {
+func (h *Handler) getUserAddressBook(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -434,7 +434,7 @@ func (h Handler) getUserAddressBook(c fiber.Ctx) error {
 //	@Failure		500		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/withdrawal/address-book [post]
 //	@Security		BearerAuth
-func (h Handler) createAddressBookEntry(c fiber.Ctx) error {
+func (h *Handler) createAddressBookEntry(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -488,7 +488,7 @@ func (h Handler) createAddressBookEntry(c fiber.Ctx) error {
 //	@Failure		500		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/withdrawal/address-book/{id} [put]
 //	@Security		BearerAuth
-func (h Handler) updateAddressBookEntry(c fiber.Ctx) error {
+func (h *Handler) updateAddressBookEntry(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -541,7 +541,7 @@ func (h Handler) updateAddressBookEntry(c fiber.Ctx) error {
 //	@Failure		500		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/withdrawal/address-book [delete]
 //	@Security		BearerAuth
-func (h Handler) deleteAddressBookEntry(c fiber.Ctx) error {
+func (h *Handler) deleteAddressBookEntry(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -588,7 +588,7 @@ func (h Handler) deleteAddressBookEntry(c fiber.Ctx) error {
 //	@Failure		404		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/withdrawal/address-book/withdrawal-rule [post]
 //	@Security		BearerAuth
-func (h Handler) addWithdrawalRule(c fiber.Ctx) error {
+func (h *Handler) addWithdrawalRule(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -635,7 +635,7 @@ func (h Handler) addWithdrawalRule(c fiber.Ctx) error {
 //	@Failure		404		{object}	apierror.Errors
 //	@Router			/v1/dv-admin/withdrawal/address-book/withdrawal-rule [delete]
 //	@Security		BearerAuth
-// func (h Handler) deleteWithdrawalRule(c fiber.Ctx) error {
+// func (h *Handler) deleteWithdrawalRule(c fiber.Ctx) error {
 // 	user, err := loadAuthUser(c)
 // 	if err != nil {
 // 		return err

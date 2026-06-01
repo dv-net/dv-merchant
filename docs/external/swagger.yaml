@@ -166,8 +166,12 @@ definitions:
         $ref: '#/definitions/Blockchain'
       code:
         type: string
+      contract_address:
+        type: string
       id:
         type: string
+      is_native:
+        type: boolean
       name:
         type: string
       sort_order:
@@ -388,6 +392,13 @@ definitions:
         type: string
       message:
         type: string
+    type: object
+  MarkIsDirtyRequest:
+    properties:
+      address:
+        type: string
+    required:
+    - address
     type: object
   ProcessingWalletWithAssets:
     properties:
@@ -938,6 +949,39 @@ paths:
       summary: Create wallet with address
       tags:
       - Wallet
+  /v1/external/wallet/addresses/dirty:
+    post:
+      consumes:
+      - application/json
+      description: Marks the given wallet address as dirty so it will not be used
+        for new payments
+      parameters:
+      - description: MarkIsDirtyRequest
+        in: body
+        name: json
+        required: true
+        schema:
+          $ref: '#/definitions/MarkIsDirtyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Mark wallet address as dirty
+      tags:
+      - Wallet
   /v1/external/wallet/balance/hot:
     get:
       description: Get external hot wallet balances
@@ -1071,7 +1115,7 @@ paths:
         name: api_key
         required: true
         type: string
-      - description: Withdrawal ID
+      - description: Withdrawal ID or Request ID
         in: path
         name: id
         required: true

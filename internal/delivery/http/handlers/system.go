@@ -24,7 +24,7 @@ import (
 //	@Success		200	{object}	response.Result[system_response.SystemInfoResponse]
 //	@Failure		400	{object}	apierror.Errors	"Bad request"
 //	@Router			/v1/dv-admin/system/info [get]
-func (h Handler) info(c fiber.Ctx) error {
+func (h *Handler) info(c fiber.Ctx) error {
 	info, err := h.services.SystemService.GetInfo(c.Context())
 	if err != nil {
 		return apierror.New().AddError(errors.New("failed get info")).SetHttpCode(fiber.StatusBadRequest)
@@ -43,7 +43,7 @@ func (h Handler) info(c fiber.Ctx) error {
 //	@Success		200	{object}	response.Result[string]
 //	@Failure		400	{object}	apierror.Errors	"Bad request"
 //	@Router			/v1/dv-admin/system/update/processing [post]
-func (h Handler) updateProcessing(c fiber.Ctx) error {
+func (h *Handler) updateProcessing(c fiber.Ctx) error {
 	ctx := context.Background()
 	go func() {
 		err := h.services.UpdaterService.UpdateProcessing(ctx)
@@ -63,7 +63,7 @@ func (h Handler) updateProcessing(c fiber.Ctx) error {
 //	@Success		200	{object}	response.Result[string]
 //	@Failure		400	{object}	apierror.Errors	"Bad request"
 //	@Router			/v1/dv-admin/system/update/backend [post]
-func (h Handler) updateBackend(c fiber.Ctx) error {
+func (h *Handler) updateBackend(c fiber.Ctx) error {
 	ctx := context.Background()
 
 	go func() {
@@ -103,7 +103,7 @@ func (h *Handler) loadNewVersions(c fiber.Ctx) error {
 	}))
 }
 
-func (h Handler) initPublicSystemRoutes(v3 fiber.Router) {
+func (h *Handler) initPublicSystemRoutes(v3 fiber.Router) {
 	public := v3.Group("/system")
 	public.Get("/info", h.info)
 

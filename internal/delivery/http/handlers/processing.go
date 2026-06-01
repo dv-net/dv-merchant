@@ -38,7 +38,7 @@ import (
 //	@Failure		400			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/processing/callback [post]
 //	@Security		BearerAuth
-func (h Handler) processingCallback(c fiber.Ctx) error {
+func (h *Handler) processingCallback(c fiber.Ctx) error {
 	// Processing the translation status
 	statusCheckRequest := processing_request.TransferStatusWebhook{}
 	err := c.Bind().Body(&statusCheckRequest)
@@ -183,7 +183,7 @@ func (h Handler) processingCallback(c fiber.Ctx) error {
 //	@Failure		400			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/processing/init [post]
 //	@Security		BearerAuth
-func (h Handler) initProcessing(c fiber.Ctx) error {
+func (h *Handler) initProcessing(c fiber.Ctx) error {
 	_, err := loadAuthUser(c)
 	if err != nil {
 		return apierror.New().SetHttpCode(fiber.StatusBadRequest).AddError(err)
@@ -462,7 +462,7 @@ func (h *Handler) processingWallets(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(wassets))
 }
 
-func (h Handler) initProcessingRoutes(v1 fiber.Router) {
+func (h *Handler) initProcessingRoutes(v1 fiber.Router) {
 	processing := v1.Group("/processing")
 	processing.Post(
 		"/init",

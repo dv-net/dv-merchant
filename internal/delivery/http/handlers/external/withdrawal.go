@@ -35,7 +35,7 @@ import (
 //	@Failure		500			{object}	apierror.Errors
 //	@Router			/v1/external/withdrawal-from-processing [post]
 //	@Security		XApiKey
-func (h Handler) createWithdrawalFromProcessingWallet(c fiber.Ctx) error {
+func (h *Handler) createWithdrawalFromProcessingWallet(c fiber.Ctx) error {
 	store, err := loadAuthStore(c)
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func (h Handler) createWithdrawalFromProcessingWallet(c fiber.Ctx) error {
 //	@Failure		500		{object}	apierror.Errors
 //	@Router			/v1/external/withdrawal-from-processing/{id} [get]
 //	@Security		XApiKey
-func (h Handler) getWithdrawalFromProcessingWallet(c fiber.Ctx) error {
+func (h *Handler) getWithdrawalFromProcessingWallet(c fiber.Ctx) error {
 	store, err := loadAuthStore(c)
 	if err != nil {
 		return err
@@ -163,7 +163,7 @@ func prepareWithdrawalHTTPError(err error) error {
 	return apierror.New().AddError(err).SetHttpCode(errCode)
 }
 
-func (h Handler) initWithdrawalRoutes(router fiber.Router) {
+func (h *Handler) initWithdrawalRoutes(router fiber.Router) {
 	router.Post("/withdrawal-from-processing", h.createWithdrawalFromProcessingWallet)
 	router.Get("/withdrawal-from-processing/:id", h.getWithdrawalFromProcessingWallet)
 	router.Delete("/withdrawal-from-processing/:id", h.deleteWithdrawalFromProcessingWallet)

@@ -19,7 +19,7 @@ import (
 //	@Success		200	{object}	response.Result[dvadmin_response.OwnerData]
 //	@Failure		400	{object}	apierror.Errors	"Bad request"
 //	@Router			/v1/dv-admin/console/owner-data [get]
-func (h Handler) getDvnetOwnerData(c fiber.Ctx) error {
+func (h *Handler) getDvnetOwnerData(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -43,7 +43,7 @@ func (h Handler) getDvnetOwnerData(c fiber.Ctx) error {
 //	@Success		200	{object}	response.Result[dvadmin_response.AuthLinkResponse]
 //	@Failure		400	{object}	apierror.Errors	"Bad request"
 //	@Router			/v1/dv-admin/console/auth-link [get]
-func (h Handler) getAuthLink(c fiber.Ctx) error {
+func (h *Handler) getAuthLink(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -57,7 +57,7 @@ func (h Handler) getAuthLink(c fiber.Ctx) error {
 	return c.JSON(dvadmin_response.AuthLinkResponse{Link: link})
 }
 
-func (h Handler) initConsoleRoutes(v3 fiber.Router) {
+func (h *Handler) initConsoleRoutes(v3 fiber.Router) {
 	public := v3.Group("/console")
 	public.Get("/owner-data", h.getDvnetOwnerData)
 	public.Get("/auth-link", h.getAuthLink)

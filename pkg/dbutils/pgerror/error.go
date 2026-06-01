@@ -17,6 +17,12 @@ func ParseError(err error) error {
 				Table:      pgErr.TableName,
 				Detail:     pgErr.Detail,
 			}
+		case "23503":
+			return &ForeignKeyViolationError{
+				Constraint: pgErr.ConstraintName,
+				Table:      pgErr.TableName,
+				Detail:     pgErr.Detail,
+			}
 		case "02000":
 			return &NotFoundError{
 				Table:  pgErr.TableName,
@@ -39,7 +45,7 @@ type UniqueConstraintError struct {
 }
 
 func (e *UniqueConstraintError) Error() string {
-	return "unique constraint violation: " + e.Detail
+	return "unique constraint violation: " + e.Constraint
 }
 
 type NotFoundError struct {
@@ -49,4 +55,14 @@ type NotFoundError struct {
 
 func (e *NotFoundError) Error() string {
 	return "record not found: " + e.Detail
+}
+
+type ForeignKeyViolationError struct {
+	Constraint string
+	Table      string
+	Detail     string
+}
+
+func (e *ForeignKeyViolationError) Error() string {
+	return "foreign key violation: " + e.Detail
 }

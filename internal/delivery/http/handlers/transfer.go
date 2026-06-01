@@ -36,7 +36,7 @@ import (
 //	@Failure		500	{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/transfer/prefetch [Get]
 //	@Security		BearerAuth
-func (h Handler) getPrefetchData(c fiber.Ctx) error {
+func (h *Handler) getPrefetchData(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (h Handler) getPrefetchData(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/transfer/ [Get]
 //	@Security		BearerAuth
-func (h Handler) getTransfer(c fiber.Ctx) error {
+func (h *Handler) getTransfer(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func (h Handler) getTransfer(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/transfer/history [Get]
 //	@Security		BearerAuth
-func (h Handler) getTransferHistory(c fiber.Ctx) error {
+func (h *Handler) getTransferHistory(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -132,7 +132,7 @@ func (h Handler) getTransferHistory(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/transfer/mode [Post]
 //	@Security		BearerAuth
-func (h Handler) transferToggle(c fiber.Ctx) error {
+func (h *Handler) transferToggle(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func (h Handler) transferToggle(c fiber.Ctx) error {
 //	@Failure		500			{object}	apierror.Errors	"Internal Server Error"
 //	@Router			/v1/dv-admin/transfer/tron/transfer-type [Post]
 //	@Security		BearerAuth
-func (h Handler) updateTronTransferType(c fiber.Ctx) error {
+func (h *Handler) updateTronTransferType(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -204,7 +204,7 @@ func (h Handler) updateTronTransferType(c fiber.Ctx) error {
 //	@Failure		401			{object}	apierror.Errors	"Unauthorized"
 //	@Router			/v1/dv-admin/transfer/ [Delete]
 //	@Security		BearerAuth
-func (h Handler) deleteTransfer(c fiber.Ctx) error {
+func (h *Handler) deleteTransfer(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
@@ -223,7 +223,7 @@ func (h Handler) deleteTransfer(c fiber.Ctx) error {
 	return c.JSON(response.OkByMessage("success"))
 }
 
-func (h Handler) initTransferRoutes(v1 fiber.Router) {
+func (h *Handler) initTransferRoutes(v1 fiber.Router) {
 	transfer := v1.Group("/transfer")
 	transfer.Get("/prefetch", h.getPrefetchData)
 	transfer.Get("/", h.getTransfer)

@@ -17,7 +17,7 @@ limit 1;
 UPDATE wallet_addresses
 SET updated_at=now(),
     dirty= true
-WHERE address = $1
+WHERE address = $1 AND user_id = $2
 RETURNING *;
 
 -- name: UpdateWalletBalance :exec
