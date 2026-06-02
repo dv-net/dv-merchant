@@ -129,10 +129,6 @@ func (o *okxFetcher) fetchAllCurrencies(ctx context.Context, client *http.Client
 					"currency", currency,
 					"connection", connectionType)
 				errCh <- fmt.Errorf("currency %s: %w", currency, err)
-			} else {
-				o.log.Infow("[EXRATE-OKX] successfully fetched for currency",
-					"currency", currency,
-					"connection", connectionType)
 			}
 		}(currency)
 	}

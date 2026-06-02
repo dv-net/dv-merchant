@@ -160,10 +160,6 @@ func (o *bybitFetcher) fetchWithClient(ctx context.Context, client *http.Client,
 		return err
 	}
 
-	o.log.Infow("[EXRATE-BYBIT] successfully fetched exchange rates",
-		"symbol_count", len(body.Result.List),
-		"connection", connectionType)
-
 	return nil
 }
 
