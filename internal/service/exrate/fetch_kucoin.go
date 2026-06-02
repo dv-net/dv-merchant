@@ -171,10 +171,6 @@ func (o *kucoinFetcher) fetchWithClient(ctx context.Context, client *http.Client
 		return err
 	}
 
-	o.log.Infow("[EXRATE-KUCOIN] successfully fetched exchange rates",
-		"ticker_count", len(body.Data.Ticker),
-		"connection", connectionType)
-
 	return nil
 }
 

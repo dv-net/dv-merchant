@@ -168,10 +168,6 @@ func (s *Service) getOrCreateWalletAddress(
 		}
 
 		if err == nil {
-			if walletAddress.Dirty {
-				return s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, walletAddress)
-			}
-
 			if logErr := s.logProcessingAddressReceived(ctx, walletAddress, pgtypeutils.DecodeText(wallet.IpAddress)); logErr != nil {
 				s.logger.Errorw("failed create log to process processing addresses", "error", logErr)
 			}
@@ -181,15 +177,17 @@ func (s *Service) getOrCreateWalletAddress(
 
 		addr, err := s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, nil)
 		if err != nil {
+			lastErr = err
 			if isDuplicateErr(err) {
+				// duplicate means either a race condition (another goroutine created the address
+				// for this wallet) or processing returned an already-used address; either way
+				// the next iteration will re-check GetByWalletIDAndCurrencyID first
 				s.logger.Debugw("duplicate detected, retrying", "attempt", attempt, "wallet_id", wallet.ID, "currency_id", c.ID)
 				time.Sleep(time.Duration(attempt) * 50 * time.Millisecond)
-				continue
+			} else {
+				s.logger.Warnw("error creating wallet address", "attempt", attempt, "error", err, "wallet_id", wallet.ID, "currency_id", c.ID)
+				time.Sleep(time.Duration(attempt) * 100 * time.Millisecond)
 			}
-
-			lastErr = err
-			s.logger.Warnw("error creating wallet address", "attempt", attempt, "error", err, "wallet_id", wallet.ID, "currency_id", c.ID)
-			time.Sleep(time.Duration(attempt) * 100 * time.Millisecond)
 			continue
 		}
 
@@ -202,11 +200,7 @@ func (s *Service) getOrCreateWalletAddress(
 		return walletAddress, nil
 	}
 
-	if lastErr != nil {
-		return nil, fmt.Errorf("failed to get or create wallet address after %d retries: %w", maxRetries, lastErr)
-	}
-
-	return nil, fmt.Errorf("failed to get or create wallet address after %d retries: address not found and no error recorded", maxRetries)
+	return nil, fmt.Errorf("failed to get or create wallet address after %d retries: %w", maxRetries, lastErr)
 }
 
 func (s *Service) createNewWalletAddress(
@@ -222,7 +216,7 @@ func (s *Service) createNewWalletAddress(
 		CustomerID: wallet.ID.String(),
 		Blockchain: *c.Blockchain,
 	}
-
+	s.logger.Infof("creating new hot wallet: owner_id=%s customer_id=%s blockchain=%s", params.OwnerID, params.CustomerID, params.Blockchain)
 	switch *c.Blockchain {
 	case models.BlockchainBitcoin:
 		params.BitcoinAddressType = util.Pointer(processing.ConvertToBitcoinAddressType(s.cfg.Blockchain.Bitcoin.AddressType))

@@ -189,10 +189,6 @@ func (o *bitgetFetcher) fetchWithClient(ctx context.Context, client *http.Client
 		return err
 	}
 
-	o.log.Infow("[EXRATE-BITGET] successfully fetched exchange rates",
-		"symbol_count", len(body.Data),
-		"connection", connectionType)
-
 	return nil
 }
 

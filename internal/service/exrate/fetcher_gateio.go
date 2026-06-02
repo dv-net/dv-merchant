@@ -158,10 +158,6 @@ func (o *gateioFetcher) fetchWithClient(ctx context.Context, client *http.Client
 		return err
 	}
 
-	o.log.Infow("[EXRATE-GATE] successfully fetched exchange rates",
-		"symbol_count", len(body.Data),
-		"connection", connectionType)
-
 	return nil
 }
 

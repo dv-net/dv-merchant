@@ -156,10 +156,6 @@ func (f *binanceFetcher) fetchWithClient(ctx context.Context, client *http.Clien
 		return err
 	}
 
-	f.log.Infow("[EXRATE-BINANCE] successfully fetched exchange rates",
-		"symbol_count", len(*body),
-		"connection", connectionType)
-
 	return nil
 }
 

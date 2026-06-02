@@ -184,10 +184,6 @@ func (o *htxFetcher) fetchWithClient(ctx context.Context, client *http.Client, c
 		return err
 	}
 
-	o.log.Infow("[EXRATE-HTX] successfully fetched exchange rates",
-		"symbol_count", len(body.Data),
-		"connection", connectionType)
-
 	return nil
 }
 
