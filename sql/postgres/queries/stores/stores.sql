@@ -18,7 +18,7 @@ WHERE s.deleted_at IS NULL
 LIMIT 1;
 
 -- name: GetStoreByWalletAddress :one
-SELECT s.*
+SELECT s.*, wa.dirty
 FROM stores s
          JOIN wallets w ON s.id = w.store_id
          LEFT JOIN wallet_addresses wa

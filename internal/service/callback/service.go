@@ -68,7 +68,7 @@ func New(
 	}
 }
 
-func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookDto) error { //nolint:funlen
+func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookDto) error {
 	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{IsoLevel: pgx.Serializable}, func(tx pgx.Tx) error {
 		amount, err := decimal.NewFromString(dto.Amount)
 		if err != nil {
@@ -88,7 +88,6 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return fmt.Errorf("transaction found error: %w", err)
 		}
-
 		if err == nil {
 			s.log.Info("transaction already exists")
 			return nil
@@ -98,13 +97,12 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			return fmt.Errorf("invalid wallet id")
 		}
 
-		// todo add wallet to dto
 		wallet, err := s.storage.Wallets(repos.WithTx(tx)).GetById(ctx, *dto.ExternalWalletID)
 		if err != nil {
 			return fmt.Errorf("wallet found error: %w", err)
 		}
 
-		storeData, err := s.storeService.GetStoreByWalletAddress(ctx, dto.ToAddress, dto.Currency.ID, repos.WithTx(tx))
+		storeData, isDirty, err := s.storeService.GetStoreByWalletAddress(ctx, dto.ToAddress, dto.Currency.ID, repos.WithTx(tx))
 		if err != nil {
 			return fmt.Errorf("storeData found error: %w", err)
 		}
@@ -121,141 +119,180 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			return fmt.Errorf("convert usd: %w", err)
 		}
 
-		exchangeRate := decimal.NewFromFloat(usdAmount.InexactFloat64() / amount.InexactFloat64()).Round(int32(dto.Currency.Precision))
-
-		usdFee := decimal.Zero
-		if !fee.IsZero() {
-			usdFee, err = s.currConvService.Convert(ctx, currconv.ConvertDTO{
-				Source:     storeData.RateSource.String(),
-				From:       dto.Currency.Code,
-				To:         models.CurrencyCodeUSDT,
-				Amount:     fee.String(),
-				StableCoin: dto.Currency.IsStablecoin,
-				Scale:      &storeData.RateScale,
-			})
-			if err != nil {
-				return fmt.Errorf("convert usd fee: %w", err)
-			}
-		}
-
-		// Either take untrusted email or trusted email. Trusted email has priority.
-		var userEmail string
-		if wallet.UntrustedEmail.Valid {
-			userEmail = wallet.UntrustedEmail.String
-		}
-		if wallet.Email.Valid {
-			userEmail = wallet.Email.String
-		}
-
 		if s.checkUnconfirmed(dto) {
-			uTransaction, err := s.createUnconfirmedTransaction(ctx, dto, storeData, wallet, amount, usdAmount, repos.WithTx(tx))
-			if err != nil {
-				return fmt.Errorf("unconfirmed transaction creation: %w", err)
-			}
-
-			if dto.IsSystem {
-				return nil
-			}
-
-			err = s.eventListener.Fire(transactions.DepositUnconfirmedEvent{
-				Tx:              *uTransaction,
-				Store:           *storeData,
-				Currency:        *dto.Currency,
-				StoreExternalID: wallet.StoreExternalID,
-				WebhookEvent:    models.WebhookEventPaymentNotConfirmed,
-				DBTx:            tx,
-			})
-			if err != nil {
-				s.log.Errorw("eventListener fire error", "error", err)
-				return fmt.Errorf("eventListener fire error: %w", err)
-			}
-			return nil
-		}
-		var receiptID uuid.NullUUID
-
-		if !dto.IsSystem {
-			receipt, err := s.receiptsService.Create(ctx, repo_receipts.CreateParams{
-				Status:     models.ReceiptStatusPaid,
-				StoreID:    storeData.ID,
-				CurrencyID: dto.Currency.ID,
-				Amount:     amount,
-				WalletID:   uuid.NullUUID{UUID: wallet.ID, Valid: true},
-			}, repos.WithTx(tx))
-			if err != nil {
-				return fmt.Errorf("receipt creation: %w", err)
-			}
-			receiptID = uuid.NullUUID{UUID: receipt.ID, Valid: true}
+			return s.handleUnconfirmedDeposit(ctx, dto, storeData, wallet, amount, usdAmount, isDirty, tx)
 		}
 
-		createPrams := repo_transactions.CreateParams{
-			UserID:             storeData.UserID,
-			StoreID:            uuid.NullUUID{UUID: storeData.ID, Valid: true},
-			ReceiptID:          receiptID,
-			WalletID:           uuid.NullUUID{UUID: wallet.ID, Valid: true},
-			CurrencyID:         dto.Currency.ID,
-			Blockchain:         *dto.Currency.Blockchain,
-			IsSystem:           dto.IsSystem,
-			TxHash:             dto.Hash,
-			BcUniqKey:          &dto.TxUniqKey,
-			Type:               models.TransactionsTypeDeposit,
-			FromAddress:        dto.FromAddress,
-			ToAddress:          dto.ToAddress,
-			Amount:             amount,
-			AmountUsd:          decimal.NullDecimal{Decimal: usdAmount, Valid: true},
-			Fee:                fee,
-			WithdrawalIsManual: false,
-			NetworkCreatedAt:   pgtype.Timestamp{Time: dto.NetworkCreatedAt, Valid: true},
-		}
-
-		transaction, err := s.transactionsService.CreateTransaction(ctx, createPrams, repos.WithTx(tx))
-		if err != nil {
-			return fmt.Errorf("transaction creation: %w", err)
-		}
-
-		nativeCurrency, err := dto.Currency.Blockchain.NativeCurrency()
-		if err != nil {
-			return fmt.Errorf("get native currency: %w", err)
-		}
-
-		nativeTokenUpdateRequired := nativeCurrency == dto.Currency.ID && dto.Blockchain.RecalculateNativeBalance()
-		if err = s.enqueueAddressBalanceUpdate(ctx, dto, nativeTokenUpdateRequired, repos.WithTx(tx)); err != nil {
-			return fmt.Errorf("cant't enqueue update balance: %w", err)
-		}
-
-		// if system transaction no send webhook
-		if dto.IsSystem {
-			return nil
-		}
-		// event for webhook
-		err = s.eventListener.Fire(transactions.DepositReceivedEvent{
-			Tx:              *transaction,
-			Store:           *storeData,
-			Currency:        *dto.Currency,
-			StoreExternalID: wallet.StoreExternalID,
-			WebhookEvent:    models.WebhookEventPaymentReceived,
-			DBTx:            tx,
-		})
-
-		if !dto.IsSystem {
-			err = s.eventListener.Fire(transactions.DepositReceiptSentEvent{
-				Tx:              *transaction,
-				Store:           *storeData,
-				Currency:        *dto.Currency,
-				StoreExternalID: wallet.StoreExternalID,
-				DBTx:            tx,
-				WalletEmail:     userEmail,
-				WalletLocale:    wallet.Locale,
-				ExchangeRate:    exchangeRate,
-				UsdFee:          usdFee,
-			})
-		}
-		if err != nil {
-			s.log.Errorw("eventListener fire error", "error", err)
-			return fmt.Errorf("eventListener fire error: %w", err)
-		}
-
-		return nil
+		return s.handleConfirmedDeposit(ctx, dto, storeData, wallet, amount, fee, usdAmount, isDirty, tx)
 	})
+}
+
+func (s *Service) handleUnconfirmedDeposit(
+	ctx context.Context,
+	dto DepositWebhookDto,
+	storeData *models.Store,
+	wallet *models.Wallet,
+	amount, usdAmount decimal.Decimal,
+	isDirty bool,
+	tx pgx.Tx,
+) error {
+	uTransaction, err := s.createUnconfirmedTransaction(ctx, dto, storeData, wallet, amount, usdAmount, repos.WithTx(tx))
+	if err != nil {
+		return fmt.Errorf("unconfirmed transaction creation: %w", err)
+	}
+
+	if dto.IsSystem || isDirty {
+		return nil
+	}
+
+	if err = s.eventListener.Fire(transactions.DepositUnconfirmedEvent{
+		Tx:              *uTransaction,
+		Store:           *storeData,
+		Currency:        *dto.Currency,
+		StoreExternalID: wallet.StoreExternalID,
+		WebhookEvent:    models.WebhookEventPaymentNotConfirmed,
+		DBTx:            tx,
+	}); err != nil {
+		s.log.Errorw("eventListener fire error", "error", err)
+		return fmt.Errorf("eventListener fire error: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) handleConfirmedDeposit(
+	ctx context.Context,
+	dto DepositWebhookDto,
+	storeData *models.Store,
+	wallet *models.Wallet,
+	amount, fee, usdAmount decimal.Decimal,
+	isDirty bool,
+	tx pgx.Tx,
+) error {
+	usdFee, exchangeRate, err := s.convertFeeAndExchangeRate(ctx, dto, storeData, amount, fee, usdAmount)
+	if err != nil {
+		return err
+	}
+
+	var receiptID uuid.NullUUID
+	if !dto.IsSystem {
+		receipt, err := s.receiptsService.Create(ctx, repo_receipts.CreateParams{
+			Status:     models.ReceiptStatusPaid,
+			StoreID:    storeData.ID,
+			CurrencyID: dto.Currency.ID,
+			Amount:     amount,
+			WalletID:   uuid.NullUUID{UUID: wallet.ID, Valid: true},
+		}, repos.WithTx(tx))
+		if err != nil {
+			return fmt.Errorf("receipt creation: %w", err)
+		}
+		receiptID = uuid.NullUUID{UUID: receipt.ID, Valid: true}
+	}
+
+	createParams := repo_transactions.CreateParams{
+		UserID:             storeData.UserID,
+		StoreID:            uuid.NullUUID{UUID: storeData.ID, Valid: true},
+		ReceiptID:          receiptID,
+		WalletID:           uuid.NullUUID{UUID: wallet.ID, Valid: true},
+		CurrencyID:         dto.Currency.ID,
+		Blockchain:         *dto.Currency.Blockchain,
+		IsSystem:           dto.IsSystem,
+		TxHash:             dto.Hash,
+		BcUniqKey:          &dto.TxUniqKey,
+		Type:               models.TransactionsTypeDeposit,
+		FromAddress:        dto.FromAddress,
+		ToAddress:          dto.ToAddress,
+		Amount:             amount,
+		AmountUsd:          decimal.NullDecimal{Decimal: usdAmount, Valid: true},
+		Fee:                fee,
+		WithdrawalIsManual: false,
+		NetworkCreatedAt:   pgtype.Timestamp{Time: dto.NetworkCreatedAt, Valid: true},
+	}
+
+	transaction, err := s.transactionsService.CreateTransaction(ctx, createParams, repos.WithTx(tx))
+	if err != nil {
+		return fmt.Errorf("transaction creation: %w", err)
+	}
+
+	nativeCurrency, err := dto.Currency.Blockchain.NativeCurrency()
+	if err != nil {
+		return fmt.Errorf("get native currency: %w", err)
+	}
+
+	nativeTokenUpdateRequired := nativeCurrency == dto.Currency.ID && dto.Blockchain.RecalculateNativeBalance()
+	if err = s.enqueueAddressBalanceUpdate(ctx, dto, nativeTokenUpdateRequired, repos.WithTx(tx)); err != nil {
+		return fmt.Errorf("can't enqueue update balance: %w", err)
+	}
+
+	if dto.IsSystem || isDirty {
+		return nil
+	}
+
+	if err = s.eventListener.Fire(transactions.DepositReceivedEvent{
+		Tx:              *transaction,
+		Store:           *storeData,
+		Currency:        *dto.Currency,
+		StoreExternalID: wallet.StoreExternalID,
+		WebhookEvent:    models.WebhookEventPaymentReceived,
+		DBTx:            tx,
+	}); err != nil {
+		s.log.Errorw("eventListener fire error", "error", err)
+		return fmt.Errorf("eventListener fire error: %w", err)
+	}
+
+	if err = s.eventListener.Fire(transactions.DepositReceiptSentEvent{
+		Tx:              *transaction,
+		Store:           *storeData,
+		Currency:        *dto.Currency,
+		StoreExternalID: wallet.StoreExternalID,
+		DBTx:            tx,
+		WalletEmail:     resolveUserEmail(wallet),
+		WalletLocale:    wallet.Locale,
+		ExchangeRate:    exchangeRate,
+		UsdFee:          usdFee,
+	}); err != nil {
+		s.log.Errorw("eventListener fire error", "error", err)
+		return fmt.Errorf("eventListener fire error: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) convertFeeAndExchangeRate(
+	ctx context.Context,
+	dto DepositWebhookDto,
+	store *models.Store,
+	amount, fee, usdAmount decimal.Decimal,
+) (usdFee, exchangeRate decimal.Decimal, err error) {
+	exchangeRate = decimal.NewFromFloat(usdAmount.InexactFloat64() / amount.InexactFloat64()).Round(int32(dto.Currency.Precision))
+
+	if fee.IsZero() {
+		return decimal.Zero, exchangeRate, nil
+	}
+
+	usdFee, err = s.currConvService.Convert(ctx, currconv.ConvertDTO{
+		Source:     store.RateSource.String(),
+		From:       dto.Currency.Code,
+		To:         models.CurrencyCodeUSDT,
+		Amount:     fee.String(),
+		StableCoin: dto.Currency.IsStablecoin,
+		Scale:      &store.RateScale,
+	})
+	if err != nil {
+		return decimal.Zero, decimal.Zero, fmt.Errorf("convert usd fee: %w", err)
+	}
+
+	return usdFee, exchangeRate, nil
+}
+
+func resolveUserEmail(wallet *models.Wallet) string {
+	if wallet.Email.Valid {
+		return wallet.Email.String
+	}
+	if wallet.UntrustedEmail.Valid {
+		return wallet.UntrustedEmail.String
+	}
+	return ""
 }
 
 func (s *Service) HandleTransferCallback(ctx context.Context, dto TransferWebhookDto) error {
@@ -364,7 +401,7 @@ func (s *Service) handleUnconfirmedHotWalletTransfer(ctx context.Context, dto Tr
 		return fmt.Errorf("wallet found error: %w", err)
 	}
 
-	storeData, err := s.storeService.GetStoreByWalletAddress(ctx, dto.FromAddress, dto.Currency.ID, repos.WithTx(tx))
+	storeData, _, err := s.storeService.GetStoreByWalletAddress(ctx, dto.FromAddress, dto.Currency.ID, repos.WithTx(tx))
 	if err != nil {
 		return fmt.Errorf("storeData found error: %w", err)
 	}
@@ -531,7 +568,7 @@ func (s *Service) prepareCreateTxParamsByHotWallet(
 		return nil, fmt.Errorf("wallet found error: %w", err)
 	}
 
-	storeData, err := s.storeService.GetStoreByWalletAddress(ctx, dto.FromAddress, dto.Currency.ID, repos.WithTx(tx))
+	storeData, _, err := s.storeService.GetStoreByWalletAddress(ctx, dto.FromAddress, dto.Currency.ID, repos.WithTx(tx))
 	if err != nil {
 		return nil, fmt.Errorf("storeData found error: %w", err)
 	}

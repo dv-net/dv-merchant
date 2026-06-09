@@ -65,7 +65,7 @@ func (s *Service) RestoreWallet(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("find wallet: %w", err)
 	}
 
-	store, err := s.storage.Stores().GetStoreByWalletAddress(ctx, repo_stores.GetStoreByWalletAddressParams{
+	storeRow, err := s.storage.Stores().GetStoreByWalletAddress(ctx, repo_stores.GetStoreByWalletAddressParams{
 		Address:    wallet.Address,
 		CurrencyID: wallet.CurrencyID,
 	})
@@ -78,7 +78,7 @@ func (s *Service) RestoreWallet(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("find curr: %w", err)
 	}
 
-	return s.syncWalletTransactions(ctx, *wallet, *store, *curr)
+	return s.syncWalletTransactions(ctx, *wallet, *storeRow.ToStore(), *curr)
 }
 
 func (s *Service) syncWalletTransactions(ctx context.Context, wallet models.WalletAddress, store models.Store, curr models.Currency) error {
