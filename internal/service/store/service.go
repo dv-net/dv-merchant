@@ -34,7 +34,7 @@ type IStore interface { //nolint:interfacebloat
 	CreateStore(ctx context.Context, dto CreateStore, user *models.User, opts ...repos.Option) (*models.Store, error)
 	UpdateStore(ctx context.Context, dto *store_request.UpdateRequest, ID uuid.UUID, opts ...repos.Option) (*models.Store, error)
 	GetStoreByStoreAPIKey(ctx context.Context, apiKey string) (*models.Store, error)
-	GetStoreByWalletAddress(ctx context.Context, address string, currencyID string, opts ...repos.Option) (*models.Store, error)
+	GetStoreByWalletAddress(ctx context.Context, address string, currencyID string, opts ...repos.Option) (*models.Store, bool, error)
 	GetStoreByWalletID(ctx context.Context, walletID uuid.UUID) (*models.Store, error)
 	CheckUserHasAccess(ctx context.Context, userID, storeID uuid.UUID) (bool, error)
 	GetStoreCurrencies(ctx context.Context, storeID uuid.UUID) ([]*models.Currency, error)
@@ -292,16 +292,16 @@ func (s *Service) GetArchivedList(ctx context.Context, userID uuid.UUID) ([]*mod
 	return s.storage.Stores().GetArchivedByUser(ctx, userID)
 }
 
-func (s *Service) GetStoreByWalletAddress(ctx context.Context, address string, currencyID string, opts ...repos.Option) (*models.Store, error) {
+func (s *Service) GetStoreByWalletAddress(ctx context.Context, address string, currencyID string, opts ...repos.Option) (*models.Store, bool, error) {
 	params := repo_stores.GetStoreByWalletAddressParams{
 		Address:    address,
 		CurrencyID: currencyID,
 	}
-	store, err := s.storage.Stores(opts...).GetStoreByWalletAddress(ctx, params)
+	row, err := s.storage.Stores(opts...).GetStoreByWalletAddress(ctx, params)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return store, err
+	return row.ToStore(), row.Dirty.Bool, nil
 }
 
 func (s *Service) UpdateStore(ctx context.Context, dto *store_request.UpdateRequest, id uuid.UUID, opts ...repos.Option) (*models.Store, error) {

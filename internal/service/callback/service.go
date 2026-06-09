@@ -104,7 +104,7 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			return fmt.Errorf("wallet found error: %w", err)
 		}
 
-		storeData, err := s.storeService.GetStoreByWalletAddress(ctx, dto.ToAddress, dto.Currency.ID, repos.WithTx(tx))
+		storeData, isDirty, err := s.storeService.GetStoreByWalletAddress(ctx, dto.ToAddress, dto.Currency.ID, repos.WithTx(tx))
 		if err != nil {
 			return fmt.Errorf("storeData found error: %w", err)
 		}
@@ -153,7 +153,7 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 				return fmt.Errorf("unconfirmed transaction creation: %w", err)
 			}
 
-			if dto.IsSystem {
+			if dto.IsSystem || isDirty {
 				return nil
 			}
 
@@ -219,11 +219,11 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 
 		nativeTokenUpdateRequired := nativeCurrency == dto.Currency.ID && dto.Blockchain.RecalculateNativeBalance()
 		if err = s.enqueueAddressBalanceUpdate(ctx, dto, nativeTokenUpdateRequired, repos.WithTx(tx)); err != nil {
-			return fmt.Errorf("cant't enqueue update balance: %w", err)
+			return fmt.Errorf("can't enqueue update balance: %w", err)
 		}
 
 		// if system transaction no send webhook
-		if dto.IsSystem {
+		if dto.IsSystem || isDirty {
 			return nil
 		}
 		// event for webhook
@@ -235,6 +235,10 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			WebhookEvent:    models.WebhookEventPaymentReceived,
 			DBTx:            tx,
 		})
+		if err != nil {
+			s.log.Errorw("eventListener fire error", "error", err)
+			return fmt.Errorf("eventListener fire error: %w", err)
+		}
 
 		if !dto.IsSystem {
 			err = s.eventListener.Fire(transactions.DepositReceiptSentEvent{
@@ -364,7 +368,7 @@ func (s *Service) handleUnconfirmedHotWalletTransfer(ctx context.Context, dto Tr
 		return fmt.Errorf("wallet found error: %w", err)
 	}
 
-	storeData, err := s.storeService.GetStoreByWalletAddress(ctx, dto.FromAddress, dto.Currency.ID, repos.WithTx(tx))
+	storeData, _, err := s.storeService.GetStoreByWalletAddress(ctx, dto.FromAddress, dto.Currency.ID, repos.WithTx(tx))
 	if err != nil {
 		return fmt.Errorf("storeData found error: %w", err)
 	}
@@ -531,7 +535,7 @@ func (s *Service) prepareCreateTxParamsByHotWallet(
 		return nil, fmt.Errorf("wallet found error: %w", err)
 	}
 
-	storeData, err := s.storeService.GetStoreByWalletAddress(ctx, dto.FromAddress, dto.Currency.ID, repos.WithTx(tx))
+	storeData, _, err := s.storeService.GetStoreByWalletAddress(ctx, dto.FromAddress, dto.Currency.ID, repos.WithTx(tx))
 	if err != nil {
 		return nil, fmt.Errorf("storeData found error: %w", err)
 	}

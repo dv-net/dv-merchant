@@ -19,7 +19,7 @@ type Querier interface {
 	GetByIDWithPublicFormEnabled(ctx context.Context, storeID uuid.UUID) (*models.Store, error)
 	GetByUser(ctx context.Context, userID uuid.UUID) ([]*models.Store, error)
 	GetStoreByStoreApiKey(ctx context.Context, key string) (*models.Store, error)
-	GetStoreByWalletAddress(ctx context.Context, arg GetStoreByWalletAddressParams) (*models.Store, error)
+	GetStoreByWalletAddress(ctx context.Context, arg GetStoreByWalletAddressParams) (*GetStoreByWalletAddressRow, error)
 	GetStoreByWalletID(ctx context.Context, id uuid.UUID) (*models.Store, error)
 	GetStoreCurrencies(ctx context.Context, storeID uuid.UUID) ([]*models.Currency, error)
 	Restore(ctx context.Context, id uuid.UUID) error

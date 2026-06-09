@@ -126,6 +126,7 @@ from wallet_addresses
 where wallet_addresses.user_id = $1
   and wallet_addresses.currency_id = $2
   and wallet_addresses.amount >= $3
+  and wallet_addresses.dirty = false
   and wallet_addresses.address not in (select unnest(from_addresses)
                                        from transfers
                                        where user_id = $1

@@ -10,6 +10,7 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -169,7 +170,7 @@ func (q *Queries) GetStoreByStoreApiKey(ctx context.Context, key string) (*model
 }
 
 const getStoreByWalletAddress = `-- name: GetStoreByWalletAddress :one
-SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
+SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled, wa.dirty
 FROM stores s
          JOIN wallets w ON s.id = w.store_id
          LEFT JOIN wallet_addresses wa
@@ -184,9 +185,28 @@ type GetStoreByWalletAddressParams struct {
 	CurrencyID string `db:"currency_id" json:"currency_id"`
 }
 
-func (q *Queries) GetStoreByWalletAddress(ctx context.Context, arg GetStoreByWalletAddressParams) (*models.Store, error) {
+type GetStoreByWalletAddressRow struct {
+	ID                       uuid.UUID         `db:"id" json:"id"`
+	UserID                   uuid.UUID         `db:"user_id" json:"user_id"`
+	Name                     string            `db:"name" json:"name"`
+	Site                     *string           `db:"site" json:"site"`
+	CurrencyID               string            `db:"currency_id" json:"currency_id"`
+	RateSource               models.RateSource `db:"rate_source" json:"rate_source"`
+	ReturnUrl                *string           `db:"return_url" json:"return_url"`
+	SuccessUrl               *string           `db:"success_url" json:"success_url"`
+	RateScale                decimal.Decimal   `db:"rate_scale" json:"rate_scale"`
+	Status                   bool              `db:"status" json:"status"`
+	MinimalPayment           decimal.Decimal   `db:"minimal_payment" json:"minimal_payment"`
+	CreatedAt                pgtype.Timestamp  `db:"created_at" json:"created_at"`
+	UpdatedAt                pgtype.Timestamp  `db:"updated_at" json:"updated_at"`
+	DeletedAt                pgtype.Timestamp  `db:"deleted_at" json:"deleted_at"`
+	PublicPaymentFormEnabled bool              `db:"public_payment_form_enabled" json:"public_payment_form_enabled"`
+	Dirty                    pgtype.Bool       `db:"dirty" json:"dirty"`
+}
+
+func (q *Queries) GetStoreByWalletAddress(ctx context.Context, arg GetStoreByWalletAddressParams) (*GetStoreByWalletAddressRow, error) {
 	row := q.db.QueryRow(ctx, getStoreByWalletAddress, arg.Address, arg.CurrencyID)
-	var i models.Store
+	var i GetStoreByWalletAddressRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -203,6 +223,7 @@ func (q *Queries) GetStoreByWalletAddress(ctx context.Context, arg GetStoreByWal
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.PublicPaymentFormEnabled,
+		&i.Dirty,
 	)
 	return &i, err
 }
