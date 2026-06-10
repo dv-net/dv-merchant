@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ## [0.9.19] - 2026-06-31
-- fiat: add handler for wallet addresses
+- feat: add handler for wallet addresses
+- feat: fix webhook send for dirty address
 
 ## [0.9.18] - 2026-06-31
 - fix error calculate evm gas price
