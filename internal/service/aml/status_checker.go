@@ -166,7 +166,7 @@ func (s *Service) updateCheckAndClearQueue(
 	updatedCheck.RiskLevel = riskLevel
 
 	if check.AmlCheck.TransactionID.Valid {
-		err := s.eventListener.Fire(&CheckCompletedEvent{Check: updatedCheck})
+		err := s.eventListener.Fire(CheckCompletedEvent{Check: updatedCheck})
 		if err != nil {
 			return fmt.Errorf("failed to fire check: %w", err)
 		}
