@@ -80,6 +80,7 @@ type Services struct {
 	StoreCurrencyService          store.IStoreCurrency
 	StoreWhitelistService         store.IStoreWhitelist
 	StoreSecretService            store.ISecret
+	StoreAMLSettingsService       store.IStoreAmlSettings
 	TransactionService            transactions.ITransaction
 	WalletTransactionService      transactions.IWalletTransaction
 	UnconfirmedTransactionService transactions.IUnconfirmedTransaction
@@ -208,7 +209,12 @@ func NewServices(
 		rate.WithDuration(conf.ExternalStoreLimits.RateLimitInterval),
 	)
 
-	storeService := store.New(storage, currencyService, logger, webhookService, eventListener, exrateService, walletService, notificationService, storeRateLimiter, conf.ExternalStoreLimits.Enabled, processingService, settingService)
+	amlService, err := prepareAMLService(storage, logger, conf.AML, eventListener)
+	if err != nil {
+		return nil, err
+	}
+
+	storeService := store.New(storage, currencyService, logger, webhookService, eventListener, exrateService, walletService, notificationService, storeRateLimiter, conf.ExternalStoreLimits.Enabled, processingService, settingService, amlService)
 	otpSvc := otp.New(&otp.Config{TTL: time.Minute * 10}, tools.RandomCodeGenerator, storage.KeyValue())
 	userService := user.New(conf, storage, storeService, permissionService, processingService, notificationService, logger, settingService, adminSvc, otpSvc)
 
@@ -236,11 +242,6 @@ func NewServices(
 		return nil, err
 	}
 
-	amlService, err := prepareAMLService(storage, logger, conf.AML)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Services{
 		UserService:                   userService,
 		UserCredentialsService:        userService,
@@ -256,6 +257,7 @@ func NewServices(
 		StoreCurrencyService:          storeService,
 		StoreWhitelistService:         storeService,
 		StoreSecretService:            storeService,
+		StoreAMLSettingsService:       storeService,
 		TransactionService:            transactionService,
 		WalletTransactionService:      transactionService,
 		UnconfirmedTransactionService: transactionService,
@@ -299,7 +301,7 @@ func NewServices(
 	}, nil
 }
 
-func prepareAMLService(st storage.IStorage, l logger.Logger, conf config.AML) (*aml.Service, error) {
+func prepareAMLService(st storage.IStorage, l logger.Logger, conf config.AML, eventListener event.IListener) (*aml.Service, error) {
 	bitokBaseURL, err := url.Parse(conf.BitOK.BaseURL)
 	if err != nil {
 		return nil, err
@@ -328,5 +330,5 @@ func prepareAMLService(st storage.IStorage, l logger.Logger, conf config.AML) (*
 		)
 	}
 
-	return aml.NewService(st, amlProviderFactory, l, conf), nil
+	return aml.NewService(st, amlProviderFactory, l, conf, eventListener), nil
 }

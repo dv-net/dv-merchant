@@ -8,10 +8,12 @@ import (
 	"context"
 
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/google/uuid"
 )
 
 type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (*models.AmlCheck, error)
+	GetByTransactionID(ctx context.Context, transactionID uuid.NullUUID) (*models.AmlCheck, error)
 	UpdateAMLCheck(ctx context.Context, arg UpdateAMLCheckParams) error
 }
 

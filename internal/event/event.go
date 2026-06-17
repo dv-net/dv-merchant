@@ -30,6 +30,7 @@ type (
 		// Unregister deletes the event handler with the specified ID
 		Unregister(HandlerID) error
 		// Fire starts event processing
+		// TODO add ctx params
 		Fire(IEvent) error
 	}
 )

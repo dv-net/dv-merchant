@@ -15,19 +15,20 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO aml_checks (user_id, service_id, external_id, status, score, risk_level, created_at, updated_at)
-	VALUES ($1, $2, $3, $4, $5, $6, now(), $7)
-	RETURNING id, user_id, service_id, external_id, status, score, risk_level, created_at, updated_at
+INSERT INTO aml_checks (user_id, service_id, external_id, status, score, risk_level, created_at, updated_at, transaction_id)
+	VALUES ($1, $2, $3, $4, $5, $6, now(), $7, $8)
+	RETURNING id, user_id, service_id, external_id, status, score, risk_level, created_at, updated_at, transaction_id
 `
 
 type CreateParams struct {
-	UserID     uuid.UUID             `db:"user_id" json:"user_id"`
-	ServiceID  uuid.UUID             `db:"service_id" json:"service_id"`
-	ExternalID string                `db:"external_id" json:"external_id"`
-	Status     models.AMLCheckStatus `db:"status" json:"status"`
-	Score      decimal.Decimal       `db:"score" json:"score"`
-	RiskLevel  *models.AmlRiskLevel  `db:"risk_level" json:"risk_level"`
-	UpdatedAt  pgtype.Timestamp      `db:"updated_at" json:"updated_at"`
+	UserID        uuid.UUID             `db:"user_id" json:"user_id"`
+	ServiceID     uuid.UUID             `db:"service_id" json:"service_id"`
+	ExternalID    string                `db:"external_id" json:"external_id"`
+	Status        models.AMLCheckStatus `db:"status" json:"status"`
+	Score         decimal.Decimal       `db:"score" json:"score"`
+	RiskLevel     *models.AmlRiskLevel  `db:"risk_level" json:"risk_level"`
+	UpdatedAt     pgtype.Timestamp      `db:"updated_at" json:"updated_at"`
+	TransactionID uuid.NullUUID         `db:"transaction_id" json:"transaction_id"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.AmlCheck, error) {
@@ -39,6 +40,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.AmlChec
 		arg.Score,
 		arg.RiskLevel,
 		arg.UpdatedAt,
+		arg.TransactionID,
 	)
 	var i models.AmlCheck
 	err := row.Scan(
@@ -51,6 +53,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.AmlChec
 		&i.RiskLevel,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.TransactionID,
 	)
 	return &i, err
 }

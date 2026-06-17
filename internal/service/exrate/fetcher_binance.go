@@ -45,10 +45,7 @@ func (f *binanceFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilte
 		return nil // Success with direct connection
 	}
 
-	f.log.Warnw("[EXRATE-BINANCE] direct request failed, trying proxies", "error", err)
-
 	if len(f.proxies) == 0 {
-		f.log.Errorw("[EXRATE-BINANCE] no proxies available after direct failure", "error", err)
 		return err
 	}
 

@@ -55,7 +55,6 @@ func (o *kucoinFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 	o.log.Warnw("[EXRATE-KUCOIN] direct request failed, trying proxies", "error", err)
 
 	if len(o.proxies) == 0 {
-		o.log.Errorw("[EXRATE-KUCOIN] no proxies available after direct failure", "error", err)
 		return err
 	}
 

@@ -4230,6 +4230,120 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/stores/{id}/aml-settings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns AML check configuration for the specified store",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Get store AML settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store ID",
+                        "name": "store_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates or updates AML check configuration for the specified store",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Update store AML settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store ID",
+                        "name": "store_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "AML settings",
+                        "name": "update",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateStoreAMLSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/system/info": {
             "get": {
                 "description": "Get system information about initialization, root user existence, registration status",
@@ -9673,7 +9787,7 @@ const docTemplate = `{
         },
         "/v1/public/wallet/{id}/refresh-address": {
             "post": {
-                "description": "Marks the current address for the given blockchain as dirty so a new one will be generated",
+                "description": "Marks the current address as dirty so a new one will be generated",
                 "consumes": [
                     "application/json"
                 ],
@@ -9694,8 +9808,8 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Blockchain",
-                        "name": "body",
+                        "description": "RefreshWalletAddressRequest",
+                        "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -13098,6 +13212,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response.StoreAMLSettingsResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_StatisticsRow": {
             "type": "object",
             "properties": {
@@ -14732,6 +14860,22 @@ const docTemplate = `{
                 }
             }
         },
+        "UpdateStoreAMLSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "provider_slug": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
+                },
+                "risk_threshold": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0
+                }
+            }
+        },
         "UpdateStoreCurrencyRequest": {
             "type": "object",
             "properties": {
@@ -15811,6 +15955,32 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "mnemonic": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response.StoreAMLSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "provider_slug": {
+                    "type": "string"
+                },
+                "risk_threshold": {
+                    "type": "integer"
+                },
+                "store_id": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }

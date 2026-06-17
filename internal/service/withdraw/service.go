@@ -573,7 +573,6 @@ func (s *service) prepareWalletToByMode(
 		if len(withdrawalAddresses) == 0 {
 			return "", errors.New("withdrawal addresses list is empty")
 		}
-		fmt.Println(withdrawalAddresses)
 		return tools.RandomSliceElement(withdrawalAddresses), nil
 	default:
 		return "", fmt.Errorf("mode '%s' is not supported", rule.Mode)
