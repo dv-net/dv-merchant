@@ -244,7 +244,7 @@ func (h *Handler) amlHistory(c fiber.Ctx) error {
 //	@Success		200			{object}	response.Result[store_response.StoreAMLSettingsResponse]
 //	@Failure		401			{object}	apierror.Errors
 //	@Failure		404			{object}	apierror.Errors
-//	@Router			/v1/dv-admin/stores/{id}/aml-settings [get]
+//	@Router			/v1/dv-admin/store/{id}/aml-settings [get]
 //	@Security		BearerAuth
 func (h *Handler) getStoreAMLSettings(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
@@ -274,7 +274,7 @@ func (h *Handler) getStoreAMLSettings(c fiber.Ctx) error {
 //	@Failure		401			{object}	apierror.Errors
 //	@Failure		404			{object}	apierror.Errors
 //	@Failure		422			{object}	apierror.Errors
-//	@Router			/v1/dv-admin/stores/{id}/aml-settings [put]
+//	@Router			/v1/dv-admin/store/{id}/aml-settings [put]
 //	@Security		BearerAuth
 func (h *Handler) updateStoreAMLSettings(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
@@ -308,7 +308,7 @@ func (h *Handler) initAMLRoutes(v1 fiber.Router) {
 	amlRoutes.Get("/history", h.amlHistory)
 	amlRoutes.Post("/score-transaction", h.scoreTransaction)
 
-	storeAmlRoutes := v1.Group("/stores/")
+	storeAmlRoutes := v1.Group("/store/")
 	storeAmlRoutes.Get(":id/aml-settings", h.getStoreAMLSettings)
 	storeAmlRoutes.Put(":id/aml-settings", h.updateStoreAMLSettings)
 }

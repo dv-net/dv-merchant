@@ -6331,6 +6331,79 @@ paths:
       summary: Update store
       tags:
       - Store
+  /v1/dv-admin/store/{id}/aml-settings:
+    get:
+      description: Returns AML check configuration for the specified store
+      parameters:
+      - description: Store ID
+        in: path
+        name: store_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Get store AML settings
+      tags:
+      - AML
+    put:
+      consumes:
+      - application/json
+      description: Creates or updates AML check configuration for the specified store
+      parameters:
+      - description: Store ID
+        in: path
+        name: store_id
+        required: true
+        type: string
+      - description: AML settings
+        in: body
+        name: update
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateStoreAMLSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Update store AML settings
+      tags:
+      - AML
   /v1/dv-admin/store/{id}/apikey:
     post:
       consumes:
@@ -7026,79 +7099,6 @@ paths:
       summary: Archived stores list
       tags:
       - Store
-  /v1/dv-admin/stores/{id}/aml-settings:
-    get:
-      description: Returns AML check configuration for the specified store
-      parameters:
-      - description: Store ID
-        in: path
-        name: store_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Get store AML settings
-      tags:
-      - AML
-    put:
-      consumes:
-      - application/json
-      description: Creates or updates AML check configuration for the specified store
-      parameters:
-      - description: Store ID
-        in: path
-        name: store_id
-        required: true
-        type: string
-      - description: AML settings
-        in: body
-        name: update
-        required: true
-        schema:
-          $ref: '#/definitions/UpdateStoreAMLSettingsRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Update store AML settings
-      tags:
-      - AML
   /v1/dv-admin/system/info:
     get:
       description: Get system information about initialization, root user existence,
