@@ -152,7 +152,7 @@ where wallet_addresses.user_id = $1
   and wallet_addresses.address not in (
       select transactions.to_address
       from transactions
-               join aml_checks on ac.transaction_id = transactions.id
+               join aml_checks on aml_checks.transaction_id = transactions.id
                join aml_check_queue on aml_check_queue.aml_check_id = aml_checks.id
       where transactions.user_id = $1
         and transactions.currency_id = $2
