@@ -98,6 +98,7 @@ from wallet_addresses
     and wallet_addresses.user_id = withdrawal_wallets.user_id
 where wallet_addresses.user_id = $1
   and wallet_addresses.amount > withdrawal_wallets.withdrawal_min_balance
+  and wallet_addresses.dirty = false
   and (withdrawal_wallets.withdrawal_min_balance_usd is null or
        (wallet_addresses.amount * exchange_rate)::decimal > withdrawal_wallets.withdrawal_min_balance_usd::numeric)
   and wallet_addresses.address not in (select unnest(from_addresses)
