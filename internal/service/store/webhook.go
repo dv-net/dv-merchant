@@ -165,7 +165,10 @@ func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent,
 		return false
 	}
 	if amlCheck.Status != models.AmlCheckStatusPending {
-		if _, markErr := s.storage.WalletAddresses().MarkAddressDirty(ctx, ev.GetTx().GetToAddress(), ev.GetStore().UserID); markErr != nil {
+		usr, usrErr := s.storage.Users().GetByID(ctx, ev.GetStore().UserID)
+		if usrErr != nil {
+			s.log.Errorw("failed to get user for mark address dirty", "error", usrErr)
+		} else if markErr := s.wallets.MarkAddressDirty(ctx, usr, ev.GetTx().GetToAddress()); markErr != nil {
 			s.log.Errorw("failed to mark address as dirty", "error", markErr)
 		}
 	}
@@ -526,12 +529,11 @@ func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
 
 	if isScoreAboveThreshold(completedEv.Check.Score, amlSettings.RiskThreshold) {
 		s.log.Warnw("AML check score above threshold, blocking webhook", "store_id", store.ID, "tx_id", tx.ID, "score", completedEv.Check.Score, "threshold", amlSettings.RiskThreshold)
-		if _, err := s.storage.WalletAddresses().MarkAddressDirty(
-			ctx,
-			tx.ToAddress,
-			store.UserID,
-		); err != nil {
-			s.log.Errorw("failed to mark address as dirty", "error", err)
+		usr, usrErr := s.storage.Users().GetByID(ctx, store.UserID)
+		if usrErr != nil {
+			s.log.Errorw("failed to get user for mark address dirty", "error", usrErr)
+		} else if markErr := s.wallets.MarkAddressDirty(ctx, usr, tx.ToAddress); markErr != nil {
+			s.log.Errorw("failed to mark address as dirty", "error", markErr)
 		}
 		return nil // webhook blocked
 	}
