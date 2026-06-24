@@ -25,7 +25,7 @@ func (q *Queries) Delete(ctx context.Context, id uuid.UUID) error {
 
 const fetchPending = `-- name: FetchPending :many
 SELECT u.id, u.email, u.email_verified_at, u.password, u.remember_token, u.processing_owner_id, u.location, u.language, u.rate_source, u.created_at, u.updated_at, u.deleted_at, u.banned, u.exchange_slug, u.rate_scale, u.dvnet_token, u.two_fa_reset_expires_at,
-       ac.id, ac.user_id, ac.service_id, ac.external_id, ac.status, ac.score, ac.risk_level, ac.created_at, ac.updated_at,
+       ac.id, ac.user_id, ac.service_id, ac.external_id, ac.status, ac.score, ac.risk_level, ac.created_at, ac.updated_at, ac.transaction_id,
        acq.id, acq.user_id, acq.aml_check_id, acq.attempts, acq.created_at, acq.updated_at,
        amls.id, amls.slug, amls.created_at, amls.updated_at,
        acq.attempts >= $1 as is_last_attempt
@@ -80,6 +80,7 @@ func (q *Queries) FetchPending(ctx context.Context, maxQueueAttempts int32, pend
 			&i.AmlCheck.RiskLevel,
 			&i.AmlCheck.CreatedAt,
 			&i.AmlCheck.UpdatedAt,
+			&i.AmlCheck.TransactionID,
 			&i.AmlCheckQueue.ID,
 			&i.AmlCheckQueue.UserID,
 			&i.AmlCheckQueue.AmlCheckID,

@@ -50,7 +50,6 @@ func (o *gateioFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 	o.log.Warnw("[EXRATE-GATE] direct request failed, trying proxies", "error", err)
 
 	if len(o.proxies) == 0 {
-		o.log.Errorw("[EXRATE-GATE] no proxies available after direct failure", "error", err)
 		return err
 	}
 

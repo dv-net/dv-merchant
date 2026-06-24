@@ -114,15 +114,12 @@ func (s *service) GetPrefetchWithdrawalAddress(ctx context.Context, user *models
 	data = append(data, multiWithdrawalPrefetch...)
 	for _, prefetchedRow := range prefetchData {
 		addressesTo := make([]string, 0, 1)
-		if prefetchedRow.WithdrawalWalletID.Valid {
-			addr, fetchAddrErr := s.getWithdrawalAddress(ctx, prefetchedRow.WithdrawalWalletID.UUID, prefetchedRow.WalletAddress.Address)
-			if fetchAddrErr != nil && !errors.Is(fetchAddrErr, pgx.ErrNoRows) {
-				return nil, fmt.Errorf("fetch address for withdrawal: %w", err)
-			}
-
-			if addr != nil && *addr != "" {
-				addressesTo = append(addressesTo, *addr)
-			}
+		addr, fetchAddrErr := s.getWithdrawalAddress(ctx, prefetchedRow.WithdrawalWalletID, prefetchedRow.WalletAddress.Address)
+		if fetchAddrErr != nil && !errors.Is(fetchAddrErr, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("fetch address for withdrawal: %w", err)
+		}
+		if addr != nil && *addr != "" {
+			addressesTo = append(addressesTo, *addr)
 		}
 
 		data = append(data, &models.PrefetchWithdrawAddressInfo{

@@ -20,3 +20,18 @@ func DecodeTime(value pgtype.Timestamp) *time.Time {
 	}
 	return t
 }
+
+func EncodeTimeTz(value time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{
+		Time:  value,
+		Valid: true,
+	}
+}
+
+func DecodeTimeTz(value pgtype.Timestamptz) *time.Time {
+	var t *time.Time
+	if value.Valid {
+		t = &value.Time
+	}
+	return t
+}

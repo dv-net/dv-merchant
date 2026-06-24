@@ -27,6 +27,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_personal_access_tokens"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_receipts"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_settings"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_aml_settings"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_api_keys"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_currencies"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_secrets"
@@ -69,6 +70,7 @@ type IRepository interface {
 	StoreWhitelist(opts ...Option) repo_store_whitelist.Querier
 	WebHookSendHistories(opts ...Option) repo_webhook_send_histories.ICustomQuerier
 	StoreSecrets(opts ...Option) repo_store_secrets.Querier
+	StoreAmlSettings(opts ...Option) repo_store_aml_settings.Querier
 	Transactions(opts ...Option) repo_transactions.ICustomQuerier
 	UnconfirmedTransactions(opts ...Option) repo_unconfirmed_transactions.Querier
 	Wallets(opts ...Option) repo_wallets.ICustomQuerier
@@ -123,6 +125,7 @@ type repository struct {
 	storeWebhooks               *repo_store_webhooks.Queries
 	storeCurrencies             *repo_store_currencies.Queries
 	storeWhitelist              *repo_store_whitelist.Queries
+	storeAmlSettings            *repo_store_aml_settings.Queries
 	webhookSendHistories        *repo_webhook_send_histories.CustomQuerier
 	transactions                *repo_transactions.CustomQuerier
 	unconfirmedTransactions     *repo_unconfirmed_transactions.Queries
@@ -181,6 +184,7 @@ func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue)
 		storeWebhooks:               repo_store_webhooks.New(psql.DB),
 		storeCurrencies:             repo_store_currencies.New(psql.DB),
 		storeWhitelist:              repo_store_whitelist.New(psql.DB),
+		storeAmlSettings:            repo_store_aml_settings.New(psql.DB),
 		webhookSendHistories:        repo_webhook_send_histories.NewCustom(psql.DB),
 		transactions:                repo_transactions.NewCustom(psql.DB),
 		unconfirmedTransactions:     repo_unconfirmed_transactions.New(psql.DB),
@@ -293,6 +297,14 @@ func (r *repository) StoreWhitelist(opts ...Option) repo_store_whitelist.Querier
 		return r.storeWhitelist.WithTx(options.Tx)
 	}
 	return r.storeWhitelist
+}
+
+func (r *repository) StoreAmlSettings(opts ...Option) repo_store_aml_settings.Querier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.storeAmlSettings.WithTx(options.Tx)
+	}
+	return r.storeAmlSettings
 }
 
 func (r *repository) WebHookSendHistories(opts ...Option) repo_webhook_send_histories.ICustomQuerier {

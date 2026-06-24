@@ -1,0 +1,1 @@
+ALTER TABLE aml_checks ADD COLUMN transaction_id UUID null references transactions(id);

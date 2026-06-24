@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+- feat: add aml scoring for deposit
+
 ## [0.9.19] - 2026-06-31
 - feat: add handler for wallet addresses
 - feat: fix webhook send for dirty address

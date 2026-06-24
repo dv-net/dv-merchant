@@ -17,7 +17,8 @@ limit 1;
 UPDATE wallet_addresses
 SET updated_at=now(),
     dirty= true
-WHERE address = $1 AND user_id = $2
+WHERE address = $1
+  AND user_id = $2
 RETURNING *;
 
 -- name: UpdateWalletBalance :exec
@@ -93,10 +94,11 @@ from wallet_addresses
      (SELECT unnest(sqlc.arg('currency_ids')::text[])     AS currency_id,
              unnest(sqlc.arg('currency_rate')::decimal[]) AS exchange_rate) rate
      on currencies.id = rate.currency_id
-         left join withdrawal_wallets on wallet_addresses.currency_id = withdrawal_wallets.currency_id
+         join withdrawal_wallets on wallet_addresses.currency_id = withdrawal_wallets.currency_id
     and wallet_addresses.user_id = withdrawal_wallets.user_id
 where wallet_addresses.user_id = $1
   and wallet_addresses.amount > withdrawal_wallets.withdrawal_min_balance
+  and wallet_addresses.dirty = false
   and (withdrawal_wallets.withdrawal_min_balance_usd is null or
        (wallet_addresses.amount * exchange_rate)::decimal > withdrawal_wallets.withdrawal_min_balance_usd::numeric)
   and wallet_addresses.address not in (select unnest(from_addresses)
@@ -112,6 +114,13 @@ where wallet_addresses.user_id = $1
                                                created_at > (now() - interval '30 minutes'))
                                            ))
   and withdrawal_wallets.withdrawal_enabled = 'enabled'
+  and wallet_addresses.address not in (
+      select transactions.to_address
+      from transactions
+               join aml_checks on aml_checks.transaction_id = transactions.id
+               join aml_check_queue on aml_check_queue.aml_check_id = aml_checks.id
+      where transactions.user_id = $1
+  )
 order by amount_usd desc;
 
 -- name: GetAddressForWithdrawal :one
@@ -141,6 +150,14 @@ where wallet_addresses.user_id = $1
                                               (transfers.stage = 'failed' and
                                                created_at > (now() - interval '30 minutes'))
                                            ))
+  and wallet_addresses.address not in (
+      select transactions.to_address
+      from transactions
+               join aml_checks on aml_checks.transaction_id = transactions.id
+               join aml_check_queue on aml_check_queue.aml_check_id = aml_checks.id
+      where transactions.user_id = $1
+        and transactions.currency_id = $2
+  )
   and (sqlc.arg('min_usd')::numeric is null or (amount * exchange_rate)::decimal >= sqlc.arg('min_usd')::numeric)
 order by amount_usd desc
 limit 1;
@@ -161,19 +178,16 @@ WHERE user_id = $1
   AND deleted_at IS NULL;
 
 -- name: GetHotWalletsTotalBalanceWithDust :one
-SELECT
-    COALESCE(SUM(wallet_addresses.amount * rate.exchange_rate), 0)::numeric as total_usd,
-    COALESCE(SUM(CASE
-        WHEN (wallet_addresses.amount * rate.exchange_rate) < 1
-        THEN wallet_addresses.amount * rate.exchange_rate
-        ELSE 0
-    END), 0)::numeric as dust_usd
+SELECT COALESCE(SUM(wallet_addresses.amount * rate.exchange_rate), 0)::numeric as total_usd,
+       COALESCE(SUM(CASE
+                        WHEN (wallet_addresses.amount * rate.exchange_rate) < 1
+                            THEN wallet_addresses.amount * rate.exchange_rate
+                        ELSE 0
+           END), 0)::numeric                                                   as dust_usd
 FROM wallet_addresses
-LEFT JOIN (
-    SELECT
-        unnest(sqlc.arg('currency_ids')::text[]) AS currency_id,
-        unnest(sqlc.arg('currency_rate')::decimal[]) AS exchange_rate
-) rate ON wallet_addresses.currency_id = rate.currency_id
+         LEFT JOIN (SELECT unnest(sqlc.arg('currency_ids')::text[])     AS currency_id,
+                           unnest(sqlc.arg('currency_rate')::decimal[]) AS exchange_rate) rate
+                   ON wallet_addresses.currency_id = rate.currency_id
 WHERE wallet_addresses.user_id = $1
   AND wallet_addresses.amount > 0
   AND wallet_addresses.deleted_at IS NULL;

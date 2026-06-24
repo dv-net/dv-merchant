@@ -227,7 +227,7 @@ func (h *Handler) notifyWalletEmail(c fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			id		path		string										true	"Wallet ID"
-//	@Param			request body		public_request.RefreshWalletAddressRequest	true	"RefreshWalletAddressRequest"
+//	@Param			request	body		public_request.RefreshWalletAddressRequest	true	"RefreshWalletAddressRequest"
 //	@Success		200		{object}	response.Result[string]
 //	@Failure		400		{object}	apierror.Errors
 //	@Failure		404		{object}	apierror.Errors

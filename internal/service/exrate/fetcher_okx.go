@@ -60,7 +60,6 @@ func (o *okxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 	o.log.Warnw("[EXRATE-OKX] direct request failed, trying proxies", "error", err)
 
 	if len(o.proxies) == 0 {
-		o.log.Errorw("[EXRATE-OKX] no proxies available after direct failure", "error", err)
 		return err
 	}
 

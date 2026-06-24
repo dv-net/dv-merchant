@@ -276,6 +276,9 @@ schemas:
                 - column: user_address_book.type
                   go_type:
                     type: AddressBookType
+                - column: store_aml_settings.provider_slug
+                  go_type:
+                    type: '*AMLSlug'
       defaults:
         queries_dir_prefix: postgres/queries
         output_dir_prefix: ../internal/storage/repos
@@ -639,6 +642,7 @@ schemas:
                             - store_id
                             - created_at
         store_currencies: {}
+        store_aml_settings: {}
         store_webhooks:
             primary_column: id
             crud:

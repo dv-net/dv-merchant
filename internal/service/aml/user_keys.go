@@ -85,7 +85,7 @@ func (s *Service) UpdateUserKeys(ctx context.Context, usr *models.User, dto User
 			return fmt.Errorf("failed to get provider: %w", err)
 		}
 
-		_, auth, err := s.prepareServiceDataByUser(ctx, usr, prepareParams{Slug: dto.Slug, ExternalID: "1"}, repos.WithTx(tx))
+		_, auth, err := s.prepareServiceDataByUser(ctx, usr.ID, prepareParams{Slug: dto.Slug, ExternalID: "1"}, repos.WithTx(tx))
 		if err != nil {
 			return err
 		}

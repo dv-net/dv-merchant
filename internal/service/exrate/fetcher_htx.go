@@ -65,7 +65,6 @@ func (o *htxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 	o.log.Warnw("[EXRATE-HTX] direct request failed, trying proxies", "error", err)
 
 	if len(o.proxies) == 0 {
-		o.log.Errorw("[EXRATE-HTX] no proxies available after direct failure", "error", err)
 		return err
 	}
 

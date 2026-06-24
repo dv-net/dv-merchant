@@ -63,5 +63,5 @@ func (h *Handler) handleError(err error, modelName string) error {
 	if errors.As(err, &fkErr) {
 		return apierror.New().AddError(errors.New("referenced " + modelName + " does not exist")).SetHttpCode(fiber.StatusUnprocessableEntity)
 	}
-	return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	return apierror.New().AddError(errors.New("failed to process request")).SetHttpCode(fiber.StatusBadRequest)
 }

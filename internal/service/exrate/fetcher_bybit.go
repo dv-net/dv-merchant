@@ -52,7 +52,6 @@ func (o *bybitFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter,
 	o.log.Warnw("[EXRATE-BYBIT] direct request failed, trying proxies", "error", err)
 
 	if len(o.proxies) == 0 {
-		o.log.Errorw("[EXRATE-BYBIT] no proxies available after direct failure", "error", err)
 		return err
 	}
 

@@ -1,0 +1,1 @@
+ALTER TABLE aml_checks DROP COLUMN transaction_id;

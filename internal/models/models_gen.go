@@ -9,15 +9,16 @@ import (
 )
 
 type AmlCheck struct {
-	ID         uuid.UUID        `db:"id" json:"id"`
-	UserID     uuid.UUID        `db:"user_id" json:"user_id"`
-	ServiceID  uuid.UUID        `db:"service_id" json:"service_id"`
-	ExternalID string           `db:"external_id" json:"external_id"`
-	Status     AMLCheckStatus   `db:"status" json:"status"`
-	Score      decimal.Decimal  `db:"score" json:"score"`
-	RiskLevel  *AmlRiskLevel    `db:"risk_level" json:"risk_level"`
-	CreatedAt  pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt  pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ID            uuid.UUID        `db:"id" json:"id"`
+	UserID        uuid.UUID        `db:"user_id" json:"user_id"`
+	ServiceID     uuid.UUID        `db:"service_id" json:"service_id"`
+	ExternalID    string           `db:"external_id" json:"external_id"`
+	Status        AMLCheckStatus   `db:"status" json:"status"`
+	Score         decimal.Decimal  `db:"score" json:"score"`
+	RiskLevel     *AmlRiskLevel    `db:"risk_level" json:"risk_level"`
+	CreatedAt     pgtype.Timestamp `db:"created_at" json:"created_at"`
+	UpdatedAt     pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	TransactionID uuid.NullUUID    `db:"transaction_id" json:"transaction_id"`
 } // @name AmlCheck
 
 type AmlCheckHistory struct {
@@ -306,6 +307,16 @@ type Store struct {
 	DeletedAt                pgtype.Timestamp `db:"deleted_at" json:"deleted_at"`
 	PublicPaymentFormEnabled bool             `db:"public_payment_form_enabled" json:"public_payment_form_enabled"`
 } // @name Store
+
+type StoreAmlSetting struct {
+	ID            uuid.UUID          `db:"id" json:"id"`
+	StoreID       uuid.UUID          `db:"store_id" json:"store_id"`
+	Enabled       bool               `db:"enabled" json:"enabled"`
+	RiskThreshold int32              `db:"risk_threshold" json:"risk_threshold"`
+	ProviderSlug  *AMLSlug           `db:"provider_slug" json:"provider_slug"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+} // @name StoreAmlSetting
 
 type StoreApiKey struct {
 	ID        uuid.UUID        `db:"id" json:"id"`

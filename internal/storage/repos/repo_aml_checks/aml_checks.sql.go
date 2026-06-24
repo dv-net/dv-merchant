@@ -13,6 +13,31 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const getByTransactionID = `-- name: GetByTransactionID :one
+SELECT id, user_id, service_id, external_id, status, score, risk_level, created_at, updated_at, transaction_id
+FROM aml_checks
+WHERE transaction_id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetByTransactionID(ctx context.Context, transactionID uuid.NullUUID) (*models.AmlCheck, error) {
+	row := q.db.QueryRow(ctx, getByTransactionID, transactionID)
+	var i models.AmlCheck
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ServiceID,
+		&i.ExternalID,
+		&i.Status,
+		&i.Score,
+		&i.RiskLevel,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.TransactionID,
+	)
+	return &i, err
+}
+
 const updateAMLCheck = `-- name: UpdateAMLCheck :exec
 UPDATE aml_checks
 SET status     = $2,

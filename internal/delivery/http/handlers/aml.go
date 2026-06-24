@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/aml_requests"
+	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_aml_request"
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/store_response"
 	"github.com/dv-net/dv-merchant/internal/service/aml"
+	"github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/tools/converters"
 
 	// Blank imports for swagger gen
@@ -231,6 +234,71 @@ func (h *Handler) amlHistory(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(converters.GetAMLCheckHistoryResponse(result)))
 }
 
+// getStoreAMLSettings returns AML settings for a specific store
+//
+//	@Summary		Get store AML settings
+//	@Description	Returns AML check configuration for the specified store
+//	@Tags			AML
+//	@Produce		json
+//	@Param			store_id	path		string	true	"Store ID"
+//	@Success		200			{object}	response.Result[store_response.StoreAMLSettingsResponse]
+//	@Failure		401			{object}	apierror.Errors
+//	@Failure		404			{object}	apierror.Errors
+//	@Router			/v1/dv-admin/store/{id}/aml-settings [get]
+//	@Security		BearerAuth
+func (h *Handler) getStoreAMLSettings(c fiber.Ctx) error {
+	targetStore, err := h.validateAndLoadStore(c)
+	if err != nil {
+		return err
+	}
+
+	amlSettings, err := h.services.StoreAMLSettingsService.GetStoreAmlSettings(c.Context(), targetStore.ID)
+	if err != nil || amlSettings == nil {
+		return c.JSON(response.OkByData(struct{}{}))
+	}
+
+	return c.JSON(response.OkByData(store_response.NewStoreAMLSettingsResponse(amlSettings)))
+}
+
+// updateStoreAMLSettings creates or updates AML settings for a specific store
+//
+//	@Summary		Update store AML settings
+//	@Description	Creates or updates AML check configuration for the specified store
+//	@Tags			AML
+//	@Accept			json
+//	@Produce		json
+//	@Param			store_id	path		string											true	"Store ID"
+//	@Param			update		body		store_aml_request.UpdateStoreAMLSettingsRequest	true	"AML settings"
+//	@Success		200			{object}	response.Result[store_response.StoreAMLSettingsResponse]
+//	@Failure		400			{object}	apierror.Errors
+//	@Failure		401			{object}	apierror.Errors
+//	@Failure		404			{object}	apierror.Errors
+//	@Failure		422			{object}	apierror.Errors
+//	@Router			/v1/dv-admin/store/{id}/aml-settings [put]
+//	@Security		BearerAuth
+func (h *Handler) updateStoreAMLSettings(c fiber.Ctx) error {
+	targetStore, err := h.validateAndLoadStore(c)
+	if err != nil {
+		return err
+	}
+	req := &store_aml_request.UpdateStoreAMLSettingsRequest{}
+	if err = c.Bind().WithAutoHandling().Body(req); err != nil {
+		return err
+	}
+
+	dto := store.UpdateAMLSettingsDTO{
+		Enabled:       req.Enabled,
+		RiskThreshold: req.RiskThreshold,
+		ProviderSlug:  req.ProviderSlug,
+	}
+
+	amlSettings, err := h.services.StoreAMLSettingsService.UpdateAMLSetting(c.Context(), targetStore.ID, dto)
+	if err != nil {
+		return h.handleError(err, "store AML settings")
+	}
+	return c.JSON(response.OkByData(store_response.NewStoreAMLSettingsResponse(amlSettings)))
+}
+
 func (h *Handler) initAMLRoutes(v1 fiber.Router) {
 	amlRoutes := v1.Group("/aml")
 	amlRoutes.Post("/:aml_provider_slug/keys", h.updateAMLKeys)
@@ -239,4 +307,8 @@ func (h *Handler) initAMLRoutes(v1 fiber.Router) {
 	amlRoutes.Get("/:aml_provider_slug/currencies", h.getAMLCurrencies)
 	amlRoutes.Get("/history", h.amlHistory)
 	amlRoutes.Post("/score-transaction", h.scoreTransaction)
+
+	storeAmlRoutes := v1.Group("/store/")
+	storeAmlRoutes.Get(":id/aml-settings", h.getStoreAMLSettings)
+	storeAmlRoutes.Put(":id/aml-settings", h.updateStoreAMLSettings)
 }

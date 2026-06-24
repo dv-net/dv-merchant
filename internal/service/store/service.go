@@ -8,6 +8,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_request"
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/service/aml"
 	"github.com/dv-net/dv-merchant/internal/service/currency"
 	"github.com/dv-net/dv-merchant/internal/service/exrate"
 	"github.com/dv-net/dv-merchant/internal/service/notify"
@@ -56,6 +57,7 @@ type Service struct {
 	notificationService notify.INotificationService
 	processingSvc       processing.IProcessingOwner
 	settingSvc          setting.ISettingService
+	amlService          aml.IService
 }
 
 var _ IStore = (*Service)(nil)
@@ -75,6 +77,7 @@ func New(
 	rateLimitEnabled bool,
 	processingSvc processing.IProcessingOwner,
 	settingSvc setting.ISettingService,
+	amlService aml.IService,
 ) *Service {
 	srv := &Service{
 		storage:             storage,
@@ -89,11 +92,13 @@ func New(
 		notificationService: notificationService,
 		processingSvc:       processingSvc,
 		settingSvc:          settingSvc,
+		amlService:          amlService,
 	}
 	// register event
 	srv.eventListener.Register(transactions.DepositReceivedEventType, srv.handleDepositReceived)
 	srv.eventListener.Register(transactions.DepositUnconfirmedEventType, srv.handleDepositReceived)
 	srv.eventListener.Register(transactions.WithdrawalFromProcessingReceivedEventType, srv.handleWithdrawalReceived)
+	srv.eventListener.Register(aml.CheckCompletedEventType, srv.handleAMLCheckCompleted)
 
 	return srv
 }

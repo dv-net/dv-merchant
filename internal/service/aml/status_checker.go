@@ -88,7 +88,7 @@ func (s *Service) processCheckQueueElement(ctx context.Context, check *repo_aml_
 		return fmt.Errorf("failed to get provider for %s: %w", check.AmlService.Slug, err)
 	}
 
-	_, authorizer, err := s.prepareServiceDataByUser(ctx, &check.User, prepareParams{Slug: check.AmlService.Slug, ExternalID: check.AmlCheck.ExternalID})
+	_, authorizer, err := s.prepareServiceDataByUser(ctx, check.User.ID, prepareParams{Slug: check.AmlService.Slug, ExternalID: check.AmlCheck.ExternalID})
 	if err != nil {
 		return fmt.Errorf("failed to prepare service '%s' data: %w", check.AmlService.Slug, err)
 	}
@@ -158,6 +158,18 @@ func (s *Service) updateCheckAndClearQueue(
 		RiskLevel: riskLevel,
 	}); err != nil {
 		return fmt.Errorf("failed to update aml check to %s: %w", status, err)
+	}
+
+	updatedCheck := check.AmlCheck
+	updatedCheck.Status = status
+	updatedCheck.Score = score
+	updatedCheck.RiskLevel = riskLevel
+
+	if check.AmlCheck.TransactionID.Valid {
+		err := s.eventListener.Fire(CheckCompletedEvent{Check: updatedCheck})
+		if err != nil {
+			return fmt.Errorf("failed to fire check: %w", err)
+		}
 	}
 
 	if err := s.st.AmlCheckQueue(repos.WithTx(tx)).Delete(ctx, check.AmlCheckQueue.ID); err != nil {

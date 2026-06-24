@@ -69,7 +69,6 @@ func (o *bitgetFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 	o.log.Warnw("[EXRATE-BITGET] direct request failed, trying proxies", "error", err)
 
 	if len(o.proxies) == 0 {
-		o.log.Errorw("[EXRATE-BITGET] no proxies available after direct failure", "error", err)
 		return err
 	}
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dv-net/dv-merchant/internal/service/aml"
 	"github.com/dv-net/dv-merchant/internal/service/transactions"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_currencies"
 	"github.com/dv-net/dv-merchant/internal/util"
@@ -113,13 +114,65 @@ func (s *Service) handleDepositReceived(ev event.IEvent) error {
 		CurrencyID: convertedEv.GetCurrency().ID,
 	}
 
-	_, err = s.storage.StoreCurrencies().FindByStoreID(context.Background(), params)
+	ctx := context.Background()
+
+	_, err = s.storage.StoreCurrencies().FindByStoreID(ctx, params)
 	if err != nil {
 		s.log.Errorw("store available currency not found", "error", err)
 		return nil
 	}
+	if s.checkAMLBlock(ctx, convertedEv) {
+		return nil
+	}
 
 	return s.processWebhooksByTransactionEvent(ev, transactions.DepositReceivedEventType, payload)
+}
+
+func (s *Service) checkAMLBlock(ctx context.Context, ev transactions.TransactionEvent) bool {
+	if ev.EventType() != transactions.DepositReceivedEventType {
+		return false
+	}
+	amlSettings, err := s.storage.StoreAmlSettings().GetByStoreID(ctx, ev.GetStore().ID)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			s.log.Errorw("get aml settings failed", "error", err)
+		}
+		return false
+	}
+	if !amlSettings.Enabled {
+		return false
+	}
+	return s.amlGate(ctx, ev, amlSettings)
+}
+
+func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent, settings *models.StoreAmlSetting) bool {
+	amlCheck, err := s.amlService.AutoScoreDeposit(ctx, aml.AutoScoreDepositDTO{
+		UserID:        ev.GetStore().UserID,
+		TxID:          ev.GetTx().GetID(),
+		TxHash:        ev.GetTx().GetTxHash(),
+		CurrencyID:    ev.GetTx().GetCurrencyID(),
+		OutputAddress: ev.GetTx().GetToAddress(),
+		ProviderSlug:  settings.ProviderSlug,
+		DBTx:          ev.GetDatabaseTx(),
+	})
+	if err != nil {
+		if !errors.Is(err, aml.ErrNoProviderAvailable) {
+			s.log.Errorw("aml auto check failed", "error", err)
+		}
+		return false // fail-open
+	}
+	if amlCheck == nil || amlCheck.Status != models.AmlCheckStatusPending && !isScoreAboveThreshold(amlCheck.Score, settings.RiskThreshold) {
+		return false
+	}
+	if amlCheck.Status != models.AmlCheckStatusPending {
+		usr, usrErr := s.storage.Users().GetByID(ctx, ev.GetStore().UserID)
+		if usrErr != nil {
+			s.log.Errorw("failed to get user for mark address dirty", "error", usrErr)
+		} else if markErr := s.wallets.MarkAddressDirty(ctx, usr, ev.GetTx().GetToAddress()); markErr != nil {
+			s.log.Errorw("failed to mark address as dirty", "error", markErr)
+		}
+	}
+	return true
 }
 
 func (s *Service) handleWithdrawalReceived(ev event.IEvent) error {
@@ -271,58 +324,22 @@ func (s *Service) processWebhooksByTransactionEvent(
 	eventType string,
 	hookPayload []byte,
 ) error {
-	txCreatedEvent, ok := ev.(transactions.TransactionEvent)
-	if !ok || txCreatedEvent.EventType() != eventType {
+	txEv, ok := ev.(transactions.TransactionEvent)
+	if !ok || txEv.EventType() != eventType {
 		return nil
 	}
 
-	dbTx := txCreatedEvent.GetDatabaseTx()
-	webhooks, err := s.getWebhooksByStore(
+	return s.sendWebhookForTx(
 		context.Background(),
-		txCreatedEvent.GetStore().ID,
-		string(txCreatedEvent.GetWebhookEvent()),
-		dbTx,
+		txEv.GetTx().GetID(),
+		txEv.GetStore().ID,
+		txEv.GetWebhookEvent(),
+		hookPayload,
+		txEv.GetDatabaseTx(),
 	)
-	if err != nil {
-		s.log.Errorw("store webhook not found", "error", err)
-		return nil
-	}
-
-	for _, v := range webhooks {
-		if s.isWebhookAlreadySent(v.StoreWebhook.Url, string(txCreatedEvent.GetWebhookEvent()), txCreatedEvent.GetTx().GetID(), dbTx) {
-			continue
-		}
-
-		if err != nil {
-			s.log.Errorw("send webhook error", "error", err)
-			continue
-		}
-		message := webhook.Message{
-			TxID:      txCreatedEvent.GetTx().GetID(),
-			WebhookID: v.StoreWebhook.ID,
-			Type:      string(txCreatedEvent.GetWebhookEvent()),
-			Data:      hookPayload,
-			Signature: hash.SHA256Signature(hookPayload, v.Secret.String),
-		}
-		whSendErr := s.webhookService.Send(&message, dbTx)
-
-		if whSendErr != nil {
-			s.log.Errorw(
-				"store webhook send error",
-				"error", err,
-				"store_id", txCreatedEvent.GetStore().ID.String(),
-				"tx_id", txCreatedEvent.GetTx().GetID().String(),
-				"tx_hash", txCreatedEvent.GetTx().GetTxHash(),
-				"wh_type", string(txCreatedEvent.GetWebhookEvent()),
-				"wh_body", string(hookPayload),
-			)
-		}
-	}
-
-	return nil
 }
 
-func (s *Service) isWebhookAlreadySent(url, whType string, txID uuid.UUID, dbTx pgx.Tx) bool {
+func (s *Service) isWebhookAlreadySent(ctx context.Context, url, whType string, txID uuid.UUID, dbTx pgx.Tx) bool {
 	whCheckParams := repo_webhook_send_histories.CheckWebhookWasSentParams{
 		TxID: txID,
 		Type: whType,
@@ -330,7 +347,7 @@ func (s *Service) isWebhookAlreadySent(url, whType string, txID uuid.UUID, dbTx 
 	}
 
 	exists, err := s.storage.WebHookSendHistories(repos.WithTx(dbTx)).CheckWebhookWasSent(
-		context.Background(),
+		ctx,
 		whCheckParams,
 	)
 	if err != nil {
@@ -484,4 +501,103 @@ func (s *Service) prepareMockTransactionDataForWhTest(whType models.WebhookEvent
 	}
 
 	return txData, nil
+}
+
+func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
+	completedEv, ok := ev.(aml.CheckCompletedEvent)
+	if !ok || !completedEv.Check.TransactionID.Valid {
+		return nil
+	}
+
+	ctx := context.Background()
+	txID := completedEv.Check.TransactionID.UUID
+
+	tx, err := s.storage.Transactions().GetById(ctx, txID)
+	if err != nil {
+		return fmt.Errorf("fetch tx: %w", err)
+	}
+
+	store, err := s.storage.Stores().GetByID(ctx, tx.StoreID.UUID)
+	if err != nil {
+		return fmt.Errorf("fetch store: %w", err)
+	}
+
+	amlSettings, err := s.storage.StoreAmlSettings().GetByStoreID(ctx, store.ID)
+	if err != nil {
+		return fmt.Errorf("fetch aml settings: %w", err)
+	}
+
+	if isScoreAboveThreshold(completedEv.Check.Score, amlSettings.RiskThreshold) {
+		s.log.Warnw("AML check score above threshold, blocking webhook", "store_id", store.ID, "tx_id", tx.ID, "score", completedEv.Check.Score, "threshold", amlSettings.RiskThreshold)
+		usr, usrErr := s.storage.Users().GetByID(ctx, store.UserID)
+		if usrErr != nil {
+			s.log.Errorw("failed to get user for mark address dirty", "error", usrErr)
+		} else if markErr := s.wallets.MarkAddressDirty(ctx, usr, tx.ToAddress); markErr != nil {
+			s.log.Errorw("failed to mark address as dirty", "error", markErr)
+		}
+		return nil // webhook blocked
+	}
+
+	curr, err := s.storage.Currencies().GetByID(ctx, tx.CurrencyID)
+	if err != nil {
+		return fmt.Errorf("fetch currency: %w", err)
+	}
+
+	storeExternalID := ""
+	if tx.WalletID.Valid {
+		if wallet, wErr := s.storage.Wallets().GetById(ctx, tx.WalletID.UUID); wErr == nil {
+			storeExternalID = wallet.StoreExternalID
+		}
+	}
+
+	payload, err := s.prepareDepositHookPayload(tx, *curr, models.WebhookEventPaymentReceived, storeExternalID)
+	if err != nil {
+		return fmt.Errorf("prepare deposit hook payload: %w", err)
+	}
+
+	return s.sendWebhookForTx(ctx, tx.ID, store.ID, models.WebhookEventPaymentReceived, payload, nil)
+}
+
+func (s *Service) sendWebhookForTx(
+	ctx context.Context,
+	txID uuid.UUID,
+	storeID uuid.UUID,
+	whType models.WebhookEvent,
+	payload []byte,
+	dbTx pgx.Tx,
+) error {
+	webhooks, err := s.getWebhooksByStore(
+		ctx,
+		storeID,
+		whType.String(),
+		dbTx,
+	)
+	if err != nil {
+		s.log.Errorw("store webhook not found", "error", err)
+		return nil
+	}
+	for _, wh := range webhooks {
+		if s.isWebhookAlreadySent(ctx, wh.StoreWebhook.Url, whType.String(), txID, dbTx) {
+			continue
+		}
+		message := webhook.Message{
+			TxID:      txID,
+			WebhookID: wh.StoreWebhook.ID,
+			Type:      whType.String(),
+			Data:      payload,
+			Signature: hash.SHA256Signature(payload, wh.Secret.String),
+		}
+
+		if whSendErr := s.webhookService.Send(&message, dbTx); whSendErr != nil {
+			s.log.Errorw(
+				"store webhook send error",
+				"error", whSendErr,
+				"store_id", storeID.String(),
+				"tx_id", txID.String(),
+				"wh_type", whType.String(),
+				"wh_body", string(payload),
+			)
+		}
+	}
+	return nil
 }

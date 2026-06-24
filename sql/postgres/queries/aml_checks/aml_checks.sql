@@ -5,3 +5,9 @@ SET status     = $2,
     risk_level = $4,
     updated_at = now()
 WHERE id = $1;
+
+-- name: GetByTransactionID :one
+SELECT *
+FROM aml_checks
+WHERE transaction_id = $1
+LIMIT 1;

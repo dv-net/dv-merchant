@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/dv-net/dv-merchant/internal/config"
 	"github.com/dv-net/dv-merchant/internal/router"
@@ -47,18 +48,24 @@ func (s *Server) Stop() error {
 }
 
 func errorHandler(c fiber.Ctx, err error) error {
+	var ae *apierror.Errors
+	if errors.As(err, &ae) && ae.HttpCode != 0 {
+		return c.Status(ae.HttpCode).JSON(ae)
+	}
+
+	var be *fiber.BindError
+	if errors.As(err, &be) {
+		return c.Status(fiber.StatusBadRequest).JSON(
+			apierror.New().AddError(errors.New("invalid request")).SetHttpCode(fiber.StatusBadRequest),
+		)
+	}
+
 	code := fiber.StatusInternalServerError
 	var e *fiber.Error
 	if errors.As(err, &e) {
 		code = e.Code
 	}
-	var ae *apierror.Errors
-	if errors.As(err, &ae) && ae.HttpCode != 0 {
-		c.Status(ae.HttpCode)
-		return c.JSON(ae)
-	}
 
-	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
-
-	return c.Status(code).SendString(err.Error())
+	msg := errors.New(http.StatusText(code))
+	return c.Status(code).JSON(apierror.New().AddError(msg).SetHttpCode(code))
 }
