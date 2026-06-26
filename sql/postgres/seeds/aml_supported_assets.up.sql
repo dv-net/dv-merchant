@@ -25,5 +25,11 @@ VALUES ('aml_bot', 'BTC.Bitcoin', 'native', 'BTC'),
        ('bit_ok', 'USDT.Ethereum', '0xdac17f958d2ee523a2206206994597c13d831ec7', 'ETH'),
        ('bit_ok', 'USDC.Ethereum', '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', 'ETH'),
        ('bit_ok', 'DAI.Ethereum', '0x6b175474e89094c44da98b954eedeac495271d0f', 'ETH'),
-       ('bit_ok', 'USDT.Tron', 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'TRX')
+       ('bit_ok', 'USDT.Tron', 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', 'TRX'),
+       ('coin_kyt', 'BTC.Bitcoin', 'native', 'btc'),
+       ('coin_kyt', 'ETH.Ethereum', 'native', 'eth'),
+       ('coin_kyt', 'TRX.Tron', 'native', 'trx'),
+       ('coin_kyt', 'USDT.Ethereum', 'USDT', 'eth'),
+       ('coin_kyt', 'USDC.Ethereum', 'USDC', 'eth'),
+       ('coin_kyt', 'USDT.Tron', 'USDT', 'trx')
 ON CONFLICT (service_slug, currency_id) DO NOTHING;

@@ -26,8 +26,9 @@ import (
 
 // slugMapping maps internal/models.AMLSlug ob providers.ProviderSlug.
 var slugMapping = map[models.AMLSlug]aml.ProviderSlug{
-	models.AMLSlugAMLBot: aml.ProviderSlugAMLBot,
-	models.AMLSlugBitOK:  aml.ProviderSlugBitOK,
+	models.AMLSlugAMLBot:  aml.ProviderSlugAMLBot,
+	models.AMLSlugBitOK:   aml.ProviderSlugBitOK,
+	models.AMLSlugCoinKyt: aml.ProvideSlugCoinKyt,
 }
 
 // keyMapping maps internal/models.AmlKeyType to aml.AMLKeyType.
@@ -36,6 +37,7 @@ var keyMapping = map[models.AmlKeyType]aml.AuthKeyType{
 	models.AmlKeyTypeAccessKey:   aml.KeyAccessKey,
 	models.AmlKeyTypeSecret:      aml.KeySecret,
 	models.AmlKeyTypeAccessID:    aml.KeyAccessID,
+	models.AmlKeyTypeAPIKey:      aml.KeyAPIKey,
 }
 
 type IService interface {
