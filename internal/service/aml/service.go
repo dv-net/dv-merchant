@@ -44,7 +44,7 @@ type IService interface {
 	ScoreTransaction(ctx context.Context, usr *models.User, dto CheckDTO) (*models.AmlCheck, error)
 	AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, error)
 	GetCheckHistory(ctx context.Context, usr *models.User, dto ChecksWithHistoryDTO) (*storecmn.FindResponseWithFullPagination[*repo_aml_checks.FindRow], error)
-	GetAllActiveProviders() []models.AMLSlug
+	GetAllActiveProviders() []models.AMLProvider
 	GetSupportedCurrencies(ctx context.Context, slug models.AMLSlug) ([]*models.CurrencyShort, error)
 }
 
@@ -179,27 +179,30 @@ func (s *Service) resolveProviderSlug(ctx context.Context, dto AutoScoreDepositD
 		return *dto.ProviderSlug, nil
 	}
 
-	for _, slug := range s.GetAllActiveProviders() {
-		if _, err := s.st.AmlUserKeys().GetServiceCredentials(ctx, dto.UserID, slug); err != nil {
+	for _, provider := range s.GetAllActiveProviders() {
+		if _, err := s.st.AmlUserKeys().GetServiceCredentials(ctx, dto.UserID, provider.Slug); err != nil {
 			continue
 		}
-		if _, err := s.st.AmlSupportedAssets().GetBySlugAndCurrencyID(ctx, dto.CurrencyID, slug); err != nil {
+		if _, err := s.st.AmlSupportedAssets().GetBySlugAndCurrencyID(ctx, dto.CurrencyID, provider.Slug); err != nil {
 			continue
 		}
-		return slug, nil
+		return provider.Slug, nil
 	}
 
 	return "", ErrNoProviderAvailable
 }
 
-func (s *Service) GetAllActiveProviders() []models.AMLSlug {
+func (s *Service) GetAllActiveProviders() []models.AMLProvider {
 	providerSlugs := s.factory.GetAllRegisteredProviders()
 
-	preparedResult := make([]models.AMLSlug, 0, len(providerSlugs))
+	preparedResult := make([]models.AMLProvider, 0, len(providerSlugs))
 	for _, providerSlug := range providerSlugs {
 		for modelSlug, mappedSlug := range slugMapping {
 			if mappedSlug == providerSlug {
-				preparedResult = append(preparedResult, modelSlug)
+				preparedResult = append(preparedResult, models.AMLProvider{
+					Slug:  modelSlug,
+					Label: modelSlug.Label(),
+				})
 				break
 			}
 		}
