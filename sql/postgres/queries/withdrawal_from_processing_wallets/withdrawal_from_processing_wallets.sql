@@ -63,6 +63,17 @@ FROM withdrawal_from_processing_wallets
 WHERE id = $1
   AND store_id = $2;
 
+-- name: HasQueuedByBlockchainAndUser :one
+SELECT EXISTS (
+    SELECT 1
+    FROM withdrawal_from_processing_wallets wfpw
+             INNER JOIN currencies c ON c.id = wfpw.currency_id
+             INNER JOIN stores s ON s.id = wfpw.store_id
+    WHERE wfpw.transfer_id IS NULL
+      AND c.blockchain = $1
+      AND s.user_id = $2
+);
+
 -- name: DeleteWithdrawalFromProcessingWallets :one
 DELETE
 FROM withdrawal_from_processing_wallets
