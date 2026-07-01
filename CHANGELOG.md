@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: add aml provider coin kyt
 - feat: block hot wallet withdrawals while processing wallet withdrawals are pending (per user, per blockchain)
 
+## [0.9.22]
+
 ## [0.9.21] - 2026-07-24
 - feat: add aml scoring for deposit
 
