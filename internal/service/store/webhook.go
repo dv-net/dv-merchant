@@ -122,15 +122,18 @@ func (s *Service) handleDepositReceived(ev event.IEvent) error {
 		return nil
 	}
 	if amlCheck, blocked := s.checkAMLBlock(ctx, convertedEv); blocked {
-		return s.sendAMLBlockedWebhook(
-			ctx,
-			convertedEv.GetTx(),
-			convertedEv.GetStore().ID,
-			convertedEv.GetCurrency(),
-			convertedEv.GetStoreExternalID(),
-			amlCheck,
-			convertedEv.GetDatabaseTx(),
-		)
+		if amlCheck != nil && amlCheck.Status != models.AmlCheckStatusPending {
+			return s.sendAMLBlockedWebhook(
+				ctx,
+				convertedEv.GetTx(),
+				convertedEv.GetStore().ID,
+				convertedEv.GetCurrency(),
+				convertedEv.GetStoreExternalID(),
+				amlCheck,
+				convertedEv.GetDatabaseTx(),
+			)
+		}
+		return nil
 	}
 	return s.processWebhooksByTransactionEvent(ev, transactions.DepositReceivedEventType, payload)
 }
