@@ -14,6 +14,7 @@ import (
 	"github.com/dv-net/dv-merchant/pkg/aml/providers"
 	"github.com/dv-net/dv-merchant/pkg/aml/providers/aml_bot"
 	"github.com/dv-net/dv-merchant/pkg/aml/providers/bitok"
+	"github.com/dv-net/dv-merchant/pkg/aml/providers/coinkyt"
 	"github.com/dv-net/dv-merchant/pkg/otp"
 	"github.com/dv-net/dv-merchant/pkg/turnstile"
 
@@ -302,19 +303,14 @@ func NewServices(
 }
 
 func prepareAMLService(st storage.IStorage, l logger.Logger, conf config.AML, eventListener event.IListener) (*aml.Service, error) {
-	bitokBaseURL, err := url.Parse(conf.BitOK.BaseURL)
-	if err != nil {
-		return nil, err
-	}
-
-	amlBotBaseURL, err := url.Parse(conf.AMLBot.BaseURL)
-	if err != nil {
-		return nil, err
-	}
-
 	amlProviderFactory := providers.NewFactory()
 
 	if conf.BitOK.Enabled {
+		bitokBaseURL, err := url.Parse(conf.BitOK.BaseURL)
+		if err != nil {
+			return nil, err
+		}
+
 		amlProviderFactory.RegisterProvider(
 			amlproviders.ProviderSlugBitOK,
 			bitok.NewBitOK(bitokBaseURL, l),
@@ -323,10 +319,27 @@ func prepareAMLService(st storage.IStorage, l logger.Logger, conf config.AML, ev
 	}
 
 	if conf.AMLBot.Enabled {
+		amlBotBaseURL, err := url.Parse(conf.AMLBot.BaseURL)
+		if err != nil {
+			return nil, err
+		}
+
 		amlProviderFactory.RegisterProvider(
 			amlproviders.ProviderSlugAMLBot,
 			aml_bot.NewAMBot(amlBotBaseURL, l),
 			providers.CreateAMLBotAuthorizer(),
+		)
+	}
+
+	if conf.CoinKyt.Enabled {
+		coinKytBaseURL, err := url.Parse(conf.CoinKyt.BaseURL)
+		if err != nil {
+			return nil, err
+		}
+		amlProviderFactory.RegisterProvider(
+			amlproviders.ProvideSlugCoinKyt,
+			coinkyt.NewCoinKyt(coinKytBaseURL, l),
+			providers.CreateCoinKytAuthorizer(),
 		)
 	}
 
