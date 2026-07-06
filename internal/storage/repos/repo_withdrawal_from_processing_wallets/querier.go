@@ -19,6 +19,7 @@ type Querier interface {
 	GetPrefetchHistoryByUserID(ctx context.Context, arg GetPrefetchHistoryByUserIDParams) ([]*GetPrefetchHistoryByUserIDRow, error)
 	GetQueuedWithdrawalsWithCurrencyAndUser(ctx context.Context) ([]*GetQueuedWithdrawalsWithCurrencyAndUserRow, error)
 	GetWithdrawalWithTransfer(ctx context.Context, arg GetWithdrawalWithTransferParams) (*GetWithdrawalWithTransferRow, error)
+	HasQueuedByBlockchainAndUser(ctx context.Context, arg HasQueuedByBlockchainAndUserParams) (bool, error)
 	IsWithdrawalExistByRequestID(ctx context.Context, requestID *string) (bool, error)
 	UpdateTransferID(ctx context.Context, arg UpdateTransferIDParams) error
 }

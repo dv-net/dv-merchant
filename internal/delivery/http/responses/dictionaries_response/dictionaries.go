@@ -12,7 +12,7 @@ type GetDictionariesResponse struct {
 	ProcessingVersionHash string                               `json:"processing_version_hash"`
 	AvailableCurrencies   []*models.CurrencyShort              `json:"available_currencies"`
 	AvailableRateSources  []string                             `json:"available_rate_sources"`
-	AvailableAMLProviders []models.AMLSlug                     `json:"available_aml_providers"`
+	AvailableAMLProviders []models.AMLProvider                 `json:"available_aml_providers"`
 	BackendAddress        string                               `json:"backend_address" format:"ipv4"`
 	GeneralSettings       []*settings_response.SettingResponse `json:"general_settings"`
 } //	@name	GetDictionariesResponse

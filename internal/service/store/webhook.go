@@ -121,31 +121,41 @@ func (s *Service) handleDepositReceived(ev event.IEvent) error {
 		s.log.Errorw("store available currency not found", "error", err)
 		return nil
 	}
-	if s.checkAMLBlock(ctx, convertedEv) {
+	if amlCheck, blocked := s.checkAMLBlock(ctx, convertedEv); blocked {
+		if amlCheck != nil && amlCheck.Status != models.AmlCheckStatusPending {
+			return s.sendAMLBlockedWebhook(
+				ctx,
+				convertedEv.GetTx(),
+				convertedEv.GetStore().ID,
+				convertedEv.GetCurrency(),
+				convertedEv.GetStoreExternalID(),
+				amlCheck,
+				convertedEv.GetDatabaseTx(),
+			)
+		}
 		return nil
 	}
-
 	return s.processWebhooksByTransactionEvent(ev, transactions.DepositReceivedEventType, payload)
 }
 
-func (s *Service) checkAMLBlock(ctx context.Context, ev transactions.TransactionEvent) bool {
+func (s *Service) checkAMLBlock(ctx context.Context, ev transactions.TransactionEvent) (*models.AmlCheck, bool) {
 	if ev.EventType() != transactions.DepositReceivedEventType {
-		return false
+		return nil, false
 	}
 	amlSettings, err := s.storage.StoreAmlSettings().GetByStoreID(ctx, ev.GetStore().ID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			s.log.Errorw("get aml settings failed", "error", err)
 		}
-		return false
+		return nil, false
 	}
 	if !amlSettings.Enabled {
-		return false
+		return nil, false
 	}
 	return s.amlGate(ctx, ev, amlSettings)
 }
 
-func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent, settings *models.StoreAmlSetting) bool {
+func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent, settings *models.StoreAmlSetting) (*models.AmlCheck, bool) {
 	amlCheck, err := s.amlService.AutoScoreDeposit(ctx, aml.AutoScoreDepositDTO{
 		UserID:        ev.GetStore().UserID,
 		TxID:          ev.GetTx().GetID(),
@@ -159,10 +169,10 @@ func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent,
 		if !errors.Is(err, aml.ErrNoProviderAvailable) {
 			s.log.Errorw("aml auto check failed", "error", err)
 		}
-		return false // fail-open
+		return nil, false // fail-open
 	}
 	if amlCheck == nil || amlCheck.Status != models.AmlCheckStatusPending && !isScoreAboveThreshold(amlCheck.Score, settings.RiskThreshold) {
-		return false
+		return nil, false
 	}
 	if amlCheck.Status != models.AmlCheckStatusPending {
 		usr, usrErr := s.storage.Users().GetByID(ctx, ev.GetStore().UserID)
@@ -172,7 +182,7 @@ func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent,
 			s.log.Errorw("failed to mark address as dirty", "error", markErr)
 		}
 	}
-	return true
+	return amlCheck, true
 }
 
 func (s *Service) handleWithdrawalReceived(ev event.IEvent) error {
@@ -527,17 +537,6 @@ func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
 		return fmt.Errorf("fetch aml settings: %w", err)
 	}
 
-	if isScoreAboveThreshold(completedEv.Check.Score, amlSettings.RiskThreshold) {
-		s.log.Warnw("AML check score above threshold, blocking webhook", "store_id", store.ID, "tx_id", tx.ID, "score", completedEv.Check.Score, "threshold", amlSettings.RiskThreshold)
-		usr, usrErr := s.storage.Users().GetByID(ctx, store.UserID)
-		if usrErr != nil {
-			s.log.Errorw("failed to get user for mark address dirty", "error", usrErr)
-		} else if markErr := s.wallets.MarkAddressDirty(ctx, usr, tx.ToAddress); markErr != nil {
-			s.log.Errorw("failed to mark address as dirty", "error", markErr)
-		}
-		return nil // webhook blocked
-	}
-
 	curr, err := s.storage.Currencies().GetByID(ctx, tx.CurrencyID)
 	if err != nil {
 		return fmt.Errorf("fetch currency: %w", err)
@@ -548,6 +547,17 @@ func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
 		if wallet, wErr := s.storage.Wallets().GetById(ctx, tx.WalletID.UUID); wErr == nil {
 			storeExternalID = wallet.StoreExternalID
 		}
+	}
+
+	if isScoreAboveThreshold(completedEv.Check.Score, amlSettings.RiskThreshold) {
+		s.log.Warnw("AML check score above threshold, blocking webhook", "store_id", store.ID, "tx_id", tx.ID, "score", completedEv.Check.Score, "threshold", amlSettings.RiskThreshold)
+		usr, usrErr := s.storage.Users().GetByID(ctx, store.UserID)
+		if usrErr != nil {
+			s.log.Errorw("failed to get user for mark address dirty", "error", usrErr)
+		} else if markErr := s.wallets.MarkAddressDirty(ctx, usr, tx.ToAddress); markErr != nil {
+			s.log.Errorw("failed to mark address as dirty", "error", markErr)
+		}
+		return s.sendAMLBlockedWebhook(ctx, tx, store.ID, *curr, storeExternalID, &completedEv.Check, nil)
 	}
 
 	payload, err := s.prepareDepositHookPayload(tx, *curr, models.WebhookEventPaymentReceived, storeExternalID)
@@ -600,4 +610,88 @@ func (s *Service) sendWebhookForTx(
 		}
 	}
 	return nil
+}
+
+func (s *Service) sendAMLBlockedWebhook(
+	ctx context.Context,
+	tx models.ITransaction,
+	storeID uuid.UUID,
+	curr models.Currency,
+	storeExternalID string,
+	amlCheck *models.AmlCheck,
+	dbTx pgx.Tx,
+) error {
+	payload, err := s.prepareAMLBlockedHookPayload(tx, curr, storeExternalID, amlCheck)
+	if err != nil {
+		return fmt.Errorf("prepare AML blocked hook payload: %w", err)
+	}
+	webhooks, err := s.getWebhooksByStore(
+		ctx,
+		storeID,
+		models.WebhookEventPaymentNotConfirmed.String(), // using uncofirmed wh for no created new
+		dbTx,
+	)
+	if err != nil {
+		s.log.Errorw("store webhook not found", "error", err)
+		return nil
+	}
+
+	for _, wh := range webhooks {
+		if s.isWebhookAlreadySent(ctx, wh.StoreWebhook.Url, models.WebhookEventPaymentAMLBlocked.String(), tx.GetID(), dbTx) {
+			continue
+		}
+
+		message := webhook.Message{
+			TxID:      tx.GetID(),
+			WebhookID: wh.StoreWebhook.ID,
+			Type:      models.WebhookEventPaymentAMLBlocked.String(),
+			Data:      payload,
+			Signature: hash.SHA256Signature(payload, wh.Secret.String),
+		}
+		if whSendErr := s.webhookService.Send(&message, dbTx); whSendErr != nil {
+			s.log.Errorw("aml blocked webhook send error", "error", whSendErr, "store_id", storeID, "tx_id", tx.GetID())
+		}
+	}
+
+	return nil
+}
+
+func (s *Service) prepareAMLBlockedHookPayload(
+	tx models.ITransaction,
+	curr models.Currency,
+	storeExternalID string,
+	amlCheck *models.AmlCheck,
+) ([]byte, error) {
+	payload := map[string]any{
+		"type":       models.WebhookEventPaymentAMLBlocked,
+		"status":     models.TransactionStatusCompleted,
+		"created_at": tx.GetCreatedAt(),
+		"paid_at":    tx.GetNetworkCreatedAt(),
+		"amount":     tx.GetAmountUsd().String(),
+		"transactions": map[string]any{
+			"tx_id":       tx.GetID().String(),
+			"tx_hash":     tx.GetTxHash(),
+			"bc_uniq_key": tx.GetBcUniqKey(),
+			"created_at":  tx.GetCreatedAt(),
+			"currency":    curr.Code,
+			"currency_id": curr.ID,
+			"blockchain":  curr.Blockchain.String(),
+			"amount":      tx.GetAmount().String(),
+			"amount_usd":  tx.GetAmountUsd().String(),
+		},
+		"wallet": map[string]any{
+			"id":                tx.GetWalletID(),
+			"store_external_id": storeExternalID,
+		},
+		"aml_check": map[string]any{
+			"id":         amlCheck.ID.String(),
+			"score":      amlCheck.Score,
+			"status":     amlCheck.Status,
+			"risk_level": amlCheck.RiskLevel,
+			"created_at": amlCheck.CreatedAt,
+			"updated_at": amlCheck.UpdatedAt,
+		},
+	}
+
+	return json.Marshal(payload)
 }

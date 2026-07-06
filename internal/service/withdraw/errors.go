@@ -24,6 +24,7 @@ var (
 	ErrWithdrawalAddressListEmpty               = errors.New("withdrawal address list is empty")
 	ErrWithdrawalAddressEmptyBalances           = errors.New("withdrawal addresses have empty balances")
 	ErrProcessingExplorerUnavailable            = errors.New("explorer is unavailable")
+	ErrPendingProcessingWithdrawal              = errors.New("pending processing withdrawal exists for blockchain")
 )
 
 type InvalidCurrencyForAddressError struct {
@@ -39,5 +40,6 @@ func isIgnoredLogError(err error) bool {
 	return errors.Is(err, ErrTransfersDisabled) ||
 		errors.Is(err, pgx.ErrNoRows) ||
 		errors.Is(err, ErrWithdrawalsFromProcessingDisabled) ||
-		errors.Is(err, ErrWithdrawalAddressListEmpty)
+		errors.Is(err, ErrWithdrawalAddressListEmpty) ||
+		errors.Is(err, ErrPendingProcessingWithdrawal)
 }

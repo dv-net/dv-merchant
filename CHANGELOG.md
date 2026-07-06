@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- feat: add aml provider coin kyt
+- feat: block hot wallet withdrawals while processing wallet withdrawals are pending (per user, per blockchain)
+- feat: aml send webhook for aml blocked address
+
+## [0.9.22]
 
 ## [0.9.21] - 2026-07-24
 - feat: add aml scoring for deposit

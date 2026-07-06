@@ -3,7 +3,7 @@ package aml_requests
 import "github.com/dv-net/dv-merchant/internal/models"
 
 type UserAMLKey struct {
-	Name  models.AmlKeyType `json:"name" validate:"required,oneof=access_key_id access_key secret_key access_id"`
+	Name  models.AmlKeyType `json:"name" validate:"required,oneof=access_key_id access_key secret_key access_id api_key"`
 	Value *string           `json:"value,omitempty"`
 } //	@name	UserAMLKey
 

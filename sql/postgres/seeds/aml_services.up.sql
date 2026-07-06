@@ -1,6 +1,7 @@
 insert into aml_services (id, slug, created_at)
 values ('621f3ad0-a3b6-4413-8379-f245bbb3e345', 'aml_bot', now()),
-       ('63592c9e-8b40-4de5-9359-9a734345996f', 'bit_ok', now())
+       ('63592c9e-8b40-4de5-9359-9a734345996f', 'bit_ok', now()),
+       ('666b082a-419f-4e11-a676-b29d8ec2c676', 'coin_kyt', now())
 ON CONFLICT DO NOTHING ;
 
 INSERT INTO aml_service_keys (id, service_id, name, description, created_at)
@@ -11,5 +12,7 @@ VALUES
 
 --     BIT_OK
     ('25233cdd-8062-418d-9141-b80b27ff8237', '621f3ad0-a3b6-4413-8379-f245bbb3e345', 'access_id', 'Access ID', now()),
-    ('4630e77b-e95e-4ea7-9183-e3e70f1be4d5', '621f3ad0-a3b6-4413-8379-f245bbb3e345', 'access_key', 'Access Key', now())
+    ('4630e77b-e95e-4ea7-9183-e3e70f1be4d5', '621f3ad0-a3b6-4413-8379-f245bbb3e345', 'access_key', 'Access Key', now()),
+--    COIN_KYT
+    ('f0c1e3d4-5b6a-4c8e-9f2a-1b2c3d4e5f6a', '666b082a-419f-4e11-a676-b29d8ec2c676', 'api_key', 'API Key', now())
 ON CONFLICT DO NOTHING;

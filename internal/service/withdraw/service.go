@@ -294,6 +294,21 @@ func (s *service) processTransferByWallet(ctx context.Context, wallet models.Wit
 		return nil, err
 	}
 
+	// Check if there are any pending processing withdrawals for the same blockchain and user
+	hasPending, err := s.storage.WithdrawalsFromProcessing().HasQueuedByBlockchainAndUser(
+		ctx,
+		repo_withdrawal_from_processing_wallets.HasQueuedByBlockchainAndUserParams{
+			Blockchain: &wallet.Blockchain,
+			UserID:     user.ID,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("check pending processing withdrawals: %w", err)
+	}
+	if hasPending {
+		return nil, ErrPendingProcessingWithdrawal
+	}
+
 	dto, err := s.prepareTransferDto(ctx, wallet, user, models.TransferKindFromAddress)
 	if err != nil {
 		return nil, fmt.Errorf("preapre transfer: %w", err)

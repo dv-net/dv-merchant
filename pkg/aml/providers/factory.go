@@ -7,6 +7,7 @@ import (
 	"github.com/dv-net/dv-merchant/pkg/aml"
 	"github.com/dv-net/dv-merchant/pkg/aml/providers/aml_bot"
 	"github.com/dv-net/dv-merchant/pkg/aml/providers/bitok"
+	"github.com/dv-net/dv-merchant/pkg/aml/providers/coinkyt"
 
 	"github.com/puzpuzpuz/xsync/v3"
 )
@@ -102,5 +103,16 @@ func CreateAMLBotAuthorizer() AuthorizerCreator {
 		}
 
 		return aml_bot.NewMD5Authorizer(accessID, accessKey, opts...), nil
+	}
+}
+
+// CreateCoinKytAuthorizer define creator for CoinKyt authorizer factory
+func CreateCoinKytAuthorizer() AuthorizerCreator {
+	return func(_ context.Context, creds map[aml.AuthKeyType]string, _ string) (aml.RequestAuthorizer, error) {
+		apiKey, ok := creds[aml.KeyAPIKey]
+		if !ok || apiKey == "" {
+			return nil, fmt.Errorf("api key not provided")
+		}
+		return coinkyt.NewAPIKeyAuthorizer(apiKey), nil
 	}
 }

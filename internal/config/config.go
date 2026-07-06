@@ -118,8 +118,9 @@ type (
 		CheckTimeout  time.Duration `yaml:"check_timeout" default:"30s"`
 		MaxAttempts   int32         `yaml:"max_attempts" default:"5"`
 
-		BitOK  BitOK  `yaml:"bit_ok" required:"true"`
-		AMLBot AMLBot `yaml:"aml_bot" required:"true"`
+		BitOK   BitOK   `yaml:"bit_ok" required:"true"`
+		AMLBot  AMLBot  `yaml:"aml_bot" required:"true"`
+		CoinKyt CoinKyt `yaml:"coin_kyt" required:"true"`
 	}
 
 	BitOK struct {
@@ -130,6 +131,11 @@ type (
 	AMLBot struct {
 		Enabled bool   `yaml:"enabled" default:"true"`
 		BaseURL string `yaml:"base_url" default:"https://extrnlapiendpoint.silencatech.com/"`
+	}
+
+	CoinKyt struct {
+		Enabled bool   `yaml:"enabled" default:"true"`
+		BaseURL string `yaml:"base_url" default:"https://explorer.coinkyt.com/openapi/"`
 	}
 )
 

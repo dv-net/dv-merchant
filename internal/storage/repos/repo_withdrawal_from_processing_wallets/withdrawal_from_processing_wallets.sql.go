@@ -329,6 +329,30 @@ func (q *Queries) GetWithdrawalWithTransfer(ctx context.Context, arg GetWithdraw
 	return &i, err
 }
 
+const hasQueuedByBlockchainAndUser = `-- name: HasQueuedByBlockchainAndUser :one
+SELECT EXISTS (
+    SELECT 1
+    FROM withdrawal_from_processing_wallets wfpw
+             INNER JOIN currencies c ON c.id = wfpw.currency_id
+             INNER JOIN stores s ON s.id = wfpw.store_id
+    WHERE wfpw.transfer_id IS NULL
+      AND c.blockchain = $1
+      AND s.user_id = $2
+)
+`
+
+type HasQueuedByBlockchainAndUserParams struct {
+	Blockchain *models.Blockchain `db:"blockchain" json:"blockchain"`
+	UserID     uuid.UUID          `db:"user_id" json:"user_id"`
+}
+
+func (q *Queries) HasQueuedByBlockchainAndUser(ctx context.Context, arg HasQueuedByBlockchainAndUserParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasQueuedByBlockchainAndUser, arg.Blockchain, arg.UserID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const isWithdrawalExistByRequestID = `-- name: IsWithdrawalExistByRequestID :one
 SELECT EXISTS (SELECT 1
                FROM withdrawal_from_processing_wallets wfpw

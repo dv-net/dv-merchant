@@ -6,6 +6,7 @@ type ProviderSlug string
 const (
 	ProviderSlugAMLBot ProviderSlug = "aml_bot"
 	ProviderSlugBitOK  ProviderSlug = "bitok"
+	ProvideSlugCoinKyt ProviderSlug = "coin_kyt"
 )
 
 // AuthKeyType defines credential types
@@ -16,4 +17,5 @@ const (
 	KeyAccessID    AuthKeyType = "access_id"
 	KeyAccessKey   AuthKeyType = "access_key"
 	KeySecret      AuthKeyType = "secret"
+	KeyAPIKey      AuthKeyType = "api_key"
 )

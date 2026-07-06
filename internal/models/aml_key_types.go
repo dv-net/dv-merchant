@@ -7,4 +7,5 @@ const (
 	AmlKeyTypeSecret      AmlKeyType = "secret_key"
 	AmlKeyTypeAccessKey   AmlKeyType = "access_key"
 	AmlKeyTypeAccessID    AmlKeyType = "access_id"
+	AmlKeyTypeAPIKey      AmlKeyType = "api_key"
 )
