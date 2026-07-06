@@ -1,4 +1,6 @@
-.PHONY:
+.PHONY: build build-linux build-linux-arm64 build-darwin build-darwin-arm64 build-all build_custom_linter \
+	run start test version version-number lint fmt genmocks gensql migrate \
+	db-create-migration db-create-seed db-seed swag-gen swag-gen-external genenvs builds update-frontend
 .SILENT:
 .DEFAULT_GOAL := run
 

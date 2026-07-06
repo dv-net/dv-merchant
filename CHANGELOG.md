@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: add aml provider coin kyt
 - feat: block hot wallet withdrawals while processing wallet withdrawals are pending (per user, per blockchain)
 - feat: aml send webhook for aml blocked address
+- feat: add filter for wallet dirty address
 
 ## [0.9.22]
 

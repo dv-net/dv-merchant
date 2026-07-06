@@ -223,7 +223,21 @@ func (h *Handler) getWallets(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	wallets, err := h.services.WalletBalanceService.GetWalletBalance(c.Context(), *request, rates)
+	wallets, err := h.services.WalletBalanceService.GetWalletBalance(c.Context(), wallet.GetWalletBalanceDTO{
+		Amount:          request.Amount,
+		CurrencyID:      request.CurrencyID,
+		WalletIDs:       request.WalletIDs,
+		Blockchain:      request.Blockchain,
+		Address:         request.Address,
+		BalanceFiatFrom: request.BalanceFiatFrom,
+		BalanceFiatTo:   request.BalanceFiatTo,
+		Page:            request.Page,
+		PageSize:        request.PageSize,
+		StoreIDs:        request.StoreIDs,
+		IsSortByAmount:  request.IsSortByAmount,
+		IsSortByBalance: request.IsSortByBalance,
+		IsDirty:         request.IsDirty,
+	}, rates)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}

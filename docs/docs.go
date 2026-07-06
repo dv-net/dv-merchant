@@ -689,12 +689,14 @@ const docTemplate = `{
                     {
                         "enum": [
                             "aml_bot",
-                            "bit_ok"
+                            "bit_ok",
+                            "coin_kyt"
                         ],
                         "type": "string",
                         "x-enum-varnames": [
                             "AMLSlugAMLBot",
-                            "AMLSlugBitOK"
+                            "AMLSlugBitOK",
+                            "AMLSlugCoinKyt"
                         ],
                         "name": "provider_slug",
                         "in": "query"
@@ -11419,7 +11421,7 @@ const docTemplate = `{
                 "available_aml_providers": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
+                        "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLProvider"
                     }
                 },
                 "available_currencies": {
@@ -11758,6 +11760,9 @@ const docTemplate = `{
                 },
                 "currency_id": {
                     "type": "string"
+                },
+                "is_dirty": {
+                    "type": "boolean"
                 },
                 "is_sort_by_amount": {
                     "type": "boolean"
@@ -15114,7 +15119,8 @@ const docTemplate = `{
                         "access_key_id",
                         "access_key",
                         "secret_key",
-                        "access_id"
+                        "access_id",
+                        "api_key"
                     ],
                     "allOf": [
                         {
@@ -15404,12 +15410,14 @@ const docTemplate = `{
             "enum": [
                 "PaymentReceived",
                 "PaymentNotConfirmed",
-                "WithdrawalFromProcessingReceived"
+                "WithdrawalFromProcessingReceived",
+                "PaymentAMLBlocked"
             ],
             "x-enum-varnames": [
                 "WebhookEventPaymentReceived",
                 "WebhookEventPaymentNotConfirmed",
-                "WebhookEventWithdrawalFromProcessingReceived"
+                "WebhookEventWithdrawalFromProcessingReceived",
+                "WebhookEventPaymentAMLBlocked"
             ]
         },
         "WebhookKind": {
@@ -16015,15 +16023,28 @@ const docTemplate = `{
                 "AmlCheckStatusFailed"
             ]
         },
+        "github_com_dv-net_dv-merchant_internal_models.AMLProvider": {
+            "type": "object",
+            "properties": {
+                "label": {
+                    "type": "string"
+                },
+                "slug": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
+                }
+            }
+        },
         "github_com_dv-net_dv-merchant_internal_models.AMLSlug": {
             "type": "string",
             "enum": [
                 "aml_bot",
-                "bit_ok"
+                "bit_ok",
+                "coin_kyt"
             ],
             "x-enum-varnames": [
                 "AMLSlugAMLBot",
-                "AMLSlugBitOK"
+                "AMLSlugBitOK",
+                "AMLSlugCoinKyt"
             ]
         },
         "github_com_dv-net_dv-merchant_internal_models.AddressType": {
@@ -16043,13 +16064,15 @@ const docTemplate = `{
                 "access_key_id",
                 "secret_key",
                 "access_key",
-                "access_id"
+                "access_id",
+                "api_key"
             ],
             "x-enum-varnames": [
                 "AmlKeyTypeAccessKeyID",
                 "AmlKeyTypeSecret",
                 "AmlKeyTypeAccessKey",
-                "AmlKeyTypeAccessID"
+                "AmlKeyTypeAccessID",
+                "AmlKeyTypeAPIKey"
             ]
         },
         "github_com_dv-net_dv-merchant_internal_models.AppProfile": {

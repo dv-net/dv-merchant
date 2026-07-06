@@ -30,6 +30,7 @@ type FindParams struct {
 	SortByAmount  bool
 	BalanceFrom   *decimal.Decimal
 	BalanceTo     *decimal.Decimal
+	IsDirty       *bool
 }
 
 type FindRow struct {
@@ -75,6 +76,15 @@ func (s *CustomQuerier) Find(ctx context.Context, params FindParams) (*storecmn.
 	if params.Blockchain != nil {
 		sb.Where(sb.Equal("wallet_addresses.blockchain", *params.Blockchain))
 		countSb.Where(countSb.Equal("wallet_addresses.blockchain", *params.Blockchain))
+	}
+
+	if params.IsDirty != nil {
+		sb.Where(sb.Or(
+			sb.Equal("wallet_addresses.dirty", *params.IsDirty),
+		))
+		countSb.Where(countSb.Or(
+			countSb.Equal("wallet_addresses.dirty", *params.IsDirty),
+		))
 	}
 
 	if params.Address != nil {
@@ -129,6 +139,17 @@ func (s *CustomQuerier) Find(ctx context.Context, params FindParams) (*storecmn.
 	if params.SortByAmount {
 		params.OrderBy = "amount"
 	}
+
+	var allowedOrderBy = map[string]string{
+		"amount":     "amount",
+		"amount_usd": "amount_usd",
+	}
+
+	safeOrderBy, err := storecmn.SafeOrderBy(params.OrderBy, allowedOrderBy)
+	if err != nil {
+		return nil, fmt.Errorf("invalid sort parameter: %w", err)
+	}
+	params.OrderBy = safeOrderBy
 
 	// https://github.com/huandu/go-sqlbuilder/issues/24#issuecomment-496102500
 	if !params.IsAscOrdering {
