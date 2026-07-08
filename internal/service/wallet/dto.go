@@ -39,6 +39,22 @@ type GetProcessingWalletsDTO struct {
 	Currencies  []string            `json:"currencies"`
 }
 
+type GetWalletBalanceDTO struct {
+	Amount          *decimal.Decimal
+	CurrencyID      *string
+	WalletIDs       []*uuid.UUID
+	Blockchain      *string
+	Address         *string
+	BalanceFiatFrom *decimal.Decimal
+	BalanceFiatTo   *decimal.Decimal
+	Page            *uint32
+	PageSize        *uint32
+	StoreIDs        []uuid.UUID
+	IsSortByAmount  bool
+	IsSortByBalance bool
+	IsDirty         *bool
+}
+
 type FetchTronStatsResolution string
 
 const (

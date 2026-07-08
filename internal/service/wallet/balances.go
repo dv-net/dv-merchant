@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/dv-net/dv-merchant/internal/delivery/http/request/wallet_request"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/exrate"
@@ -28,7 +27,7 @@ import (
 )
 
 type IWalletBalances interface {
-	GetWalletBalance(ctx context.Context, dto wallet_request.GetWalletByStoreRequest, rates *exrate.Rates) (*storecmn.FindResponseWithFullPagination[*models.WalletWithUSDBalance], error)
+	GetWalletBalance(ctx context.Context, dto GetWalletBalanceDTO, rates *exrate.Rates) (*storecmn.FindResponseWithFullPagination[*models.WalletWithUSDBalance], error)
 	GetHotWalletsTotalBalance(ctx context.Context, user *models.User) (*AddressesTotalBalance, error)
 	GetColdWalletsTotalBalance(ctx context.Context, user *models.User) (*AddressesTotalBalance, error)
 	GetExchangeWalletsTotalBalance(ctx context.Context, user *models.User) (*AddressesTotalBalance, error)
@@ -36,8 +35,7 @@ type IWalletBalances interface {
 	ProcessingBalanceStatsInBackground(ctx context.Context, updateInterval time.Duration)
 }
 
-// GetWalletBalance TODO change request to dto
-func (s *Service) GetWalletBalance(ctx context.Context, dto wallet_request.GetWalletByStoreRequest, rates *exrate.Rates) (*storecmn.FindResponseWithFullPagination[*models.WalletWithUSDBalance], error) {
+func (s *Service) GetWalletBalance(ctx context.Context, dto GetWalletBalanceDTO, rates *exrate.Rates) (*storecmn.FindResponseWithFullPagination[*models.WalletWithUSDBalance], error) {
 	commonParams := storecmn.NewCommonFindParams()
 
 	if dto.PageSize != nil {
@@ -71,6 +69,7 @@ func (s *Service) GetWalletBalance(ctx context.Context, dto wallet_request.GetWa
 		SortByAmount:     dto.IsSortByAmount,
 		BalanceFrom:      dto.BalanceFiatFrom,
 		BalanceTo:        dto.BalanceFiatTo,
+		IsDirty:          dto.IsDirty,
 	}
 
 	wallets, err := s.storage.WalletAddresses().Find(ctx, params)

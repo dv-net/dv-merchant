@@ -28,6 +28,7 @@ type GetWalletByStoreRequest struct {
 	StoreIDs        []uuid.UUID      `json:"store_ids" validate:"required,min=1,dive,uuid"` //nolint:tagliatelle
 	IsSortByAmount  bool             `json:"is_sort_by_amount"`
 	IsSortByBalance bool             `json:"is_sort_by_balance"`
+	IsDirty         *bool            `json:"is_dirty" validate:"omitempty"`
 } //	@name	GetWalletByStoreRequest
 
 type GetHotWalletsTotalBalanceRequest struct{} //	@name	GetHotWalletsTotalBalanceRequest
