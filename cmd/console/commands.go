@@ -2,6 +2,7 @@ package console
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -27,7 +28,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 
 	epr "github.com/dv-net/dv-proto/go/eproxy"
 )
@@ -43,21 +44,21 @@ func InitCommands(currentAppVersion, commitHash string) []*cli.Command {
 			Name:        "start",
 			Description: "DV backend server",
 			Flags:       []cli.Flag{cfgPathsFlag()},
-			Action: func(ctx *cli.Context) error {
-				conf, err := loadConfig(ctx.Args().Slice(), ctx.StringSlice("configs"))
+			Action: func(ctx context.Context, c *cli.Command) error {
+				conf, err := loadConfig(c.Args().Slice(), c.StringSlice("configs"))
 				if err != nil {
 					return fmt.Errorf("failed to load config: %w", err)
 				}
 				PrintBanner(currentAppVersion)
 				l := logger.New(currentAppVersion, conf.Log)
 				l.Info("Logger Init")
-				return app.Run(ctx.Context, conf, l, currentAppVersion, commitHash)
+				return app.Run(ctx, conf, l, currentAppVersion, commitHash)
 			},
 		}, // Start
 		{
 			Name:        "version",
 			Description: "print DV backend server version",
-			Action: func(_ *cli.Context) error {
+			Action: func(_ context.Context, c *cli.Command) error {
 				_, _ = fmt.Fprintln(os.Stdout, currentAppVersion)
 				return nil
 			},
@@ -71,7 +72,7 @@ func InitCommands(currentAppVersion, commitHash string) []*cli.Command {
 					Name: "mode", Aliases: []string{"m"},
 					Usage: "Seed mode: {up|down}",
 					Value: "up",
-					Action: func(_ *cli.Context, s string) error {
+					Action: func(_ context.Context, _ *cli.Command, s string) error {
 						switch strings.ToLower(s) {
 						case string(seed.ModeUp), string(seed.ModeDown):
 							return nil
@@ -83,7 +84,7 @@ func InitCommands(currentAppVersion, commitHash string) []*cli.Command {
 					Name: "name", Aliases: []string{"n"},
 					Usage: "Name of seed",
 				},
-				&cli.PathFlag{
+				&cli.StringFlag{
 					Name: "file", Aliases: []string{"f"},
 					Usage: "Full path to seed file",
 				},
@@ -92,51 +93,51 @@ func InitCommands(currentAppVersion, commitHash string) []*cli.Command {
 If the "path" parameter is set, then the "driver" and "mode" parameters are ignored.
 By default, the "mode" parameter is set to "up", and the "driver" parameter is set to "postgres".
 If the parameter is not specified, then all scripts of the specified driver are executed in the specified mode.`,
-			Action: func(ctx *cli.Context) error {
-				conf, err := loadConfig(ctx.Args().Slice(), ctx.StringSlice("configs"))
+			Action: func(ctx context.Context, c *cli.Command) error {
+				conf, err := loadConfig(c.Args().Slice(), c.StringSlice("configs"))
 				if err != nil {
 					return fmt.Errorf("failed to load config: %w", err)
 				}
 				fmt.Printf("%+v\n", conf.Seed.Base)
-				seeder, err := seed.NewSeeder(ctx.Context, conf, sqlpostgres.SeedsFs)
+				seeder, err := seed.NewSeeder(ctx, conf, sqlpostgres.SeedsFs)
 				if err != nil {
 					return fmt.Errorf("failed to init: %w", err)
 				}
-				return seeder.Run(ctx.Context, &seed.Options{
-					Mode: seed.Mode(ctx.String("mode")),
-					Name: ctx.String("name"),
-					File: ctx.String("file"),
+				return seeder.Run(ctx, &seed.Options{
+					Mode: seed.Mode(c.String("mode")),
+					Name: c.String("name"),
+					File: c.String("file"),
 				})
 			},
 		}, // seed
 		{
 			Name:        "config",
 			Description: "validate, gen envs and flags for config",
-			Subcommands: prepareConfigCommands(),
+			Commands:    prepareConfigCommands(),
 		}, // config
 		{
 			Name:        "migrate",
 			Description: "migration database schema",
 			Flags:       []cli.Flag{cfgPathsFlag()},
-			Subcommands: prepareMigrationCommands(currentAppVersion),
+			Commands:    prepareMigrationCommands(currentAppVersion),
 		}, // migrate
 		{
 			Name:        "permission",
 			Description: "Access rights management.",
 			Flags:       []cli.Flag{cfgPathsFlag()},
-			Subcommands: preparePermissionCommands(currentAppVersion),
+			Commands:    preparePermissionCommands(currentAppVersion),
 		}, // permission
 		{
 			Name:        "transactions",
 			Description: "Transactions management",
 			Flags:       []cli.Flag{cfgPathsFlag()},
-			Subcommands: prepareTransactionsCommands(currentAppVersion),
+			Commands:    prepareTransactionsCommands(currentAppVersion),
 		}, // transactions
 		{
 			Name:        "users",
 			Description: "Users management",
 			Flags:       []cli.Flag{cfgPathsFlag()},
-			Subcommands: prepareUsersCommands(),
+			Commands:    prepareUsersCommands(),
 		}, // user
 	}
 }
@@ -147,14 +148,14 @@ func preparePermissionCommands(currentAppVersion string) []*cli.Command {
 			Name:        "load",
 			Description: "load permission policies from CSV file",
 			Flags: []cli.Flag{
-				&cli.PathFlag{
+				&cli.StringFlag{
 					Name:  "file",
 					Usage: "path to casbin rbac policies CSV file",
 					Value: "configs/rbac_policies.csv",
 				},
 			},
-			Action: func(ctx *cli.Context) error {
-				conf, err := loadConfig(ctx.Args().Slice(), ctx.StringSlice("configs"))
+			Action: func(ctx context.Context, c *cli.Command) error {
+				conf, err := loadConfig(c.Args().Slice(), c.StringSlice("configs"))
 				if err != nil {
 					return fmt.Errorf("failed to load config: %w", err)
 				}
@@ -163,7 +164,7 @@ func preparePermissionCommands(currentAppVersion string) []*cli.Command {
 					return fmt.Errorf("init logger failed: %w", err)
 				}
 
-				st, err := storage.InitStore(ctx.Context, conf)
+				st, err := storage.InitStore(ctx, conf)
 				if err != nil {
 					return fmt.Errorf("storage init: %w", err)
 				}
@@ -176,7 +177,7 @@ func preparePermissionCommands(currentAppVersion string) []*cli.Command {
 				if err != nil {
 					return fmt.Errorf("init permission service failed: %w", err)
 				}
-				if err := srv.LoadPolicies(ctx.String("file")); err != nil {
+				if err := srv.LoadPolicies(c.String("file")); err != nil {
 					return fmt.Errorf("load permission policies failed: %w", err)
 				}
 				return nil
@@ -196,19 +197,19 @@ func preparePermissionCommands(currentAppVersion string) []*cli.Command {
 					Usage:   "permission role",
 				},
 			},
-			Subcommands: prepareUserPermissionCommands(currentAppVersion),
+			Commands: prepareUserPermissionCommands(currentAppVersion),
 		}, // permission.user
 		{
 			Name:        "clear",
 			Description: "delete all permission policies",
-			Action: func(ctx *cli.Context) error {
-				conf, err := loadConfig(ctx.Args().Slice(), ctx.StringSlice("configs"))
+			Action: func(ctx context.Context, c *cli.Command) error {
+				conf, err := loadConfig(c.Args().Slice(), c.StringSlice("configs"))
 				if err != nil {
 					return fmt.Errorf("failed to load config: %w", err)
 				}
 				lg := logger.New(currentAppVersion, conf.Log)
 
-				st, err := storage.InitStore(ctx.Context, conf)
+				st, err := storage.InitStore(ctx, conf)
 				if err != nil {
 					return fmt.Errorf("storage init: %w", err)
 				}
@@ -222,7 +223,7 @@ func preparePermissionCommands(currentAppVersion string) []*cli.Command {
 				if err != nil {
 					return fmt.Errorf("init permission service failed: %w", err)
 				}
-				if !migrations.ConfirmActions(ctx.Context, "Are you sure?", false) {
+				if !migrations.ConfirmActions(ctx, "Are you sure?", false) {
 					return nil
 				}
 				srv.ClearPolicy()
@@ -237,14 +238,14 @@ func prepareUserPermissionCommands(currentAppVersion string) []*cli.Command {
 		{
 			Name:        "add",
 			Description: "add permission role to given user",
-			Action: func(ctx *cli.Context) error {
-				conf, err := loadConfig(ctx.Args().Slice(), ctx.StringSlice("configs"))
+			Action: func(ctx context.Context, c *cli.Command) error {
+				conf, err := loadConfig(c.Args().Slice(), c.StringSlice("configs"))
 				if err != nil {
 					return fmt.Errorf("failed to load config: %w", err)
 				}
 				lg := logger.New(currentAppVersion, conf.Log)
 
-				st, err := storage.InitStore(ctx.Context, conf)
+				st, err := storage.InitStore(ctx, conf)
 				if err != nil {
 					return fmt.Errorf("storage init: %w", err)
 				}
@@ -258,7 +259,7 @@ func prepareUserPermissionCommands(currentAppVersion string) []*cli.Command {
 				if err != nil {
 					return fmt.Errorf("init permission service failed: %w", err)
 				}
-				ok, err := srv.AddUserRole(ctx.String("id"), models.UserRole(ctx.String("role")))
+				ok, err := srv.AddUserRole(c.String("id"), models.UserRole(c.String("role")))
 				if err != nil {
 					return fmt.Errorf("add user role failed: %w", err)
 				}
@@ -273,14 +274,14 @@ func prepareUserPermissionCommands(currentAppVersion string) []*cli.Command {
 		{
 			Name:        "delete",
 			Description: "deletes permission role for given user",
-			Action: func(ctx *cli.Context) error {
-				conf, err := loadConfig(ctx.Args().Slice(), ctx.StringSlice("configs"))
+			Action: func(ctx context.Context, c *cli.Command) error {
+				conf, err := loadConfig(c.Args().Slice(), c.StringSlice("configs"))
 				if err != nil {
 					return fmt.Errorf("failed to load config: %w", err)
 				}
 				lg := logger.New(currentAppVersion, conf.Log)
 
-				st, err := storage.InitStore(ctx.Context, conf)
+				st, err := storage.InitStore(ctx, conf)
 				if err != nil {
 					return fmt.Errorf("storage init: %w", err)
 				}
@@ -293,7 +294,7 @@ func prepareUserPermissionCommands(currentAppVersion string) []*cli.Command {
 				if err != nil {
 					return fmt.Errorf("init permission service failed: %w", err)
 				}
-				ok, err := srv.DeleteUserRole(ctx.String("id"), models.UserRole(ctx.String("role")))
+				ok, err := srv.DeleteUserRole(c.String("id"), models.UserRole(c.String("role")))
 				if err != nil {
 					return fmt.Errorf("delete user role failed: %w", err)
 				}
@@ -319,14 +320,14 @@ func prepareTransactionsCommands(currentAppVersion string) []*cli.Command {
 					Usage:   "target blockchains to restore",
 				},
 			},
-			Action: func(ctx *cli.Context) error {
-				conf, err := loadConfig(ctx.Args().Slice(), ctx.StringSlice("configs"))
+			Action: func(ctx context.Context, c *cli.Command) error {
+				conf, err := loadConfig(c.Args().Slice(), c.StringSlice("configs"))
 				if err != nil {
 					return fmt.Errorf("failed to load config: %w", err)
 				}
 
 				lg := logger.New(currentAppVersion, conf.Log)
-				st, err := storage.InitStore(ctx.Context, conf)
+				st, err := storage.InitStore(ctx, conf)
 				if err != nil {
 					return fmt.Errorf("storage init: %w", err)
 				}
@@ -350,9 +351,9 @@ func prepareTransactionsCommands(currentAppVersion string) []*cli.Command {
 
 				transactionService := transactions.New(lg, st, eProxyService, currConvService, eventListener, nil)
 
-				blockchains := ctx.StringSlice("blockchains")
+				blockchains := c.StringSlice("blockchains")
 
-				return transactionService.RestoreAllWallets(ctx.Context, blockchains)
+				return transactionService.RestoreAllWallets(ctx, blockchains)
 			},
 		},
 	}
@@ -363,7 +364,7 @@ func prepareConfigCommands() []*cli.Command {
 		{
 			Name:  "genenvs",
 			Usage: "generate markdown for all envs and config yaml template",
-			Action: func(_ *cli.Context) error {
+			Action: func(ctx context.Context, c *cli.Command) error {
 				conf := new(config.Config)
 
 				envMarkdown, err := xconfig.GenerateMarkdown(conf, xconfig.WithEnvPrefix(envPrefix))
@@ -394,8 +395,8 @@ func prepareConfigCommands() []*cli.Command {
 			Name:  "validate",
 			Usage: "validate config without starting the server",
 			Flags: []cli.Flag{cfgPathsFlag()},
-			Action: func(ctx *cli.Context) error {
-				_, err := config.Load[config.Config](ctx.StringSlice("configs"), envPrefix)
+			Action: func(_ context.Context, c *cli.Command) error {
+				_, err := config.Load[config.Config](c.StringSlice("configs"), envPrefix)
 				if err != nil {
 					return err
 				}
@@ -409,7 +410,7 @@ func cfgPathsFlag() *cli.StringSliceFlag {
 	return &cli.StringSliceFlag{
 		Name:    "configs",
 		Aliases: []string{"c"},
-		Value:   cli.NewStringSlice(defaultConfigPath),
+		Value:   cli.NewStringSlice(defaultConfigPath).Value(),
 		Usage:   "allows you to use your own paths to configuration files, separated by commas (config.yaml,config.prod.yml,.env)",
 	}
 }

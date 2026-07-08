@@ -45,6 +45,7 @@ func (h *Handler) processingCallback(c fiber.Ctx) error {
 	if err == nil && statusCheckRequest.Kind == models.WebhookKindTransferStatus {
 		err = h.services.CallbackService.HandleUpdateTransferStatusCallback(c.Context(), statusCheckRequest)
 		if err != nil {
+			h.logger.Errorw("failed update transfer status", "request_id", statusCheckRequest.RequestID, "error", err)
 			return apierror.New().AddError(errors.New("failed update transfer status")).SetHttpCode(fiber.StatusBadRequest)
 		}
 		return c.Status(fiber.StatusAccepted).JSON(fiber.Map{

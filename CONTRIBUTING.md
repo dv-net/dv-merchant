@@ -27,7 +27,7 @@
 
 ### Prerequisites
 
-- **Go 1.24.4+** — [Download](https://go.dev/dl/)
+- **Go 1.25.0+** — [Download](https://go.dev/dl/)
 - **PostgreSQL** — Database operations
 - **Redis** — Caching (optional for local dev)
 - **Make** — Build commands

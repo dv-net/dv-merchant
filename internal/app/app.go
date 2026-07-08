@@ -3,10 +3,8 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/dv-net/dv-merchant/internal/cache"
 	"github.com/dv-net/dv-merchant/internal/config"
@@ -20,17 +18,6 @@ import (
 
 func Run(ctx context.Context, conf *config.Config, l logger.Logger, currentAppVersion, commitHash string) error {
 	lg := l
-
-	ctx, cancel := signal.NotifyContext(
-		ctx,
-		[]os.Signal{
-			syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT,
-		}...,
-	)
-
-	defer func() {
-		cancel()
-	}()
 
 	st, err := storage.InitStore(ctx, conf)
 	if err != nil {
@@ -76,15 +63,18 @@ func Run(ctx context.Context, conf *config.Config, l logger.Logger, currentAppVe
 	serverErrCh := make(chan error, 1)
 	go func() {
 		defer close(serverErrCh)
-		if err := srv.Run(); !errors.Is(err, http.ErrServerClosed) {
+		if err := srv.Run(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErrCh <- err
 		}
 	}()
 
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
-	case srvErr := <-serverErrCh:
-		return srvErr
+		if err := srv.Stop(); err != nil {
+			return fmt.Errorf("server shutdown: %w", err)
+		}
+		return nil
+	case err := <-serverErrCh:
+		return fmt.Errorf("server: %w", err)
 	}
 }

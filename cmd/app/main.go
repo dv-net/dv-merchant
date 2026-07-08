@@ -1,17 +1,21 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 
 	"github.com/dv-net/dv-merchant/cmd/console"
+	"github.com/dv-net/mx/logger"
 
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 var (
-	appName    = "github.com/dv-net/dv-merchant"
+	appName    = "dv-merchant"
 	version    = "local"
 	commitHash = "unknown"
 )
@@ -33,23 +37,30 @@ var (
 // @name						X-Api-Key
 // @description				Store API key
 func main() {
-	application := &cli.App{
-		Name:                 appName,
-		Description:          "This is an API for DV Merchant",
-		Version:              getBuildVersion(),
-		Suggest:              true,
-		EnableBashCompletion: true,
+	ctx, cancel := signal.NotifyContext(context.Background(), []os.Signal{
+		syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL,
+	}...)
+	defer cancel()
+
+	l := logger.NewExtended()
+
+	application := &cli.Command{
+		Name:        appName,
+		Description: "This is an API for DV Merchant",
+		Version:     getBuildVersion(),
+		Suggest:     true,
 		Flags: []cli.Flag{
 			cli.HelpFlag,
 			cli.VersionFlag,
-			cli.BashCompletionFlag,
 		},
-		Commands: console.InitCommands(version, commitHash),
+		Commands:       console.InitCommands(version, commitHash),
+		DefaultCommand: "start",
 	}
-	if err := application.Run(os.Args); err != nil {
-		_, _ = fmt.Println(err.Error())
-		os.Exit(1)
+
+	if err := application.Run(ctx, os.Args); err != nil {
+		l.Fatalf("failed to run cli runner: %s", err)
 	}
+
 }
 
 func getBuildVersion() string {
