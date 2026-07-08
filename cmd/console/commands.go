@@ -58,7 +58,7 @@ func InitCommands(currentAppVersion, commitHash string) []*cli.Command {
 		{
 			Name:        "version",
 			Description: "print DV backend server version",
-			Action: func(_ context.Context, c *cli.Command) error {
+			Action: func(_ context.Context, _ *cli.Command) error {
 				_, _ = fmt.Fprintln(os.Stdout, currentAppVersion)
 				return nil
 			},
@@ -364,7 +364,7 @@ func prepareConfigCommands() []*cli.Command {
 		{
 			Name:  "genenvs",
 			Usage: "generate markdown for all envs and config yaml template",
-			Action: func(ctx context.Context, c *cli.Command) error {
+			Action: func(_ context.Context, _ *cli.Command) error {
 				conf := new(config.Config)
 
 				envMarkdown, err := xconfig.GenerateMarkdown(conf, xconfig.WithEnvPrefix(envPrefix))

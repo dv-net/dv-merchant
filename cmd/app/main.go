@@ -60,7 +60,6 @@ func main() {
 	if err := application.Run(ctx, os.Args); err != nil {
 		l.Fatalf("failed to run cli runner: %s", err)
 	}
-
 }
 
 func getBuildVersion() string {
