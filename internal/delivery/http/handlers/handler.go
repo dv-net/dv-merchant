@@ -77,7 +77,7 @@ func (h *Handler) Init(api *fiber.App) {
 
 	h.initTransferRoutes(securedV1Admin)
 
-	h.initAdminRoutes(v1Admin)
+	h.initRootRoutes(v1Admin)
 
 	h.initStatisticsRoutes(securedV1Admin)
 

@@ -8,6 +8,7 @@ package repo_stores
 import (
 	"context"
 
+	constants "github.com/dv-net/dv-merchant/internal/constants"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -15,7 +16,7 @@ import (
 )
 
 const getArchivedByUser = `-- name: GetArchivedByUser :many
-SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled
+SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason
 FROM stores
 WHERE user_id = $1
   AND deleted_at IS NOT NULL
@@ -47,6 +48,10 @@ func (q *Queries) GetArchivedByUser(ctx context.Context, userID uuid.UUID) ([]*m
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.PublicPaymentFormEnabled,
+			&i.VerificationStatus,
+			&i.VerifiedAt,
+			&i.VerifiedBy,
+			&i.RejectionReason,
 		); err != nil {
 			return nil, err
 		}
@@ -59,7 +64,7 @@ func (q *Queries) GetArchivedByUser(ctx context.Context, userID uuid.UUID) ([]*m
 }
 
 const getByIDWithPublicFormEnabled = `-- name: GetByIDWithPublicFormEnabled :one
-SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled
+SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason
 FROM stores
 WHERE id = $1::uuid
   AND public_payment_form_enabled = true
@@ -85,12 +90,16 @@ func (q *Queries) GetByIDWithPublicFormEnabled(ctx context.Context, storeID uuid
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.PublicPaymentFormEnabled,
+		&i.VerificationStatus,
+		&i.VerifiedAt,
+		&i.VerifiedBy,
+		&i.RejectionReason,
 	)
 	return &i, err
 }
 
 const getByUser = `-- name: GetByUser :many
-SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled
+SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason
 FROM stores
 WHERE user_id = $1
   AND deleted_at IS NULL
@@ -122,6 +131,10 @@ func (q *Queries) GetByUser(ctx context.Context, userID uuid.UUID) ([]*models.St
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.PublicPaymentFormEnabled,
+			&i.VerificationStatus,
+			&i.VerifiedAt,
+			&i.VerifiedBy,
+			&i.RejectionReason,
 		); err != nil {
 			return nil, err
 		}
@@ -134,7 +147,7 @@ func (q *Queries) GetByUser(ctx context.Context, userID uuid.UUID) ([]*models.St
 }
 
 const getStoreByStoreApiKey = `-- name: GetStoreByStoreApiKey :one
-SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
+SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled, s.verification_status, s.verified_at, s.verified_by, s.rejection_reason
 FROM stores s
          JOIN
      store_api_keys sak
@@ -165,12 +178,16 @@ func (q *Queries) GetStoreByStoreApiKey(ctx context.Context, key string) (*model
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.PublicPaymentFormEnabled,
+		&i.VerificationStatus,
+		&i.VerifiedAt,
+		&i.VerifiedBy,
+		&i.RejectionReason,
 	)
 	return &i, err
 }
 
 const getStoreByWalletAddress = `-- name: GetStoreByWalletAddress :one
-SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled, wa.dirty
+SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled, s.verification_status, s.verified_at, s.verified_by, s.rejection_reason, wa.dirty
 FROM stores s
          JOIN wallets w ON s.id = w.store_id
          LEFT JOIN wallet_addresses wa
@@ -186,22 +203,26 @@ type GetStoreByWalletAddressParams struct {
 }
 
 type GetStoreByWalletAddressRow struct {
-	ID                       uuid.UUID         `db:"id" json:"id"`
-	UserID                   uuid.UUID         `db:"user_id" json:"user_id"`
-	Name                     string            `db:"name" json:"name"`
-	Site                     *string           `db:"site" json:"site"`
-	CurrencyID               string            `db:"currency_id" json:"currency_id"`
-	RateSource               models.RateSource `db:"rate_source" json:"rate_source"`
-	ReturnUrl                *string           `db:"return_url" json:"return_url"`
-	SuccessUrl               *string           `db:"success_url" json:"success_url"`
-	RateScale                decimal.Decimal   `db:"rate_scale" json:"rate_scale"`
-	Status                   bool              `db:"status" json:"status"`
-	MinimalPayment           decimal.Decimal   `db:"minimal_payment" json:"minimal_payment"`
-	CreatedAt                pgtype.Timestamp  `db:"created_at" json:"created_at"`
-	UpdatedAt                pgtype.Timestamp  `db:"updated_at" json:"updated_at"`
-	DeletedAt                pgtype.Timestamp  `db:"deleted_at" json:"deleted_at"`
-	PublicPaymentFormEnabled bool              `db:"public_payment_form_enabled" json:"public_payment_form_enabled"`
-	Dirty                    pgtype.Bool       `db:"dirty" json:"dirty"`
+	ID                       uuid.UUID                         `db:"id" json:"id"`
+	UserID                   uuid.UUID                         `db:"user_id" json:"user_id"`
+	Name                     string                            `db:"name" json:"name"`
+	Site                     *string                           `db:"site" json:"site"`
+	CurrencyID               string                            `db:"currency_id" json:"currency_id"`
+	RateSource               models.RateSource                 `db:"rate_source" json:"rate_source"`
+	ReturnUrl                *string                           `db:"return_url" json:"return_url"`
+	SuccessUrl               *string                           `db:"success_url" json:"success_url"`
+	RateScale                decimal.Decimal                   `db:"rate_scale" json:"rate_scale"`
+	Status                   bool                              `db:"status" json:"status"`
+	MinimalPayment           decimal.Decimal                   `db:"minimal_payment" json:"minimal_payment"`
+	CreatedAt                pgtype.Timestamp                  `db:"created_at" json:"created_at"`
+	UpdatedAt                pgtype.Timestamp                  `db:"updated_at" json:"updated_at"`
+	DeletedAt                pgtype.Timestamp                  `db:"deleted_at" json:"deleted_at"`
+	PublicPaymentFormEnabled bool                              `db:"public_payment_form_enabled" json:"public_payment_form_enabled"`
+	VerificationStatus       constants.StoreVerificationStatus `db:"verification_status" json:"verification_status"`
+	VerifiedAt               pgtype.Timestamp                  `db:"verified_at" json:"verified_at"`
+	VerifiedBy               uuid.NullUUID                     `db:"verified_by" json:"verified_by"`
+	RejectionReason          pgtype.Text                       `db:"rejection_reason" json:"rejection_reason"`
+	Dirty                    pgtype.Bool                       `db:"dirty" json:"dirty"`
 }
 
 func (q *Queries) GetStoreByWalletAddress(ctx context.Context, arg GetStoreByWalletAddressParams) (*GetStoreByWalletAddressRow, error) {
@@ -223,14 +244,18 @@ func (q *Queries) GetStoreByWalletAddress(ctx context.Context, arg GetStoreByWal
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.PublicPaymentFormEnabled,
+		&i.VerificationStatus,
+		&i.VerifiedAt,
+		&i.VerifiedBy,
+		&i.RejectionReason,
 		&i.Dirty,
 	)
 	return &i, err
 }
 
 const getStoreByWalletID = `-- name: GetStoreByWalletID :one
-SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
-FROM stores s 
+SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled, s.verification_status, s.verified_at, s.verified_by, s.rejection_reason
+FROM stores s
 JOIN wallets w ON s.id = w.store_id
 WHERE w.id = $1
 LIMIT 1
@@ -255,6 +280,10 @@ func (q *Queries) GetStoreByWalletID(ctx context.Context, id uuid.UUID) (*models
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.PublicPaymentFormEnabled,
+		&i.VerificationStatus,
+		&i.VerifiedAt,
+		&i.VerifiedBy,
+		&i.RejectionReason,
 	)
 	return &i, err
 }
@@ -306,6 +335,46 @@ func (q *Queries) GetStoreCurrencies(ctx context.Context, storeID uuid.UUID) ([]
 	return items, nil
 }
 
+const resendStoreVerification = `-- name: ResendStoreVerification :one
+UPDATE stores
+SET verification_status = $1::varchar,
+    updated_at           = now()
+WHERE id = $2::uuid
+    RETURNING id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason
+`
+
+type ResendStoreVerificationParams struct {
+	VerificationStatus string    `db:"verification_status" json:"verification_status"`
+	StoreID            uuid.UUID `db:"store_id" json:"store_id"`
+}
+
+func (q *Queries) ResendStoreVerification(ctx context.Context, arg ResendStoreVerificationParams) (*models.Store, error) {
+	row := q.db.QueryRow(ctx, resendStoreVerification, arg.VerificationStatus, arg.StoreID)
+	var i models.Store
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Site,
+		&i.CurrencyID,
+		&i.RateSource,
+		&i.ReturnUrl,
+		&i.SuccessUrl,
+		&i.RateScale,
+		&i.Status,
+		&i.MinimalPayment,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.PublicPaymentFormEnabled,
+		&i.VerificationStatus,
+		&i.VerifiedAt,
+		&i.VerifiedBy,
+		&i.RejectionReason,
+	)
+	return &i, err
+}
+
 const restore = `-- name: Restore :exec
 UPDATE stores
 SET deleted_at = NULL, updated_at = now()
@@ -345,4 +414,54 @@ type UpdateRateParams struct {
 func (q *Queries) UpdateRate(ctx context.Context, arg UpdateRateParams) error {
 	_, err := q.db.Exec(ctx, updateRate, arg.RateScale, arg.RateSource, arg.UserID)
 	return err
+}
+
+const updateVerificationStatus = `-- name: UpdateVerificationStatus :one
+UPDATE stores
+SET verification_status = $1::varchar,
+    verified_at          = now(),
+    verified_by          = $2::uuid,
+    rejection_reason     = $3::text,
+    updated_at           = now()
+WHERE id = $4::uuid
+RETURNING id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason
+`
+
+type UpdateVerificationStatusParams struct {
+	VerificationStatus string      `db:"verification_status" json:"verification_status"`
+	AdminID            uuid.UUID   `db:"admin_id" json:"admin_id"`
+	RejectionReason    pgtype.Text `db:"rejection_reason" json:"rejection_reason"`
+	StoreID            uuid.UUID   `db:"store_id" json:"store_id"`
+}
+
+func (q *Queries) UpdateVerificationStatus(ctx context.Context, arg UpdateVerificationStatusParams) (*models.Store, error) {
+	row := q.db.QueryRow(ctx, updateVerificationStatus,
+		arg.VerificationStatus,
+		arg.AdminID,
+		arg.RejectionReason,
+		arg.StoreID,
+	)
+	var i models.Store
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Name,
+		&i.Site,
+		&i.CurrencyID,
+		&i.RateSource,
+		&i.ReturnUrl,
+		&i.SuccessUrl,
+		&i.RateScale,
+		&i.Status,
+		&i.MinimalPayment,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.PublicPaymentFormEnabled,
+		&i.VerificationStatus,
+		&i.VerifiedAt,
+		&i.VerifiedBy,
+		&i.RejectionReason,
+	)
+	return &i, err
 }

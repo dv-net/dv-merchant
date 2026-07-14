@@ -10,14 +10,13 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
 const create = `-- name: Create :one
 INSERT INTO stores (user_id, name, site, currency_id, rate_source, return_url, success_url, status, created_at, public_payment_form_enabled)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9)
-	RETURNING id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled
+	RETURNING id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason
 `
 
 type CreateParams struct {
@@ -61,57 +60,16 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Store, 
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.PublicPaymentFormEnabled,
+		&i.VerificationStatus,
+		&i.VerifiedAt,
+		&i.VerifiedBy,
+		&i.RejectionReason,
 	)
 	return &i, err
 }
 
-const getAll = `-- name: GetAll :many
-SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled FROM stores WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT $1 OFFSET $2
-`
-
-type GetAllParams struct {
-	Limit  int32 `db:"limit" json:"limit"`
-	Offset int32 `db:"offset" json:"offset"`
-}
-
-func (q *Queries) GetAll(ctx context.Context, arg GetAllParams) ([]*models.Store, error) {
-	rows, err := q.db.Query(ctx, getAll, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []*models.Store{}
-	for rows.Next() {
-		var i models.Store
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.Name,
-			&i.Site,
-			&i.CurrencyID,
-			&i.RateSource,
-			&i.ReturnUrl,
-			&i.SuccessUrl,
-			&i.RateScale,
-			&i.Status,
-			&i.MinimalPayment,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.PublicPaymentFormEnabled,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getByID = `-- name: GetByID :one
-SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled FROM stores WHERE id=$1 LIMIT 1
+SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason FROM stores WHERE id=$1 LIMIT 1
 `
 
 func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.Store, error) {
@@ -133,15 +91,19 @@ func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.Store, err
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.PublicPaymentFormEnabled,
+		&i.VerificationStatus,
+		&i.VerifiedAt,
+		&i.VerifiedBy,
+		&i.RejectionReason,
 	)
 	return &i, err
 }
 
 const update = `-- name: Update :one
 UPDATE stores
-	SET name=$1, site=$2, currency_id=$3, rate_source=$4, return_url=$5, success_url=$6, rate_scale=$7, status=$8, minimal_payment=$9, updated_at=$10, public_payment_form_enabled=$11
-WHERE id=$12
-	RETURNING id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled
+	SET name=$1, site=$2, currency_id=$3, rate_source=$4, return_url=$5, success_url=$6, rate_scale=$7, status=$8, minimal_payment=$9, updated_at=now(), public_payment_form_enabled=$10
+WHERE id=$11
+	RETURNING id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason
 `
 
 type UpdateParams struct {
@@ -154,7 +116,6 @@ type UpdateParams struct {
 	RateScale                decimal.Decimal   `db:"rate_scale" json:"rate_scale"`
 	Status                   bool              `db:"status" json:"status"`
 	MinimalPayment           decimal.Decimal   `db:"minimal_payment" json:"minimal_payment"`
-	UpdatedAt                pgtype.Timestamp  `db:"updated_at" json:"updated_at"`
 	PublicPaymentFormEnabled bool              `db:"public_payment_form_enabled" json:"public_payment_form_enabled"`
 	ID                       uuid.UUID         `db:"id" json:"id"`
 }
@@ -170,7 +131,6 @@ func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.Store, 
 		arg.RateScale,
 		arg.Status,
 		arg.MinimalPayment,
-		arg.UpdatedAt,
 		arg.PublicPaymentFormEnabled,
 		arg.ID,
 	)
@@ -191,6 +151,10 @@ func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.Store, 
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.PublicPaymentFormEnabled,
+		&i.VerificationStatus,
+		&i.VerifiedAt,
+		&i.VerifiedBy,
+		&i.RejectionReason,
 	)
 	return &i, err
 }

@@ -63,7 +63,7 @@ type IRepository interface {
 	Currencies(opts ...Option) repo_currencies.Querier
 	Users(opts ...Option) repo_users.ICustomQuerier
 	PersonalAccessToken(opts ...Option) repo_personal_access_tokens.Querier
-	Stores(opts ...Option) repo_stores.Querier
+	Stores(opts ...Option) repo_stores.ICustomQuerier
 	StoreAPIKeys(opts ...Option) repo_store_api_keys.Querier
 	StoreWebhooks(opts ...Option) repo_store_webhooks.Querier
 	StoreCurrencies(opts ...Option) repo_store_currencies.Querier
@@ -120,7 +120,7 @@ type repository struct {
 	currencies                  *repo_currencies.Queries
 	users                       *repo_users.CustomQuerier
 	personalAccessToken         *repo_personal_access_tokens.Queries
-	stores                      *repo_stores.Queries
+	stores                      *repo_stores.CustomQuerier
 	storeAPIKeys                *repo_store_api_keys.Queries
 	storeWebhooks               *repo_store_webhooks.Queries
 	storeCurrencies             *repo_store_currencies.Queries
@@ -179,7 +179,7 @@ func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue)
 		currencies:                  repo_currencies.New(psql.DB),
 		users:                       repo_users.NewCustom(psql.DB),
 		personalAccessToken:         repo_personal_access_tokens.New(psql.DB),
-		stores:                      repo_stores.New(psql.DB),
+		stores:                      repo_stores.NewCustom(psql.DB),
 		storeAPIKeys:                repo_store_api_keys.New(psql.DB),
 		storeWebhooks:               repo_store_webhooks.New(psql.DB),
 		storeCurrencies:             repo_store_currencies.New(psql.DB),
@@ -259,7 +259,7 @@ func (r *repository) PersonalAccessToken(opts ...Option) repo_personal_access_to
 	return r.personalAccessToken
 }
 
-func (r *repository) Stores(opts ...Option) repo_stores.Querier {
+func (r *repository) Stores(opts ...Option) repo_stores.ICustomQuerier {
 	options := parseOptions(opts...)
 	if options.Tx != nil {
 		return r.stores.WithTx(options.Tx)

@@ -119,7 +119,7 @@ func (h *Handler) createOrUpdateUserSetting(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[[]settings_response.SettingResponse]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/dv-admin/setting/ [get]
+//	@Router			/v1/dv-admin/root-setting/ [get]
 //	@Security		BearerAuth
 func (h *Handler) getRootSettings(c fiber.Ctx) error {
 	settings, err := h.services.SettingService.GetRootSettings(c.Context())
@@ -139,7 +139,7 @@ func (h *Handler) getRootSettings(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[[]setting.Dto]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/dv-admin/setting/list [get]
+//	@Router			/v1/dv-admin/root-setting/list [get]
 //	@Security		BearerAuth
 func (h *Handler) listRootSettings(c fiber.Ctx) error {
 	availableSettings, err := h.services.SettingService.GetRootSettingsList(c.Context())

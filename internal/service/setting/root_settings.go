@@ -37,6 +37,8 @@ const (
 
 	NotificationSender = "notification_sender"
 	AnonymousTelemetry = "anonymous_telemetry"
+
+	StoreVerificationState = "store_verification_state"
 )
 
 var ExposedSettings = []string{
@@ -52,6 +54,7 @@ var ExposedSettings = []string{
 	MerchantDomain,
 	MerchantPayFormDomain,
 	AnonymousTelemetry,
+	StoreVerificationState,
 }
 
 var MailerSettings = []string{
@@ -89,6 +92,8 @@ var validRootSettings = map[string][]string{
 
 	NotificationSender: {NotificationSenderInternal, NotificationSenderDVNet},
 	AnonymousTelemetry: {FlagValueDisabled, FlagValueEnabled},
+
+	StoreVerificationState: {FlagValueDisabled, FlagValueEnabled},
 }
 
 var immutableRootSettings = map[string]bool{

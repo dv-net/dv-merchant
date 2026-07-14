@@ -11,6 +11,7 @@ import (
 type StoreResponse struct {
 	ID                       uuid.UUID       `json:"id" format:"uuid"`
 	UserID                   uuid.UUID       `json:"user_id" format:"uuid"`
+	OwnerEmail               string          `json:"owner_email,omitempty"`
 	Name                     string          `json:"name"`
 	Site                     *string         `json:"site" format:"uri"`
 	CurrencyID               string          `json:"currency_id"`
@@ -22,6 +23,9 @@ type StoreResponse struct {
 	MinimalPayment           decimal.Decimal `json:"minimal_payment"`
 	PublicPaymentFormEnabled bool            `json:"public_payment_form_enabled"`
 	CreatedAt                time.Time       `json:"created_at" format:"date-time"`
+	VerificationStatus       string          `json:"verification_status"`
+	VerifiedAt               *time.Time      `json:"verified_at" format:"date-time"`
+	RejectionReason          *string         `json:"rejection_reason"`
 } //	@name	StoreResponse
 
 type StoreWithTransactionsResponse struct {

@@ -51,7 +51,7 @@ func (h *Handler) exchangesList(c fiber.Ctx) error {
 // @Success		200	{object}	response.Result[string]
 // @Failure		422	{object}	apierror.Errors
 // @Failure		503	{object}	apierror.Errors
-// @Router			/v1/dv-admin/exchange/:slug/set [post]
+// @Router			/v1/dv-admin/exchange/{exchange_slug}/set [post]
 // @Security		Bearer
 func (h *Handler) setExchange(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
@@ -81,7 +81,7 @@ func (h *Handler) setExchange(c fiber.Ctx) error {
 // @Success		200				{object}	response.Result[string]
 // @Failure		422				{object}	apierror.Errors
 // @Failure		503				{object}	apierror.Errors
-// @Router			/v1/dv-admin/exchange/:slug/keys [post]
+// @Router			/v1/dv-admin/exchange/{exchange_slug}/keys [post]
 func (h *Handler) updateKeys(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
@@ -115,7 +115,7 @@ func (h *Handler) updateKeys(c fiber.Ctx) error {
 // @Success		200				{object}	response.Result[string]
 // @Failure		422				{object}	apierror.Errors
 // @Failure		503				{object}	apierror.Errors
-// @Router			/v1/dv-admin/exchange/:slug/keys [delete]
+// @Router			/v1/dv-admin/exchange/{exchange_slug}/keys [delete]
 func (h *Handler) deleteKeys(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
@@ -142,7 +142,7 @@ func (h *Handler) deleteKeys(c fiber.Ctx) error {
 // @Success		200	{object}	response.Result[string]
 // @Failure		422	{object}	apierror.Errors
 // @Failure		503	{object}	apierror.Errors
-// @Router			/v1/dv-admin/exchange/:slug/test [get]
+// @Router			/v1/dv-admin/exchange/{exchange_slug}/test [get]
 func (h *Handler) testConnection(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
@@ -203,7 +203,7 @@ func (h *Handler) testConnectionExternal(c fiber.Ctx) error {
 // @Success		200	{object}	response.Result[exchange_response.ExchangeBalanceResponse]
 // @Failure		422	{object}	apierror.Errors
 // @Failure		503	{object}	apierror.Errors
-// @Router			/v1/dv-admin/exchange/:slug/balance [get]
+// @Router			/v1/dv-admin/exchange/{exchange_slug}/balance [get]
 // @Security		Bearer
 func (h *Handler) getBalance(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
@@ -231,7 +231,7 @@ func (h *Handler) getBalance(c fiber.Ctx) error {
 // @Success		200				{object}	response.Result[string]
 // @Failure		422				{object}	apierror.Errors
 // @Failure		503				{object}	apierror.Errors
-// @Router			/v1/dv-admin/exchange/:slug/user-pairs [put]
+// @Router			/v1/dv-admin/exchange/{exchange_slug}/user-pairs [put]
 // @Security		Bearer
 func (h *Handler) updateUserExchangePairs(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
@@ -265,7 +265,7 @@ func (h *Handler) updateUserExchangePairs(c fiber.Ctx) error {
 // @Success		200	{object}	response.Result[exchange_response.ExchangeUserPairResponse]
 // @Failure		422	{object}	apierror.Errors
 // @Failure		503	{object}	apierror.Errors
-// @Router			/v1/dv-admin/exchange/:slug/user-pairs [get]
+// @Router			/v1/dv-admin/exchange/{exchange_slug}/user-pairs [get]
 // @Security		Bearer
 func (h *Handler) getUserExchangePairs(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
@@ -293,7 +293,7 @@ func (h *Handler) getUserExchangePairs(c fiber.Ctx) error {
 // @Success		200	{object}	response.Result[[]models.ExchangeSymbolDTO]
 // @Failure		422	{object}	apierror.Errors
 // @Failure		503	{object}	apierror.Errors
-// @Router			/v1/exchange/:slug/pairs [get]
+// @Router			/v1/exchange/{exchange_slug}/pairs [get]
 // @Security		Bearer
 func (h *Handler) getExchangePairs(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
@@ -354,7 +354,7 @@ func (h *Handler) updateDepositAddresses(c fiber.Ctx) error {
 // @Success		200	{object}	response.Result[[][]exchange_response.ExchangeWithdrawalRulesResponse]
 // @Failure		422	{object}	apierror.Errors
 // @Failure		503	{object}	apierror.Errors
-// @Router			/v1/exchange/:slug/withdrawal-rules [get]
+// @Router			/v1/exchange/{exchange_slug}/withdrawal-rules [get]
 // @Security		Bearer
 func (h *Handler) getExchangeWithdrawalRules(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)

@@ -10,7 +10,6 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const create = `-- name: Create :one
@@ -20,10 +19,10 @@ INSERT INTO aml_user_keys (key_id, user_id, value, created_at, updated_at)
 `
 
 type CreateParams struct {
-	KeyID     uuid.UUID        `db:"key_id" json:"key_id"`
-	UserID    uuid.UUID        `db:"user_id" json:"user_id"`
-	Value     string           `db:"value" json:"value"`
-	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	KeyID     uuid.UUID   `db:"key_id" json:"key_id"`
+	UserID    uuid.UUID   `db:"user_id" json:"user_id"`
+	Value     string      `db:"value" json:"value"`
+	UpdatedAt interface{} `db:"updated_at" json:"updated_at"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.AmlUserKey, error) {

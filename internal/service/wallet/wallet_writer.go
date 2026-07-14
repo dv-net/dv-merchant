@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/dv-net/dv-merchant/internal/constants"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
@@ -15,6 +16,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+var ErrStoreNotVerified = errors.New("store is not verified")
+
 // StoreWalletWithAddress creates/returns wallet with addresses
 func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWalletWithAddressDTO, amountUSD string) (*WithAddressDto, error) {
 	var storeOwner *models.User
@@ -22,7 +25,23 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 	walletWithAddress := &WithAddressDto{}
 	wallet := &models.Wallet{}
 
-	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+	str, err := s.storage.Stores().GetByID(ctx, dto.StoreID)
+	if err != nil {
+		return nil, err
+	}
+
+	if str.VerificationStatus != constants.StoreVerificationStatusSuccess {
+		verificationSetting, err := s.settingService.GetRootSetting(ctx, setting.StoreVerificationState)
+		if err != nil {
+			s.logger.Errorw("error getting root setting", "error", err)
+			return nil, err
+		}
+		if verificationSetting.Value == setting.FlagValueEnabled {
+			return nil, ErrStoreNotVerified
+		}
+	}
+
+	err = repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		w, err := s.storage.Wallets(repos.WithTx(tx)).GetByStore(ctx, repo_wallets.GetByStoreParams{
 			StoreID:         dto.StoreID,
 			StoreExternalID: dto.StoreExternalID,
@@ -56,11 +75,6 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 
 		if err := walletWithAddress.Encode(wallet, feURL.Value); err != nil {
 			return fmt.Errorf("failed to encode wallet: %w", err)
-		}
-
-		str, err := s.storage.Stores().GetByID(ctx, dto.StoreID)
-		if err != nil {
-			return err
 		}
 
 		storeOwner, err = s.storage.Users().GetByID(ctx, str.UserID)

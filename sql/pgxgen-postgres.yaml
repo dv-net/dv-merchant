@@ -111,6 +111,11 @@ schemas:
                 - column: stores.rate_source
                   go_type:
                     type: RateSource
+                - column: stores.verification_status
+                  go_type:
+                    import: 'github.com/dv-net/dv-merchant/internal/constants'
+                    package: 'constants'
+                    type: 'StoreVerificationStatus'
                 - column: store_webhooks.events
                   go_type:
                     type: '[]*WebhookEvent'
@@ -685,16 +690,12 @@ schemas:
                             - deleted_at
                             - updated_at
                             - slug
+                            - verification_status
+                            - verified_at
+                            - verified_by
+                            - rejection_reason
                         column_values:
                             created_at: now()
-                    find:
-                        name: GetAll
-                        where:
-                            deleted_at:
-                                value: IS NULL
-                        limit: true
-                        order:
-                            by: created_at
                     get:
                         name: GetByID
                     update:
@@ -704,6 +705,12 @@ schemas:
                             - user_id
                             - created_at
                             - deleted_at
+                            - verification_status
+                            - verified_at
+                            - verified_by
+                            - rejection_reason
+                        column_values:
+                            updated_at: now()
         transactions:
             primary_column: id
             crud:

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/dv-net/dv-merchant/internal/constants"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_request"
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -21,6 +22,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_stores"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_stores"
+	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/dv-net/dv-merchant/pkg/rate"
 	"github.com/google/uuid"
@@ -28,7 +30,7 @@ import (
 )
 
 type IStore interface { //nolint:interfacebloat
-	GetAllStores(ctx context.Context, page int32) ([]*models.Store, error)
+	GetAllStores(ctx context.Context, status *constants.StoreVerificationStatus, params *storecmn.CommonFindParams) (*storecmn.FindResponseWithFullPagination[*repo_stores.StoreWithOwnerEmail], error)
 	GetArchivedList(ctx context.Context, userID uuid.UUID) ([]*models.Store, error)
 	GetStoreByID(ctx context.Context, ID uuid.UUID) (*models.Store, error)
 	GetStoresByUserID(ctx context.Context, ID uuid.UUID) ([]*models.Store, error)
@@ -61,8 +63,6 @@ type Service struct {
 }
 
 var _ IStore = (*Service)(nil)
-
-const PageSize = 10
 
 func New(
 	storage storage.IStorage,
@@ -103,16 +103,13 @@ func New(
 	return srv
 }
 
-func (s *Service) GetAllStores(ctx context.Context, page int32) ([]*models.Store, error) {
-	if page < 1 {
-		return nil, fmt.Errorf("page number must be greater than 0")
-	}
-	params := repo_stores.GetAllParams{
-		Limit:  PageSize,
-		Offset: (page - 1) * PageSize,
+func (s *Service) GetAllStores(ctx context.Context, status *constants.StoreVerificationStatus, pagination *storecmn.CommonFindParams) (*storecmn.FindResponseWithFullPagination[*repo_stores.StoreWithOwnerEmail], error) {
+	params := repo_stores.GetAllFilteredParams{
+		Status:     status,
+		PageParams: pagination.PageParams,
 	}
 
-	stores, err := s.storage.Stores().GetAll(ctx, params)
+	stores, err := s.storage.Stores().GetStoresWithFilter(ctx, params)
 	if err != nil {
 		return nil, err
 	}

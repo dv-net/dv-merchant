@@ -27,7 +27,7 @@ create table if not exists aml_user_keys
     user_id    uuid         not null references users,
     value      varchar(255) not null check (value != ''),
     created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP             DEFAULT NULL,
+    updated_at verification_status             DEFAULT NULL,
 
     UNIQUE (user_id, key_id)
 );

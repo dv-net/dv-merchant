@@ -4,6 +4,7 @@ package models
 import (
 	"time"
 
+	"github.com/dv-net/dv-merchant/internal/constants"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
@@ -71,7 +72,7 @@ type AmlUserKey struct {
 	UserID    uuid.UUID        `db:"user_id" json:"user_id"`
 	Value     string           `db:"value" json:"value"`
 	CreatedAt pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	UpdatedAt interface{}      `db:"updated_at" json:"updated_at"`
 } //	@name	AmlUserKey
 
 type Currency struct {
@@ -292,21 +293,25 @@ type Setting struct {
 } //	@name	Setting
 
 type Store struct {
-	ID                       uuid.UUID        `db:"id" json:"id"`
-	UserID                   uuid.UUID        `db:"user_id" json:"user_id"`
-	Name                     string           `db:"name" json:"name"`
-	Site                     *string          `db:"site" json:"site"`
-	CurrencyID               string           `db:"currency_id" json:"currency_id"`
-	RateSource               RateSource       `db:"rate_source" json:"rate_source"`
-	ReturnUrl                *string          `db:"return_url" json:"return_url"`
-	SuccessUrl               *string          `db:"success_url" json:"success_url"`
-	RateScale                decimal.Decimal  `db:"rate_scale" json:"rate_scale"`
-	Status                   bool             `db:"status" json:"status"`
-	MinimalPayment           decimal.Decimal  `db:"minimal_payment" json:"minimal_payment"`
-	CreatedAt                pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt                pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-	DeletedAt                pgtype.Timestamp `db:"deleted_at" json:"deleted_at"`
-	PublicPaymentFormEnabled bool             `db:"public_payment_form_enabled" json:"public_payment_form_enabled"`
+	ID                       uuid.UUID                         `db:"id" json:"id"`
+	UserID                   uuid.UUID                         `db:"user_id" json:"user_id"`
+	Name                     string                            `db:"name" json:"name"`
+	Site                     *string                           `db:"site" json:"site"`
+	CurrencyID               string                            `db:"currency_id" json:"currency_id"`
+	RateSource               RateSource                        `db:"rate_source" json:"rate_source"`
+	ReturnUrl                *string                           `db:"return_url" json:"return_url"`
+	SuccessUrl               *string                           `db:"success_url" json:"success_url"`
+	RateScale                decimal.Decimal                   `db:"rate_scale" json:"rate_scale"`
+	Status                   bool                              `db:"status" json:"status"`
+	MinimalPayment           decimal.Decimal                   `db:"minimal_payment" json:"minimal_payment"`
+	CreatedAt                pgtype.Timestamp                  `db:"created_at" json:"created_at"`
+	UpdatedAt                pgtype.Timestamp                  `db:"updated_at" json:"updated_at"`
+	DeletedAt                pgtype.Timestamp                  `db:"deleted_at" json:"deleted_at"`
+	PublicPaymentFormEnabled bool                              `db:"public_payment_form_enabled" json:"public_payment_form_enabled"`
+	VerificationStatus       constants.StoreVerificationStatus `db:"verification_status" json:"verification_status"`
+	VerifiedAt               pgtype.Timestamp                  `db:"verified_at" json:"verified_at"`
+	VerifiedBy               uuid.NullUUID                     `db:"verified_by" json:"verified_by"`
+	RejectionReason          pgtype.Text                       `db:"rejection_reason" json:"rejection_reason"`
 } //	@name	Store
 
 type StoreAmlSetting struct {

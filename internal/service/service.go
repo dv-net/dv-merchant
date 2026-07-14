@@ -82,6 +82,7 @@ type Services struct {
 	StoreWhitelistService         store.IStoreWhitelist
 	StoreSecretService            store.ISecret
 	StoreAMLSettingsService       store.IStoreAmlSettings
+	StoreVerificationService      store.IVerify
 	TransactionService            transactions.ITransaction
 	WalletTransactionService      transactions.IWalletTransaction
 	UnconfirmedTransactionService transactions.IUnconfirmedTransaction
@@ -259,6 +260,7 @@ func NewServices(
 		StoreWhitelistService:         storeService,
 		StoreSecretService:            storeService,
 		StoreAMLSettingsService:       storeService,
+		StoreVerificationService:      storeService,
 		TransactionService:            transactionService,
 		WalletTransactionService:      transactionService,
 		UnconfirmedTransactionService: transactionService,

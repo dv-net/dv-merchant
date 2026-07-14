@@ -6,13 +6,18 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/service/notify"
 
+	"github.com/dv-net/dv-merchant/internal/constants"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/admin_request"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/admin_response"
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/store_response"
 	"github.com/dv-net/dv-merchant/internal/delivery/middleware"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
-	_ "github.com/dv-net/dv-merchant/internal/storage/storecmn" // swaggo
+	"github.com/dv-net/dv-merchant/internal/service/store"
+	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
+	"github.com/dv-net/dv-merchant/internal/tools"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
+	"github.com/dv-net/dv-merchant/internal/tools/converters"
 	"github.com/dv-net/dv-merchant/internal/tools/response"
 
 	"golang.org/x/text/language"
@@ -31,7 +36,7 @@ import (
 //	@Success		200		{object}	response.Result[storecmn.FindResponseWithFullPagination[admin_response.GetUsersResponse]]
 //	@Failure		422		{object}	apierror.Errors
 //	@Failure		503		{object}	apierror.Errors
-//	@Router			/v1/admin/users [get]
+//	@Router			/v1/dv-admin/root/users [get]
 //	@Security		BearerAuth
 func (h *Handler) getUsers(c fiber.Ctx) error {
 	_, err := loadAuthUser(c)
@@ -63,7 +68,7 @@ func (h *Handler) getUsers(c fiber.Ctx) error {
 //	@Success		200		{object}	response.Result[admin_response.BanUserResponse]
 //	@Failure		422		{object}	apierror.Errors
 //	@Failure		503		{object}	apierror.Errors
-//	@Router			/v1/admin/ban [patch]
+//	@Router			/v1/dv-admin/root/ban [patch]
 //	@Security		BearerAuth
 func (h *Handler) banUser(c fiber.Ctx) error {
 	_, err := loadAuthUser(c)
@@ -100,7 +105,7 @@ func (h *Handler) banUser(c fiber.Ctx) error {
 //	@Success		200		{object}	response.Result[admin_response.UnbanUserResponse]
 //	@Failure		422		{object}	apierror.Errors
 //	@Failure		503		{object}	apierror.Errors
-//	@Router			/v1/admin/unban [patch]
+//	@Router			/v1/dv-admin/root/unban [patch]
 //	@Security		BearerAuth
 func (h *Handler) unbanUser(c fiber.Ctx) error {
 	_, err := loadAuthUser(c)
@@ -137,7 +142,7 @@ func (h *Handler) unbanUser(c fiber.Ctx) error {
 //	@Success		200		{object}	response.Result[string]
 //	@Failure		422		{object}	apierror.Errors
 //	@Failure		503		{object}	apierror.Errors
-//	@Router			/v1/admin/role [delete]
+//	@Router			/v1/dv-admin/root/role [delete]
 //	@Security		BearerAuth
 func (h *Handler) deleteUserRole(c fiber.Ctx) error {
 	_, err := loadAuthUser(c)
@@ -185,7 +190,7 @@ func (h *Handler) deleteUserRole(c fiber.Ctx) error {
 //	@Success		200		{object}	response.Result[admin_response.AddUserRoleResponse]
 //	@Failure		422		{object}	apierror.Errors
 //	@Failure		503		{object}	apierror.Errors
-//	@Router			/v1/admin/role [post]
+//	@Router			/v1/dv-admin/root/role [post]
 //	@Security		BearerAuth
 func (h *Handler) addUserRole(c fiber.Ctx) error {
 	_, err := loadAuthUser(c)
@@ -237,7 +242,7 @@ func (h *Handler) addUserRole(c fiber.Ctx) error {
 //	@Failure		403			{object}	apierror.Errors
 //	@Failure		422			{object}	apierror.Errors
 //	@Failure		500			{object}	apierror.Errors
-//	@Router			/v1/admin/invite [post]
+//	@Router			/v1/dv-admin/root/invite [post]
 //	@Security		BearerAuth
 func (h *Handler) inviteUser(c fiber.Ctx) error {
 	u, err := loadAuthUser(c)
@@ -279,14 +284,136 @@ func (h *Handler) inviteUser(c fiber.Ctx) error {
 	return c.JSON(response.OkByMessage("User invite sent successfully"))
 }
 
-func (h *Handler) initAdminRoutes(v1 fiber.Router) {
-	admin := v1.Group("/admin",
+// getStores is a function to get all stores, optionally filtered by verification status
+//
+//	@Summary		Get all stores
+//	@Description	Get all stores, optionally filtered by verification status
+//	@Tags			Admin
+//	@Accept			json
+//	@Produce		json
+//	@Param			string	query		admin_request.GetStoresRequest	true	"GetStoresRequest"
+//	@Success		200		{object}	response.Result[storecmn.FindResponseWithFullPagination[store_response.StoreResponse]]
+//	@Failure		400		{object}	apierror.Errors
+//	@Router			/v1/dv-admin/root/stores [get]
+//	@Security		BearerAuth
+func (h *Handler) getStores(c fiber.Ctx) error {
+	_, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	req := &admin_request.GetStoresRequest{}
+	if err := c.Bind().Query(req); err != nil {
+		return err
+	}
+
+	var status *constants.StoreVerificationStatus
+	if req.Status != nil {
+		s := constants.StoreVerificationStatus(*req.Status)
+		status = &s
+	}
+
+	params := storecmn.NewCommonFindParams().SetPage(req.Page).SetPageSize(req.PageSize)
+
+	res, err := h.services.StoreService.GetAllStores(c.Context(), status, params)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(&storecmn.FindResponseWithFullPagination[*store_response.StoreResponse]{
+		Items:      converters.FromStoreWithOwnerEmailModelToResponses(res.Items...),
+		Pagination: res.Pagination,
+	}))
+}
+
+// verifyStore is a function to approve store verification
+//
+//	@Summary		Verify store
+//	@Description	Approve store verification
+//	@Tags			Admin
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		string	true	"Store ID"
+//	@Success		200	{object}	response.Result[store_response.StoreResponse]
+//	@Failure		400	{object}	apierror.Errors
+//	@Failure		404	{object}	apierror.Errors
+//	@Router			/v1/dv-admin/root/stores/{id}/verify [patch]
+//	@Security		BearerAuth
+func (h *Handler) verifyStore(c fiber.Ctx) error {
+	admin, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	storeID, err := tools.ValidateUUID(c.Params("id"))
+	if err != nil {
+		return err
+	}
+
+	updatedStore, err := h.services.StoreVerificationService.VerifyStore(c.Context(), store.VerifyStoreDTO{
+		StoreID: storeID,
+		Admin:   admin,
+	})
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(converters.FromStoreModelToResponse(updatedStore)))
+}
+
+// rejectStore is a function to reject store verification
+//
+//	@Summary		Reject store
+//	@Description	Reject store verification
+//	@Tags			Admin
+//	@Accept			json
+//	@Produce		json
+//	@Param			id			path		string								true	"Store ID"
+//	@Param			register	body		admin_request.RejectStoreRequest	true	"Reject store"
+//	@Success		200			{object}	response.Result[store_response.StoreResponse]
+//	@Failure		400			{object}	apierror.Errors
+//	@Failure		404			{object}	apierror.Errors
+//	@Router			/v1/dv-admin/root/stores/{id}/reject [patch]
+//	@Security		BearerAuth
+func (h *Handler) rejectStore(c fiber.Ctx) error {
+	admin, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	storeID, err := tools.ValidateUUID(c.Params("id"))
+	if err != nil {
+		return err
+	}
+
+	req := &admin_request.RejectStoreRequest{}
+	if err := c.Bind().Body(req); err != nil {
+		return err
+	}
+
+	updatedStore, err := h.services.StoreVerificationService.RejectStore(c.Context(), store.RejectStoreDTO{
+		StoreID: storeID,
+		Admin:   admin,
+		Reason:  req.Reason,
+	})
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(converters.FromStoreModelToResponse(updatedStore)))
+}
+
+func (h *Handler) initRootRoutes(v1 fiber.Router) {
+	root := v1.Group("/root",
 		middleware.AuthMiddleware(h.services.AuthService),
 		middleware.CasbinMiddleware(h.services.PermissionService, []models.UserRole{models.UserRoleRoot}))
-	admin.Get("/users", h.getUsers)
-	admin.Post("/invite", h.inviteUser)
-	admin.Patch("/ban", h.banUser)
-	admin.Patch("/unban", h.unbanUser)
-	admin.Delete("/role", h.deleteUserRole)
-	admin.Post("/role", h.addUserRole)
+	root.Get("/users", h.getUsers)
+	root.Post("/invite", h.inviteUser)
+	root.Patch("/ban", h.banUser)
+	root.Patch("/unban", h.unbanUser)
+	root.Delete("/role", h.deleteUserRole)
+	root.Post("/role", h.addUserRole)
+	root.Get("/stores", h.getStores)
+	root.Patch("/stores/:id/verify", h.verifyStore)
+	root.Patch("/stores/:id/reject", h.rejectStore)
 }

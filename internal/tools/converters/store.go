@@ -3,7 +3,9 @@ package converters
 import (
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/store_response"
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_stores"
 	"github.com/dv-net/dv-merchant/internal/util"
+	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 )
 
 func FromStoreModelToResponse(o *models.Store) *store_response.StoreResponse {
@@ -21,6 +23,9 @@ func FromStoreModelToResponse(o *models.Store) *store_response.StoreResponse {
 		CreatedAt:                o.CreatedAt.Time,
 		ReturnURL:                o.ReturnUrl,
 		SuccessURL:               o.SuccessUrl,
+		VerificationStatus:       o.VerificationStatus.String(),
+		VerifiedAt:               pgtypeutils.DecodeTime(o.VerifiedAt),
+		RejectionReason:          pgtypeutils.DecodeText(o.RejectionReason),
 	}
 	return res
 }
@@ -29,6 +34,20 @@ func FromStoreModelToResponses(models ...*models.Store) []*store_response.StoreR
 	res := make([]*store_response.StoreResponse, 0, len(models))
 	for _, model := range models {
 		res = append(res, FromStoreModelToResponse(model))
+	}
+	return res
+}
+
+func FromStoreWithOwnerEmailModelToResponse(o *repo_stores.StoreWithOwnerEmail) *store_response.StoreResponse {
+	res := FromStoreModelToResponse(&o.Store)
+	res.OwnerEmail = o.OwnerEmail.String
+	return res
+}
+
+func FromStoreWithOwnerEmailModelToResponses(models ...*repo_stores.StoreWithOwnerEmail) []*store_response.StoreResponse {
+	res := make([]*store_response.StoreResponse, 0, len(models))
+	for _, model := range models {
+		res = append(res, FromStoreWithOwnerEmailModelToResponse(model))
 	}
 	return res
 }

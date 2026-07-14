@@ -65,7 +65,7 @@ func (q *Queries) GetByStoreId(ctx context.Context, storeID uuid.UUID) ([]*model
 }
 
 const getStoreByKey = `-- name: GetStoreByKey :one
-SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
+SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled, s.verification_status, s.verified_at, s.verified_by, s.rejection_reason
 FROM store_api_keys sak
          INNER JOIN stores s on s.id = sak.store_id
 WHERE sak.key = $1 and sak.enabled = true
@@ -91,6 +91,10 @@ func (q *Queries) GetStoreByKey(ctx context.Context, key string) (*models.Store,
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.PublicPaymentFormEnabled,
+		&i.VerificationStatus,
+		&i.VerifiedAt,
+		&i.VerifiedBy,
+		&i.RejectionReason,
 	)
 	return &i, err
 }

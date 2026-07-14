@@ -13,7 +13,6 @@ import (
 
 type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (*models.Store, error)
-	GetAll(ctx context.Context, arg GetAllParams) ([]*models.Store, error)
 	GetArchivedByUser(ctx context.Context, userID uuid.UUID) ([]*models.Store, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Store, error)
 	GetByIDWithPublicFormEnabled(ctx context.Context, storeID uuid.UUID) (*models.Store, error)
@@ -22,10 +21,12 @@ type Querier interface {
 	GetStoreByWalletAddress(ctx context.Context, arg GetStoreByWalletAddressParams) (*GetStoreByWalletAddressRow, error)
 	GetStoreByWalletID(ctx context.Context, id uuid.UUID) (*models.Store, error)
 	GetStoreCurrencies(ctx context.Context, storeID uuid.UUID) ([]*models.Currency, error)
+	ResendStoreVerification(ctx context.Context, arg ResendStoreVerificationParams) (*models.Store, error)
 	Restore(ctx context.Context, id uuid.UUID) error
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 	Update(ctx context.Context, arg UpdateParams) (*models.Store, error)
 	UpdateRate(ctx context.Context, arg UpdateRateParams) error
+	UpdateVerificationStatus(ctx context.Context, arg UpdateVerificationStatusParams) (*models.Store, error)
 }
 
 var _ Querier = (*Queries)(nil)

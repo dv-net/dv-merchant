@@ -47,7 +47,7 @@ func (q *Queries) GetByStore(ctx context.Context, arg GetByStoreParams) (*models
 }
 
 const getFullDataByID = `-- name: GetFullDataByID :one
-select w.id, w.store_id, w.store_external_id, w.created_at, w.updated_at, w.deleted_at, w.email, w.ip_address, w.untrusted_email, w.locale, st.id, st.user_id, st.name, st.site, st.currency_id, st.rate_source, st.return_url, st.success_url, st.rate_scale, st.status, st.minimal_payment, st.created_at, st.updated_at, st.deleted_at, st.public_payment_form_enabled
+select w.id, w.store_id, w.store_external_id, w.created_at, w.updated_at, w.deleted_at, w.email, w.ip_address, w.untrusted_email, w.locale, st.id, st.user_id, st.name, st.site, st.currency_id, st.rate_source, st.return_url, st.success_url, st.rate_scale, st.status, st.minimal_payment, st.created_at, st.updated_at, st.deleted_at, st.public_payment_form_enabled, st.verification_status, st.verified_at, st.verified_by, st.rejection_reason
 from wallets w
          left join stores st on w.store_id = st.id
 where w.id = $1
@@ -87,12 +87,16 @@ func (q *Queries) GetFullDataByID(ctx context.Context, id uuid.UUID) (*GetFullDa
 		&i.Store.UpdatedAt,
 		&i.Store.DeletedAt,
 		&i.Store.PublicPaymentFormEnabled,
+		&i.Store.VerificationStatus,
+		&i.Store.VerifiedAt,
+		&i.Store.VerifiedBy,
+		&i.Store.RejectionReason,
 	)
 	return &i, err
 }
 
 const getWalletWithStore = `-- name: GetWalletWithStore :many
-SELECT w.id as wallet_id, w.store_external_id, wa.address, wa.currency_id, s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled
+SELECT w.id as wallet_id, w.store_external_id, wa.address, wa.currency_id, s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled, s.verification_status, s.verified_at, s.verified_by, s.rejection_reason
 FROM wallets w
          INNER JOIN stores s ON w.store_id = s.id
          INNER JOIN wallet_addresses wa ON w.id = wa.wallet_id
@@ -143,6 +147,10 @@ func (q *Queries) GetWalletWithStore(ctx context.Context, arg GetWalletWithStore
 			&i.Store.UpdatedAt,
 			&i.Store.DeletedAt,
 			&i.Store.PublicPaymentFormEnabled,
+			&i.Store.VerificationStatus,
+			&i.Store.VerifiedAt,
+			&i.Store.VerifiedBy,
+			&i.Store.RejectionReason,
 		); err != nil {
 			return nil, err
 		}
