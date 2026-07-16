@@ -14,19 +14,20 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO withdrawal_from_processing_wallets (currency_id, store_id, address_from, address_to, amount, amount_usd, request_id)
-	VALUES ($1, $2, $3, $4, $5, $6, $7)
-	RETURNING id, currency_id, store_id, transfer_id, address_from, address_to, amount, amount_usd, created_at, updated_at, request_id
+INSERT INTO withdrawal_from_processing_wallets (currency_id, store_id, address_from, address_to, amount, amount_usd, request_id, blocked_by_processing_error)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	RETURNING id, currency_id, store_id, transfer_id, address_from, address_to, amount, amount_usd, created_at, updated_at, request_id, blocked_by_processing_error
 `
 
 type CreateParams struct {
-	CurrencyID  string          `db:"currency_id" json:"currency_id"`
-	StoreID     uuid.UUID       `db:"store_id" json:"store_id"`
-	AddressFrom string          `db:"address_from" json:"address_from"`
-	AddressTo   string          `db:"address_to" json:"address_to"`
-	Amount      decimal.Decimal `db:"amount" json:"amount"`
-	AmountUsd   decimal.Decimal `db:"amount_usd" json:"amount_usd"`
-	RequestID   *string         `db:"request_id" json:"request_id"`
+	CurrencyID               string          `db:"currency_id" json:"currency_id"`
+	StoreID                  uuid.UUID       `db:"store_id" json:"store_id"`
+	AddressFrom              string          `db:"address_from" json:"address_from"`
+	AddressTo                string          `db:"address_to" json:"address_to"`
+	Amount                   decimal.Decimal `db:"amount" json:"amount"`
+	AmountUsd                decimal.Decimal `db:"amount_usd" json:"amount_usd"`
+	RequestID                *string         `db:"request_id" json:"request_id"`
+	BlockedByProcessingError bool            `db:"blocked_by_processing_error" json:"blocked_by_processing_error"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.WithdrawalFromProcessingWallet, error) {
@@ -38,6 +39,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Withdra
 		arg.Amount,
 		arg.AmountUsd,
 		arg.RequestID,
+		arg.BlockedByProcessingError,
 	)
 	var i models.WithdrawalFromProcessingWallet
 	err := row.Scan(
@@ -52,6 +54,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Withdra
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.RequestID,
+		&i.BlockedByProcessingError,
 	)
 	return &i, err
 }

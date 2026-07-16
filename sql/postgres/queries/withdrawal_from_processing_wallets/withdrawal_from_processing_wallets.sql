@@ -72,6 +72,7 @@ SELECT EXISTS (
     WHERE wfpw.transfer_id IS NULL
       AND c.blockchain = $1
       AND s.user_id = $2
+      AND wfpw.blocked_by_processing_error = false
 );
 
 -- name: DeleteWithdrawalFromProcessingWallets :one
@@ -81,3 +82,8 @@ WHERE id = $1
   AND store_id = $2
   AND transfer_id IS NULL
 RETURNING *;
+
+-- name: SetBlockedByProcessingError :exec
+UPDATE withdrawal_from_processing_wallets
+SET blocked_by_processing_error = $1
+WHERE id = $2;

@@ -21,6 +21,7 @@ type Querier interface {
 	GetWithdrawalWithTransfer(ctx context.Context, arg GetWithdrawalWithTransferParams) (*GetWithdrawalWithTransferRow, error)
 	HasQueuedByBlockchainAndUser(ctx context.Context, arg HasQueuedByBlockchainAndUserParams) (bool, error)
 	IsWithdrawalExistByRequestID(ctx context.Context, requestID *string) (bool, error)
+	SetBlockedByProcessingError(ctx context.Context, arg SetBlockedByProcessingErrorParams) error
 	UpdateTransferID(ctx context.Context, arg UpdateTransferIDParams) error
 }
 

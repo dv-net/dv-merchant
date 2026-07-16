@@ -9,38 +9,30 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dv-net/dv-merchant/internal/cache/settings"
-	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_wallet_addresses"
-
-	"github.com/dv-net/dv-merchant/internal/tools"
-
-	"github.com/dv-net/dv-merchant/internal/storage/repos"
-
-	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_from_processing_wallets"
-
-	"github.com/shopspring/decimal"
-
-	"github.com/dv-net/dv-merchant/internal/util"
-
-	"github.com/dv-net/dv-merchant/internal/service/setting"
-
 	"connectrpc.com/connect"
 
-	"github.com/dv-net/dv-merchant/internal/service/currency"
-	"github.com/dv-net/dv-merchant/internal/service/exrate"
-
 	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
 
+	"github.com/google/uuid"
+
+	"github.com/dv-net/dv-merchant/internal/cache/settings"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
+	"github.com/dv-net/dv-merchant/internal/service/currency"
+	"github.com/dv-net/dv-merchant/internal/service/exrate"
 	"github.com/dv-net/dv-merchant/internal/service/processing"
+	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/storage"
+	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transactions"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transfers"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallet_addresses"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_from_processing_wallets"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_wallet_addresses"
+	"github.com/dv-net/dv-merchant/internal/tools"
+	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/logger"
-
-	"github.com/google/uuid"
 )
 
 type IWithdrawServiceRunner interface {
@@ -60,6 +52,19 @@ const (
 	CodeStatusBlockchainIsDisabled = 4000
 	CodeStatusAddressEmptyBalance  = 4001
 )
+
+// isRetryableProcessingError reports whether err came from the "resource is temporarily
+// unavailable" branch of initializeTransfer (not enough balance, address taken, blockchain
+// disabled) — cases where no transfer was created and the same withdrawal is expected to be
+// retried later once the underlying condition clears.
+func isRetryableProcessingError(err error) bool {
+	if errors.Is(err, ErrProcessingExplorerUnavailable) {
+		return true
+	}
+
+	rpcCode, ok := processing.ErrorRPCCode(err)
+	return ok && rpcCode >= CodeStatusNotEnoughResources && rpcCode <= CodeStatusBlockchainIsDisabled
+}
 
 type service struct {
 	transfersInProcess blockchainsInProcess
@@ -265,6 +270,18 @@ func (s *service) processProcessingWithdrawal(
 
 	transfer, err := s.initializeTransfer(ctx, dto, &row.User, tx)
 	if err != nil && !errors.Is(err, ErrTransfersDisabled) && !errors.Is(err, pgx.ErrNoRows) {
+		if isRetryableProcessingError(err) {
+			if updErr := s.storage.WithdrawalsFromProcessing(repos.WithTx(tx)).SetBlockedByProcessingError(
+				ctx,
+				repo_withdrawal_from_processing_wallets.SetBlockedByProcessingErrorParams{
+					ID:                       row.WithdrawalFromProcessingWallet.ID,
+					BlockedByProcessingError: true,
+				},
+			); updErr != nil {
+				s.logger.Errorw("failed to mark processing withdrawal as blocked by processing error", "error", updErr)
+			}
+		}
+
 		return transfer, err
 	}
 	if transfer != nil {
