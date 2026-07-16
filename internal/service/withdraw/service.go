@@ -49,21 +49,17 @@ type IWithdrawService interface {
 const (
 	CodeStatusNotEnoughResources   = 3000
 	CodeStatusAddressIsTaken       = 3001
+	CodeStatusNotEnoughBalance     = 3004
 	CodeStatusBlockchainIsDisabled = 4000
 	CodeStatusAddressEmptyBalance  = 4001
 )
 
-// isRetryableProcessingError reports whether err came from the "resource is temporarily
-// unavailable" branch of initializeTransfer (not enough balance, address taken, blockchain
-// disabled) — cases where no transfer was created and the same withdrawal is expected to be
-// retried later once the underlying condition clears.
+// isRetryableProcessingError reports whether err is specifically the "not enough balance for
+// transfer" error from initializeTransfer — the only case where no transfer was created and the
+// same withdrawal is expected to be retried later once the processing wallet balance is topped up.
 func isRetryableProcessingError(err error) bool {
-	if errors.Is(err, ErrProcessingExplorerUnavailable) {
-		return true
-	}
-
 	rpcCode, ok := processing.ErrorRPCCode(err)
-	return ok && rpcCode >= CodeStatusNotEnoughResources && rpcCode <= CodeStatusBlockchainIsDisabled
+	return ok && rpcCode == CodeStatusNotEnoughBalance
 }
 
 type service struct {
