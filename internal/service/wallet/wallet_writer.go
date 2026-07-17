@@ -30,7 +30,7 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 		return nil, err
 	}
 
-	if str.VerificationStatus != constants.StoreVerificationStatusSuccess {
+	if str.VerificationStatus == constants.StoreVerificationStatusRejected {
 		verificationSetting, err := s.settingService.GetRootSetting(ctx, setting.StoreVerificationState)
 		if err != nil {
 			s.logger.Errorw("error getting root setting", "error", err)
