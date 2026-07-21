@@ -8,8 +8,9 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/tools/converters"
 
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/aml_responses"
+
 	// Blank imports for swagger gen
-	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/aml_responses"
 	_ "github.com/dv-net/dv-merchant/internal/storage/storecmn"
 
 	"errors"
@@ -287,9 +288,10 @@ func (h *Handler) updateStoreAMLSettings(c fiber.Ctx) error {
 	}
 
 	dto := store.UpdateAMLSettingsDTO{
-		Enabled:       req.Enabled,
-		RiskThreshold: req.RiskThreshold,
-		ProviderSlug:  req.ProviderSlug,
+		Enabled:                 req.Enabled,
+		RiskThreshold:           req.RiskThreshold,
+		ProviderSlug:            req.ProviderSlug,
+		IgnoredSignalCategories: req.IgnoredSignalCategories,
 	}
 
 	amlSettings, err := h.services.StoreAMLSettingsService.UpdateAMLSetting(c.Context(), targetStore.ID, dto)
@@ -299,12 +301,52 @@ func (h *Handler) updateStoreAMLSettings(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(store_response.NewStoreAMLSettingsResponse(amlSettings)))
 }
 
+// getAMLSignalingCategories returns the list of risk signal categories supported by an AML-provider.
+//
+//	@Summary		Get AML-provider signal categories
+//	@Description	Get the list of risk signal categories a specific AML-provider can return in a check response (used to build a per-store ignore-list)
+//	@Tags			AML
+//	@Accept			json
+//	@Produce		json
+//	@Param			aml_provider_slug	path		string	true	"AML-provider slug"
+//	@Success		200					{object}	response.Result[[]aml_responses.SignalCategoryResponse]
+//	@Failure		400					{object}	apierror.Errors
+//	@Failure		404					{object}	apierror.Errors
+//	@Router			/v1/dv-admin/aml/{aml_provider_slug}/signals [get]
+func (h *Handler) getAMLSignalingCategories(c fiber.Ctx) error {
+	_, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	slug := models.AMLSlug(c.Params("aml_provider_slug"))
+	if !slug.Valid() {
+		return apierror.New().AddError(errors.New("AML provider not found")).SetHttpCode(http.StatusNotFound)
+	}
+
+	signalCategories, err := h.services.AMLService.GetSignalsCategorise(c.Context(), slug)
+	if err != nil {
+		return apierror.New().AddError(errors.New("failed to get signal categories")).SetHttpCode(http.StatusBadRequest)
+	}
+
+	resp := make([]aml_responses.SignalCategoryResponse, 0, len(signalCategories))
+	for _, category := range signalCategories {
+		resp = append(resp, aml_responses.SignalCategoryResponse{
+			Category: category.Category,
+			Label:    category.Label,
+		})
+	}
+
+	return c.JSON(response.OkByData(resp))
+}
+
 func (h *Handler) initAMLRoutes(v1 fiber.Router) {
 	amlRoutes := v1.Group("/aml")
 	amlRoutes.Post("/:aml_provider_slug/keys", h.updateAMLKeys)
 	amlRoutes.Get("/:aml_provider_slug/keys", h.getAMLKeys)
 	amlRoutes.Delete("/:aml_provider_slug/keys", h.deleteAMLKeys)
 	amlRoutes.Get("/:aml_provider_slug/currencies", h.getAMLCurrencies)
+	amlRoutes.Get("/:aml_provider_slug/signals", h.getAMLSignalingCategories)
 	amlRoutes.Get("/history", h.amlHistory)
 	amlRoutes.Post("/score-transaction", h.scoreTransaction)
 

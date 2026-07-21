@@ -156,14 +156,20 @@ func (s *Service) checkAMLBlock(ctx context.Context, ev transactions.Transaction
 }
 
 func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent, settings *models.StoreAmlSetting) (*models.AmlCheck, bool) {
+	categories, err := settings.ParseIgnoredSignalCategories()
+	if err != nil {
+		s.log.Errorw("failed to parse ignored signal categories", "error", err)
+		categories = []string{}
+	}
 	amlCheck, err := s.amlService.AutoScoreDeposit(ctx, aml.AutoScoreDepositDTO{
-		UserID:        ev.GetStore().UserID,
-		TxID:          ev.GetTx().GetID(),
-		TxHash:        ev.GetTx().GetTxHash(),
-		CurrencyID:    ev.GetTx().GetCurrencyID(),
-		OutputAddress: ev.GetTx().GetToAddress(),
-		ProviderSlug:  settings.ProviderSlug,
-		DBTx:          ev.GetDatabaseTx(),
+		UserID:                  ev.GetStore().UserID,
+		TxID:                    ev.GetTx().GetID(),
+		TxHash:                  ev.GetTx().GetTxHash(),
+		CurrencyID:              ev.GetTx().GetCurrencyID(),
+		OutputAddress:           ev.GetTx().GetToAddress(),
+		ProviderSlug:            settings.ProviderSlug,
+		IgnoredSignalCategories: categories,
+		DBTx:                    ev.GetDatabaseTx(),
 	})
 	if err != nil {
 		if !errors.Is(err, aml.ErrNoProviderAvailable) {

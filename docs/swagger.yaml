@@ -2023,6 +2023,17 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-array_SignalCategoryResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/SignalCategoryResponse'
+        type: array
+      message:
+        type: string
+    type: object
   JSONResponse-array_StatisticsDTO:
     properties:
       code:
@@ -2837,6 +2848,13 @@ definitions:
       status:
         $ref: '#/definitions/TransferStatus'
     type: object
+  SignalCategoryResponse:
+    properties:
+      category:
+        type: string
+      label:
+        type: string
+    type: object
   StatisticsDTO:
     properties:
       date:
@@ -3327,6 +3345,10 @@ definitions:
     properties:
       enabled:
         type: boolean
+      ignored_signal_categories:
+        items:
+          type: string
+        type: array
       provider_slug:
         $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug'
       risk_threshold:
@@ -4074,6 +4096,10 @@ definitions:
         type: boolean
       id:
         type: string
+      ignored_signal_categories:
+        items:
+          type: string
+        type: array
       provider_slug:
         type: string
       risk_threshold:
@@ -4675,6 +4701,36 @@ paths:
           schema:
             $ref: '#/definitions/APIErrors'
       summary: Update AML-provider keys
+      tags:
+      - AML
+  /v1/dv-admin/aml/{aml_provider_slug}/signals:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of risk signal categories a specific AML-provider
+        can return in a check response (used to build a per-store ignore-list)
+      parameters:
+      - description: AML-provider slug
+        in: path
+        name: aml_provider_slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_SignalCategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get AML-provider signal categories
       tags:
       - AML
   /v1/dv-admin/aml/history:

@@ -609,6 +609,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/aml/{aml_provider_slug}/signals": {
+            "get": {
+                "description": "Get the list of risk signal categories a specific AML-provider can return in a check response (used to build a per-store ignore-list)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Get AML-provider signal categories",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "AML-provider slug",
+                        "name": "aml_provider_slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_SignalCategoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/auth/login": {
             "post": {
                 "description": "Auth a user",
@@ -13206,6 +13250,23 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-array_SignalCategoryResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SignalCategoryResponse"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-array_StatisticsDTO": {
             "type": "object",
             "properties": {
@@ -14423,6 +14484,17 @@ const docTemplate = `{
                 }
             }
         },
+        "SignalCategoryResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                }
+            }
+        },
         "StatisticsDTO": {
             "type": "object",
             "properties": {
@@ -15135,6 +15207,12 @@ const docTemplate = `{
             "properties": {
                 "enabled": {
                     "type": "boolean"
+                },
+                "ignored_signal_categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "provider_slug": {
                     "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
@@ -16243,6 +16321,12 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string"
+                },
+                "ignored_signal_categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "provider_slug": {
                     "type": "string"

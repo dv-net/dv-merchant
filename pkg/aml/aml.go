@@ -28,18 +28,32 @@ const (
 )
 
 type CheckResponse struct {
-	ExternalID string          `json:"external_id"`
-	Score      decimal.Decimal `json:"score"`
-	Status     CheckStatus     `json:"status"`
-	RiskLevel  *CheckRiskLevel `json:"risk_level"`
-	HTTPStatus int             `json:"http_status"`
-	Request    json.RawMessage `json:"request"`
-	Response   json.RawMessage `json:"response"`
+	ExternalID string               `json:"external_id"`
+	Score      decimal.Decimal      `json:"score"`
+	Status     CheckStatus          `json:"status"`
+	RiskLevel  *CheckRiskLevel      `json:"risk_level"`
+	HTTPStatus int                  `json:"http_status"`
+	Request    json.RawMessage      `json:"request"`
+	Response   json.RawMessage      `json:"response"`
+	Signals    []SignalContribution `json:"signals,omitempty"`
 }
 
 type TokenData struct {
 	Blockchain      string `json:"blockchain"`
 	ContractAddress string `json:"contract_address"`
+}
+
+type SignalContribution struct {
+	Category string          `json:"category"`
+	Weight   decimal.Decimal `json:"weight"`
+}
+type SignalCategory struct {
+	Category string `json:"category"`
+	Label    string `json:"label"`
+}
+
+type SignalCategoryLister interface {
+	SignalCategories() []SignalCategory
 }
 
 func (td TokenData) IsNative() bool {

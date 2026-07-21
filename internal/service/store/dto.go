@@ -10,9 +10,10 @@ type UpdateStoreCurrencyDTO struct {
 }
 
 type UpdateAMLSettingsDTO struct {
-	Enabled       bool  `json:"enabled"`
-	RiskThreshold int32 `json:"risk_threshold"`
-	ProviderSlug  *models.AMLSlug
+	Enabled                 bool  `json:"enabled"`
+	RiskThreshold           int32 `json:"risk_threshold"`
+	ProviderSlug            *models.AMLSlug
+	IgnoredSignalCategories []string `json:"ignored_signal_categories"`
 }
 
 type VerifyStoreDTO struct {

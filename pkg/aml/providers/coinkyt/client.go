@@ -157,6 +157,21 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 
 	reqJSON, _ := json.Marshal(values)
 
+	weights := make(map[string]decimal.Decimal)
+	for _, s := range response.Indirects {
+		w, err := decimal.NewFromString(s.TotalCountCoef)
+		if err != nil {
+			c.log.Errorw("parsing signal weight error", "error", err, "signal", s)
+			continue
+		}
+		weights[s.Type] = weights[s.Type].Add(w.Mul(decimal.NewFromInt(100)))
+	}
+
+	signals := make([]aml.SignalContribution, 0, len(weights))
+	for category, weight := range weights {
+		signals = append(signals, aml.SignalContribution{Category: category, Weight: weight})
+	}
+
 	riskLevel := response.ToAMLRiskLevel()
 	return &aml.CheckResponse{
 		ExternalID: response.ID,
@@ -166,5 +181,6 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 		HTTPStatus: resp.StatusCode,
 		Request:    reqJSON,
 		Response:   respBodyBytes,
+		Signals:    signals,
 	}, nil
 }

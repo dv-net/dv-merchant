@@ -5,6 +5,7 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/pkg/aml"
+	"github.com/shopspring/decimal"
 )
 
 func convertAmlRiskLevelToModel(riskLevel aml.CheckRiskLevel) (*models.AmlRiskLevel, error) {
@@ -38,4 +39,20 @@ func convertAmlStatusToModel(status aml.CheckStatus) models.AMLCheckStatus {
 	default:
 		return models.AmlCheckStatusPending
 	}
+}
+
+func subtractIgnoredSignals(score decimal.Decimal, signals []aml.SignalContribution, ignored []string) decimal.Decimal {
+	if len(ignored) == 0 || len(signals) == 0 {
+		return score
+	}
+	ignoredSet := make(map[string]struct{}, len(ignored))
+	for _, c := range ignored {
+		ignoredSet[c] = struct{}{}
+	}
+	for _, s := range signals {
+		if _, ok := ignoredSet[s.Category]; ok {
+			score = score.Sub(s.Weight)
+		}
+	}
+	return decimal.Max(score, decimal.Zero)
 }

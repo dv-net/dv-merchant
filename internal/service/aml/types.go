@@ -32,11 +32,12 @@ type CheckDTO struct {
 }
 
 type AutoScoreDepositDTO struct {
-	TxID          uuid.UUID
-	UserID        uuid.UUID
-	TxHash        string
-	CurrencyID    string
-	ProviderSlug  *models.AMLSlug // nil = auto-select by user keys
-	OutputAddress string
-	DBTx          pgx.Tx // outer DB transaction from the deposit event; nil for manual checks
+	TxID                    uuid.UUID
+	UserID                  uuid.UUID
+	TxHash                  string
+	CurrencyID              string
+	ProviderSlug            *models.AMLSlug // nil = auto-select by user keys
+	OutputAddress           string
+	IgnoredSignalCategories []string
+	DBTx                    pgx.Tx // outer DB transaction from the deposit event; nil for manual checks
 }

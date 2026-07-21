@@ -6,6 +6,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_aml_settings"
 	"github.com/dv-net/dv-merchant/pkg/dbutils/pgerror"
+	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
@@ -26,11 +27,16 @@ func (s *Service) GetStoreAmlSettings(ctx context.Context, storeID uuid.UUID) (*
 }
 
 func (s *Service) UpdateAMLSetting(ctx context.Context, storeID uuid.UUID, dto UpdateAMLSettingsDTO) (*models.StoreAmlSetting, error) {
+	isg, err := json.Marshal(dto.IgnoredSignalCategories)
+	if err != nil {
+		return nil, err
+	}
 	amlSetting, err := s.storage.StoreAmlSettings().Upsert(ctx, repo_store_aml_settings.UpsertParams{
-		StoreID:       storeID,
-		Enabled:       dto.Enabled,
-		RiskThreshold: dto.RiskThreshold,
-		ProviderSlug:  dto.ProviderSlug,
+		StoreID:                 storeID,
+		Enabled:                 dto.Enabled,
+		RiskThreshold:           dto.RiskThreshold,
+		ProviderSlug:            dto.ProviderSlug,
+		IgnoredSignalCategories: isg,
 	})
 	if err != nil {
 		parsedErr := pgerror.ParseError(err)

@@ -46,6 +46,7 @@ type IService interface {
 	GetCheckHistory(ctx context.Context, usr *models.User, dto ChecksWithHistoryDTO) (*storecmn.FindResponseWithFullPagination[*repo_aml_checks.FindRow], error)
 	GetAllActiveProviders() []models.AMLProvider
 	GetSupportedCurrencies(ctx context.Context, slug models.AMLSlug) ([]*models.CurrencyShort, error)
+	GetSignalsCategorise(ctx context.Context, slug models.AMLSlug) ([]aml.SignalCategory, error)
 }
 
 var _ IService = (*Service)(nil)
@@ -161,6 +162,8 @@ func (s *Service) AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO)
 	if err != nil {
 		return nil, err
 	}
+	// remove weight signals
+	check.Score = subtractIgnoredSignals(check.Score, check.Signals, dto.IgnoredSignalCategories)
 
 	createdAmlCheck, err := s.createCheck(ctx, dto.UserID, *amlSvc, check, &dto.TxID, dto.DBTx)
 	if err != nil {
@@ -234,6 +237,24 @@ func (s *Service) GetSupportedCurrencies(ctx context.Context, slug models.AMLSlu
 	}
 
 	return preparedCurrs, nil
+}
+
+func (s *Service) GetSignalsCategorise(_ context.Context, slug models.AMLSlug) ([]aml.SignalCategory, error) {
+	if err := s.ensureProviderEnabled(slug); err != nil {
+		return nil, err
+	}
+
+	client, err := s.factory.GetClient(slugMapping[slug])
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider: %w", err)
+	}
+
+	lister, ok := client.(aml.SignalCategoryLister)
+	if !ok {
+		return []aml.SignalCategory{}, nil
+	}
+
+	return lister.SignalCategories(), nil
 }
 
 type prepareParams struct {

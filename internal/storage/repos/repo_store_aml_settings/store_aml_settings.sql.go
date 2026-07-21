@@ -13,10 +13,9 @@ import (
 )
 
 const getByStoreID = `-- name: GetByStoreID :one
-SELECT id, store_id, enabled, risk_threshold, provider_slug, created_at, updated_at
+SELECT id, store_id, enabled, risk_threshold, provider_slug, created_at, updated_at, ignored_signal_categories
 FROM store_aml_settings
-WHERE store_id = $1
-limit 1
+WHERE store_id = $1 limit 1
 `
 
 func (q *Queries) GetByStoreID(ctx context.Context, storeID uuid.UUID) (*models.StoreAmlSetting, error) {
@@ -30,26 +29,30 @@ func (q *Queries) GetByStoreID(ctx context.Context, storeID uuid.UUID) (*models.
 		&i.ProviderSlug,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IgnoredSignalCategories,
 	)
 	return &i, err
 }
 
 const upsert = `-- name: Upsert :one
-INSERT INTO store_aml_settings (store_id, enabled, risk_threshold, provider_slug, created_at, updated_at)
-VALUES ($1, $2, $3, $4, now(), now())
-ON CONFLICT (store_id) DO UPDATE
-    SET enabled        = EXCLUDED.enabled,
-        risk_threshold = EXCLUDED.risk_threshold,
-        provider_slug  = EXCLUDED.provider_slug,
-        updated_at     = now()
-RETURNING id, store_id, enabled, risk_threshold, provider_slug, created_at, updated_at
+INSERT INTO store_aml_settings (store_id, enabled, risk_threshold, provider_slug, ignored_signal_categories, created_at,
+                                updated_at)
+VALUES ($1, $2, $3, $4, $5, now(), now()) ON CONFLICT (store_id) DO
+UPDATE
+    SET enabled = EXCLUDED.enabled,
+    risk_threshold = EXCLUDED.risk_threshold,
+    provider_slug = EXCLUDED.provider_slug,
+    ignored_signal_categories = EXCLUDED.ignored_signal_categories,
+    updated_at = now()
+    RETURNING id, store_id, enabled, risk_threshold, provider_slug, created_at, updated_at, ignored_signal_categories
 `
 
 type UpsertParams struct {
-	StoreID       uuid.UUID       `db:"store_id" json:"store_id"`
-	Enabled       bool            `db:"enabled" json:"enabled"`
-	RiskThreshold int32           `db:"risk_threshold" json:"risk_threshold"`
-	ProviderSlug  *models.AMLSlug `db:"provider_slug" json:"provider_slug"`
+	StoreID                 uuid.UUID       `db:"store_id" json:"store_id"`
+	Enabled                 bool            `db:"enabled" json:"enabled"`
+	RiskThreshold           int32           `db:"risk_threshold" json:"risk_threshold"`
+	ProviderSlug            *models.AMLSlug `db:"provider_slug" json:"provider_slug"`
+	IgnoredSignalCategories []byte          `db:"ignored_signal_categories" json:"ignored_signal_categories"`
 }
 
 func (q *Queries) Upsert(ctx context.Context, arg UpsertParams) (*models.StoreAmlSetting, error) {
@@ -58,6 +61,7 @@ func (q *Queries) Upsert(ctx context.Context, arg UpsertParams) (*models.StoreAm
 		arg.Enabled,
 		arg.RiskThreshold,
 		arg.ProviderSlug,
+		arg.IgnoredSignalCategories,
 	)
 	var i models.StoreAmlSetting
 	err := row.Scan(
@@ -68,6 +72,7 @@ func (q *Queries) Upsert(ctx context.Context, arg UpsertParams) (*models.StoreAm
 		&i.ProviderSlug,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IgnoredSignalCategories,
 	)
 	return &i, err
 }

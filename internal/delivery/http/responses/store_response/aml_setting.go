@@ -9,23 +9,29 @@ import (
 )
 
 type StoreAMLSettingsResponse struct {
-	ID            uuid.UUID  `db:"id" json:"id"`
-	StoreID       uuid.UUID  `db:"store_id" json:"store_id"`
-	Enabled       bool       `db:"enabled" json:"enabled"`
-	RiskThreshold int32      `db:"risk_threshold" json:"risk_threshold"`
-	ProviderSlug  string     `db:"provider_slug" json:"provider_slug"`
-	CreatedAt     *time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     *time.Time `db:"updated_at" json:"updated_at"`
+	ID                      uuid.UUID  `json:"id"`
+	StoreID                 uuid.UUID  `json:"store_id"`
+	Enabled                 bool       `json:"enabled"`
+	RiskThreshold           int32      `json:"risk_threshold"`
+	ProviderSlug            string     `json:"provider_slug"`
+	IgnoredSignalCategories []string   `json:"ignored_signal_categories"`
+	CreatedAt               *time.Time `json:"created_at"`
+	UpdatedAt               *time.Time `json:"updated_at"`
 }
 
 func NewStoreAMLSettingsResponse(amlSettings *models.StoreAmlSetting) StoreAMLSettingsResponse {
+	categories, err := amlSettings.ParseIgnoredSignalCategories()
+	if err != nil {
+		categories = nil
+	}
 	return StoreAMLSettingsResponse{
-		ID:            amlSettings.ID,
-		StoreID:       amlSettings.StoreID,
-		Enabled:       amlSettings.Enabled,
-		RiskThreshold: amlSettings.RiskThreshold,
-		ProviderSlug:  amlSettings.ProviderSlug.String(),
-		CreatedAt:     pgtypeutils.DecodeTimeTz(amlSettings.CreatedAt),
-		UpdatedAt:     pgtypeutils.DecodeTimeTz(amlSettings.UpdatedAt),
+		ID:                      amlSettings.ID,
+		StoreID:                 amlSettings.StoreID,
+		Enabled:                 amlSettings.Enabled,
+		RiskThreshold:           amlSettings.RiskThreshold,
+		ProviderSlug:            amlSettings.ProviderSlug.String(),
+		IgnoredSignalCategories: categories,
+		CreatedAt:               pgtypeutils.DecodeTimeTz(amlSettings.CreatedAt),
+		UpdatedAt:               pgtypeutils.DecodeTimeTz(amlSettings.UpdatedAt),
 	}
 }
