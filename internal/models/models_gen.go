@@ -314,17 +314,6 @@ type Store struct {
 	RejectionReason          pgtype.Text                       `db:"rejection_reason" json:"rejection_reason"`
 } //	@name	Store
 
-type StoreAmlSetting struct {
-	ID                      uuid.UUID          `db:"id" json:"id"`
-	StoreID                 uuid.UUID          `db:"store_id" json:"store_id"`
-	Enabled                 bool               `db:"enabled" json:"enabled"`
-	RiskThreshold           int32              `db:"risk_threshold" json:"risk_threshold"`
-	ProviderSlug            *AMLSlug           `db:"provider_slug" json:"provider_slug"`
-	CreatedAt               pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt               pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	IgnoredSignalCategories []byte             `db:"ignored_signal_categories" json:"ignored_signal_categories"`
-} //	@name	StoreAmlSetting
-
 type StoreApiKey struct {
 	ID        uuid.UUID        `db:"id" json:"id"`
 	StoreID   uuid.UUID        `db:"store_id" json:"store_id"`
@@ -496,6 +485,27 @@ type UserAddressBook struct {
 	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	DeletedAt   pgtype.Timestamptz `db:"deleted_at" json:"deleted_at"`
 } //	@name	UserAddressBook
+
+type UserAmlRiskRule struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	UserID       uuid.UUID          `db:"user_id" json:"user_id"`
+	ProviderSlug string             `db:"provider_slug" json:"provider_slug"`
+	RiskType     string             `db:"risk_type" json:"risk_type"`
+	Enabled      bool               `db:"enabled" json:"enabled"`
+	Threshold    decimal.Decimal    `db:"threshold" json:"threshold"`
+	Action       string             `db:"action" json:"action"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+} //	@name	UserAmlRiskRule
+
+type UserAmlSetting struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	Enabled      bool               `db:"enabled" json:"enabled"`
+	ProviderSlug *AMLSlug           `db:"provider_slug" json:"provider_slug"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UserID       uuid.UUID          `db:"user_id" json:"user_id"`
+} //	@name	UserAmlSetting
 
 type UserExchange struct {
 	ID              uuid.UUID               `db:"id" json:"id"`

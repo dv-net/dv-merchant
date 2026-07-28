@@ -23,9 +23,10 @@ type Client struct {
 }
 
 const (
-	MethodManualCheckTransfer = "/v1/manual-checks/check-transfer/"
-	MethodManualCheck         = "/v1/manual-checks/"
-	MethodSupportedCoins      = "/v1/basics/networks/"
+	MethodManualCheckTransfer         = "/v1/manual-checks/check-transfer/"
+	MethodManualCheck                 = "/v1/manual-checks/"
+	MethodManualCheckTransferExposure = "/v1/manual-checks/%s/transfer-exposure/"
+	MethodSupportedCoins              = "/v1/basics/networks/"
 )
 
 func NewBitOK(u *url.URL, l logger.Logger) *Client {
@@ -211,15 +212,81 @@ func (b *Client) FetchCheckStatus(ctx context.Context, checkID string, auth aml.
 		return nil, fmt.Errorf("decode response: %w", err)
 	}
 
+	status := CheckStatus(apiResp.CheckStatus).ToAMLStatus()
+
+	var signals []aml.SignalContribution
+	if status == aml.CheckStatusSuccess {
+		var sigErr error
+		signals, sigErr = b.fetchTransferExposureSignals(ctx, apiResp.ID, auth)
+		if sigErr != nil {
+			// don't fail the whole check over the breakdown — score/risk_level matter more
+			b.log.Errorw("fetching BitOK transfer-exposure error", "error", sigErr, "check_id", apiResp.ID)
+		}
+	}
+
 	riskLevel := aml.CheckRiskLevel(apiResp.RiskLevel)
 	return &aml.CheckResponse{
 		ExternalID: apiResp.ID,
 		Score:      apiResp.RiskScore.Mul(decimal.NewFromInt(100)), // Calculate percentage,
 		RiskLevel:  &riskLevel,
-		Status:     CheckStatus(apiResp.CheckStatus).ToAMLStatus(),
+		Status:     status,
 		HTTPStatus: resp.StatusCode,
 		Response:   respBodyBytes,
+		Signals:    signals,
 	}, nil
+}
+
+func (b *Client) fetchTransferExposureSignals(ctx context.Context, checkID string, auth aml.RequestAuthorizer) ([]aml.SignalContribution, error) {
+	if checkID == "" {
+		return nil, fmt.Errorf("checkID cannot be empty")
+	}
+
+	u := *b.baseURL
+	u.Path = fmt.Sprintf(MethodManualCheckTransferExposure, checkID)
+
+	httpReq, _, err := b.prepareRequest(ctx, http.MethodGet, u.Path, nil, auth)
+	if err != nil {
+		return nil, fmt.Errorf("prepare request: %w", err)
+	}
+
+	resp, err := b.cl.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("send request: %w", err)
+	}
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			b.log.Warnw("failed to close response body", "error", cerr)
+		}
+	}()
+
+	respBodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, &aml.RequestFailedError{
+			StatusCode: resp.StatusCode,
+			Body:       respBodyBytes,
+			RequestURL: httpReq.URL.Path,
+		}
+	}
+
+	var exposure TransferExposureResponse
+	if err := json.Unmarshal(respBodyBytes, &exposure); err != nil {
+		return nil, fmt.Errorf("decode response: %w", err)
+	}
+
+	weights := make(map[string]decimal.Decimal, len(exposure.IndirectInteraction))
+	for _, e := range exposure.IndirectInteraction {
+		weights[e.EntityCategory] = weights[e.EntityCategory].Add(e.ValueShare.Mul(decimal.NewFromInt(100)))
+	}
+
+	signals := make([]aml.SignalContribution, 0, len(weights))
+	for category, weight := range weights {
+		signals = append(signals, aml.SignalContribution{Category: category, Weight: weight})
+	}
+	return signals, nil
 }
 
 // prepareRequest prepares an HTTP request with signature

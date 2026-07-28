@@ -34,3 +34,17 @@ type CheckTransferResponse struct {
 	RiskScore    decimal.Decimal `json:"risk_score"`
 	FiatCurrency string          `json:"fiat_currency"`
 }
+
+// TransferExposureEntry is one category entry from the /transfer-exposure/ endpoint.
+type TransferExposureEntry struct {
+	EntityCategory string          `json:"entity_category"`
+	ValueShare     decimal.Decimal `json:"value_share"`
+	ValueInFiat    decimal.Decimal `json:"value_in_fiat"`
+}
+
+// TransferExposureResponse represents the response from the /manual-checks/{id}/transfer-exposure/ endpoint.
+type TransferExposureResponse struct {
+	DirectInteraction   []TransferExposureEntry `json:"direct_interaction"`
+	IndirectInteraction []TransferExposureEntry `json:"indirect_interaction"`
+	FiatCurrency        string                  `json:"fiat_currency"`
+}

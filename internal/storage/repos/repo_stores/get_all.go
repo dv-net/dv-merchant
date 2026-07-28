@@ -14,7 +14,7 @@ import (
 )
 
 type GetAllFilteredParams struct {
-	Status *constants.StoreVerificationStatus
+	Status []constants.StoreVerificationStatus
 	storecmn.PageParams
 }
 
@@ -33,8 +33,12 @@ func (s *CustomQuerier) GetStoresWithFilter(
 	sb.Select("stores.*", "users.email AS owner_email").
 		From("stores").
 		JoinWithOption(sqlbuilder.LeftJoin, "users", "users.id = stores.user_id")
-	if params.Status != nil {
-		sb.Where(sb.Equal("stores.verification_status", params.Status.String()))
+	if len(params.Status) > 0 {
+		statuses := make([]any, len(params.Status))
+		for i, st := range params.Status {
+			statuses[i] = st.String()
+		}
+		sb.Where(sb.In("stores.verification_status", statuses...))
 	}
 	sb.OrderBy(pendingFirst, "stores.created_at DESC")
 
@@ -54,8 +58,12 @@ func (s *CustomQuerier) GetStoresWithFilter(
 
 	countSb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	countSb.Select("COUNT(stores.id)").From("stores")
-	if params.Status != nil {
-		countSb.Where(countSb.Equal("stores.verification_status", params.Status.String()))
+	if len(params.Status) > 0 {
+		statuses := make([]any, len(params.Status))
+		for i, st := range params.Status {
+			statuses[i] = st.String()
+		}
+		countSb.Where(countSb.In("stores.verification_status", statuses...))
 	}
 
 	var totalCnt uint32

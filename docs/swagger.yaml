@@ -124,6 +124,13 @@ definitions:
       user_id:
         type: string
     type: object
+  AmlSettingsResponse:
+    properties:
+      enabled:
+        type: boolean
+      provider_slug:
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug'
+    type: object
   Asset:
     properties:
       amount:
@@ -1321,6 +1328,15 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-AmlSettingsResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/AmlSettingsResponse'
+      message:
+        type: string
+    type: object
   JSONResponse-AuthLinkResponse:
     properties:
       code:
@@ -2012,6 +2028,17 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-array_RiskRuleResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/RiskRuleResponse'
+        type: array
+      message:
+        type: string
+    type: object
   JSONResponse-array_SettingResponse:
     properties:
       code:
@@ -2185,15 +2212,6 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse'
-      message:
-        type: string
-    type: object
-  JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse:
-    properties:
-      code:
-        type: integer
-      data:
-        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response.StoreAMLSettingsResponse'
       message:
         type: string
     type: object
@@ -2752,6 +2770,37 @@ definitions:
         type: array
       pagination:
         $ref: '#/definitions/FullPagingData'
+    type: object
+  RiskRuleRequest:
+    properties:
+      action:
+        enum:
+        - reject
+        - accept_and_flag
+        type: string
+      enabled:
+        type: boolean
+      risk_type:
+        type: string
+      threshold:
+        maximum: 100
+        minimum: 0
+        type: number
+    required:
+    - action
+    - risk_type
+    - threshold
+    type: object
+  RiskRuleResponse:
+    properties:
+      action:
+        type: string
+      enabled:
+        type: boolean
+      risk_type:
+        type: string
+      threshold:
+        type: number
     type: object
   ScoreTxRequest:
     properties:
@@ -3341,21 +3390,6 @@ definitions:
     required:
     - list
     type: object
-  UpdateStoreAMLSettingsRequest:
-    properties:
-      enabled:
-        type: boolean
-      ignored_signal_categories:
-        items:
-          type: string
-        type: array
-      provider_slug:
-        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug'
-      risk_threshold:
-        maximum: 100
-        minimum: 0
-        type: integer
-    type: object
   UpdateStoreCurrencyRequest:
     properties:
       currency_ids:
@@ -3467,6 +3501,15 @@ definitions:
         $ref: '#/definitions/WithdrawalStatus'
     required:
     - interval
+    type: object
+  UpsertRiskRulesRequest:
+    properties:
+      rules:
+        items:
+          $ref: '#/definitions/RiskRuleRequest'
+        type: array
+    required:
+    - rules
     type: object
   User:
     properties:
@@ -3922,6 +3965,13 @@ definitions:
     required:
     - stages
     type: object
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_aml_requests.UpdateAmlSettingsRequest:
+    properties:
+      enabled:
+        type: boolean
+      provider_slug:
+        type: string
+    type: object
   github_com_dv-net_dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest:
     properties:
       rate_scale:
@@ -4086,27 +4136,6 @@ definitions:
   github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse:
     properties:
       mnemonic:
-        type: string
-    type: object
-  github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response.StoreAMLSettingsResponse:
-    properties:
-      created_at:
-        type: string
-      enabled:
-        type: boolean
-      id:
-        type: string
-      ignored_signal_categories:
-        items:
-          type: string
-        type: array
-      provider_slug:
-        type: string
-      risk_threshold:
-        type: integer
-      store_id:
-        type: string
-      updated_at:
         type: string
     type: object
   github_com_dv-net_dv-merchant_internal_dto.LogDTO:
@@ -4703,6 +4732,70 @@ paths:
       summary: Update AML-provider keys
       tags:
       - AML
+  /v1/dv-admin/aml/{aml_provider_slug}/rules:
+    get:
+      consumes:
+      - application/json
+      description: Get AML risk rules for a specific provider, merged with supported
+        signal categories
+      parameters:
+      - description: AML-provider slug
+        in: path
+        name: aml_provider_slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_RiskRuleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get AML risk rules
+      tags:
+      - AML
+    post:
+      consumes:
+      - application/json
+      description: Create or update AML risk rules for a specific provider
+      parameters:
+      - description: AML-provider slug
+        in: path
+        name: aml_provider_slug
+        required: true
+        type: string
+      - description: Upsert risk rules
+        in: body
+        name: upsert_rules
+        required: true
+        schema:
+          $ref: '#/definitions/UpsertRiskRulesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_RiskRuleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Upsert AML risk rules
+      tags:
+      - AML
   /v1/dv-admin/aml/{aml_provider_slug}/signals:
     get:
       consumes:
@@ -4816,6 +4909,58 @@ paths:
           schema:
             $ref: '#/definitions/APIErrors'
       summary: Score transaction in specific AML-provider
+      tags:
+      - AML
+  /v1/dv-admin/aml/settings:
+    get:
+      consumes:
+      - application/json
+      description: Get AML settings for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-AmlSettingsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get AML settings
+      tags:
+      - AML
+    post:
+      consumes:
+      - application/json
+      description: Update AML settings for the current user
+      parameters:
+      - description: Update AML settings
+        in: body
+        name: update_settings
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_aml_requests.UpdateAmlSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-AmlSettingsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Update AML settings
       tags:
       - AML
   /v1/dv-admin/auth/login:
@@ -6245,13 +6390,16 @@ paths:
       - in: query
         name: page_size
         type: integer
-      - enum:
-        - PENDING
-        - SUCCESS
-        - REJECTED
+      - collectionFormat: csv
         in: query
+        items:
+          enum:
+          - PENDING
+          - SUCCESS
+          - REJECTED
+          type: string
         name: status
-        type: string
+        type: array
       produces:
       - application/json
       responses:
@@ -6638,79 +6786,6 @@ paths:
       summary: Update store
       tags:
       - Store
-  /v1/dv-admin/store/{id}/aml-settings:
-    get:
-      description: Returns AML check configuration for the specified store
-      parameters:
-      - description: Store ID
-        in: path
-        name: store_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Get store AML settings
-      tags:
-      - AML
-    put:
-      consumes:
-      - application/json
-      description: Creates or updates AML check configuration for the specified store
-      parameters:
-      - description: Store ID
-        in: path
-        name: store_id
-        required: true
-        type: string
-      - description: AML settings
-        in: body
-        name: update
-        required: true
-        schema:
-          $ref: '#/definitions/UpdateStoreAMLSettingsRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Update store AML settings
-      tags:
-      - AML
   /v1/dv-admin/store/{id}/apikey:
     post:
       consumes:

@@ -307,15 +307,14 @@ func (h *Handler) getStores(c fiber.Ctx) error {
 		return err
 	}
 
-	var status *constants.StoreVerificationStatus
-	if req.Status != nil {
-		s := constants.StoreVerificationStatus(*req.Status)
-		status = &s
+	statuses := make([]constants.StoreVerificationStatus, len(req.Status))
+	for i, s := range req.Status {
+		statuses[i] = constants.StoreVerificationStatus(s)
 	}
 
 	params := storecmn.NewCommonFindParams().SetPage(req.Page).SetPageSize(req.PageSize)
 
-	res, err := h.services.StoreService.GetAllStores(c.Context(), status, params)
+	res, err := h.services.StoreService.GetAllStores(c.Context(), statuses, params)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}

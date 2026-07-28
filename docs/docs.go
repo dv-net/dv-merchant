@@ -428,6 +428,85 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/aml/settings": {
+            "get": {
+                "description": "Get AML settings for the current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Get AML settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-AmlSettingsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Update AML settings for the current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Update AML settings",
+                "parameters": [
+                    {
+                        "description": "Update AML settings",
+                        "name": "update_settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_aml_requests.UpdateAmlSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-AmlSettingsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/aml/{aml_provider_slug}/currencies": {
             "get": {
                 "description": "Get supported by AML-provider currencies",
@@ -602,6 +681,101 @@ const docTemplate = `{
                     },
                     "503": {
                         "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/aml/{aml_provider_slug}/rules": {
+            "get": {
+                "description": "Get AML risk rules for a specific provider, merged with supported signal categories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Get AML risk rules",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "AML-provider slug",
+                        "name": "aml_provider_slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_RiskRuleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create or update AML risk rules for a specific provider",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Upsert AML risk rules",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "AML-provider slug",
+                        "name": "aml_provider_slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Upsert risk rules",
+                        "name": "upsert_rules",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpsertRiskRulesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_RiskRuleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -2891,12 +3065,16 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "enum": [
-                            "PENDING",
-                            "SUCCESS",
-                            "REJECTED"
-                        ],
-                        "type": "string",
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "PENDING",
+                                "SUCCESS",
+                                "REJECTED"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
                         "name": "status",
                         "in": "query"
                     }
@@ -3538,120 +3716,6 @@ const docTemplate = `{
                     },
                     "503": {
                         "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/dv-admin/store/{id}/aml-settings": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns AML check configuration for the specified store",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "AML"
-                ],
-                "summary": "Get store AML settings",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Store ID",
-                        "name": "store_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates or updates AML check configuration for the specified store",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "AML"
-                ],
-                "summary": "Update store AML settings",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Store ID",
-                        "name": "store_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "AML settings",
-                        "name": "update",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/UpdateStoreAMLSettingsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -10394,6 +10458,17 @@ const docTemplate = `{
                 }
             }
         },
+        "AmlSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "provider_slug": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
+                }
+            }
+        },
         "Asset": {
             "type": "object",
             "properties": {
@@ -12160,6 +12235,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-AmlSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/AmlSettingsResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-AuthLinkResponse": {
             "type": "object",
             "properties": {
@@ -13233,6 +13322,23 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-array_RiskRuleResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RiskRuleResponse"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-array_SettingResponse": {
             "type": "object",
             "properties": {
@@ -13499,20 +13605,6 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "data": {
-                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response.StoreAMLSettingsResponse"
                 },
                 "message": {
                     "type": "string"
@@ -14338,6 +14430,51 @@ const docTemplate = `{
                 },
                 "pagination": {
                     "$ref": "#/definitions/FullPagingData"
+                }
+            }
+        },
+        "RiskRuleRequest": {
+            "type": "object",
+            "required": [
+                "action",
+                "risk_type",
+                "threshold"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": [
+                        "reject",
+                        "accept_and_flag"
+                    ]
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "risk_type": {
+                    "type": "string"
+                },
+                "threshold": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0
+                }
+            }
+        },
+        "RiskRuleResponse": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "risk_type": {
+                    "type": "string"
+                },
+                "threshold": {
+                    "type": "number"
                 }
             }
         },
@@ -15202,28 +15339,6 @@ const docTemplate = `{
                 }
             }
         },
-        "UpdateStoreAMLSettingsRequest": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "ignored_signal_categories": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "provider_slug": {
-                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
-                },
-                "risk_threshold": {
-                    "type": "integer",
-                    "maximum": 100,
-                    "minimum": 0
-                }
-            }
-        },
         "UpdateStoreCurrencyRequest": {
             "type": "object",
             "properties": {
@@ -15385,6 +15500,20 @@ const docTemplate = `{
                 },
                 "status": {
                     "$ref": "#/definitions/WithdrawalStatus"
+                }
+            }
+        },
+        "UpsertRiskRulesRequest": {
+            "type": "object",
+            "required": [
+                "rules"
+            ],
+            "properties": {
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RiskRuleRequest"
+                    }
                 }
             }
         },
@@ -16059,6 +16188,17 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_aml_requests.UpdateAmlSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "provider_slug": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_dv-net_dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest": {
             "type": "object",
             "required": [
@@ -16306,38 +16446,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "mnemonic": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response.StoreAMLSettingsResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "ignored_signal_categories": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "provider_slug": {
-                    "type": "string"
-                },
-                "risk_threshold": {
-                    "type": "integer"
-                },
-                "store_id": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }

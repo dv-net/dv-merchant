@@ -30,7 +30,7 @@ import (
 )
 
 type IStore interface { //nolint:interfacebloat
-	GetAllStores(ctx context.Context, status *constants.StoreVerificationStatus, params *storecmn.CommonFindParams) (*storecmn.FindResponseWithFullPagination[*repo_stores.StoreWithOwnerEmail], error)
+	GetAllStores(ctx context.Context, status []constants.StoreVerificationStatus, params *storecmn.CommonFindParams) (*storecmn.FindResponseWithFullPagination[*repo_stores.StoreWithOwnerEmail], error)
 	GetArchivedList(ctx context.Context, userID uuid.UUID) ([]*models.Store, error)
 	GetStoreByID(ctx context.Context, ID uuid.UUID) (*models.Store, error)
 	GetStoresByUserID(ctx context.Context, ID uuid.UUID) ([]*models.Store, error)
@@ -103,7 +103,7 @@ func New(
 	return srv
 }
 
-func (s *Service) GetAllStores(ctx context.Context, status *constants.StoreVerificationStatus, pagination *storecmn.CommonFindParams) (*storecmn.FindResponseWithFullPagination[*repo_stores.StoreWithOwnerEmail], error) {
+func (s *Service) GetAllStores(ctx context.Context, status []constants.StoreVerificationStatus, pagination *storecmn.CommonFindParams) (*storecmn.FindResponseWithFullPagination[*repo_stores.StoreWithOwnerEmail], error) {
 	params := repo_stores.GetAllFilteredParams{
 		Status:     status,
 		PageParams: pagination.PageParams,

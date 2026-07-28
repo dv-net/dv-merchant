@@ -42,7 +42,7 @@ var keyMapping = map[models.AmlKeyType]aml.AuthKeyType{
 
 type IService interface {
 	ScoreTransaction(ctx context.Context, usr *models.User, dto CheckDTO) (*models.AmlCheck, error)
-	AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, error)
+	AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, []aml.SignalContribution, error)
 	GetCheckHistory(ctx context.Context, usr *models.User, dto ChecksWithHistoryDTO) (*storecmn.FindResponseWithFullPagination[*repo_aml_checks.FindRow], error)
 	GetAllActiveProviders() []models.AMLProvider
 	GetSupportedCurrencies(ctx context.Context, slug models.AMLSlug) ([]*models.CurrencyShort, error)
@@ -123,31 +123,31 @@ func (s *Service) ScoreTransaction(ctx context.Context, usr *models.User, dto Ch
 	return createdAmlCheck, nil
 }
 
-func (s *Service) AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, error) {
+func (s *Service) AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, []aml.SignalContribution, error) {
 	targetSlug, err := s.resolveProviderSlug(ctx, dto)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	providerSlug := slugMapping[targetSlug]
 
 	currData, err := s.st.AmlSupportedAssets().GetBySlugAndCurrencyID(ctx, dto.CurrencyID, targetSlug)
 	if err != nil {
-		return nil, ErrUnsupportedCurrencies
+		return nil, nil, ErrUnsupportedCurrencies
 	}
 
 	if !avalidator.ValidateAddressByBlockchain(dto.OutputAddress, currData.Currency.Blockchain.String()) {
-		return nil, fmt.Errorf("%w: '%s' for blockchain '%s'", ErrInvalidAddress, dto.OutputAddress, currData.Currency.Blockchain)
+		return nil, nil, fmt.Errorf("%w: '%s' for blockchain '%s'", ErrInvalidAddress, dto.OutputAddress, currData.Currency.Blockchain)
 	}
 
 	provider, err := s.factory.GetClient(providerSlug)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get provider: %w", err)
+		return nil, nil, fmt.Errorf("failed to get provider: %w", err)
 	}
 
 	amlSvc, auth, err := s.prepareServiceDataByUser(ctx, dto.UserID, prepareParams{Slug: targetSlug, ExternalID: dto.TxHash})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	check, err := provider.InitCheckTransaction(ctx, aml.InitCheckDTO{
@@ -160,16 +160,14 @@ func (s *Service) AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO)
 		OutputAddress: dto.OutputAddress,
 	}, auth)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	// remove weight signals
-	check.Score = subtractIgnoredSignals(check.Score, check.Signals, dto.IgnoredSignalCategories)
 
 	createdAmlCheck, err := s.createCheck(ctx, dto.UserID, *amlSvc, check, &dto.TxID, dto.DBTx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return createdAmlCheck, nil
+	return createdAmlCheck, check.Signals, nil
 }
 
 // resolveProviderSlug returns the provider slug to use for AutoScoreDeposit.
@@ -273,7 +271,7 @@ func (s *Service) prepareServiceDataByUser(
 		return nil, nil, fmt.Errorf("failed to get service credentials: %w", err)
 	}
 
-	auth, err := s.prepareCredsBySlug(ctx, params.Slug, serviceData.Creds, params.ExternalID)
+	auth, err := s.prepareCreedsBySlug(ctx, params.Slug, serviceData.Creds, params.ExternalID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -281,7 +279,7 @@ func (s *Service) prepareServiceDataByUser(
 	return serviceData.Service, auth, nil
 }
 
-func (s *Service) prepareCredsBySlug(
+func (s *Service) prepareCreedsBySlug(
 	ctx context.Context,
 	slug models.AMLSlug,
 	creds map[models.AmlKeyType]string,
