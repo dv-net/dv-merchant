@@ -51,8 +51,8 @@ func (s *CustomQuerier) GetByUser(ctx context.Context, usr *models.User, params 
 		Where(countSb.Equal("aml_checks.user_id", usr.ID.String()))
 
 	if params.ServiceSlug != nil {
-		sb.Where(sb.Equal("aml_services.slug", string(*params.ServiceSlug)))
-		countSb.Where(countSb.Equal("aml_services.slug", string(*params.ServiceSlug)))
+		sb.Where(sb.Equal("aml_services.slug", params.ServiceSlug.String()))
+		countSb.Where(countSb.Equal("aml_services.slug", params.ServiceSlug.String()))
 	}
 
 	timezone := time.UTC.String()
