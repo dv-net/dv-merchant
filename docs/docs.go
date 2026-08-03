@@ -3095,6 +3095,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/root/stores/{id}/clarification": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Request store clarification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Request store clarification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request store clarification",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ClarificationStoreRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-StoreResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/root/stores/{id}/reject": {
             "patch": {
                 "security": [
@@ -10701,6 +10759,17 @@ const docTemplate = `{
                 }
             }
         },
+        "ClarificationStoreRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "CombinedStats": {
             "type": "object",
             "properties": {
@@ -10843,6 +10912,11 @@ const docTemplate = `{
                 "name"
             ],
             "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 32,
@@ -14700,6 +14774,9 @@ const docTemplate = `{
                 "currency_id": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string",
                     "format": "uuid"
@@ -14743,6 +14820,9 @@ const docTemplate = `{
                 "user_id": {
                     "type": "string",
                     "format": "uuid"
+                },
+                "verification_comment": {
+                    "type": "string"
                 },
                 "verification_status": {
                     "type": "string"
@@ -15357,6 +15437,9 @@ const docTemplate = `{
             ],
             "properties": {
                 "currency_id": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "minimal_payment": {

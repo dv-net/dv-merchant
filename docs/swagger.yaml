@@ -290,6 +290,13 @@ definitions:
       updated_at:
         type: string
     type: object
+  ClarificationStoreRequest:
+    properties:
+      reason:
+        type: string
+    required:
+    - reason
+    type: object
   CombinedStats:
     properties:
       available_bandwidth:
@@ -387,6 +394,10 @@ definitions:
     type: object
   CreateStoreRequest:
     properties:
+      description:
+        maxLength: 255
+        minLength: 1
+        type: string
       name:
         maxLength: 32
         minLength: 2
@@ -2953,6 +2964,8 @@ definitions:
         type: string
       currency_id:
         type: string
+      description:
+        type: string
       id:
         format: uuid
         type: string
@@ -2983,6 +2996,8 @@ definitions:
         type: string
       user_id:
         format: uuid
+        type: string
+      verification_comment:
         type: string
       verification_status:
         type: string
@@ -3400,6 +3415,8 @@ definitions:
   UpdateStoreRequest:
     properties:
       currency_id:
+        type: string
+      description:
         type: string
       minimal_payment:
         type: number
@@ -6414,6 +6431,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Get all stores
+      tags:
+      - Admin
+  /v1/dv-admin/root/stores/{id}/clarification:
+    patch:
+      consumes:
+      - application/json
+      description: Request store clarification
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Request store clarification
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/ClarificationStoreRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-StoreResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Request store clarification
       tags:
       - Admin
   /v1/dv-admin/root/stores/{id}/reject:

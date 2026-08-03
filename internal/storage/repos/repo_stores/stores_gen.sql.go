@@ -10,13 +10,14 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
 const create = `-- name: Create :one
-INSERT INTO stores (user_id, name, site, currency_id, rate_source, return_url, success_url, status, created_at, public_payment_form_enabled)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9)
-	RETURNING id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason
+INSERT INTO stores (user_id, name, site, currency_id, rate_source, return_url, success_url, status, created_at, public_payment_form_enabled, description, verification_comment)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9, $10, $11)
+	RETURNING id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason, description, verification_comment
 `
 
 type CreateParams struct {
@@ -29,6 +30,8 @@ type CreateParams struct {
 	SuccessUrl               *string           `db:"success_url" json:"success_url"`
 	Status                   bool              `db:"status" json:"status"`
 	PublicPaymentFormEnabled bool              `db:"public_payment_form_enabled" json:"public_payment_form_enabled"`
+	Description              *string           `db:"description" json:"description"`
+	VerificationComment      pgtype.Text       `db:"verification_comment" json:"verification_comment"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Store, error) {
@@ -42,6 +45,8 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Store, 
 		arg.SuccessUrl,
 		arg.Status,
 		arg.PublicPaymentFormEnabled,
+		arg.Description,
+		arg.VerificationComment,
 	)
 	var i models.Store
 	err := row.Scan(
@@ -64,12 +69,14 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Store, 
 		&i.VerifiedAt,
 		&i.VerifiedBy,
 		&i.RejectionReason,
+		&i.Description,
+		&i.VerificationComment,
 	)
 	return &i, err
 }
 
 const getByID = `-- name: GetByID :one
-SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason FROM stores WHERE id=$1 LIMIT 1
+SELECT id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason, description, verification_comment FROM stores WHERE id=$1 LIMIT 1
 `
 
 func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.Store, error) {
@@ -95,15 +102,17 @@ func (q *Queries) GetByID(ctx context.Context, id uuid.UUID) (*models.Store, err
 		&i.VerifiedAt,
 		&i.VerifiedBy,
 		&i.RejectionReason,
+		&i.Description,
+		&i.VerificationComment,
 	)
 	return &i, err
 }
 
 const update = `-- name: Update :one
 UPDATE stores
-	SET name=$1, site=$2, currency_id=$3, rate_source=$4, return_url=$5, success_url=$6, rate_scale=$7, status=$8, minimal_payment=$9, updated_at=now(), public_payment_form_enabled=$10
-WHERE id=$11
-	RETURNING id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason
+	SET name=$1, site=$2, currency_id=$3, rate_source=$4, return_url=$5, success_url=$6, rate_scale=$7, status=$8, minimal_payment=$9, updated_at=now(), public_payment_form_enabled=$10, description=$11
+WHERE id=$12
+	RETURNING id, user_id, name, site, currency_id, rate_source, return_url, success_url, rate_scale, status, minimal_payment, created_at, updated_at, deleted_at, public_payment_form_enabled, verification_status, verified_at, verified_by, rejection_reason, description, verification_comment
 `
 
 type UpdateParams struct {
@@ -117,6 +126,7 @@ type UpdateParams struct {
 	Status                   bool              `db:"status" json:"status"`
 	MinimalPayment           decimal.Decimal   `db:"minimal_payment" json:"minimal_payment"`
 	PublicPaymentFormEnabled bool              `db:"public_payment_form_enabled" json:"public_payment_form_enabled"`
+	Description              *string           `db:"description" json:"description"`
 	ID                       uuid.UUID         `db:"id" json:"id"`
 }
 
@@ -132,6 +142,7 @@ func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.Store, 
 		arg.Status,
 		arg.MinimalPayment,
 		arg.PublicPaymentFormEnabled,
+		arg.Description,
 		arg.ID,
 	)
 	var i models.Store
@@ -155,6 +166,8 @@ func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.Store, 
 		&i.VerifiedAt,
 		&i.VerifiedBy,
 		&i.RejectionReason,
+		&i.Description,
+		&i.VerificationComment,
 	)
 	return &i, err
 }

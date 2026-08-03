@@ -4,6 +4,9 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_stores"
+	"github.com/dv-net/dv-merchant/internal/util"
+	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
@@ -13,6 +16,7 @@ type StoreResponse struct {
 	UserID                   uuid.UUID       `json:"user_id" format:"uuid"`
 	OwnerEmail               string          `json:"owner_email,omitempty"`
 	Name                     string          `json:"name"`
+	Description              *string         `json:"description"`
 	Site                     *string         `json:"site" format:"uri"`
 	CurrencyID               string          `json:"currency_id"`
 	RateSource               string          `json:"rate_source"`
@@ -26,7 +30,53 @@ type StoreResponse struct {
 	VerificationStatus       string          `json:"verification_status"`
 	VerifiedAt               *time.Time      `json:"verified_at" format:"date-time"`
 	RejectionReason          *string         `json:"rejection_reason"`
+	VerificationComment      *string         `json:"verification_comment"`
 } //	@name	StoreResponse
+
+func NewStoreResponse(o *models.Store) *StoreResponse {
+	return &StoreResponse{
+		ID:                       o.ID,
+		UserID:                   o.UserID,
+		Name:                     o.Name,
+		Description:              o.Description,
+		Site:                     o.Site,
+		CurrencyID:               o.CurrencyID,
+		RateSource:               o.RateSource.String(),
+		RateScale:                o.RateScale,
+		Status:                   o.Status,
+		MinimalPayment:           o.MinimalPayment,
+		PublicPaymentFormEnabled: o.PublicPaymentFormEnabled,
+		CreatedAt:                o.CreatedAt.Time,
+		ReturnURL:                o.ReturnUrl,
+		SuccessURL:               o.SuccessUrl,
+		VerificationStatus:       o.VerificationStatus.String(),
+		VerifiedAt:               pgtypeutils.DecodeTime(o.VerifiedAt),
+		RejectionReason:          pgtypeutils.DecodeText(o.RejectionReason),
+		VerificationComment:      pgtypeutils.DecodeText(o.VerificationComment),
+	}
+}
+
+func NewStoreResponses(stores ...*models.Store) []*StoreResponse {
+	res := make([]*StoreResponse, 0, len(stores))
+	for _, store := range stores {
+		res = append(res, NewStoreResponse(store))
+	}
+	return res
+}
+
+func NewStoreResponseFromStoreWithOwnerEmail(o *repo_stores.StoreWithOwnerEmail) *StoreResponse {
+	res := NewStoreResponse(&o.Store)
+	res.OwnerEmail = o.OwnerEmail.String
+	return res
+}
+
+func NewStoreResponsesFromStoreWithOwnerEmail(stores ...*repo_stores.StoreWithOwnerEmail) []*StoreResponse {
+	res := make([]*StoreResponse, 0, len(stores))
+	for _, store := range stores {
+		res = append(res, NewStoreResponseFromStoreWithOwnerEmail(store))
+	}
+	return res
+}
 
 type StoreWithTransactionsResponse struct {
 	ID             uuid.UUID       `json:"id" format:"uuid"`
@@ -84,6 +134,56 @@ type StoreTransactionResponse struct {
 	NetworkCreatedAt   time.Time               `json:"network_created_at" format:"date-time"`
 } //	@name	StoreTransactionResponse
 
+func NewStoreTransactionResponse(t *models.Transaction) *StoreTransactionResponse {
+	res := &StoreTransactionResponse{
+		ID:                 t.ID.String(),
+		UserID:             t.UserID.String(),
+		StoreID:            t.StoreID.UUID.String(),
+		CurrencyID:         t.CurrencyID,
+		Blockchain:         t.Blockchain.String(),
+		TxHash:             t.TxHash,
+		Type:               t.Type,
+		FromAddress:        t.FromAddress,
+		ToAddress:          t.ToAddress,
+		Amount:             t.Amount,
+		AmountUsd:          t.AmountUsd,
+		Fee:                t.Fee,
+		WithdrawalIsManual: t.WithdrawalIsManual,
+		NetworkCreatedAt:   t.NetworkCreatedAt.Time,
+		BcUniqKey:          t.BcUniqKey,
+	}
+
+	if t.ReceiptID.Valid {
+		res.ReceiptID = util.Pointer(t.ReceiptID.UUID.String())
+	}
+
+	if t.WalletID.Valid {
+		res.WalletID = util.Pointer(t.WalletID.UUID.String())
+	}
+
+	return res
+}
+
+func NewStoreTransactionResponses(transactions ...*models.Transaction) []*StoreTransactionResponse {
+	res := make([]*StoreTransactionResponse, 0, len(transactions))
+	for _, transaction := range transactions {
+		res = append(res, NewStoreTransactionResponse(transaction))
+	}
+	return res
+}
+
 type StoreCurrencyResponse []string //	@name	StoreCurrencyResponse
 
 type StoreWhitelistResponse []string //	@name	StoreWhitelistResponse
+
+func NewStoreWhitelistResponse(o *models.StoreWhitelist) *StoreWhitelistResponse {
+	return &StoreWhitelistResponse{o.Ip}
+}
+
+func NewStoreWhitelistResponses(whitelists ...*models.StoreWhitelist) StoreWhitelistResponse {
+	res := make(StoreWhitelistResponse, 0, len(whitelists))
+	for _, w := range whitelists {
+		res = append(res, w.Ip)
+	}
+	return res
+}

@@ -93,6 +93,9 @@ schemas:
           - column: stores.site
             go_type:
               type: '*string'
+          - column: stores.description
+            go_type:
+              type: '*string'
           - column: stores.return_url
             go_type:
               type: '*string'
@@ -705,6 +708,7 @@ schemas:
                 - created_at
                 - deleted_at
                 - verification_status
+                - verification_comment
                 - verified_at
                 - verified_by
                 - rejection_reason

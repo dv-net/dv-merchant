@@ -312,6 +312,8 @@ type Store struct {
 	VerifiedAt               pgtype.Timestamp                  `db:"verified_at" json:"verified_at"`
 	VerifiedBy               uuid.NullUUID                     `db:"verified_by" json:"verified_by"`
 	RejectionReason          pgtype.Text                       `db:"rejection_reason" json:"rejection_reason"`
+	Description              *string                           `db:"description" json:"description"`
+	VerificationComment      pgtype.Text                       `db:"verification_comment" json:"verification_comment"`
 } //	@name	Store
 
 type StoreApiKey struct {

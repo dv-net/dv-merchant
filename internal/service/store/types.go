@@ -2,13 +2,29 @@ package store
 
 import (
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/shopspring/decimal"
 
 	"github.com/google/uuid"
 )
 
 type CreateStore struct {
-	Name string
-	Site *string
+	Name        string
+	Site        *string
+	Description *string
+}
+
+type UpdateStore struct {
+	Name                     string
+	Site                     *string
+	Description              *string
+	PublicPaymentFormEnabled bool
+	CurrencyID               string
+	RateSource               string
+	ReturnURL                *string
+	SuccessURL               *string
+	RateScale                decimal.Decimal
+	Status                   bool
+	MinimalPayment           decimal.Decimal
 }
 
 type CurrencyRate struct {

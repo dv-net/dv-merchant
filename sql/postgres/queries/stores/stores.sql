@@ -84,6 +84,7 @@ RETURNING *;
 -- name: ResendStoreVerification :one
 UPDATE stores
 SET verification_status = sqlc.arg(verification_status)::varchar,
+    verification_comment = sqlc.arg(verification_comment)::varchar,
     updated_at           = now()
 WHERE id = sqlc.arg(store_id)::uuid
     RETURNING *;

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/dv-net/dv-merchant/internal/constants"
-	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_request"
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/aml"
@@ -35,7 +34,7 @@ type IStore interface { //nolint:interfacebloat
 	GetStoreByID(ctx context.Context, ID uuid.UUID) (*models.Store, error)
 	GetStoresByUserID(ctx context.Context, ID uuid.UUID) ([]*models.Store, error)
 	CreateStore(ctx context.Context, dto CreateStore, user *models.User, opts ...repos.Option) (*models.Store, error)
-	UpdateStore(ctx context.Context, dto *store_request.UpdateRequest, ID uuid.UUID, opts ...repos.Option) (*models.Store, error)
+	UpdateStore(ctx context.Context, dto UpdateStore, ID uuid.UUID, opts ...repos.Option) (*models.Store, error)
 	GetStoreByStoreAPIKey(ctx context.Context, apiKey string) (*models.Store, error)
 	GetStoreByWalletAddress(ctx context.Context, address string, currencyID string, opts ...repos.Option) (*models.Store, bool, error)
 	GetStoreByWalletID(ctx context.Context, walletID uuid.UUID) (*models.Store, error)
@@ -142,13 +141,15 @@ func (s *Service) GetStoreByStoreAPIKey(ctx context.Context, apiKey string) (*mo
 
 func (s *Service) CreateStore(ctx context.Context, dto CreateStore, user *models.User, opts ...repos.Option) (*models.Store, error) {
 	params := repo_stores.CreateParams{
-		Name:       dto.Name,
-		UserID:     user.ID,
-		CurrencyID: "USD",
-		RateSource: user.RateSource,
-		Status:     true,
-		Site:       dto.Site,
+		Name:        dto.Name,
+		UserID:      user.ID,
+		CurrencyID:  "USD",
+		RateSource:  user.RateSource,
+		Status:      true,
+		Site:        dto.Site,
+		Description: dto.Description,
 	}
+
 	if err := params.Validate(); err != nil {
 		return nil, fmt.Errorf("validate params error: %w", err)
 	}
@@ -306,10 +307,11 @@ func (s *Service) GetStoreByWalletAddress(ctx context.Context, address string, c
 	return row.ToStore(), row.Dirty.Bool, nil
 }
 
-func (s *Service) UpdateStore(ctx context.Context, dto *store_request.UpdateRequest, id uuid.UUID, opts ...repos.Option) (*models.Store, error) {
+func (s *Service) UpdateStore(ctx context.Context, dto UpdateStore, id uuid.UUID, opts ...repos.Option) (*models.Store, error) {
 	params := repo_stores.UpdateParams{
 		Name:                     dto.Name,
 		Site:                     dto.Site,
+		Description:              dto.Description,
 		CurrencyID:               dto.CurrencyID,
 		RateSource:               models.RateSource(dto.RateSource),
 		ReturnUrl:                dto.ReturnURL,

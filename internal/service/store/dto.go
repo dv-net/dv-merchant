@@ -29,4 +29,10 @@ type RejectStoreDTO struct {
 
 type ResendStoreVerificationDTO struct {
 	StoreID uuid.UUID `json:"store_id"`
+	Comment string    `json:"comment"`
+}
+type ClarificationStoreDTO struct {
+	StoreID uuid.UUID    `json:"store_id"`
+	Admin   *models.User `json:"admin"`
+	Reason  string       `json:"reason"`
 }

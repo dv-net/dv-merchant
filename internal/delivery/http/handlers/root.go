@@ -17,7 +17,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	"github.com/dv-net/dv-merchant/internal/tools"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
-	"github.com/dv-net/dv-merchant/internal/tools/converters"
 	"github.com/dv-net/dv-merchant/internal/tools/response"
 
 	"golang.org/x/text/language"
@@ -320,7 +319,7 @@ func (h *Handler) getStores(c fiber.Ctx) error {
 	}
 
 	return c.JSON(response.OkByData(&storecmn.FindResponseWithFullPagination[*store_response.StoreResponse]{
-		Items:      converters.FromStoreWithOwnerEmailModelToResponses(res.Items...),
+		Items:      store_response.NewStoreResponsesFromStoreWithOwnerEmail(res.Items...),
 		Pagination: res.Pagination,
 	}))
 }
@@ -357,7 +356,7 @@ func (h *Handler) verifyStore(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	return c.JSON(response.OkByData(converters.FromStoreModelToResponse(updatedStore)))
+	return c.JSON(response.OkByData(store_response.NewStoreResponse(updatedStore)))
 }
 
 // rejectStore is a function to reject store verification
@@ -399,7 +398,49 @@ func (h *Handler) rejectStore(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	return c.JSON(response.OkByData(converters.FromStoreModelToResponse(updatedStore)))
+	return c.JSON(response.OkByData(store_response.NewStoreResponse(updatedStore)))
+}
+
+// requestStoreClarification is a function to request store clarification
+//
+//	@Summary		Request store clarification
+//	@Description	Request store clarification
+//	@Tags			Admin
+//	@Accept			json
+//	@Produce		json
+//	@Param			id			path		string									true	"Store ID"
+//	@Param			register	body		admin_request.ClarificationStoreRequest	true	"Request store clarification"
+//	@Success		200			{object}	response.Result[store_response.StoreResponse]
+//	@Failure		400			{object}	apierror.Errors
+//	@Failure		404			{object}	apierror.Errors
+//	@Router			/v1/dv-admin/root/stores/{id}/clarification [patch]
+//	@Security		BearerAuth
+func (h *Handler) requestStoreClarification(c fiber.Ctx) error {
+	admin, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	storeID, err := tools.ValidateUUID(c.Params("id"))
+	if err != nil {
+		return err
+	}
+
+	req := &admin_request.ClarificationStoreRequest{}
+	if err := c.Bind().Body(req); err != nil {
+		return err
+	}
+
+	updatedStore, err := h.services.StoreVerificationService.ClarificationStore(c.Context(), store.ClarificationStoreDTO{
+		StoreID: storeID,
+		Admin:   admin,
+		Reason:  req.Reason,
+	})
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(store_response.NewStoreResponse(updatedStore)))
 }
 
 func (h *Handler) initRootRoutes(v1 fiber.Router) {
@@ -415,4 +456,5 @@ func (h *Handler) initRootRoutes(v1 fiber.Router) {
 	root.Get("/stores", h.getStores)
 	root.Patch("/stores/:id/verify", h.verifyStore)
 	root.Patch("/stores/:id/reject", h.rejectStore)
+	root.Patch("/stores/:id/clarification", h.requestStoreClarification)
 }
