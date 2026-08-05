@@ -15,6 +15,7 @@ type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (*models.AmlCheck, error)
 	GetByTransactionID(ctx context.Context, transactionID uuid.NullUUID) (*models.AmlCheck, error)
 	UpdateAMLCheck(ctx context.Context, arg UpdateAMLCheckParams) error
+	UpdateExternalID(ctx context.Context, iD uuid.UUID, externalID string) error
 }
 
 var _ Querier = (*Queries)(nil)

@@ -63,3 +63,15 @@ func (q *Queries) UpdateAMLCheck(ctx context.Context, arg UpdateAMLCheckParams) 
 	)
 	return err
 }
+
+const updateExternalID = `-- name: UpdateExternalID :exec
+UPDATE aml_checks
+SET external_id = $2,
+    updated_at  = now()
+WHERE id = $1
+`
+
+func (q *Queries) UpdateExternalID(ctx context.Context, iD uuid.UUID, externalID string) error {
+	_, err := q.db.Exec(ctx, updateExternalID, iD, externalID)
+	return err
+}

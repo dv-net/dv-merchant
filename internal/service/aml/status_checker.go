@@ -3,6 +3,7 @@ package aml
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -88,7 +89,19 @@ func (s *Service) processCheckQueueElement(ctx context.Context, check *repo_aml_
 		return fmt.Errorf("failed to get provider for %s: %w", check.AmlService.Slug, err)
 	}
 
-	_, authorizer, err := s.prepareServiceDataByUser(ctx, check.User.ID, prepareParams{Slug: check.AmlService.Slug, ExternalID: check.AmlCheck.ExternalID})
+	var dto amlproviders.InitCheckDTO
+	if err := json.Unmarshal(check.AmlCheckQueue.RequestPayload, &dto); err != nil {
+		return fmt.Errorf("failed to unmarshal check payload: %w", err)
+	}
+
+	externalID := check.AmlCheck.ExternalID
+	authExternalID := externalID
+	if isPendingExternalID(externalID) {
+		externalID = ""
+		authExternalID = dto.TxID
+	}
+
+	_, authorizer, err := s.prepareServiceDataByUser(ctx, check.User.ID, prepareParams{Slug: check.AmlService.Slug, ExternalID: authExternalID})
 	if err != nil {
 		return fmt.Errorf("failed to prepare service '%s' data: %w", check.AmlService.Slug, err)
 	}
@@ -96,7 +109,7 @@ func (s *Service) processCheckQueueElement(ctx context.Context, check *repo_aml_
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, s.checkTimeout)
 	defer cancel()
 
-	externalCheckResult, err := client.FetchCheckStatus(ctxWithTimeout, check.AmlCheck.ExternalID, authorizer)
+	externalCheckResult, err := client.Check(ctxWithTimeout, dto, externalID, authorizer)
 	return s.handleCheckResult(ctx, check, externalCheckResult, err)
 }
 
@@ -112,7 +125,18 @@ func (s *Service) handleCheckResult(
 		}
 
 		if fetchErr != nil {
+			var reqErr *amlproviders.RequestFailedError
+			if errors.As(fetchErr, &reqErr) && !reqErr.Retryable {
+				return s.updateCheckAndClearQueue(ctx, tx, check, models.AmlCheckStatusFailed, decimal.Zero, nil)
+			}
 			return s.continueOrFailCheck(ctx, tx, check, decimal.Zero)
+		}
+
+		if result.ExternalID != "" && result.ExternalID != check.AmlCheck.ExternalID {
+			if err := s.st.AmlChecks(repos.WithTx(tx)).UpdateExternalID(ctx, check.AmlCheck.ID, result.ExternalID); err != nil {
+				return fmt.Errorf("failed to update external id: %w", err)
+			}
+			check.AmlCheck.ExternalID = result.ExternalID
 		}
 
 		resolvedStatus := convertAmlStatusToModel(result.Status)

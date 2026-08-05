@@ -12,11 +12,11 @@ import (
 )
 
 const create = `-- name: Create :exec
-INSERT INTO aml_check_queue (user_id, aml_check_id, created_at)
-	VALUES ($1, $2, now())
+INSERT INTO aml_check_queue (user_id, aml_check_id, created_at, request_payload)
+	VALUES ($1, $2, now(), $3)
 `
 
-func (q *Queries) Create(ctx context.Context, userID uuid.UUID, amlCheckID uuid.UUID) error {
-	_, err := q.db.Exec(ctx, create, userID, amlCheckID)
+func (q *Queries) Create(ctx context.Context, userID uuid.UUID, amlCheckID uuid.UUID, requestPayload []byte) error {
+	_, err := q.db.Exec(ctx, create, userID, amlCheckID, requestPayload)
 	return err
 }

@@ -11,6 +11,7 @@ type RequestFailedError struct {
 	StatusCode int
 	Body       []byte
 	RequestURL string
+	Retryable  bool
 }
 
 func (re *RequestFailedError) Error() string {

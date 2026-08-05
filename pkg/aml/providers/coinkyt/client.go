@@ -2,7 +2,6 @@ package coinkyt
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/dv-net/dv-merchant/pkg/aml"
 	"github.com/dv-net/dv-merchant/pkg/logger"
+	"github.com/goccy/go-json"
 	"github.com/shopspring/decimal"
 )
 
@@ -40,14 +40,14 @@ func (c *Client) Name() string {
 	return "coinkyt"
 }
 
-func (c *Client) InitCheckTransaction(ctx context.Context, dto aml.InitCheckDTO, auth aml.RequestAuthorizer) (*aml.CheckResponse, error) {
+func (c *Client) Check(ctx context.Context, dto aml.InitCheckDTO, _ string, auth aml.RequestAuthorizer) (*aml.CheckResponse, error) {
 	values := url.Values{
 		"blockchain":  {dto.TokenData.Blockchain},
 		"token":       {nativeToEmpty(dto.TokenData.ContractAddress)},
 		"transaction": {dto.TxID},
 	}
 
-	return c.doRequest(ctx, http.MethodGet, MethodCheckTransaction, values, auth, aml.CheckStatusNew)
+	return c.doRequest(ctx, http.MethodGet, MethodCheckTransaction, values, auth)
 }
 
 // nativeToEmpty converts "native" contract address to empty string as required by CoinKyt API.
@@ -56,11 +56,6 @@ func nativeToEmpty(contractAddress string) string {
 		return ""
 	}
 	return contractAddress
-}
-
-func (c *Client) FetchCheckStatus(_ context.Context, _ string, _ aml.RequestAuthorizer) (*aml.CheckResponse, error) {
-	// CoinKyt returns the result synchronously; polling is not needed.
-	return nil, fmt.Errorf("coinkyt: FetchCheckStatus not supported, result is returned synchronously by InitCheckTransaction")
 }
 
 func (c *Client) TestRequestWithAuth(ctx context.Context, auth aml.RequestAuthorizer) error {
@@ -103,7 +98,7 @@ func (c *Client) TestRequestWithAuth(ctx context.Context, auth aml.RequestAuthor
 	return nil
 }
 
-func (c *Client) doRequest(ctx context.Context, method, endpoint string, values url.Values, auth aml.RequestAuthorizer, _ aml.CheckStatus) (*aml.CheckResponse, error) {
+func (c *Client) doRequest(ctx context.Context, method, endpoint string, values url.Values, auth aml.RequestAuthorizer) (*aml.CheckResponse, error) {
 	u := *c.baseURL
 	u.Path = endpoint
 	u.RawQuery = values.Encode()
@@ -140,12 +135,25 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 		return nil, fmt.Errorf("reading response body: %w", err)
 	}
 
+	reqJSON, _ := json.Marshal(values)
+
+	if resp.StatusCode == http.StatusNotFound {
+		c.log.Debugw("CoinKyt transaction not found yet, treating as pending", "url", reqURL)
+		return &aml.CheckResponse{
+			Status:     aml.CheckStatusNew,
+			HTTPStatus: resp.StatusCode,
+			Request:    reqJSON,
+			Response:   respBodyBytes,
+		}, nil
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		c.log.Debugw("CoinKyt non-200 response", "status", resp.StatusCode, "body", string(respBodyBytes), "url", reqURL)
 		return nil, &aml.RequestFailedError{
 			StatusCode: resp.StatusCode,
 			Body:       respBodyBytes,
 			RequestURL: endpoint,
+			Retryable:  resp.StatusCode != http.StatusUnauthorized && resp.StatusCode != http.StatusForbidden,
 		}
 	}
 
@@ -154,8 +162,6 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 		c.log.Errorw("parsing CoinKyt response error", "error", err)
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
-
-	reqJSON, _ := json.Marshal(values)
 
 	weights := make(map[string]decimal.Decimal)
 	for _, s := range response.Indirects {

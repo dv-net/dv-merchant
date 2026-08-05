@@ -99,7 +99,11 @@ func (b *Client) TestRequestWithAuth(ctx context.Context, auth aml.RequestAuthor
 	return nil
 }
 
-func (b *Client) InitCheckTransaction(ctx context.Context, dto aml.InitCheckDTO, auth aml.RequestAuthorizer) (*aml.CheckResponse, error) {
+func (b *Client) Check(ctx context.Context, dto aml.InitCheckDTO, externalID string, auth aml.RequestAuthorizer) (*aml.CheckResponse, error) {
+	if externalID != "" {
+		return b.fetchCheckStatus(ctx, externalID, auth)
+	}
+
 	reqBody := &CheckTransferRequest{
 		Network:       dto.TokenData.Blockchain,
 		TokenID:       dto.TokenData.ContractAddress,
@@ -143,6 +147,7 @@ func (b *Client) InitCheckTransaction(ctx context.Context, dto aml.InitCheckDTO,
 			StatusCode: resp.StatusCode,
 			Body:       respBodyBytes,
 			RequestURL: preparedReq.URL.Path,
+			Retryable:  resp.StatusCode != http.StatusUnauthorized && resp.StatusCode != http.StatusForbidden,
 		}
 	}
 
@@ -164,12 +169,8 @@ func (b *Client) InitCheckTransaction(ctx context.Context, dto aml.InitCheckDTO,
 	}, nil
 }
 
-// FetchCheckStatus retrieves the status of a check by its external ID.
-func (b *Client) FetchCheckStatus(ctx context.Context, checkID string, auth aml.RequestAuthorizer) (*aml.CheckResponse, error) {
-	if checkID == "" {
-		return nil, fmt.Errorf("checkID cannot be empty")
-	}
-
+// fetchCheckStatus retrieves the status of a check by its external ID.
+func (b *Client) fetchCheckStatus(ctx context.Context, checkID string, auth aml.RequestAuthorizer) (*aml.CheckResponse, error) {
 	// Prepare the request URL
 	u := *b.baseURL
 	u.Path = path.Join(MethodManualCheck, checkID)
@@ -203,6 +204,7 @@ func (b *Client) FetchCheckStatus(ctx context.Context, checkID string, auth aml.
 			StatusCode: resp.StatusCode,
 			Body:       respBodyBytes,
 			RequestURL: httpReq.URL.Path,
+			Retryable:  resp.StatusCode != http.StatusUnauthorized && resp.StatusCode != http.StatusForbidden,
 		}
 	}
 

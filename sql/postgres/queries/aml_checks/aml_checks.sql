@@ -11,3 +11,9 @@ SELECT *
 FROM aml_checks
 WHERE transaction_id = $1
 LIMIT 1;
+
+-- name: UpdateExternalID :exec
+UPDATE aml_checks
+SET external_id = $2,
+    updated_at  = now()
+WHERE id = $1;

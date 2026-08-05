@@ -12,7 +12,7 @@ import (
 )
 
 type Querier interface {
-	Create(ctx context.Context, userID uuid.UUID, amlCheckID uuid.UUID) error
+	Create(ctx context.Context, userID uuid.UUID, amlCheckID uuid.UUID, requestPayload []byte) error
 	Delete(ctx context.Context, id uuid.UUID) error
 	FetchPending(ctx context.Context, maxQueueAttempts int32, pendingStatus models.AMLCheckStatus) ([]*FetchPendingRow, error)
 	IncrementAttempts(ctx context.Context, id uuid.UUID) error

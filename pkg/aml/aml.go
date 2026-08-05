@@ -78,7 +78,6 @@ type RequestAuthorizer interface {
 }
 
 type Client interface {
-	InitCheckTransaction(ctx context.Context, dto InitCheckDTO, auth RequestAuthorizer) (*CheckResponse, error)
-	FetchCheckStatus(ctx context.Context, checkID string, auth RequestAuthorizer) (*CheckResponse, error)
+	Check(ctx context.Context, dto InitCheckDTO, externalID string, auth RequestAuthorizer) (*CheckResponse, error)
 	TestRequestWithAuth(ctx context.Context, auth RequestAuthorizer) error
 }
