@@ -5,6 +5,7 @@ import (
 	"github.com/dv-net/dv-merchant/pkg/aml"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/shopspring/decimal"
 )
 
 type Direction string
@@ -39,4 +40,16 @@ type AutoScoreDepositDTO struct {
 	ProviderSlug  *models.AMLSlug // nil = auto-select by user keys
 	OutputAddress string
 	DBTx          pgx.Tx // outer DB transaction from the deposit event; nil for manual checks
+}
+
+type UpdateAmlSettingsDTO struct {
+	Enabled      bool
+	ProviderSlug *models.AMLSlug
+}
+
+type RiskRuleDTO struct {
+	RiskType  string
+	Enabled   bool
+	Threshold decimal.Decimal
+	Action    string
 }

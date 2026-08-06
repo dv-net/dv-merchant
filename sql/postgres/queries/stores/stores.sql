@@ -66,7 +66,25 @@ ORDER BY created_at DESC;
 
 -- name: GetStoreByWalletID :one
 SELECT s.*
-FROM stores s 
+FROM stores s
 JOIN wallets w ON s.id = w.store_id
 WHERE w.id = $1
 LIMIT 1;
+
+-- name: UpdateVerificationStatus :one
+UPDATE stores
+SET verification_status = sqlc.arg(verification_status)::varchar,
+    verified_at          = now(),
+    verified_by          = sqlc.arg(admin_id)::uuid,
+    rejection_reason     = sqlc.narg(rejection_reason)::text,
+    updated_at           = now()
+WHERE id = sqlc.arg(store_id)::uuid
+RETURNING *;
+
+-- name: ResendStoreVerification :one
+UPDATE stores
+SET verification_status = sqlc.arg(verification_status)::varchar,
+    verification_comment = sqlc.arg(verification_comment)::varchar,
+    updated_at           = now()
+WHERE id = sqlc.arg(store_id)::uuid
+    RETURNING *;

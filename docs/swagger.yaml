@@ -124,6 +124,13 @@ definitions:
       user_id:
         type: string
     type: object
+  AmlSettingsResponse:
+    properties:
+      enabled:
+        type: boolean
+      provider_slug:
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug'
+    type: object
   Asset:
     properties:
       amount:
@@ -283,6 +290,13 @@ definitions:
       updated_at:
         type: string
     type: object
+  ClarificationStoreRequest:
+    properties:
+      reason:
+        type: string
+    required:
+    - reason
+    type: object
   CombinedStats:
     properties:
       available_bandwidth:
@@ -380,6 +394,10 @@ definitions:
     type: object
   CreateStoreRequest:
     properties:
+      description:
+        maxLength: 255
+        minLength: 1
+        type: string
       name:
         maxLength: 32
         minLength: 2
@@ -1321,6 +1339,15 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-AmlSettingsResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/AmlSettingsResponse'
+      message:
+        type: string
+    type: object
   JSONResponse-AuthLinkResponse:
     properties:
       code:
@@ -1665,6 +1692,15 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-ResponseWithFullPagination-StoreResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/ResponseWithFullPagination-StoreResponse'
+      message:
+        type: string
+    type: object
   JSONResponse-ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow:
     properties:
       code:
@@ -2003,6 +2039,17 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-array_RiskRuleResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/RiskRuleResponse'
+        type: array
+      message:
+        type: string
+    type: object
   JSONResponse-array_SettingResponse:
     properties:
       code:
@@ -2010,6 +2057,17 @@ definitions:
       data:
         items:
           $ref: '#/definitions/SettingResponse'
+        type: array
+      message:
+        type: string
+    type: object
+  JSONResponse-array_SignalCategoryResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/SignalCategoryResponse'
         type: array
       message:
         type: string
@@ -2165,15 +2223,6 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse'
-      message:
-        type: string
-    type: object
-  JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse:
-    properties:
-      code:
-        type: integer
-      data:
-        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response.StoreAMLSettingsResponse'
       message:
         type: string
     type: object
@@ -2645,6 +2694,13 @@ definitions:
       user_info:
         $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_service_user.RegisterUserDTO'
     type: object
+  RejectStoreRequest:
+    properties:
+      reason:
+        type: string
+    required:
+    - reason
+    type: object
   ResponseWithFullPagination-AmlHistoryResponse:
     properties:
       items:
@@ -2708,6 +2764,15 @@ definitions:
       pagination:
         $ref: '#/definitions/FullPagingData'
     type: object
+  ResponseWithFullPagination-StoreResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/StoreResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/FullPagingData'
+    type: object
   ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow:
     properties:
       items:
@@ -2716,6 +2781,37 @@ definitions:
         type: array
       pagination:
         $ref: '#/definitions/FullPagingData'
+    type: object
+  RiskRuleRequest:
+    properties:
+      action:
+        enum:
+        - reject
+        - accept_and_flag
+        type: string
+      enabled:
+        type: boolean
+      risk_type:
+        type: string
+      threshold:
+        maximum: 100
+        minimum: 0
+        type: number
+    required:
+    - action
+    - risk_type
+    - threshold
+    type: object
+  RiskRuleResponse:
+    properties:
+      action:
+        type: string
+      enabled:
+        type: boolean
+      risk_type:
+        type: string
+      threshold:
+        type: number
     type: object
   ScoreTxRequest:
     properties:
@@ -2812,6 +2908,13 @@ definitions:
       status:
         $ref: '#/definitions/TransferStatus'
     type: object
+  SignalCategoryResponse:
+    properties:
+      category:
+        type: string
+      label:
+        type: string
+    type: object
   StatisticsDTO:
     properties:
       date:
@@ -2861,6 +2964,8 @@ definitions:
         type: string
       currency_id:
         type: string
+      description:
+        type: string
       id:
         format: uuid
         type: string
@@ -2868,11 +2973,15 @@ definitions:
         type: number
       name:
         type: string
+      owner_email:
+        type: string
       public_payment_form_enabled:
         type: boolean
       rate_scale:
         type: number
       rate_source:
+        type: string
+      rejection_reason:
         type: string
       return_url:
         format: uri
@@ -2887,6 +2996,13 @@ definitions:
         type: string
       user_id:
         format: uuid
+        type: string
+      verification_comment:
+        type: string
+      verification_status:
+        type: string
+      verified_at:
+        format: date-time
         type: string
     type: object
   StoreSecretResponse:
@@ -3289,17 +3405,6 @@ definitions:
     required:
     - list
     type: object
-  UpdateStoreAMLSettingsRequest:
-    properties:
-      enabled:
-        type: boolean
-      provider_slug:
-        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug'
-      risk_threshold:
-        maximum: 100
-        minimum: 0
-        type: integer
-    type: object
   UpdateStoreCurrencyRequest:
     properties:
       currency_ids:
@@ -3310,6 +3415,8 @@ definitions:
   UpdateStoreRequest:
     properties:
       currency_id:
+        type: string
+      description:
         type: string
       minimal_payment:
         type: number
@@ -3411,6 +3518,15 @@ definitions:
         $ref: '#/definitions/WithdrawalStatus'
     required:
     - interval
+    type: object
+  UpsertRiskRulesRequest:
+    properties:
+      rules:
+        items:
+          $ref: '#/definitions/RiskRuleRequest'
+        type: array
+    required:
+    - rules
     type: object
   User:
     properties:
@@ -3866,6 +3982,13 @@ definitions:
     required:
     - stages
     type: object
+  github_com_dv-net_dv-merchant_internal_delivery_http_request_aml_requests.UpdateAmlSettingsRequest:
+    properties:
+      enabled:
+        type: boolean
+      provider_slug:
+        type: string
+    type: object
   github_com_dv-net_dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest:
     properties:
       rate_scale:
@@ -4030,23 +4153,6 @@ definitions:
   github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse:
     properties:
       mnemonic:
-        type: string
-    type: object
-  github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response.StoreAMLSettingsResponse:
-    properties:
-      created_at:
-        type: string
-      enabled:
-        type: boolean
-      id:
-        type: string
-      provider_slug:
-        type: string
-      risk_threshold:
-        type: integer
-      store_id:
-        type: string
-      updated_at:
         type: string
     type: object
   github_com_dv-net_dv-merchant_internal_dto.LogDTO:
@@ -4341,224 +4447,6 @@ info:
   title: DV Merchant
   version: "1.0"
 paths:
-  /v1/admin/ban:
-    patch:
-      consumes:
-      - application/json
-      description: Issue ban to user
-      parameters:
-      - format: uuid
-        in: query
-        name: user_id
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-BanUserResponse'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "503":
-          description: Service Unavailable
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Issue ban to user
-      tags:
-      - Admin
-  /v1/admin/invite:
-    post:
-      consumes:
-      - application/json
-      description: Invite user with role
-      parameters:
-      - description: Invite user with specific role
-        in: body
-        name: register
-        required: true
-        schema:
-          $ref: '#/definitions/InviteUserWithRoleRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-string'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Invite user with role
-      tags:
-      - Admin
-  /v1/admin/role:
-    delete:
-      consumes:
-      - application/json
-      description: Request to remove user role
-      parameters:
-      - format: uuid
-        in: query
-        name: user_id
-        required: true
-        type: string
-      - enum:
-        - user
-        - root
-        - support
-        - finance_manager
-        in: query
-        name: user_role
-        required: true
-        type: string
-        x-enum-varnames:
-        - UserRoleDefault
-        - UserRoleRoot
-        - UserRoleSupport
-        - UserRoleFinanceManager
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-string'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "503":
-          description: Service Unavailable
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Remove user role
-      tags:
-      - Admin
-    post:
-      consumes:
-      - application/json
-      description: Request to add user role
-      parameters:
-      - description: AddUserRoleRequest
-        in: body
-        name: string
-        required: true
-        schema:
-          $ref: '#/definitions/AddUserRoleRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-AddUserRoleResponse'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "503":
-          description: Service Unavailable
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Add user role
-      tags:
-      - Admin
-  /v1/admin/unban:
-    patch:
-      consumes:
-      - application/json
-      description: Unban user
-      parameters:
-      - format: uuid
-        in: query
-        name: user_id
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-UnbanUserResponse'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "503":
-          description: Service Unavailable
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Unban user
-      tags:
-      - Admin
-  /v1/admin/users:
-    get:
-      consumes:
-      - application/json
-      description: Get all users
-      parameters:
-      - in: query
-        name: page
-        type: integer
-      - in: query
-        name: page_size
-        type: integer
-      - enum:
-        - root
-        - user
-        in: query
-        name: roles
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-ResponseWithFullPagination-GetUsersResponse'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "503":
-          description: Service Unavailable
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Get all users
-      tags:
-      - Admin
   /v1/dv-admin/2fa/:
     get:
       consumes:
@@ -4861,6 +4749,100 @@ paths:
       summary: Update AML-provider keys
       tags:
       - AML
+  /v1/dv-admin/aml/{aml_provider_slug}/rules:
+    get:
+      consumes:
+      - application/json
+      description: Get AML risk rules for a specific provider, merged with supported
+        signal categories
+      parameters:
+      - description: AML-provider slug
+        in: path
+        name: aml_provider_slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_RiskRuleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get AML risk rules
+      tags:
+      - AML
+    post:
+      consumes:
+      - application/json
+      description: Create or update AML risk rules for a specific provider
+      parameters:
+      - description: AML-provider slug
+        in: path
+        name: aml_provider_slug
+        required: true
+        type: string
+      - description: Upsert risk rules
+        in: body
+        name: upsert_rules
+        required: true
+        schema:
+          $ref: '#/definitions/UpsertRiskRulesRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_RiskRuleResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Upsert AML risk rules
+      tags:
+      - AML
+  /v1/dv-admin/aml/{aml_provider_slug}/signals:
+    get:
+      consumes:
+      - application/json
+      description: Get the list of risk signal categories a specific AML-provider
+        can return in a check response (used to build a per-store ignore-list)
+      parameters:
+      - description: AML-provider slug
+        in: path
+        name: aml_provider_slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_SignalCategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get AML-provider signal categories
+      tags:
+      - AML
   /v1/dv-admin/aml/history:
     get:
       consumes:
@@ -4944,6 +4926,58 @@ paths:
           schema:
             $ref: '#/definitions/APIErrors'
       summary: Score transaction in specific AML-provider
+      tags:
+      - AML
+  /v1/dv-admin/aml/settings:
+    get:
+      consumes:
+      - application/json
+      description: Get AML settings for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-AmlSettingsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get AML settings
+      tags:
+      - AML
+    post:
+      consumes:
+      - application/json
+      description: Update AML settings for the current user
+      parameters:
+      - description: Update AML settings
+        in: body
+        name: update_settings
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_aml_requests.UpdateAmlSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-AmlSettingsResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Update AML settings
       tags:
       - AML
   /v1/dv-admin/auth/login:
@@ -5274,7 +5308,7 @@ paths:
       summary: Dictionaries load
       tags:
       - Dictionary
-  /v1/dv-admin/exchange/:slug/balance:
+  /v1/dv-admin/exchange/{exchange_slug}/balance:
     get:
       description: Get exchange balances
       produces:
@@ -5297,7 +5331,7 @@ paths:
       summary: Get exchange balances
       tags:
       - Exchange
-  /v1/dv-admin/exchange/:slug/keys:
+  /v1/dv-admin/exchange/{exchange_slug}/keys:
     delete:
       consumes:
       - application/json
@@ -5360,7 +5394,7 @@ paths:
       summary: Update exchange keys
       tags:
       - Exchange
-  /v1/dv-admin/exchange/:slug/set:
+  /v1/dv-admin/exchange/{exchange_slug}/set:
     post:
       consumes:
       - application/json
@@ -5385,7 +5419,7 @@ paths:
       summary: Set current exchange
       tags:
       - Exchange
-  /v1/dv-admin/exchange/:slug/test:
+  /v1/dv-admin/exchange/{exchange_slug}/test:
     get:
       description: Route for ensure exchange correct set up
       produces:
@@ -5406,7 +5440,7 @@ paths:
       summary: Test exchange
       tags:
       - Exchange
-  /v1/dv-admin/exchange/:slug/user-pairs:
+  /v1/dv-admin/exchange/{exchange_slug}/user-pairs:
     get:
       description: Get user exchange pairs
       produces:
@@ -5631,6 +5665,27 @@ paths:
       summary: Get last processing logs
       tags:
       - Logs
+  /v1/dv-admin/notifications/{notification_id}:
+    put:
+      consumes:
+      - application/json
+      description: List available user settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: List available user settings
+      tags:
+      - Notifications
   /v1/dv-admin/notifications/history:
     get:
       consumes:
@@ -5725,6 +5780,82 @@ paths:
       security:
       - BearerAuth: []
       summary: Get user notification history
+      tags:
+      - Notifications
+  /v1/dv-admin/notifications/list:
+    get:
+      consumes:
+      - application/json
+      description: List available user notifications
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_UserNotificationResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: List available user notifications
+      tags:
+      - Notifications
+  /v1/dv-admin/notifications/list/update:
+    patch:
+      consumes:
+      - application/json
+      description: Update list user notifications
+      parameters:
+      - description: Update user notifications list
+        in: body
+        name: updateList
+        required: true
+        schema:
+          $ref: '#/definitions/UpdateList'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Update list user notifications
+      tags:
+      - Notifications
+  /v1/dv-admin/notifications/test:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Test email request
+        in: body
+        name: testEmailRequest
+        required: true
+        schema:
+          $ref: '#/definitions/TestNotificationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Test local SMTP server email sending
       tags:
       - Notifications
   /v1/dv-admin/notifications/types:
@@ -6038,6 +6169,26 @@ paths:
       tags:
       - Receipt
   /v1/dv-admin/root-setting/:
+    get:
+      consumes:
+      - application/json
+      description: Get root settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_SettingResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Get root settings
+      tags:
+      - Setting
     post:
       consumes:
       - application/json
@@ -6073,6 +6224,388 @@ paths:
       summary: Create or update root settings
       tags:
       - Setting
+  /v1/dv-admin/root-setting/list:
+    get:
+      consumes:
+      - application/json
+      description: List available root settings
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: List available root settings
+      tags:
+      - Setting
+  /v1/dv-admin/root/ban:
+    patch:
+      consumes:
+      - application/json
+      description: Issue ban to user
+      parameters:
+      - format: uuid
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-BanUserResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Issue ban to user
+      tags:
+      - Admin
+  /v1/dv-admin/root/invite:
+    post:
+      consumes:
+      - application/json
+      description: Invite user with role
+      parameters:
+      - description: Invite user with specific role
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/InviteUserWithRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Invite user with role
+      tags:
+      - Admin
+  /v1/dv-admin/root/role:
+    delete:
+      consumes:
+      - application/json
+      description: Request to remove user role
+      parameters:
+      - format: uuid
+        in: query
+        name: user_id
+        required: true
+        type: string
+      - enum:
+        - user
+        - root
+        - support
+        - finance_manager
+        in: query
+        name: user_role
+        required: true
+        type: string
+        x-enum-varnames:
+        - UserRoleDefault
+        - UserRoleRoot
+        - UserRoleSupport
+        - UserRoleFinanceManager
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Remove user role
+      tags:
+      - Admin
+    post:
+      consumes:
+      - application/json
+      description: Request to add user role
+      parameters:
+      - description: AddUserRoleRequest
+        in: body
+        name: string
+        required: true
+        schema:
+          $ref: '#/definitions/AddUserRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-AddUserRoleResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Add user role
+      tags:
+      - Admin
+  /v1/dv-admin/root/stores:
+    get:
+      consumes:
+      - application/json
+      description: Get all stores, optionally filtered by verification status
+      parameters:
+      - in: query
+        name: page
+        type: integer
+      - in: query
+        name: page_size
+        type: integer
+      - collectionFormat: csv
+        in: query
+        items:
+          enum:
+          - PENDING
+          - SUCCESS
+          - REJECTED
+          type: string
+        name: status
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ResponseWithFullPagination-StoreResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Get all stores
+      tags:
+      - Admin
+  /v1/dv-admin/root/stores/{id}/clarification:
+    patch:
+      consumes:
+      - application/json
+      description: Request store clarification
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Request store clarification
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/ClarificationStoreRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-StoreResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Request store clarification
+      tags:
+      - Admin
+  /v1/dv-admin/root/stores/{id}/reject:
+    patch:
+      consumes:
+      - application/json
+      description: Reject store verification
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reject store
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/RejectStoreRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-StoreResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Reject store
+      tags:
+      - Admin
+  /v1/dv-admin/root/stores/{id}/verify:
+    patch:
+      consumes:
+      - application/json
+      description: Approve store verification
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-StoreResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Verify store
+      tags:
+      - Admin
+  /v1/dv-admin/root/unban:
+    patch:
+      consumes:
+      - application/json
+      description: Unban user
+      parameters:
+      - format: uuid
+        in: query
+        name: user_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-UnbanUserResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Unban user
+      tags:
+      - Admin
+  /v1/dv-admin/root/users:
+    get:
+      consumes:
+      - application/json
+      description: Get all users
+      parameters:
+      - in: query
+        name: page
+        type: integer
+      - in: query
+        name: page_size
+        type: integer
+      - enum:
+        - root
+        - user
+        in: query
+        name: roles
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ResponseWithFullPagination-GetUsersResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - Admin
   /v1/dv-admin/search/{searchParam}:
     get:
       consumes:
@@ -6098,48 +6631,6 @@ paths:
       summary: Get wallet/tx data
       tags:
       - Search
-  /v1/dv-admin/setting/:
-    get:
-      consumes:
-      - application/json
-      description: Get root settings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-array_SettingResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Get root settings
-      tags:
-      - Setting
-  /v1/dv-admin/setting/list:
-    get:
-      consumes:
-      - application/json
-      description: List available root settings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: List available root settings
-      tags:
-      - Setting
   /v1/dv-admin/store-setting/{id}:
     post:
       consumes:
@@ -6349,79 +6840,6 @@ paths:
       summary: Update store
       tags:
       - Store
-  /v1/dv-admin/store/{id}/aml-settings:
-    get:
-      description: Returns AML check configuration for the specified store
-      parameters:
-      - description: Store ID
-        in: path
-        name: store_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Get store AML settings
-      tags:
-      - AML
-    put:
-      consumes:
-      - application/json
-      description: Creates or updates AML check configuration for the specified store
-      parameters:
-      - description: Store ID
-        in: path
-        name: store_id
-        required: true
-        type: string
-      - description: AML settings
-        in: body
-        name: update
-        required: true
-        schema:
-          $ref: '#/definitions/UpdateStoreAMLSettingsRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Update store AML settings
-      tags:
-      - AML
   /v1/dv-admin/store/{id}/apikey:
     post:
       consumes:
@@ -6658,6 +7076,39 @@ paths:
       security:
       - BearerAuth: []
       summary: Update store currency
+      tags:
+      - Store
+  /v1/dv-admin/store/{id}/resend-verify:
+    post:
+      description: Resend store verification
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-any'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Resend store verification
       tags:
       - Store
   /v1/dv-admin/store/{id}/secret:
@@ -7092,7 +7543,43 @@ paths:
       summary: Update store whitelist
       tags:
       - Store
-  /v1/dv-admin/store/archived/list:
+  /v1/dv-admin/store/{id}/whitelists/{ip}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete store whitelist
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Whitelist IP
+        in: path
+        name: ip
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-any'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Delete store whitelist
+      tags:
+      - Store
+  /v1/dv-admin/store/archived:
     get:
       consumes:
       - application/json
@@ -7169,7 +7656,7 @@ paths:
       summary: Update processing
       tags:
       - System
-  /v1/dv-admin/system/version:
+  /v1/dv-admin/system/versions:
     get:
       consumes:
       - application/json
@@ -8046,7 +8533,7 @@ paths:
       summary: Update user password
       tags:
       - User
-  /v1/dv-admin/user/email-confirmation:
+  /v1/dv-admin/user/confirm-email:
     post:
       consumes:
       - application/json
@@ -8661,46 +9148,6 @@ paths:
       summary: Emulate webhook to store
       tags:
       - StoreWebhook
-  /v1/dv-admin/withdraw-multiple-to-processing:
-    post:
-      consumes:
-      - application/json
-      description: This endpoint for import manual withdraw
-      parameters:
-      - description: Withdraw to processing
-        in: body
-        name: register
-        required: true
-        schema:
-          $ref: '#/definitions/MultipleWithdrawalToProcessingRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-array_string'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Create manual withdraw by specific wallet
-      tags:
-      - Withdrawal
   /v1/dv-admin/withdrawal-wallet/{walletID}/addresses:
     patch:
       consumes:
@@ -9113,6 +9560,46 @@ paths:
       summary: Create manual withdraw by specific wallet
       tags:
       - Withdrawal
+  /v1/dv-admin/withdrawal/withdraw-multiple-to-processing:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint for import manual withdraw
+      parameters:
+      - description: Withdraw to processing
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/MultipleWithdrawalToProcessingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_string'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Create manual withdraw by specific wallet
+      tags:
+      - Withdrawal
   /v1/dv-admin/withdrawal/withdraw-to-processing:
     post:
       consumes:
@@ -9286,7 +9773,28 @@ paths:
       summary: Create withdrawal setting
       tags:
       - Exchange
-  /v1/exchange/:slug/pairs:
+  /v1/exchange/{exchange_slug}/chains:
+    get:
+      description: Get exchange chains
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_ExchangeChain'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get exchange chains
+      tags:
+      - Exchange
+  /v1/exchange/{exchange_slug}/pairs:
     get:
       description: Get exchange pairs
       produces:
@@ -9307,50 +9815,6 @@ paths:
       security:
       - Bearer: []
       summary: Get exchange pairs
-      tags:
-      - Exchange
-  /v1/exchange/:slug/withdrawal-rules:
-    get:
-      description: Get exchange withdrawal rules for all enabled currencies
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-array_array_github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "503":
-          description: Service Unavailable
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - Bearer: []
-      summary: Get exchange withdrawal rules
-      tags:
-      - Exchange
-  /v1/exchange/{exchange_slug}/chains:
-    get:
-      description: Get exchange chains
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-array_ExchangeChain'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "503":
-          description: Service Unavailable
-          schema:
-            $ref: '#/definitions/APIErrors'
-      summary: Get exchange chains
       tags:
       - Exchange
   /v1/exchange/{exchange_slug}/toggle-swaps:
@@ -9421,6 +9885,29 @@ paths:
       security:
       - Bearer: []
       summary: Toggle exchange withdrawals
+      tags:
+      - Exchange
+  /v1/exchange/{exchange_slug}/withdrawal-rules:
+    get:
+      description: Get exchange withdrawal rules for all enabled currencies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_array_github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - Bearer: []
+      summary: Get exchange withdrawal rules
       tags:
       - Exchange
   /v1/exchange/{exchange_slug}/withdrawal-setting/{id}:
@@ -10212,103 +10699,6 @@ paths:
       summary: Get withdrawal from processing
       tags:
       - Withdrawal
-  /v1/notifications/{id}:
-    put:
-      consumes:
-      - application/json
-      description: List available user settings
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-string'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: List available user settings
-      tags:
-      - Notifications
-  /v1/notifications/list:
-    get:
-      consumes:
-      - application/json
-      description: List available user notifications
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-array_UserNotificationResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: List available user notifications
-      tags:
-      - Notifications
-  /v1/notifications/list/update:
-    patch:
-      consumes:
-      - application/json
-      description: Update list user notifications
-      parameters:
-      - description: Update user notifications list
-        in: body
-        name: updateList
-        required: true
-        schema:
-          $ref: '#/definitions/UpdateList'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-string'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Update list user notifications
-      tags:
-      - Notifications
-  /v1/notifications/test:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Test email request
-        in: body
-        name: testEmailRequest
-        required: true
-        schema:
-          $ref: '#/definitions/TestNotificationRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-string'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Test local SMTP server email sending
-      tags:
-      - Notifications
   /v1/public/currencies:
     get:
       consumes:
@@ -10673,42 +11063,6 @@ paths:
       tags:
       - Wallet
       - Public
-  /v1/store/{id}/whitelists/{ip}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete store whitelist
-      parameters:
-      - description: Store ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Whitelist IP
-        in: path
-        name: ip
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-any'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Delete store whitelist
-      tags:
-      - Store
 securityDefinitions:
   BearerAuth:
     in: header

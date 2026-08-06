@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_request"
+	"github.com/dv-net/dv-merchant/internal/constants"
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/aml"
@@ -21,6 +21,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_stores"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_stores"
+	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/dv-net/dv-merchant/pkg/rate"
 	"github.com/google/uuid"
@@ -28,12 +29,12 @@ import (
 )
 
 type IStore interface { //nolint:interfacebloat
-	GetAllStores(ctx context.Context, page int32) ([]*models.Store, error)
+	GetAllStores(ctx context.Context, status []constants.StoreVerificationStatus, params *storecmn.CommonFindParams) (*storecmn.FindResponseWithFullPagination[*repo_stores.StoreWithOwnerEmail], error)
 	GetArchivedList(ctx context.Context, userID uuid.UUID) ([]*models.Store, error)
 	GetStoreByID(ctx context.Context, ID uuid.UUID) (*models.Store, error)
 	GetStoresByUserID(ctx context.Context, ID uuid.UUID) ([]*models.Store, error)
 	CreateStore(ctx context.Context, dto CreateStore, user *models.User, opts ...repos.Option) (*models.Store, error)
-	UpdateStore(ctx context.Context, dto *store_request.UpdateRequest, ID uuid.UUID, opts ...repos.Option) (*models.Store, error)
+	UpdateStore(ctx context.Context, dto UpdateStore, ID uuid.UUID, opts ...repos.Option) (*models.Store, error)
 	GetStoreByStoreAPIKey(ctx context.Context, apiKey string) (*models.Store, error)
 	GetStoreByWalletAddress(ctx context.Context, address string, currencyID string, opts ...repos.Option) (*models.Store, bool, error)
 	GetStoreByWalletID(ctx context.Context, walletID uuid.UUID) (*models.Store, error)
@@ -61,8 +62,6 @@ type Service struct {
 }
 
 var _ IStore = (*Service)(nil)
-
-const PageSize = 10
 
 func New(
 	storage storage.IStorage,
@@ -103,16 +102,13 @@ func New(
 	return srv
 }
 
-func (s *Service) GetAllStores(ctx context.Context, page int32) ([]*models.Store, error) {
-	if page < 1 {
-		return nil, fmt.Errorf("page number must be greater than 0")
-	}
-	params := repo_stores.GetAllParams{
-		Limit:  PageSize,
-		Offset: (page - 1) * PageSize,
+func (s *Service) GetAllStores(ctx context.Context, status []constants.StoreVerificationStatus, pagination *storecmn.CommonFindParams) (*storecmn.FindResponseWithFullPagination[*repo_stores.StoreWithOwnerEmail], error) {
+	params := repo_stores.GetAllFilteredParams{
+		Status:     status,
+		PageParams: pagination.PageParams,
 	}
 
-	stores, err := s.storage.Stores().GetAll(ctx, params)
+	stores, err := s.storage.Stores().GetStoresWithFilter(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -145,13 +141,15 @@ func (s *Service) GetStoreByStoreAPIKey(ctx context.Context, apiKey string) (*mo
 
 func (s *Service) CreateStore(ctx context.Context, dto CreateStore, user *models.User, opts ...repos.Option) (*models.Store, error) {
 	params := repo_stores.CreateParams{
-		Name:       dto.Name,
-		UserID:     user.ID,
-		CurrencyID: "USD",
-		RateSource: user.RateSource,
-		Status:     true,
-		Site:       dto.Site,
+		Name:        dto.Name,
+		UserID:      user.ID,
+		CurrencyID:  "USD",
+		RateSource:  user.RateSource,
+		Status:      true,
+		Site:        dto.Site,
+		Description: dto.Description,
 	}
+
 	if err := params.Validate(); err != nil {
 		return nil, fmt.Errorf("validate params error: %w", err)
 	}
@@ -309,10 +307,11 @@ func (s *Service) GetStoreByWalletAddress(ctx context.Context, address string, c
 	return row.ToStore(), row.Dirty.Bool, nil
 }
 
-func (s *Service) UpdateStore(ctx context.Context, dto *store_request.UpdateRequest, id uuid.UUID, opts ...repos.Option) (*models.Store, error) {
+func (s *Service) UpdateStore(ctx context.Context, dto UpdateStore, id uuid.UUID, opts ...repos.Option) (*models.Store, error) {
 	params := repo_stores.UpdateParams{
 		Name:                     dto.Name,
 		Site:                     dto.Site,
+		Description:              dto.Description,
 		CurrencyID:               dto.CurrencyID,
 		RateSource:               models.RateSource(dto.RateSource),
 		ReturnUrl:                dto.ReturnURL,

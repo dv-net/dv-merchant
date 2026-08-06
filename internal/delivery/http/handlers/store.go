@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
+	"github.com/dv-net/dv-merchant/internal/constants"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_api_key_request"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_currency_request"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_request"
@@ -43,20 +45,21 @@ func (h *Handler) createStore(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	dto := &store_request.CreateRequest{}
+	req := &store_request.CreateRequest{}
 
-	if err := c.Bind().Body(dto); err != nil {
+	if err := c.Bind().Body(req); err != nil {
 		return err
 	}
 	createdStore, err := h.services.StoreService.CreateStore(c.Context(), store.CreateStore{
-		Name: dto.Name,
-		Site: dto.Site,
+		Name:        req.Name,
+		Site:        req.Site,
+		Description: req.Description,
 	}, user)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusUnprocessableEntity)
 	}
 
-	res := converters.FromStoreModelToResponse(createdStore)
+	res := store_response.NewStoreResponse(createdStore)
 	return c.JSON(response.OkByData(res))
 }
 
@@ -83,7 +86,7 @@ func (h *Handler) loadUserStore(c fiber.Ctx) error {
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)
 	}
-	res := converters.FromStoreModelToResponses(stores...)
+	res := store_response.NewStoreResponses(stores...)
 	return c.JSON(response.OkByData(res))
 }
 
@@ -105,15 +108,28 @@ func (h *Handler) updateStore(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	dto := &store_request.UpdateRequest{}
-	if err := c.Bind().Body(dto); err != nil {
+	req := &store_request.UpdateRequest{}
+	if err := c.Bind().Body(req); err != nil {
 		return err
+	}
+	dto := store.UpdateStore{
+		Name:                     req.Name,
+		Site:                     req.Site,
+		Description:              req.Description,
+		PublicPaymentFormEnabled: req.PublicPaymentFormEnabled,
+		CurrencyID:               req.CurrencyID,
+		RateSource:               req.RateSource,
+		ReturnURL:                req.ReturnURL,
+		SuccessURL:               req.SuccessURL,
+		RateScale:                req.RateScale,
+		Status:                   req.Status,
+		MinimalPayment:           req.MinimalPayment,
 	}
 	updatedStore, err := h.services.StoreService.UpdateStore(c.Context(), dto, targetStore.ID)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
-	res := converters.FromStoreModelToResponse(updatedStore)
+	res := store_response.NewStoreResponse(updatedStore)
 	return c.JSON(response.OkByData(res))
 }
 
@@ -135,7 +151,7 @@ func (h *Handler) loadStoreByID(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	res := converters.FromStoreModelToResponse(targetStore)
+	res := store_response.NewStoreResponse(targetStore)
 	return c.JSON(response.OkByData(res))
 }
 
@@ -184,7 +200,7 @@ func (h *Handler) storeUnarchive(c fiber.Ctx) error {
 //	@Success		200	{object}	response.Result[any]
 //	@Failure		401	{object}	apierror.Errors
 //	@Failure		500	{object}	apierror.Errors
-//	@Router			/v1/dv-admin/store/archived/list [get]
+//	@Router			/v1/dv-admin/store/archived [get]
 //	@Security		BearerAuth
 func (h *Handler) archivedStoresList(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
@@ -197,7 +213,7 @@ func (h *Handler) archivedStoresList(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	return c.JSON(response.OkByData(converters.FromStoreModelToResponses(stores...)))
+	return c.JSON(response.OkByData(store_response.NewStoreResponses(stores...)))
 }
 
 // storeArchive is a function to init archive store
@@ -249,11 +265,7 @@ func (h *Handler) storeArchive(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/store/{id}/apikey [post]
 //	@Security		BearerAuth
 func (h *Handler) generateStoreAPIKey(c fiber.Ctx) error {
-	targetStore, err := h.validateAndLoadStore(c)
-	if err != nil {
-		return err
-	}
-	user, err := loadAuthUser(c)
+	targetStore, user, err := h.validateAndLoadStoreWithUser(c)
 	if err != nil {
 		return err
 	}
@@ -626,7 +638,7 @@ func (h *Handler) loadStoreTransaction(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)
 	}
 
-	res := converters.FromStoreTransactionModelToResponses(storeTransactions...)
+	res := store_response.NewStoreTransactionResponses(storeTransactions...)
 	return c.JSON(response.OkByData(res))
 }
 
@@ -717,7 +729,7 @@ func (h *Handler) loadStoreWhitelist(c fiber.Ctx) error {
 		return c.JSON(response.OkByData([]string{}))
 	}
 
-	return c.JSON(response.OkByData(converters.FromStoreWhitelistModelToResponses(storeWhitelist...)))
+	return c.JSON(response.OkByData(store_response.NewStoreWhitelistResponses(storeWhitelist...)))
 }
 
 // updateStoreWhitelist is a function to Update store whitelist
@@ -740,17 +752,17 @@ func (h *Handler) updateStoreWhitelist(c fiber.Ctx) error {
 		return err
 	}
 
-	dto := &store_whitelist_request.UpdateRequest{}
-	if err := c.Bind().Body(dto); err != nil {
+	req := &store_whitelist_request.UpdateRequest{}
+	if err := c.Bind().Body(req); err != nil {
 		return err
 	}
 
-	storeWhitelists, err := h.services.StoreWhitelistService.CreateStoreWhitelist(c.Context(), targetStore.ID, dto.Ips)
+	storeWhitelists, err := h.services.StoreWhitelistService.CreateStoreWhitelist(c.Context(), targetStore.ID, req.Ips)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	res := converters.FromStoreWhitelistModelToResponses(storeWhitelists...)
+	res := store_response.NewStoreWhitelistResponses(storeWhitelists...)
 	return c.JSON(response.OkByData(res))
 }
 
@@ -813,17 +825,17 @@ func (h *Handler) patchStoreWhitelist(c fiber.Ctx) error {
 		return err
 	}
 
-	dto := &store_whitelist_request.PatchRequest{}
-	if err = c.Bind().Body(dto); err != nil {
+	req := &store_whitelist_request.PatchRequest{}
+	if err = c.Bind().Body(req); err != nil {
 		return err
 	}
 
-	storeWhitelists, err := h.services.StoreWhitelistService.PatchStoreWhitelist(c.Context(), targetStore.ID, dto.IP)
+	storeWhitelists, err := h.services.StoreWhitelistService.PatchStoreWhitelist(c.Context(), targetStore.ID, req.IP)
 	if err != nil {
 		return apierror.New().AddError(errors.New("ip already exists in whitelist")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	res := converters.FromStoreWhitelistModelToResponses(storeWhitelists...)
+	res := store_response.NewStoreWhitelistResponses(storeWhitelists...)
 	return c.JSON(response.OkByData(res))
 }
 
@@ -839,7 +851,7 @@ func (h *Handler) patchStoreWhitelist(c fiber.Ctx) error {
 //	@Success		200	{object}	response.Result[any]
 //	@Failure		401	{object}	apierror.Errors
 //	@Failure		400	{object}	apierror.Errors
-//	@Router			/v1/store/{id}/whitelists/{ip} [delete]
+//	@Router			/v1/dv-admin/store/{id}/whitelists/{ip} [delete]
 //	@Security		BearerAuth
 func (h *Handler) deleteStoreWhitelist(c fiber.Ctx) error {
 	targetStore, err := h.validateAndLoadStore(c)
@@ -927,11 +939,7 @@ func (h *Handler) getStoreSecret(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/store/{id}/secret [post]
 //	@Security		BearerAuth
 func (h *Handler) generateStoreSecret(c fiber.Ctx) error {
-	st, err := h.validateAndLoadStore(c)
-	if err != nil {
-		return err
-	}
-	user, err := loadAuthUser(c)
+	st, user, err := h.validateAndLoadStoreWithUser(c)
 	if err != nil {
 		return err
 	}
@@ -956,6 +964,50 @@ func (h *Handler) generateStoreSecret(c fiber.Ctx) error {
 	)
 
 	return c.JSON(response.OkByData(store_response.StoreSecretResponse{Secret: secret}))
+}
+
+// resendVerifyStore is a function to resend store verification request
+//
+//	@Summary		Resend store verification
+//	@Description	Resend store verification
+//	@Tags			Store
+//	@Produce		json
+//	@Param			id	path		string	true	"Store ID"
+//	@Success		200	{object}	response.Result[any]
+//	@Failure		400	{object}	apierror.Errors
+//	@Failure		401	{object}	apierror.Errors
+//	@Failure		500	{object}	apierror.Errors
+//	@Router			/v1/dv-admin/store/{id}/resend-verify [post]
+//	@Security		BearerAuth
+func (h *Handler) resendVerifyStore(c fiber.Ctx) error {
+	st, _, err := h.validateAndLoadStoreWithUser(c)
+	if err != nil {
+		return err
+	}
+
+	if st.VerificationStatus == constants.StoreVerificationStatusPending {
+		return apierror.New().AddError(errors.New("store is already pending verification")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	if st.VerificationStatus == constants.StoreVerificationStatusSuccess {
+		return apierror.New().AddError(errors.New("store is already verified")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	req := &store_request.ResendStoreVerificationRequest{}
+	if err := c.Bind().Body(req); err != nil {
+		return err
+	}
+
+	_, err = h.services.StoreVerificationService.ResendStoreVerification(c.Context(), store.ResendStoreVerificationDTO{
+		StoreID: st.ID,
+		Comment: req.Comment,
+	})
+
+	if err != nil {
+		return apierror.New().AddError(fmt.Errorf("failed to resend store verification")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByMessage("resend store verification successfully"))
 }
 
 func (h *Handler) initStoreRoutes(v1 fiber.Router) {
@@ -986,4 +1038,5 @@ func (h *Handler) initStoreRoutes(v1 fiber.Router) {
 	storeHandlers.Put("/:id/whitelists", h.updateStoreWhitelist)
 	storeHandlers.Patch("/:id/whitelists", h.patchStoreWhitelist)
 	storeHandlers.Delete("/:id/whitelists/:ip", h.deleteStoreWhitelist)
+	storeHandlers.Post("/:id/resend-verify", h.resendVerifyStore)
 }

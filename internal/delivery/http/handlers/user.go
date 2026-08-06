@@ -60,7 +60,7 @@ func (h *Handler) authUser(c fiber.Ctx) error {
 //	@Failure		401	{object}	apierror.Errors
 //	@Failure		422	{object}	apierror.Errors
 //	@Failure		503	{object}	apierror.Errors
-//	@Router			/v1/dv-admin/user/email-confirmation [post]
+//	@Router			/v1/dv-admin/user/confirm-email [post]
 //	@Security		BearerAuth
 func (h *Handler) confirmEmail(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)

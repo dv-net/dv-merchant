@@ -47,8 +47,17 @@ func (c *Client) Name() string {
 	return "amlbot"
 }
 
-// InitCheckTransaction initiates a transaction check with AMLBot.
-func (c *Client) InitCheckTransaction(ctx context.Context, dto aml.InitCheckDTO, auth aml.RequestAuthorizer) (*aml.CheckResponse, error) {
+// Check performs one check attempt. An empty externalID initiates a new check;
+// a non-empty externalID rechecks the status of an already-initiated check.
+func (c *Client) Check(ctx context.Context, dto aml.InitCheckDTO, externalID string, auth aml.RequestAuthorizer) (*aml.CheckResponse, error) {
+	if externalID != "" {
+		values := url.Values{
+			"uid":    {externalID},
+			"locale": {"en"},
+		}
+		return c.doRequest(ctx, http.MethodPost, endpointRecheck, values, auth, aml.CheckStatusNew)
+	}
+
 	// Prepare form data
 	values := url.Values{
 		"hash":      {dto.TxID},
@@ -60,17 +69,6 @@ func (c *Client) InitCheckTransaction(ctx context.Context, dto aml.InitCheckDTO,
 	}
 
 	return c.doRequest(ctx, http.MethodPost, endpointCheck, values, auth, aml.CheckStatusNew)
-}
-
-// FetchCheckStatus fetches the status of a previous check.
-func (c *Client) FetchCheckStatus(ctx context.Context, checkID string, auth aml.RequestAuthorizer) (*aml.CheckResponse, error) {
-	// Prepare form data
-	values := url.Values{
-		"uid":    {checkID},
-		"locale": {"en"},
-	}
-
-	return c.doRequest(ctx, http.MethodPost, endpointRecheck, values, auth, aml.CheckStatusNew)
 }
 
 // TestRequestWithAuth sends request with required auth for creds test
@@ -161,6 +159,7 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 			StatusCode: resp.StatusCode,
 			Body:       respBodyBytes,
 			RequestURL: req.URL.Path,
+			Retryable:  resp.StatusCode != http.StatusUnauthorized && resp.StatusCode != http.StatusForbidden,
 		}
 	}
 
@@ -176,6 +175,7 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 			StatusCode: http.StatusOK,
 			Body:       respBodyBytes,
 			RequestURL: req.URL.Path,
+			Retryable:  true,
 		}
 	}
 
@@ -186,6 +186,7 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 			StatusCode: http.StatusOK,
 			Body:       respBodyBytes,
 			RequestURL: req.URL.Path,
+			Retryable:  true,
 		}
 	}
 

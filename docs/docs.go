@@ -18,348 +18,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/v1/admin/ban": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Issue ban to user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin"
-                ],
-                "summary": "Issue ban to user",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "format": "uuid",
-                        "name": "user_id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-BanUserResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/admin/invite": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Invite user with role",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin"
-                ],
-                "summary": "Invite user with role",
-                "parameters": [
-                    {
-                        "description": "Invite user with specific role",
-                        "name": "register",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/InviteUserWithRoleRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/admin/role": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Request to add user role",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin"
-                ],
-                "summary": "Add user role",
-                "parameters": [
-                    {
-                        "description": "AddUserRoleRequest",
-                        "name": "string",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/AddUserRoleRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-AddUserRoleResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Request to remove user role",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin"
-                ],
-                "summary": "Remove user role",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "format": "uuid",
-                        "name": "user_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "enum": [
-                            "user",
-                            "root",
-                            "support",
-                            "finance_manager"
-                        ],
-                        "type": "string",
-                        "x-enum-varnames": [
-                            "UserRoleDefault",
-                            "UserRoleRoot",
-                            "UserRoleSupport",
-                            "UserRoleFinanceManager"
-                        ],
-                        "name": "user_role",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-string"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/admin/unban": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Unban user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin"
-                ],
-                "summary": "Unban user",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "format": "uuid",
-                        "name": "user_id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-UnbanUserResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/admin/users": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get all users",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin"
-                ],
-                "summary": "Get all users",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "name": "page_size",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "root",
-                            "user"
-                        ],
-                        "type": "string",
-                        "name": "roles",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-ResponseWithFullPagination-GetUsersResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/dv-admin/2fa/": {
             "get": {
                 "security": [
@@ -770,6 +428,85 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/aml/settings": {
+            "get": {
+                "description": "Get AML settings for the current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Get AML settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-AmlSettingsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Update AML settings for the current user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Update AML settings",
+                "parameters": [
+                    {
+                        "description": "Update AML settings",
+                        "name": "update_settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_request_aml_requests.UpdateAmlSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-AmlSettingsResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/aml/{aml_provider_slug}/currencies": {
             "get": {
                 "description": "Get supported by AML-provider currencies",
@@ -944,6 +681,145 @@ const docTemplate = `{
                     },
                     "503": {
                         "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/aml/{aml_provider_slug}/rules": {
+            "get": {
+                "description": "Get AML risk rules for a specific provider, merged with supported signal categories",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Get AML risk rules",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "AML-provider slug",
+                        "name": "aml_provider_slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_RiskRuleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create or update AML risk rules for a specific provider",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Upsert AML risk rules",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "AML-provider slug",
+                        "name": "aml_provider_slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Upsert risk rules",
+                        "name": "upsert_rules",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpsertRiskRulesRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_RiskRuleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/aml/{aml_provider_slug}/signals": {
+            "get": {
+                "description": "Get the list of risk signal categories a specific AML-provider can return in a check response (used to build a per-store ignore-list)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Get AML-provider signal categories",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "AML-provider slug",
+                        "name": "aml_provider_slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_SignalCategoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -1457,7 +1333,98 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/dv-admin/exchange/:slug/balance": {
+        "/v1/dv-admin/exchange/list": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get all available exchanges with keys",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exchange"
+                ],
+                "summary": "List exchanges",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-ExchangeWithKeysResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/exchange/test": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Test exchange API connection with provided credentials",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exchange"
+                ],
+                "summary": "Test exchange API connection",
+                "parameters": [
+                    {
+                        "description": "Test connection request",
+                        "name": "test_connection",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ExchangeTestConnectionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/exchange/{exchange_slug}/balance": {
             "get": {
                 "security": [
                     {
@@ -1494,7 +1461,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/dv-admin/exchange/:slug/keys": {
+        "/v1/dv-admin/exchange/{exchange_slug}/keys": {
             "post": {
                 "description": "Update or create exchange user keys",
                 "consumes": [
@@ -1589,7 +1556,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/dv-admin/exchange/:slug/set": {
+        "/v1/dv-admin/exchange/{exchange_slug}/set": {
             "post": {
                 "security": [
                     {
@@ -1629,7 +1596,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/dv-admin/exchange/:slug/test": {
+        "/v1/dv-admin/exchange/{exchange_slug}/test": {
             "get": {
                 "description": "Route for ensure exchange correct set up",
                 "produces": [
@@ -1661,7 +1628,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/dv-admin/exchange/:slug/user-pairs": {
+        "/v1/dv-admin/exchange/{exchange_slug}/user-pairs": {
             "get": {
                 "security": [
                     {
@@ -1722,97 +1689,6 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/ExchangeUpdatePairsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-string"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/dv-admin/exchange/list": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Get all available exchanges with keys",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Exchange"
-                ],
-                "summary": "List exchanges",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-ExchangeWithKeysResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/dv-admin/exchange/test": {
-            "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Test exchange API connection with provided credentials",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Exchange"
-                ],
-                "summary": "Test exchange API connection",
-                "parameters": [
-                    {
-                        "description": "Test connection request",
-                        "name": "test_connection",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/ExchangeTestConnectionRequest"
                         }
                     }
                 ],
@@ -2156,6 +2032,129 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/notifications/list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List available user notifications",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "List available user notifications",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_UserNotificationResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/notifications/list/update": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update list user notifications",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Update list user notifications",
+                "parameters": [
+                    {
+                        "description": "Update user notifications list",
+                        "name": "updateList",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateList"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/notifications/test": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Test local SMTP server email sending",
+                "parameters": [
+                    {
+                        "description": "Test email request",
+                        "name": "testEmailRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TestNotificationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/notifications/types": {
             "get": {
                 "security": [
@@ -2179,6 +2178,40 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/JSONResponse-NotificationTypeListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/notifications/{notification_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List available user settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "List available user settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
                         }
                     },
                     "401": {
@@ -2647,6 +2680,38 @@ const docTemplate = `{
             }
         },
         "/v1/dv-admin/root-setting/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get root settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Setting"
+                ],
+                "summary": "Get root settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_SettingResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -2703,6 +2768,607 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/root-setting/list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List available root settings",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Setting"
+                ],
+                "summary": "List available root settings",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/root/ban": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Issue ban to user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Issue ban to user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "name": "user_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-BanUserResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/root/invite": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invite user with role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Invite user with role",
+                "parameters": [
+                    {
+                        "description": "Invite user with specific role",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/InviteUserWithRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/root/role": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Request to add user role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Add user role",
+                "parameters": [
+                    {
+                        "description": "AddUserRoleRequest",
+                        "name": "string",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AddUserRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-AddUserRoleResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Request to remove user role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Remove user role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "user",
+                            "root",
+                            "support",
+                            "finance_manager"
+                        ],
+                        "type": "string",
+                        "x-enum-varnames": [
+                            "UserRoleDefault",
+                            "UserRoleRoot",
+                            "UserRoleSupport",
+                            "UserRoleFinanceManager"
+                        ],
+                        "name": "user_role",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/root/stores": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all stores, optionally filtered by verification status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get all stores",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "PENDING",
+                                "SUCCESS",
+                                "REJECTED"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-ResponseWithFullPagination-StoreResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/root/stores/{id}/clarification": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Request store clarification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Request store clarification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Request store clarification",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ClarificationStoreRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-StoreResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/root/stores/{id}/reject": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reject store verification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Reject store",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Reject store",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RejectStoreRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-StoreResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/root/stores/{id}/verify": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Approve store verification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Verify store",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-StoreResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/root/unban": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Unban user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Unban user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "name": "user_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-UnbanUserResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/root/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get all users",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get all users",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "root",
+                            "user"
+                        ],
+                        "type": "string",
+                        "name": "roles",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-ResponseWithFullPagination-GetUsersResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/search/{searchParam}": {
             "get": {
                 "security": [
@@ -2736,74 +3402,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/dv-admin/setting/": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Get root settings",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Setting"
-                ],
-                "summary": "Get root settings",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_SettingResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/dv-admin/setting/list": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "List available root settings",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Setting"
-                ],
-                "summary": "List available root settings",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_service_setting_Dto"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -3045,7 +3643,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/dv-admin/store/archived/list": {
+        "/v1/dv-admin/store/archived": {
             "get": {
                 "security": [
                     {
@@ -3176,120 +3774,6 @@ const docTemplate = `{
                     },
                     "503": {
                         "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/dv-admin/store/{id}/aml-settings": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns AML check configuration for the specified store",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "AML"
-                ],
-                "summary": "Get store AML settings",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Store ID",
-                        "name": "store_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates or updates AML check configuration for the specified store",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "AML"
-                ],
-                "summary": "Update store AML settings",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Store ID",
-                        "name": "store_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "AML settings",
-                        "name": "update",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/UpdateStoreAMLSettingsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -3663,6 +4147,58 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/store/{id}/resend-verify": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Resend store verification",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store"
+                ],
+                "summary": "Resend store verification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -4346,6 +4882,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/store/{id}/whitelists/{ip}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Delete store whitelist",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store"
+                ],
+                "summary": "Delete store whitelist",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Whitelist IP",
+                        "name": "ip",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-any"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/system/info": {
             "get": {
                 "description": "Get system information about initialization, root user existence, registration status",
@@ -4424,7 +5016,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/dv-admin/system/version": {
+        "/v1/dv-admin/system/versions": {
             "get": {
                 "security": [
                     {
@@ -5769,7 +6361,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/dv-admin/user/email-confirmation": {
+        "/v1/dv-admin/user/confirm-email": {
             "post": {
                 "security": [
                     {
@@ -6749,69 +7341,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/dv-admin/withdraw-multiple-to-processing": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "This endpoint for import manual withdraw",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Withdrawal"
-                ],
-                "summary": "Create manual withdraw by specific wallet",
-                "parameters": [
-                    {
-                        "description": "Withdraw to processing",
-                        "name": "register",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/MultipleWithdrawalToProcessingRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/dv-admin/withdrawal-wallet/{walletID}/addresses": {
             "patch": {
                 "security": [
@@ -7343,6 +7872,69 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/withdrawal/withdraw-multiple-to-processing": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint for import manual withdraw",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Withdrawal"
+                ],
+                "summary": "Create manual withdraw by specific wallet",
+                "parameters": [
+                    {
+                        "description": "Withdraw to processing",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MultipleWithdrawalToProcessingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/withdrawal/withdraw-to-processing": {
             "post": {
                 "security": [
@@ -7726,80 +8318,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/exchange/:slug/pairs": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Get exchange pairs",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Exchange"
-                ],
-                "summary": "Get exchange pairs",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_models_ExchangeSymbolDTO"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/exchange/:slug/withdrawal-rules": {
-            "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
-                "description": "Get exchange withdrawal rules for all enabled currencies",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Exchange"
-                ],
-                "summary": "Get exchange withdrawal rules",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_array_github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/exchange/deposit-addresses": {
             "get": {
                 "security": [
@@ -8067,6 +8585,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/exchange/{exchange_slug}/pairs": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get exchange pairs",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exchange"
+                ],
+                "summary": "Get exchange pairs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_github_com_dv-net_dv-merchant_internal_models_ExchangeSymbolDTO"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/exchange/{exchange_slug}/toggle-swaps": {
             "post": {
                 "security": [
@@ -8160,6 +8715,43 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/exchange/{exchange_slug}/withdrawal-rules": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Get exchange withdrawal rules for all enabled currencies",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exchange"
+                ],
+                "summary": "Get exchange withdrawal rules",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_array_github_com_dv-net_dv-merchant_internal_delivery_http_responses_exchange_response_ExchangeWithdrawalRulesResponse"
                         }
                     },
                     "422": {
@@ -9177,163 +9769,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/notifications/list": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "List available user notifications",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notifications"
-                ],
-                "summary": "List available user notifications",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_UserNotificationResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/notifications/list/update": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update list user notifications",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notifications"
-                ],
-                "summary": "Update list user notifications",
-                "parameters": [
-                    {
-                        "description": "Update user notifications list",
-                        "name": "updateList",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/UpdateList"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-string"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/notifications/test": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notifications"
-                ],
-                "summary": "Test local SMTP server email sending",
-                "parameters": [
-                    {
-                        "description": "Test email request",
-                        "name": "testEmailRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/TestNotificationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-string"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/notifications/{id}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "List available user settings",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notifications"
-                ],
-                "summary": "List available user settings",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-string"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/public/currencies": {
             "get": {
                 "security": [
@@ -9888,62 +10323,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/v1/store/{id}/whitelists/{ip}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete store whitelist",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Store"
-                ],
-                "summary": "Delete store whitelist",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Store ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Whitelist IP",
-                        "name": "ip",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-any"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -10134,6 +10513,17 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "AmlSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "provider_slug": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
                 }
             }
         },
@@ -10369,6 +10759,17 @@ const docTemplate = `{
                 }
             }
         },
+        "ClarificationStoreRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "CombinedStats": {
             "type": "object",
             "properties": {
@@ -10511,6 +10912,11 @@ const docTemplate = `{
                 "name"
             ],
             "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 32,
@@ -11903,6 +12309,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-AmlSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/AmlSettingsResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-AuthLinkResponse": {
             "type": "object",
             "properties": {
@@ -12438,6 +12858,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-ResponseWithFullPagination-StoreResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/ResponseWithFullPagination-StoreResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow": {
             "type": "object",
             "properties": {
@@ -12962,6 +13396,23 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-array_RiskRuleResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RiskRuleResponse"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-array_SettingResponse": {
             "type": "object",
             "properties": {
@@ -12972,6 +13423,23 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/SettingResponse"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-array_SignalCategoryResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SignalCategoryResponse"
                     }
                 },
                 "message": {
@@ -13211,20 +13679,6 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_mnemonic_response.MnemonicResponse"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "JSONResponse-github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response_StoreAMLSettingsResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "data": {
-                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response.StoreAMLSettingsResponse"
                 },
                 "message": {
                     "type": "string"
@@ -13916,6 +14370,17 @@ const docTemplate = `{
                 }
             }
         },
+        "RejectStoreRequest": {
+            "type": "object",
+            "required": [
+                "reason"
+            ],
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
         "ResponseWithFullPagination-AmlHistoryResponse": {
             "type": "object",
             "properties": {
@@ -14014,6 +14479,20 @@ const docTemplate = `{
                 }
             }
         },
+        "ResponseWithFullPagination-StoreResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/StoreResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/FullPagingData"
+                }
+            }
+        },
         "ResponseWithFullPagination-github_com_dv-net_dv-merchant_internal_storage_repos_repo_transactions_FindRow": {
             "type": "object",
             "properties": {
@@ -14025,6 +14504,51 @@ const docTemplate = `{
                 },
                 "pagination": {
                     "$ref": "#/definitions/FullPagingData"
+                }
+            }
+        },
+        "RiskRuleRequest": {
+            "type": "object",
+            "required": [
+                "action",
+                "risk_type",
+                "threshold"
+            ],
+            "properties": {
+                "action": {
+                    "type": "string",
+                    "enum": [
+                        "reject",
+                        "accept_and_flag"
+                    ]
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "risk_type": {
+                    "type": "string"
+                },
+                "threshold": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0
+                }
+            }
+        },
+        "RiskRuleResponse": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "risk_type": {
+                    "type": "string"
+                },
+                "threshold": {
+                    "type": "number"
                 }
             }
         },
@@ -14171,6 +14695,17 @@ const docTemplate = `{
                 }
             }
         },
+        "SignalCategoryResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                }
+            }
+        },
         "StatisticsDTO": {
             "type": "object",
             "properties": {
@@ -14239,6 +14774,9 @@ const docTemplate = `{
                 "currency_id": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string",
                     "format": "uuid"
@@ -14249,6 +14787,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "owner_email": {
+                    "type": "string"
+                },
                 "public_payment_form_enabled": {
                     "type": "boolean"
                 },
@@ -14256,6 +14797,9 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "rate_source": {
+                    "type": "string"
+                },
+                "rejection_reason": {
                     "type": "string"
                 },
                 "return_url": {
@@ -14276,6 +14820,16 @@ const docTemplate = `{
                 "user_id": {
                     "type": "string",
                     "format": "uuid"
+                },
+                "verification_comment": {
+                    "type": "string"
+                },
+                "verification_status": {
+                    "type": "string"
+                },
+                "verified_at": {
+                    "type": "string",
+                    "format": "date-time"
                 }
             }
         },
@@ -14865,22 +15419,6 @@ const docTemplate = `{
                 }
             }
         },
-        "UpdateStoreAMLSettingsRequest": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "provider_slug": {
-                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
-                },
-                "risk_threshold": {
-                    "type": "integer",
-                    "maximum": 100,
-                    "minimum": 0
-                }
-            }
-        },
         "UpdateStoreCurrencyRequest": {
             "type": "object",
             "properties": {
@@ -14899,6 +15437,9 @@ const docTemplate = `{
             ],
             "properties": {
                 "currency_id": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "minimal_payment": {
@@ -15042,6 +15583,20 @@ const docTemplate = `{
                 },
                 "status": {
                     "$ref": "#/definitions/WithdrawalStatus"
+                }
+            }
+        },
+        "UpsertRiskRulesRequest": {
+            "type": "object",
+            "required": [
+                "rules"
+            ],
+            "properties": {
+                "rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RiskRuleRequest"
+                    }
                 }
             }
         },
@@ -15716,6 +16271,17 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_dv-net_dv-merchant_internal_delivery_http_request_aml_requests.UpdateAmlSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "provider_slug": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_dv-net_dv-merchant_internal_delivery_http_request_currency_request.UpdateCurrencyRateRequest": {
             "type": "object",
             "required": [
@@ -15963,32 +16529,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "mnemonic": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_dv-net_dv-merchant_internal_delivery_http_responses_store_response.StoreAMLSettingsResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "provider_slug": {
-                    "type": "string"
-                },
-                "risk_threshold": {
-                    "type": "integer"
-                },
-                "store_id": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }

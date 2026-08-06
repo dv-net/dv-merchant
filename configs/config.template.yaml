@@ -31,14 +31,12 @@ redis:
   db_index: 0
 exrate:
   fetch_interval: 1m0s
+  proxies: []
   timeout: 10s
-  proxies:
-    - http://user:pass@proxy1.example.com:8080
-    - https://user:pass@proxy2.example.com:443
-    - socks5://user:pass@proxy3.example.com:9050
 admin:
   base_url: https://api.dv.net/
   ping_version_interval: 1h0m0s
+  log_status: false
 notify:
   telegram:
     enabled: false
@@ -75,7 +73,7 @@ ops:
 key_value:
   engine: redis
 transactions:
-  unconfirmed_collapse_interval: 3m0s
+  unconfirmed_collapse_interval: 30s
 wallets:
   update_balances_interval: 2s
   update_tron_resources_interval: 1h0m0s
@@ -114,3 +112,6 @@ aml:
   aml_bot:
     enabled: true
     base_url: https://extrnlapiendpoint.silencatech.com/
+  coin_kyt:
+    enabled: true
+    base_url: https://explorer.coinkyt.com/openapi/

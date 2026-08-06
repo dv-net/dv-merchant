@@ -2,14 +2,13 @@ package handlers
 
 import (
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/aml_requests"
-	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_aml_request"
-	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/store_response"
 	"github.com/dv-net/dv-merchant/internal/service/aml"
-	"github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/tools/converters"
+	"github.com/jackc/pgx/v5"
+
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/aml_responses"
 
 	// Blank imports for swagger gen
-	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/aml_responses"
 	_ "github.com/dv-net/dv-merchant/internal/storage/storecmn"
 
 	"errors"
@@ -234,69 +233,189 @@ func (h *Handler) amlHistory(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(converters.GetAMLCheckHistoryResponse(result)))
 }
 
-// getStoreAMLSettings returns AML settings for a specific store
+// getAMLSignalingCategories returns the list of risk signal categories supported by an AML-provider.
 //
-//	@Summary		Get store AML settings
-//	@Description	Returns AML check configuration for the specified store
-//	@Tags			AML
-//	@Produce		json
-//	@Param			store_id	path		string	true	"Store ID"
-//	@Success		200			{object}	response.Result[store_response.StoreAMLSettingsResponse]
-//	@Failure		401			{object}	apierror.Errors
-//	@Failure		404			{object}	apierror.Errors
-//	@Router			/v1/dv-admin/store/{id}/aml-settings [get]
-//	@Security		BearerAuth
-func (h *Handler) getStoreAMLSettings(c fiber.Ctx) error {
-	targetStore, err := h.validateAndLoadStore(c)
-	if err != nil {
-		return err
-	}
-
-	amlSettings, err := h.services.StoreAMLSettingsService.GetStoreAmlSettings(c.Context(), targetStore.ID)
-	if err != nil || amlSettings == nil {
-		return c.JSON(response.OkByData(struct{}{}))
-	}
-
-	return c.JSON(response.OkByData(store_response.NewStoreAMLSettingsResponse(amlSettings)))
-}
-
-// updateStoreAMLSettings creates or updates AML settings for a specific store
-//
-//	@Summary		Update store AML settings
-//	@Description	Creates or updates AML check configuration for the specified store
+//	@Summary		Get AML-provider signal categories
+//	@Description	Get the list of risk signal categories a specific AML-provider can return in a check response (used to build a per-store ignore-list)
 //	@Tags			AML
 //	@Accept			json
 //	@Produce		json
-//	@Param			store_id	path		string											true	"Store ID"
-//	@Param			update		body		store_aml_request.UpdateStoreAMLSettingsRequest	true	"AML settings"
-//	@Success		200			{object}	response.Result[store_response.StoreAMLSettingsResponse]
-//	@Failure		400			{object}	apierror.Errors
-//	@Failure		401			{object}	apierror.Errors
-//	@Failure		404			{object}	apierror.Errors
-//	@Failure		422			{object}	apierror.Errors
-//	@Router			/v1/dv-admin/store/{id}/aml-settings [put]
-//	@Security		BearerAuth
-func (h *Handler) updateStoreAMLSettings(c fiber.Ctx) error {
-	targetStore, err := h.validateAndLoadStore(c)
+//	@Param			aml_provider_slug	path		string	true	"AML-provider slug"
+//	@Success		200					{object}	response.Result[[]aml_responses.SignalCategoryResponse]
+//	@Failure		400					{object}	apierror.Errors
+//	@Failure		404					{object}	apierror.Errors
+//	@Router			/v1/dv-admin/aml/{aml_provider_slug}/signals [get]
+func (h *Handler) getAMLSignalingCategories(c fiber.Ctx) error {
+	_, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
-	req := &store_aml_request.UpdateStoreAMLSettingsRequest{}
-	if err = c.Bind().WithAutoHandling().Body(req); err != nil {
+
+	slug := models.AMLSlug(c.Params("aml_provider_slug"))
+	if !slug.Valid() {
+		return apierror.New().AddError(errors.New("AML provider not found")).SetHttpCode(http.StatusNotFound)
+	}
+
+	signalCategories, err := h.services.AMLService.GetSignalsCategorise(c.Context(), slug)
+	if err != nil {
+		return apierror.New().AddError(errors.New("failed to get signal categories")).SetHttpCode(http.StatusBadRequest)
+	}
+
+	resp := make([]aml_responses.SignalCategoryResponse, 0, len(signalCategories))
+	for _, category := range signalCategories {
+		resp = append(resp, aml_responses.SignalCategoryResponse{
+			Category: category.Category,
+			Label:    category.Label,
+		})
+	}
+
+	return c.JSON(response.OkByData(resp))
+}
+
+// getAmlSettings returns AML settings for the current user
+//
+//	@Summary		Get AML settings
+//	@Description	Get AML settings for the current user
+//	@Tags			AML
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	response.Result[aml_responses.AmlSettingsResponse]
+//	@Failure		404	{object}	apierror.Errors
+//	@Failure		503	{object}	apierror.Errors
+//	@Router			/v1/dv-admin/aml/settings [get]
+func (h *Handler) getAmlSettings(c fiber.Ctx) error {
+	usr, err := loadAuthUser(c)
+	if err != nil {
 		return err
 	}
 
-	dto := store.UpdateAMLSettingsDTO{
-		Enabled:       req.Enabled,
-		RiskThreshold: req.RiskThreshold,
-		ProviderSlug:  req.ProviderSlug,
+	settings, err := h.services.AMLUserSettings.GetAmlSettings(c.Context(), usr.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return c.JSON(response.OkByData(struct{}{}))
+		}
+		return h.handleError(err, "aml settings")
+	}
+	return c.JSON(response.OkByData(aml_responses.NewAmlSettingsResponse(settings)))
+}
+
+// updateAmlSettings updates AML settings for the current user
+//
+//	@Summary		Update AML settings
+//	@Description	Update AML settings for the current user
+//	@Tags			AML
+//	@Accept			json
+//	@Produce		json
+//	@Param			update_settings	body		aml_requests.UpdateAmlSettingsRequest	true	"Update AML settings"
+//	@Success		200				{object}	response.Result[aml_responses.AmlSettingsResponse]
+//	@Failure		404				{object}	apierror.Errors
+//	@Failure		503				{object}	apierror.Errors
+//	@Router			/v1/dv-admin/aml/settings [post]
+func (h *Handler) updateAmlSettings(c fiber.Ctx) error {
+	usr, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+	req := &aml_requests.UpdateAmlSettingsRequest{}
+	if err = c.Bind().Body(req); err != nil {
+		return err
 	}
 
-	amlSettings, err := h.services.StoreAMLSettingsService.UpdateAMLSetting(c.Context(), targetStore.ID, dto)
-	if err != nil {
-		return h.handleError(err, "store AML settings")
+	slug := models.AMLSlug(req.ProviderSlug)
+	if !slug.Valid() {
+		return apierror.New().AddError(errors.New("AML provider not found")).SetHttpCode(http.StatusNotFound)
 	}
-	return c.JSON(response.OkByData(store_response.NewStoreAMLSettingsResponse(amlSettings)))
+
+	settings, err := h.services.AMLUserSettings.UpdateAmlSettings(c.Context(), usr.ID, aml.UpdateAmlSettingsDTO{
+		Enabled:      req.Enabled,
+		ProviderSlug: &slug,
+	})
+
+	if err != nil {
+		return h.handleError(err, "aml settings")
+	}
+	return c.JSON(response.OkByData(aml_responses.NewAmlSettingsResponse(settings)))
+}
+
+// listAmlRiskRules returns AML risk rules for a specific provider
+//
+//	@Summary		Get AML risk rules
+//	@Description	Get AML risk rules for a specific provider, merged with supported signal categories
+//	@Tags			AML
+//	@Accept			json
+//	@Produce		json
+//	@Param			aml_provider_slug	path		string	true	"AML-provider slug"
+//	@Success		200					{object}	response.Result[[]aml_responses.RiskRuleResponse]
+//	@Failure		400					{object}	apierror.Errors
+//	@Failure		404					{object}	apierror.Errors
+//	@Router			/v1/dv-admin/aml/{aml_provider_slug}/rules [get]
+func (h *Handler) listAmlRiskRules(c fiber.Ctx) error {
+	usr, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	slug := models.AMLSlug(c.Params("aml_provider_slug"))
+	if !slug.Valid() {
+		return apierror.New().AddError(errors.New("AML provider not found")).SetHttpCode(http.StatusNotFound)
+	}
+
+	rules, err := h.services.AMLUserSettings.ListRiskRules(c.Context(), usr.ID, &slug)
+	if err != nil {
+		return h.handleError(err, "aml risk rules")
+	}
+
+	categories, err := h.services.AMLService.GetSignalsCategorise(c.Context(), slug)
+	if err != nil {
+		return h.handleError(err, "aml signal categories")
+	}
+
+	return c.JSON(response.OkByData(aml_responses.MergeRiskRules(categories, rules)))
+}
+
+// upsertAmlRiskRules creates or updates AML risk rules for a specific provider
+//
+//	@Summary		Upsert AML risk rules
+//	@Description	Create or update AML risk rules for a specific provider
+//	@Tags			AML
+//	@Accept			json
+//	@Produce		json
+//	@Param			aml_provider_slug	path		string								true	"AML-provider slug"
+//	@Param			upsert_rules		body		aml_requests.UpsertRiskRulesRequest	true	"Upsert risk rules"
+//	@Success		200					{object}	response.Result[[]aml_responses.RiskRuleResponse]
+//	@Failure		400					{object}	apierror.Errors
+//	@Failure		404					{object}	apierror.Errors
+//	@Router			/v1/dv-admin/aml/{aml_provider_slug}/rules [post]
+func (h *Handler) upsertAmlRiskRules(c fiber.Ctx) error {
+	usr, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+	slug := models.AMLSlug(c.Params("aml_provider_slug"))
+	if !slug.Valid() {
+		return apierror.New().AddError(errors.New("AML provider not found")).SetHttpCode(http.StatusNotFound)
+	}
+
+	req := &aml_requests.UpsertRiskRulesRequest{}
+	if err = c.Bind().Body(req); err != nil {
+		return err
+	}
+
+	dtos := make([]aml.RiskRuleDTO, 0, len(req.Rules))
+	for _, r := range req.Rules {
+		dtos = append(dtos, aml.RiskRuleDTO{RiskType: r.RiskType, Enabled: r.Enabled, Threshold: r.Threshold, Action: r.Action})
+	}
+
+	rules, err := h.services.AMLUserSettings.UpsertRiskRules(c.Context(), usr.ID, &slug, dtos)
+	if err != nil {
+		return h.handleError(err, "aml risk rules")
+	}
+
+	resp := make([]aml_responses.RiskRuleResponse, 0, len(rules))
+	for _, r := range rules {
+		resp = append(resp, aml_responses.NewRiskRuleResponse(r))
+	}
+	return c.JSON(response.OkByData(resp))
 }
 
 func (h *Handler) initAMLRoutes(v1 fiber.Router) {
@@ -305,10 +424,12 @@ func (h *Handler) initAMLRoutes(v1 fiber.Router) {
 	amlRoutes.Get("/:aml_provider_slug/keys", h.getAMLKeys)
 	amlRoutes.Delete("/:aml_provider_slug/keys", h.deleteAMLKeys)
 	amlRoutes.Get("/:aml_provider_slug/currencies", h.getAMLCurrencies)
+	amlRoutes.Get("/:aml_provider_slug/signals", h.getAMLSignalingCategories)
 	amlRoutes.Get("/history", h.amlHistory)
 	amlRoutes.Post("/score-transaction", h.scoreTransaction)
 
-	storeAmlRoutes := v1.Group("/store/")
-	storeAmlRoutes.Get(":id/aml-settings", h.getStoreAMLSettings)
-	storeAmlRoutes.Put(":id/aml-settings", h.updateStoreAMLSettings)
+	amlRoutes.Get("/settings", h.getAmlSettings)
+	amlRoutes.Post("/settings", h.updateAmlSettings)
+	amlRoutes.Get("/:aml_provider_slug/rules", h.listAmlRiskRules)
+	amlRoutes.Post("/:aml_provider_slug/rules", h.upsertAmlRiskRules)
 }

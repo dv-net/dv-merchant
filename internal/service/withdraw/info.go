@@ -110,7 +110,28 @@ func (s *service) GetPrefetchWithdrawalAddress(ctx context.Context, user *models
 		})
 	}
 
+	processingWithdrawalPrefetch := make([]*models.PrefetchWithdrawAddressInfo, 0, len(prefetchProcessingWithdrawals))
+	for _, processingWithdrawal := range prefetchProcessingWithdrawals {
+		processingWithdrawalPrefetch = append(processingWithdrawalPrefetch, &models.PrefetchWithdrawAddressInfo{
+			Currency: models.CurrencyShort{
+				ID:            processingWithdrawal.Currency.ID,
+				Code:          processingWithdrawal.Currency.Code,
+				Precision:     processingWithdrawal.Currency.Precision,
+				Name:          processingWithdrawal.Currency.Name,
+				Blockchain:    processingWithdrawal.Currency.Blockchain,
+				IsBitcoinLike: processingWithdrawal.Currency.Blockchain.IsBitcoinLike(),
+				IsEVMLike:     processingWithdrawal.Currency.Blockchain.IsEVMLike(),
+			},
+			Amount:      processingWithdrawal.WithdrawalFromProcessingWallet.Amount,
+			AmountUsd:   processingWithdrawal.AmountUsd,
+			Type:        models.TransferKindFromProcessing,
+			AddressFrom: []string{processingWithdrawal.WithdrawalFromProcessingWallet.AddressFrom},
+			AddressTo:   []string{processingWithdrawal.WithdrawalFromProcessingWallet.AddressTo},
+		})
+	}
+
 	data := make([]*models.PrefetchWithdrawAddressInfo, 0, len(prefetchData)+len(prefetchProcessingWithdrawals)+len(multiWithdrawalPrefetch))
+	data = append(data, processingWithdrawalPrefetch...)
 	data = append(data, multiWithdrawalPrefetch...)
 	for _, prefetchedRow := range prefetchData {
 		addressesTo := make([]string, 0, 1)
@@ -137,25 +158,6 @@ func (s *service) GetPrefetchWithdrawalAddress(ctx context.Context, user *models
 			Type:        models.TransferKindFromAddress,
 			AddressFrom: []string{prefetchedRow.WalletAddress.Address},
 			AddressTo:   addressesTo,
-		})
-	}
-
-	for _, processingWithdrawal := range prefetchProcessingWithdrawals {
-		data = append(data, &models.PrefetchWithdrawAddressInfo{
-			Currency: models.CurrencyShort{
-				ID:            processingWithdrawal.Currency.ID,
-				Code:          processingWithdrawal.Currency.Code,
-				Precision:     processingWithdrawal.Currency.Precision,
-				Name:          processingWithdrawal.Currency.Name,
-				Blockchain:    processingWithdrawal.Currency.Blockchain,
-				IsBitcoinLike: processingWithdrawal.Currency.Blockchain.IsBitcoinLike(),
-				IsEVMLike:     processingWithdrawal.Currency.Blockchain.IsEVMLike(),
-			},
-			Amount:      processingWithdrawal.WithdrawalFromProcessingWallet.Amount,
-			AmountUsd:   processingWithdrawal.AmountUsd,
-			Type:        models.TransferKindFromProcessing,
-			AddressFrom: []string{processingWithdrawal.WithdrawalFromProcessingWallet.AddressFrom},
-			AddressTo:   []string{processingWithdrawal.WithdrawalFromProcessingWallet.AddressTo},
 		})
 	}
 

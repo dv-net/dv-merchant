@@ -81,7 +81,7 @@ type Services struct {
 	StoreCurrencyService          store.IStoreCurrency
 	StoreWhitelistService         store.IStoreWhitelist
 	StoreSecretService            store.ISecret
-	StoreAMLSettingsService       store.IStoreAmlSettings
+	StoreVerificationService      store.IVerify
 	TransactionService            transactions.ITransaction
 	WalletTransactionService      transactions.IWalletTransaction
 	UnconfirmedTransactionService transactions.IUnconfirmedTransaction
@@ -122,6 +122,7 @@ type Services struct {
 	AMLService                    aml.IService
 	AMLKeysService                aml.KeysService
 	AMLStatusChecker              aml.StatusChecker
+	AMLUserSettings               aml.IUserAmlSettings
 }
 
 func NewServices(
@@ -258,7 +259,7 @@ func NewServices(
 		StoreCurrencyService:          storeService,
 		StoreWhitelistService:         storeService,
 		StoreSecretService:            storeService,
-		StoreAMLSettingsService:       storeService,
+		StoreVerificationService:      storeService,
 		TransactionService:            transactionService,
 		WalletTransactionService:      transactionService,
 		UnconfirmedTransactionService: transactionService,
@@ -299,6 +300,7 @@ func NewServices(
 		AMLService:                    amlService,
 		AMLKeysService:                amlService,
 		AMLStatusChecker:              amlService,
+		AMLUserSettings:               amlService,
 	}, nil
 }
 

@@ -27,7 +27,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_personal_access_tokens"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_receipts"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_settings"
-	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_aml_settings"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_api_keys"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_currencies"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_secrets"
@@ -41,6 +40,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_unconfirmed_transactions"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_update_balance_queue"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_address_book"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_aml_settings"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_exchange_pairs"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_exchanges"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_notifications"
@@ -63,14 +63,13 @@ type IRepository interface {
 	Currencies(opts ...Option) repo_currencies.Querier
 	Users(opts ...Option) repo_users.ICustomQuerier
 	PersonalAccessToken(opts ...Option) repo_personal_access_tokens.Querier
-	Stores(opts ...Option) repo_stores.Querier
+	Stores(opts ...Option) repo_stores.ICustomQuerier
 	StoreAPIKeys(opts ...Option) repo_store_api_keys.Querier
 	StoreWebhooks(opts ...Option) repo_store_webhooks.Querier
 	StoreCurrencies(opts ...Option) repo_store_currencies.Querier
 	StoreWhitelist(opts ...Option) repo_store_whitelist.Querier
 	WebHookSendHistories(opts ...Option) repo_webhook_send_histories.ICustomQuerier
 	StoreSecrets(opts ...Option) repo_store_secrets.Querier
-	StoreAmlSettings(opts ...Option) repo_store_aml_settings.Querier
 	Transactions(opts ...Option) repo_transactions.ICustomQuerier
 	UnconfirmedTransactions(opts ...Option) repo_unconfirmed_transactions.Querier
 	Wallets(opts ...Option) repo_wallets.ICustomQuerier
@@ -86,12 +85,9 @@ type IRepository interface {
 	KeyValue() key_value.IKeyValue
 	Exchanges(opts ...Option) repo_exchanges.Querier
 	ExchangeUserKeys(opts ...Option) repo_exchange_user_keys.Querier
-	UserStores(opts ...Option) repo_user_stores.Querier
 	NotificationSendHistory(opts ...Option) repo_notification_send_history.ICustomQuerier
 	NotificationSendQueue(opts ...Option) repo_notification_send_queue.Querier
 	WithdrawalsFromProcessing(opts ...Option) repo_withdrawal_from_processing_wallets.Querier
-	UserExchangePairs(opts ...Option) repo_user_exchange_pairs.Querier
-	UserExchanges(opts ...Option) repo_user_exchanges.ICustomQuerier
 	ExchangeOrders(opts ...Option) repo_exchange_orders.ICustomQuerier
 	ExchangeAddresses(opts ...Option) repo_exchange_addresses.Querier
 	ExchangeWithdrawalHistory(opts ...Option) repo_exchange_withdrawal_history.ICustomQuerier
@@ -99,7 +95,6 @@ type IRepository interface {
 	ExchangeChains(opts ...Option) repo_exchange_chains.Querier
 	LogTypes(opts ...Option) repo_log_types.Querier
 	Logs(opts ...Option) repo_logs.Querier
-	UserNotifications(opts ...Option) repo_user_notifications.Querier
 	Notifications(opts ...Option) repo_notifications.Querier
 	UpdateBalanceQueue(opts ...Option) repo_update_balance_queue.Querier
 	MultiWithdrawalRules(opts ...Option) repo_multi_withdrawal_rules.Querier
@@ -114,18 +109,22 @@ type IRepository interface {
 	AmlCheckHistory(opts ...Option) repo_aml_check_history.Querier
 	AmlSupportedAssets(opts ...Option) repo_aml_supported_assets.Querier
 	UserAddressBook(opts ...Option) repo_user_address_book.Querier
+	UserExchangePairs(opts ...Option) repo_user_exchange_pairs.Querier
+	UserExchanges(opts ...Option) repo_user_exchanges.ICustomQuerier
+	UserStores(opts ...Option) repo_user_stores.Querier
+	UserNotifications(opts ...Option) repo_user_notifications.Querier
+	UserAmlSettings(opts ...Option) repo_user_aml_settings.Querier
 }
 
 type repository struct {
 	currencies                  *repo_currencies.Queries
 	users                       *repo_users.CustomQuerier
 	personalAccessToken         *repo_personal_access_tokens.Queries
-	stores                      *repo_stores.Queries
+	stores                      *repo_stores.CustomQuerier
 	storeAPIKeys                *repo_store_api_keys.Queries
 	storeWebhooks               *repo_store_webhooks.Queries
 	storeCurrencies             *repo_store_currencies.Queries
 	storeWhitelist              *repo_store_whitelist.Queries
-	storeAmlSettings            *repo_store_aml_settings.Queries
 	webhookSendHistories        *repo_webhook_send_histories.CustomQuerier
 	transactions                *repo_transactions.CustomQuerier
 	unconfirmedTransactions     *repo_unconfirmed_transactions.Queries
@@ -144,11 +143,8 @@ type repository struct {
 	keyValue                    key_value.IKeyValue
 	exchanges                   *repo_exchanges.Queries
 	exchangeUserKeys            *repo_exchange_user_keys.Queries
-	userStores                  *repo_user_stores.Queries
 	notificationSendHistory     *repo_notification_send_history.CustomQuerier
 	withdrawalsFromProcessing   *repo_withdrawal_from_processing_wallets.Queries
-	userExchangePairs           *repo_user_exchange_pairs.Queries
-	userExchanges               *repo_user_exchanges.CustomQuerier
 	exchangeOrders              *repo_exchange_orders.CustomQuerier
 	exchangeAddresses           *repo_exchange_addresses.Queries
 	notificationSendQueue       *repo_notification_send_queue.Queries
@@ -157,7 +153,6 @@ type repository struct {
 	exchangeChains              *repo_exchange_chains.Queries
 	logTypes                    *repo_log_types.Queries
 	logs                        *repo_logs.Queries
-	userNotifications           *repo_user_notifications.Queries
 	notifications               *repo_notifications.Queries
 	updateBalanceQueue          *repo_update_balance_queue.Queries
 	multiWithdrawalRules        *repo_multi_withdrawal_rules.Queries
@@ -172,6 +167,11 @@ type repository struct {
 	amlCheckHistory             *repo_aml_check_history.Queries
 	amlSupportedAssets          *repo_aml_supported_assets.Queries
 	userAddressBook             *repo_user_address_book.Queries
+	userExchanges               *repo_user_exchanges.CustomQuerier
+	userExchangePairs           *repo_user_exchange_pairs.Queries
+	userStores                  *repo_user_stores.Queries
+	userNotifications           *repo_user_notifications.Queries
+	userAmlSettings             *repo_user_aml_settings.Queries
 }
 
 func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue) IRepository {
@@ -179,12 +179,11 @@ func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue)
 		currencies:                  repo_currencies.New(psql.DB),
 		users:                       repo_users.NewCustom(psql.DB),
 		personalAccessToken:         repo_personal_access_tokens.New(psql.DB),
-		stores:                      repo_stores.New(psql.DB),
+		stores:                      repo_stores.NewCustom(psql.DB),
 		storeAPIKeys:                repo_store_api_keys.New(psql.DB),
 		storeWebhooks:               repo_store_webhooks.New(psql.DB),
 		storeCurrencies:             repo_store_currencies.New(psql.DB),
 		storeWhitelist:              repo_store_whitelist.New(psql.DB),
-		storeAmlSettings:            repo_store_aml_settings.New(psql.DB),
 		webhookSendHistories:        repo_webhook_send_histories.NewCustom(psql.DB),
 		transactions:                repo_transactions.NewCustom(psql.DB),
 		unconfirmedTransactions:     repo_unconfirmed_transactions.New(psql.DB),
@@ -201,14 +200,11 @@ func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue)
 		verificationCodes:           repo_user_verification.New(keyValue),
 		exchanges:                   repo_exchanges.New(psql.DB),
 		exchangeUserKeys:            repo_exchange_user_keys.New(psql.DB),
-		userStores:                  repo_user_stores.New(psql.DB),
 		withdrawalsFromProcessing:   repo_withdrawal_from_processing_wallets.New(psql.DB),
 		storeSecrets:                repo_store_secrets.New(psql.DB),
 		keyValue:                    keyValue,
 		notificationSendHistory:     repo_notification_send_history.NewCustom(psql.DB),
 		notificationSendQueue:       repo_notification_send_queue.New(psql.DB),
-		userExchangePairs:           repo_user_exchange_pairs.New(psql.DB),
-		userExchanges:               repo_user_exchanges.NewCustom(psql.DB),
 		exchangeOrders:              repo_exchange_orders.NewCustom(psql.DB),
 		exchangeAddresses:           repo_exchange_addresses.New(psql.DB),
 		logTypes:                    repo_log_types.New(psql.DB),
@@ -216,7 +212,6 @@ func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue)
 		exchangeWithdrawalHistory:   repo_exchange_withdrawal_history.NewCustom(psql.DB),
 		exchangeWithdrawalSettings:  repo_exchange_withdrawal_settings.New(psql.DB),
 		exchangeChains:              repo_exchange_chains.New(psql.DB),
-		userNotifications:           repo_user_notifications.New(psql.DB),
 		notifications:               repo_notifications.New(psql.DB),
 		updateBalanceQueue:          repo_update_balance_queue.New(psql.DB),
 		multiWithdrawalRules:        repo_multi_withdrawal_rules.New(psql.DB),
@@ -231,6 +226,11 @@ func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue)
 		amlCheckHistory:             repo_aml_check_history.New(psql.DB),
 		amlSupportedAssets:          repo_aml_supported_assets.New(psql.DB),
 		userAddressBook:             repo_user_address_book.New(psql.DB),
+		userExchangePairs:           repo_user_exchange_pairs.New(psql.DB),
+		userExchanges:               repo_user_exchanges.NewCustom(psql.DB),
+		userStores:                  repo_user_stores.New(psql.DB),
+		userNotifications:           repo_user_notifications.New(psql.DB),
+		userAmlSettings:             repo_user_aml_settings.New(psql.DB),
 	}
 }
 
@@ -259,7 +259,7 @@ func (r *repository) PersonalAccessToken(opts ...Option) repo_personal_access_to
 	return r.personalAccessToken
 }
 
-func (r *repository) Stores(opts ...Option) repo_stores.Querier {
+func (r *repository) Stores(opts ...Option) repo_stores.ICustomQuerier {
 	options := parseOptions(opts...)
 	if options.Tx != nil {
 		return r.stores.WithTx(options.Tx)
@@ -297,14 +297,6 @@ func (r *repository) StoreWhitelist(opts ...Option) repo_store_whitelist.Querier
 		return r.storeWhitelist.WithTx(options.Tx)
 	}
 	return r.storeWhitelist
-}
-
-func (r *repository) StoreAmlSettings(opts ...Option) repo_store_aml_settings.Querier {
-	options := parseOptions(opts...)
-	if options.Tx != nil {
-		return r.storeAmlSettings.WithTx(options.Tx)
-	}
-	return r.storeAmlSettings
 }
 
 func (r *repository) WebHookSendHistories(opts ...Option) repo_webhook_send_histories.ICustomQuerier {
@@ -429,15 +421,6 @@ func (r *repository) ExchangeUserKeys(opts ...Option) repo_exchange_user_keys.Qu
 	return r.exchangeUserKeys
 }
 
-func (r *repository) UserStores(opts ...Option) repo_user_stores.Querier {
-	options := parseOptions(opts...)
-	if options.Tx != nil {
-		return r.userStores.WithTx(options.Tx)
-	}
-
-	return r.userStores
-}
-
 func (r *repository) NotificationSendHistory(opts ...Option) repo_notification_send_history.ICustomQuerier {
 	options := parseOptions(opts...)
 	if options.Tx != nil {
@@ -463,24 +446,6 @@ func (r *repository) WithdrawalsFromProcessing(opts ...Option) repo_withdrawal_f
 	}
 
 	return r.withdrawalsFromProcessing
-}
-
-func (r *repository) UserExchangePairs(opts ...Option) repo_user_exchange_pairs.Querier {
-	options := parseOptions(opts...)
-	if options.Tx != nil {
-		return r.userExchangePairs.WithTx(options.Tx)
-	}
-
-	return r.userExchangePairs
-}
-
-func (r *repository) UserExchanges(opts ...Option) repo_user_exchanges.ICustomQuerier {
-	options := parseOptions(opts...)
-	if options.Tx != nil {
-		return r.userExchanges.WithTx(options.Tx)
-	}
-
-	return r.userExchanges
 }
 
 func (r *repository) ExchangeOrders(opts ...Option) repo_exchange_orders.ICustomQuerier {
@@ -553,15 +518,6 @@ func (r *repository) StoreSecrets(opts ...Option) repo_store_secrets.Querier {
 	}
 
 	return r.storeSecrets
-}
-
-func (r *repository) UserNotifications(opts ...Option) repo_user_notifications.Querier {
-	options := parseOptions(opts...)
-	if options.Tx != nil {
-		return r.userNotifications.WithTx(options.Tx)
-	}
-
-	return r.userNotifications
 }
 
 func (r *repository) Notifications(opts ...Option) repo_notifications.Querier {
@@ -688,4 +644,49 @@ func (r *repository) UserAddressBook(opts ...Option) repo_user_address_book.Quer
 	}
 
 	return r.userAddressBook
+}
+
+func (r *repository) UserExchangePairs(opts ...Option) repo_user_exchange_pairs.Querier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.userExchangePairs.WithTx(options.Tx)
+	}
+
+	return r.userExchangePairs
+}
+
+func (r *repository) UserExchanges(opts ...Option) repo_user_exchanges.ICustomQuerier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.userExchanges.WithTx(options.Tx)
+	}
+
+	return r.userExchanges
+}
+
+func (r *repository) UserStores(opts ...Option) repo_user_stores.Querier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.userStores.WithTx(options.Tx)
+	}
+
+	return r.userStores
+}
+
+func (r *repository) UserNotifications(opts ...Option) repo_user_notifications.Querier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.userNotifications.WithTx(options.Tx)
+	}
+
+	return r.userNotifications
+}
+
+func (r *repository) UserAmlSettings(opts ...Option) repo_user_aml_settings.Querier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.userAmlSettings.WithTx(options.Tx)
+	}
+
+	return r.userAmlSettings
 }

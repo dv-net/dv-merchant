@@ -272,7 +272,7 @@ func (h *Handler) withdrawToProcessing(c fiber.Ctx) error {
 //	@Failure		403			{object}	apierror.Errors	"Forbidden"
 //	@Failure		422			{object}	apierror.Errors	"Unprocessable Entity"
 //	@Failure		500			{object}	apierror.Errors	"Internal Server Error"
-//	@Router			/v1/dv-admin/withdraw-multiple-to-processing [Post]
+//	@Router			/v1/dv-admin/withdrawal/withdraw-multiple-to-processing [Post]
 //	@Security		BearerAuth
 func (h *Handler) withdrawToProcessingMultiple(c fiber.Ctx) error {
 	user, err := loadAuthUser(c)

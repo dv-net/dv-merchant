@@ -10,6 +10,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/aml"
 	"github.com/dv-net/dv-merchant/internal/service/transactions"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_currencies"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_aml_settings"
 	"github.com/dv-net/dv-merchant/internal/util"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/store_webhook_request"
@@ -142,21 +143,30 @@ func (s *Service) checkAMLBlock(ctx context.Context, ev transactions.Transaction
 	if ev.EventType() != transactions.DepositReceivedEventType {
 		return nil, false
 	}
-	amlSettings, err := s.storage.StoreAmlSettings().GetByStoreID(ctx, ev.GetStore().ID)
+	amlSettings, err := s.storage.UserAmlSettings(repos.WithTx(ev.GetDatabaseTx())).GetByUserID(ctx, ev.GetStore().UserID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			s.log.Errorw("get aml settings failed", "error", err)
 		}
 		return nil, false
 	}
-	if !amlSettings.Enabled {
+	if !amlSettings.Enabled || amlSettings.ProviderSlug == nil {
 		return nil, false
 	}
 	return s.amlGate(ctx, ev, amlSettings)
 }
 
-func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent, settings *models.StoreAmlSetting) (*models.AmlCheck, bool) {
-	amlCheck, err := s.amlService.AutoScoreDeposit(ctx, aml.AutoScoreDepositDTO{
+func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent, settings *models.UserAmlSetting) (*models.AmlCheck, bool) {
+	rules, err := s.storage.UserAmlSettings().ListRiskRulesByUserID(ctx, repo_user_aml_settings.ListRiskRulesByUserIDParams{
+		UserID:       ev.GetStore().UserID,
+		ProviderSlug: settings.ProviderSlug.String(),
+	})
+	if err != nil {
+		s.log.Errorw("failed to list aml risk rules", "error", err)
+		return nil, false // fail open
+	}
+
+	amlCheck, signals, err := s.amlService.AutoScoreDeposit(ctx, aml.AutoScoreDepositDTO{
 		UserID:        ev.GetStore().UserID,
 		TxID:          ev.GetTx().GetID(),
 		TxHash:        ev.GetTx().GetTxHash(),
@@ -171,10 +181,15 @@ func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent,
 		}
 		return nil, false // fail-open
 	}
-	if amlCheck == nil || amlCheck.Status != models.AmlCheckStatusPending && !isScoreAboveThreshold(amlCheck.Score, settings.RiskThreshold) {
+	if amlCheck == nil {
 		return nil, false
 	}
-	if amlCheck.Status != models.AmlCheckStatusPending {
+	if amlCheck.Status == models.AmlCheckStatusPending {
+		return amlCheck, true // ждём завершения асинхронной проверки, обычный webhook пока не шлём
+	}
+
+	blocked, shouldMarkDirty := aml.EvaluateRiskRules(amlCheck.Score, signals, rules)
+	if shouldMarkDirty {
 		usr, usrErr := s.storage.Users().GetByID(ctx, ev.GetStore().UserID)
 		if usrErr != nil {
 			s.log.Errorw("failed to get user for mark address dirty", "error", usrErr)
@@ -182,7 +197,7 @@ func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent,
 			s.log.Errorw("failed to mark address as dirty", "error", markErr)
 		}
 	}
-	return amlCheck, true
+	return amlCheck, blocked
 }
 
 func (s *Service) handleWithdrawalReceived(ev event.IEvent) error {
@@ -532,9 +547,20 @@ func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
 		return fmt.Errorf("fetch store: %w", err)
 	}
 
-	amlSettings, err := s.storage.StoreAmlSettings().GetByStoreID(ctx, store.ID)
+	amlSettings, err := s.storage.UserAmlSettings().GetByUserID(ctx, store.UserID)
 	if err != nil {
 		return fmt.Errorf("fetch aml settings: %w", err)
+	}
+	if amlSettings.ProviderSlug == nil {
+		return fmt.Errorf("aml provider not configured for user %s", store.UserID)
+	}
+
+	rules, err := s.storage.UserAmlSettings().ListRiskRulesByUserID(ctx, repo_user_aml_settings.ListRiskRulesByUserIDParams{
+		UserID:       store.UserID,
+		ProviderSlug: amlSettings.ProviderSlug.String(),
+	})
+	if err != nil {
+		return fmt.Errorf("fetch aml risk rules: %w", err)
 	}
 
 	curr, err := s.storage.Currencies().GetByID(ctx, tx.CurrencyID)
@@ -549,14 +575,20 @@ func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
 		}
 	}
 
-	if isScoreAboveThreshold(completedEv.Check.Score, amlSettings.RiskThreshold) {
-		s.log.Warnw("AML check score above threshold, blocking webhook", "store_id", store.ID, "tx_id", tx.ID, "score", completedEv.Check.Score, "threshold", amlSettings.RiskThreshold)
+	// signals aren't persisted on models.AmlCheck, so only TOTAL_RISK_SCORE rules can
+	// fire here; this async path is only reached by BitOK, which never populates
+	// Signals anyway, so category/SUM_OF_SIGNALS rules are a no-op here, not a regression.
+	blocked, shouldMarkDirty := aml.EvaluateRiskRules(completedEv.Check.Score, nil, rules)
+	if shouldMarkDirty {
 		usr, usrErr := s.storage.Users().GetByID(ctx, store.UserID)
 		if usrErr != nil {
 			s.log.Errorw("failed to get user for mark address dirty", "error", usrErr)
 		} else if markErr := s.wallets.MarkAddressDirty(ctx, usr, tx.ToAddress); markErr != nil {
 			s.log.Errorw("failed to mark address as dirty", "error", markErr)
 		}
+	}
+	if blocked {
+		s.log.Warnw("AML check triggered a blocking rule", "store_id", store.ID, "tx_id", tx.ID, "score", completedEv.Check.Score)
 		return s.sendAMLBlockedWebhook(ctx, tx, store.ID, *curr, storeExternalID, &completedEv.Check, nil)
 	}
 

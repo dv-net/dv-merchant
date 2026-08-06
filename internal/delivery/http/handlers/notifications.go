@@ -27,7 +27,7 @@ import (
 //	@Produce		json
 //	@Success		200	{object}	response.Result[[]notification_responses.UserNotificationResponse]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/notifications/list [get]
+//	@Router			/v1/dv-admin/notifications/list [get]
 //	@Security		BearerAuth
 func (h *Handler) notificationsList(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
@@ -52,7 +52,7 @@ func (h *Handler) notificationsList(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[string]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/notifications/{id} [put]
+//	@Router			/v1/dv-admin/notifications/{notification_id} [put]
 //	@Security		BearerAuth
 func (h *Handler) updateUserNotification(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
@@ -91,7 +91,7 @@ func (h *Handler) updateUserNotification(c fiber.Ctx) error {
 //	@Param			updateList	body		notification_request.UpdateList	true	"Update user notifications list"
 //	@Success		200			{object}	response.Result[string]
 //	@Failure		401			{object}	apierror.Errors
-//	@Router			/v1/notifications/list/update [patch]
+//	@Router			/v1/dv-admin/notifications/list/update [patch]
 //	@Security		BearerAuth
 func (h *Handler) notificationsListUpdate(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
@@ -129,7 +129,7 @@ func (h *Handler) notificationsListUpdate(c fiber.Ctx) error {
 //	@Param		testEmailRequest	body		notification_request.TestNotificationRequest	true	"Test email request"
 //	@Success	200					{object}	response.Result[string]
 //	@Failure	401					{object}	apierror.Errors
-//	@Router		/v1/notifications/test [post]
+//	@Router		/v1/dv-admin/notifications/test [post]
 //	@Security	BearerAuth
 func (h *Handler) testNotification(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)

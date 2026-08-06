@@ -3,6 +3,7 @@ package aml
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -11,13 +12,14 @@ import (
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
-	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_aml_check_history"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_aml_checks"
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	"github.com/dv-net/dv-merchant/pkg/aml"
 	"github.com/dv-net/dv-merchant/pkg/aml/providers"
 	"github.com/dv-net/dv-merchant/pkg/logger"
+	"github.com/goccy/go-json"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 
 	"github.com/dv-net/dv-processing/pkg/avalidator"
 
@@ -42,10 +44,11 @@ var keyMapping = map[models.AmlKeyType]aml.AuthKeyType{
 
 type IService interface {
 	ScoreTransaction(ctx context.Context, usr *models.User, dto CheckDTO) (*models.AmlCheck, error)
-	AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, error)
+	AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, []aml.SignalContribution, error)
 	GetCheckHistory(ctx context.Context, usr *models.User, dto ChecksWithHistoryDTO) (*storecmn.FindResponseWithFullPagination[*repo_aml_checks.FindRow], error)
 	GetAllActiveProviders() []models.AMLProvider
 	GetSupportedCurrencies(ctx context.Context, slug models.AMLSlug) ([]*models.CurrencyShort, error)
+	GetSignalsCategorise(ctx context.Context, slug models.AMLSlug) ([]aml.SignalCategory, error)
 }
 
 var _ IService = (*Service)(nil)
@@ -91,17 +94,16 @@ func (s *Service) ScoreTransaction(ctx context.Context, usr *models.User, dto Ch
 		return nil, fmt.Errorf("%w: '%s' for blockchain '%s'", ErrInvalidAddress, dto.OutputAddress, currData.Currency.Blockchain)
 	}
 
-	provider, err := s.factory.GetClient(providerSlug)
-	if err != nil {
+	if _, err := s.factory.GetClient(providerSlug); err != nil {
 		return nil, fmt.Errorf("failed to get provider: %w", err)
 	}
 
-	amlSvc, auth, err := s.prepareServiceDataByUser(ctx, usr.ID, prepareParams{Slug: dto.ProviderSlug, ExternalID: dto.TxID})
+	amlSvc, _, err := s.prepareServiceDataByUser(ctx, usr.ID, prepareParams{Slug: dto.ProviderSlug, ExternalID: dto.TxID})
 	if err != nil {
 		return nil, err
 	}
 
-	check, err := provider.InitCheckTransaction(ctx, aml.InitCheckDTO{
+	createdAmlCheck, err := s.enqueueCheck(ctx, usr.ID, *amlSvc, aml.InitCheckDTO{
 		TxID: dto.TxID,
 		TokenData: aml.TokenData{
 			Blockchain:      currData.AmlSupportedAsset.BlockchainName,
@@ -109,12 +111,7 @@ func (s *Service) ScoreTransaction(ctx context.Context, usr *models.User, dto Ch
 		},
 		Direction:     dto.Direction.ToAMLDirection(),
 		OutputAddress: dto.OutputAddress,
-	}, auth)
-	if err != nil {
-		return nil, err
-	}
-
-	createdAmlCheck, err := s.createCheck(ctx, usr.ID, *amlSvc, check, nil, nil)
+	}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -122,34 +119,33 @@ func (s *Service) ScoreTransaction(ctx context.Context, usr *models.User, dto Ch
 	return createdAmlCheck, nil
 }
 
-func (s *Service) AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, error) {
+func (s *Service) AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, []aml.SignalContribution, error) {
 	targetSlug, err := s.resolveProviderSlug(ctx, dto)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	providerSlug := slugMapping[targetSlug]
 
 	currData, err := s.st.AmlSupportedAssets().GetBySlugAndCurrencyID(ctx, dto.CurrencyID, targetSlug)
 	if err != nil {
-		return nil, ErrUnsupportedCurrencies
+		return nil, nil, ErrUnsupportedCurrencies
 	}
 
 	if !avalidator.ValidateAddressByBlockchain(dto.OutputAddress, currData.Currency.Blockchain.String()) {
-		return nil, fmt.Errorf("%w: '%s' for blockchain '%s'", ErrInvalidAddress, dto.OutputAddress, currData.Currency.Blockchain)
+		return nil, nil, fmt.Errorf("%w: '%s' for blockchain '%s'", ErrInvalidAddress, dto.OutputAddress, currData.Currency.Blockchain)
 	}
 
-	provider, err := s.factory.GetClient(providerSlug)
+	if _, err := s.factory.GetClient(providerSlug); err != nil {
+		return nil, nil, fmt.Errorf("failed to get provider: %w", err)
+	}
+
+	amlSvc, _, err := s.prepareServiceDataByUser(ctx, dto.UserID, prepareParams{Slug: targetSlug, ExternalID: dto.TxHash})
 	if err != nil {
-		return nil, fmt.Errorf("failed to get provider: %w", err)
+		return nil, nil, err
 	}
 
-	amlSvc, auth, err := s.prepareServiceDataByUser(ctx, dto.UserID, prepareParams{Slug: targetSlug, ExternalID: dto.TxHash})
-	if err != nil {
-		return nil, err
-	}
-
-	check, err := provider.InitCheckTransaction(ctx, aml.InitCheckDTO{
+	createdAmlCheck, err := s.enqueueCheck(ctx, dto.UserID, *amlSvc, aml.InitCheckDTO{
 		TxID: dto.TxHash,
 		TokenData: aml.TokenData{
 			Blockchain:      currData.AmlSupportedAsset.BlockchainName,
@@ -157,16 +153,13 @@ func (s *Service) AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO)
 		},
 		Direction:     aml.DirectionIn,
 		OutputAddress: dto.OutputAddress,
-	}, auth)
+	}, &dto.TxID, dto.DBTx)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
-	createdAmlCheck, err := s.createCheck(ctx, dto.UserID, *amlSvc, check, &dto.TxID, dto.DBTx)
-	if err != nil {
-		return nil, err
-	}
-	return createdAmlCheck, nil
+	// no signals yet — the check hasn't run; they'll be available once the queued
+	// check completes and CheckCompletedEvent is fired.
+	return createdAmlCheck, nil, nil
 }
 
 // resolveProviderSlug returns the provider slug to use for AutoScoreDeposit.
@@ -236,6 +229,24 @@ func (s *Service) GetSupportedCurrencies(ctx context.Context, slug models.AMLSlu
 	return preparedCurrs, nil
 }
 
+func (s *Service) GetSignalsCategorise(_ context.Context, slug models.AMLSlug) ([]aml.SignalCategory, error) {
+	if err := s.ensureProviderEnabled(slug); err != nil {
+		return nil, err
+	}
+
+	client, err := s.factory.GetClient(slugMapping[slug])
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider: %w", err)
+	}
+
+	lister, ok := client.(aml.SignalCategoryLister)
+	if !ok {
+		return []aml.SignalCategory{}, nil
+	}
+
+	return lister.SignalCategories(), nil
+}
+
 type prepareParams struct {
 	Slug       models.AMLSlug
 	ExternalID string
@@ -252,7 +263,7 @@ func (s *Service) prepareServiceDataByUser(
 		return nil, nil, fmt.Errorf("failed to get service credentials: %w", err)
 	}
 
-	auth, err := s.prepareCredsBySlug(ctx, params.Slug, serviceData.Creds, params.ExternalID)
+	auth, err := s.prepareCreedsBySlug(ctx, params.Slug, serviceData.Creds, params.ExternalID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -260,7 +271,7 @@ func (s *Service) prepareServiceDataByUser(
 	return serviceData.Service, auth, nil
 }
 
-func (s *Service) prepareCredsBySlug(
+func (s *Service) prepareCreedsBySlug(
 	ctx context.Context,
 	slug models.AMLSlug,
 	creds map[models.AmlKeyType]string,
@@ -281,50 +292,40 @@ func (s *Service) prepareCredsBySlug(
 	return s.factory.CreateAuthorizer(ctx, providerSlug, mappedCreds, externalID)
 }
 
-func (s *Service) createCheck(ctx context.Context, usrID uuid.UUID, service models.AmlService, check *aml.CheckResponse, txID *uuid.UUID, outerTx pgx.Tx) (*models.AmlCheck, error) {
+const pendingExternalIDPrefix = "pending:"
+
+func isPendingExternalID(externalID string) bool {
+	return strings.HasPrefix(externalID, pendingExternalIDPrefix)
+}
+
+func (s *Service) enqueueCheck(ctx context.Context, usrID uuid.UUID, service models.AmlService, dto aml.InitCheckDTO, txID *uuid.UUID, outerTx pgx.Tx) (*models.AmlCheck, error) {
+	payload, err := json.Marshal(dto)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal check payload: %w", err)
+	}
+
 	var createdCheck *models.AmlCheck
 
 	insertFn := func(tx pgx.Tx) error {
-		var err error
-
-		var preparedRiskLvl *models.AmlRiskLevel
-		if check.RiskLevel != nil {
-			preparedRiskLvl, err = convertAmlRiskLevelToModel(*check.RiskLevel)
-			if err != nil {
-				return err
-			}
-		}
 		params := repo_aml_checks.CreateParams{
 			UserID:     usrID,
 			ServiceID:  service.ID,
-			ExternalID: check.ExternalID,
-			Status:     convertAmlStatusToModel(check.Status),
-			Score:      check.Score,
-			RiskLevel:  preparedRiskLvl,
+			ExternalID: pendingExternalIDPrefix + uuid.NewString(),
+			Status:     models.AmlCheckStatusPending,
+			Score:      decimal.Zero,
 		}
 
 		if txID != nil {
 			params.TransactionID = uuid.NullUUID{UUID: *txID, Valid: true}
 		}
 
+		var err error
 		createdCheck, err = s.st.AmlChecks(repos.WithTx(tx)).Create(ctx, params)
 		if err != nil {
 			return err
 		}
 
-		if _, err = s.st.AmlCheckHistory(repos.WithTx(tx)).Create(ctx, repo_aml_check_history.CreateParams{
-			AmlCheckID:      createdCheck.ID,
-			RequestPayload:  check.Request,
-			ServiceResponse: check.Response,
-		}); err != nil {
-			return err
-		}
-
-		if createdCheck.Status == models.AmlCheckStatusPending {
-			return s.st.AmlCheckQueue(repos.WithTx(tx)).Create(ctx, usrID, createdCheck.ID)
-		}
-
-		return nil
+		return s.st.AmlCheckQueue(repos.WithTx(tx)).Create(ctx, usrID, createdCheck.ID, payload)
 	}
 
 	var txErr error

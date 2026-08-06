@@ -85,7 +85,7 @@ func (h *Handler) updateBackend(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[system_response.VersionResponse]
 //	@Failure		401	{object}	apierror.Errors
-//	@Router			/v1/dv-admin/system/version [get]
+//	@Router			/v1/dv-admin/system/versions [get]
 //	@Security		BearerAuth
 func (h *Handler) loadNewVersions(c fiber.Ctx) error {
 	versions, err := h.services.UpdaterService.CheckApplicationVersions(c.Context())
