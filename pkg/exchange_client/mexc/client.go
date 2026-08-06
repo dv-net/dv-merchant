@@ -1,0 +1,184 @@
+package mexc
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
+	"github.com/goccy/go-json"
+	"github.com/ulule/limiter/v3"
+
+	"github.com/dv-net/dv-merchant/pkg/exchange_client/utils"
+	"github.com/dv-net/dv-merchant/pkg/logger"
+)
+
+type IMexcClient interface {
+	Account() IMexcAccount
+}
+
+func NewBaseClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption) (*BaseClient, error) {
+	return &BaseClient{
+		accountClient: NewAccountClient(opt, store, opts...),
+	}, nil
+}
+
+type BaseClient struct {
+	accountClient IMexcAccount
+}
+
+func (o *BaseClient) Account() IMexcAccount { return o.accountClient }
+
+type ClientOption func(c *Client)
+
+func WithLogger(log logger.Logger) ClientOption {
+	return func(c *Client) {
+		c.log = log
+	}
+}
+
+type ClientOptions struct {
+	APIKey    string
+	SecretKey string
+	BaseURL   *url.URL
+}
+
+func NewClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption) *Client {
+	c := &Client{
+		apiKey:     opt.APIKey,
+		secretKey:  opt.SecretKey,
+		baseURL:    opt.BaseURL,
+		httpClient: http.DefaultClient,
+		signer:     NewSigner(opt.APIKey, opt.SecretKey),
+		store:      store,
+	}
+	for _, o := range opts {
+		o(c)
+	}
+	return c
+}
+
+type Client struct {
+	apiKey     string
+	secretKey  string
+	baseURL    *url.URL
+	httpClient *http.Client
+	store      limiter.Store
+	limiters   map[string]*limiter.Limiter
+	signer     ISigner
+	log        logger.Logger
+}
+
+func (o *Client) Do(ctx context.Context, method, endpoint string, private bool, dest interface{}, params ...map[string]string) error {
+	if l, exists := o.limiters[endpoint]; exists {
+		for {
+			r, err := l.Get(ctx, utils.HashLimiterKey(endpoint, o.apiKey, o.secretKey))
+			if err != nil {
+				return err
+			}
+			if !r.Reached {
+				break
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Until(time.Unix(r.Reset, 0).Add(time.Second))):
+			}
+		}
+	}
+	return o.DoPlain(ctx, method, endpoint, private, dest, params...)
+}
+
+func (o *Client) DoPlain(ctx context.Context, method, endpoint string, private bool, dest interface{}, params ...map[string]string) error {
+	startTime := time.Now()
+
+	if o.log != nil {
+		o.log.Debugln("[EXCHANGE-API]: Preparing request",
+			"exchange", "mexc",
+			"method", method,
+			"endpoint", endpoint,
+			"private", private,
+		)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, o.baseURL.String()+endpoint, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	if len(params) > 0 {
+		q := req.URL.Query()
+		for k, v := range params[0] {
+			q.Add(k, strings.ReplaceAll(v, "\"", ""))
+		}
+		req.URL.RawQuery = q.Encode()
+	}
+
+	req = o.signer.SignRequest(ctx, req, private)
+	req.Header.Set("Content-Type", "application/json")
+
+	if o.log != nil {
+		o.log.Debugln("[EXCHANGE-API]: Sending request",
+			"exchange", "mexc",
+			"method", method,
+			"url", req.URL.String(),
+			"headers", sanitizeHeaders(req.Header),
+		)
+	}
+
+	res, err := o.httpClient.Do(req)
+	if err != nil {
+		if o.log != nil {
+			o.log.Errorln("[EXCHANGE-API]: Request failed",
+				"exchange", "mexc",
+				"method", method,
+				"endpoint", endpoint,
+				"error", err.Error(),
+				"duration_ms", time.Since(startTime).Milliseconds(),
+			)
+		}
+		return err
+	}
+	defer res.Body.Close()
+
+	bb := new(bytes.Buffer)
+	if _, err = io.Copy(bb, res.Body); err != nil {
+		return err
+	}
+
+	duration := time.Since(startTime)
+
+	if res.StatusCode >= 400 {
+		errRes := ErrorResponse{}
+		if err = json.Unmarshal(bb.Bytes(), &errRes); err != nil {
+			return fmt.Errorf("mexc error: status %d, body: %s", res.StatusCode, bb.String())
+		}
+		if o.log != nil {
+			o.log.Errorln("[EXCHANGE-API]: API error response",
+				"exchange", "mexc",
+				"method", method,
+				"endpoint", endpoint,
+				"status_code", res.StatusCode,
+				"error", errorFromResponse(&errRes).Error(),
+				"duration_ms", duration.Milliseconds(),
+			)
+		}
+		return errorFromResponse(&errRes)
+	}
+
+	if o.log != nil {
+		o.log.Debugln("[EXCHANGE-API]: Request completed",
+			"exchange", "mexc",
+			"method", method,
+			"endpoint", endpoint,
+			"status_code", res.StatusCode,
+			"duration_ms", duration.Milliseconds(),
+		)
+	}
+
+	return json.Unmarshal(bb.Bytes(), dest)
+}
