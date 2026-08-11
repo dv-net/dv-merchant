@@ -139,7 +139,8 @@ func (o *Client) DoPlain(ctx context.Context, method, endpoint string, private b
 			"[EXCHANGE-API]: Sending request",
 			"exchange", "mexc",
 			"method", method,
-			"url", req.URL.String(),
+			"url", o.baseURL.String()+endpoint,
+			"query", sanitizeBody(req.URL.RawQuery),
 			"headers", sanitizeHeaders(req.Header),
 		)
 	}

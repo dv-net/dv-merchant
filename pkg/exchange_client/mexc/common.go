@@ -40,6 +40,7 @@ func sanitizeHeaders(headers http.Header) map[string]string {
 	return sanitized
 }
 
+// sanitizeBody truncates long request payloads for logging
 func sanitizeBody(body string) string {
 	if len(body) == 0 {
 		return "(empty)"

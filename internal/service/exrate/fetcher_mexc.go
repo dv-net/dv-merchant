@@ -1,4 +1,3 @@
-//nolint:tagliatelle
 package exrate
 
 import (
@@ -39,7 +38,7 @@ func (f *mexcFetcher) Source() string {
 	return "mexc"
 }
 
-func (f *mexcFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error { //nolint:dupl
+func (f *mexcFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, out chan<- ExRate) error {
 	err := f.fetchWithClient(ctx, f.httpClient, "direct", currencyFilter, out)
 	if err == nil {
 		return nil
@@ -57,7 +56,7 @@ func (f *mexcFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, 
 		shuffledProxies[i], shuffledProxies[j] = shuffledProxies[j], shuffledProxies[i]
 	})
 
-	var lastErr error = err
+	lastErr := err
 
 	for _, proxyURL := range shuffledProxies {
 		client, err := f.createProxyClient(proxyURL)

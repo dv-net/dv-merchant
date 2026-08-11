@@ -1,3 +1,4 @@
+//nolint:tagliatelle
 package responses
 
 import "github.com/shopspring/decimal"

@@ -309,7 +309,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side 
 	}
 	req.NewClientOrderID = strings.ReplaceAll(clientOrderID.String(), "-", "")
 
-	amount := decimal.Zero
+	var amount decimal.Decimal
 	switch req.Side {
 	case mexc.OrderSideSell:
 		balance, err := o.GetCurrencyBalance(ctx, rule.BaseCurrency)
