@@ -45,6 +45,8 @@ func (o *Service) fetchWithdrawalRule(ctx context.Context, exchange models.Excha
 		return o.handleGateioWithdrawal(ctx, userID, currency)
 	case models.ExchangeSlugBybit:
 		return o.handleBybitWithdrawal(ctx, userID, currency)
+	case models.ExchangeSlugMexc:
+		return o.handleMexcWithdrawal(ctx, userID, currency)
 	default:
 		return nil, fmt.Errorf("exchange %s not supported", exchange.String())
 	}
@@ -122,6 +124,18 @@ func (o *Service) handleGateioWithdrawal(ctx context.Context, userID, currency s
 	return rule, json.Unmarshal(data, rule)
 }
 
+func (o *Service) handleMexcWithdrawal(ctx context.Context, userID, currency string) (*models.WithdrawalRulesDTO, error) {
+	rule := &models.WithdrawalRulesDTO{}
+	data, err := o.storage.KeyValue().Get(ctx, formatKey(models.ExchangeSlugMexc, WithdrawalRuleType, currency, userID))
+	if err != nil {
+		if errors.Is(err, redis.Nil) || errors.Is(err, key_value.ErrEntryNotFound) {
+			return o.fetchAndCacheMexcWithdrawalRules(ctx, userID, currency)
+		}
+		return nil, err
+	}
+	return rule, json.Unmarshal(data, rule)
+}
+
 func (o *Service) handleBybitWithdrawal(ctx context.Context, userID, currency string) (*models.WithdrawalRulesDTO, error) {
 	rule := &models.WithdrawalRulesDTO{}
 	data, err := o.storage.KeyValue().Get(ctx, formatKey(models.ExchangeSlugBybit, WithdrawalRuleType, currency, userID))
@@ -153,6 +167,22 @@ func (o *Service) fetchAndCacheGateioWithdrawalRules(ctx context.Context, userID
 		return &models.WithdrawalRulesDTO{}, nil
 	}
 	err = o.storage.KeyValue().Set(ctx, formatKey(models.ExchangeSlugGateio, WithdrawalRuleType, currency, userID), structs.Map(rules[0]), 30*time.Minute)
+	return rules[0], err
+}
+
+func (o *Service) fetchAndCacheMexcWithdrawalRules(ctx context.Context, userID, currency string) (*models.WithdrawalRulesDTO, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("parse user id: %w", err)
+	}
+	rules, err := o.fetchMexcWithdrawalRules(ctx, userUUID, currency)
+	if err != nil {
+		return nil, err
+	}
+	if len(rules) == 0 {
+		return &models.WithdrawalRulesDTO{}, nil
+	}
+	err = o.storage.KeyValue().Set(ctx, formatKey(models.ExchangeSlugMexc, WithdrawalRuleType, currency, userID), structs.Map(rules[0]), 30*time.Minute)
 	return rules[0], err
 }
 
@@ -296,6 +326,18 @@ func (o *Service) fetchGateioWithdrawalRules(ctx context.Context, userID uuid.UU
 		return nil, err
 	}
 	rules, err := gateioClient.GetWithdrawalRules(ctx, currencies...)
+	if err != nil {
+		return nil, err
+	}
+	return rules, nil
+}
+
+func (o *Service) fetchMexcWithdrawalRules(ctx context.Context, userID uuid.UUID, currencies ...string) ([]*models.WithdrawalRulesDTO, error) {
+	mexcClient, err := o.manager.GetDriver(ctx, models.ExchangeSlugMexc, userID)
+	if err != nil {
+		return nil, err
+	}
+	rules, err := mexcClient.GetWithdrawalRules(ctx, currencies...)
 	if err != nil {
 		return nil, err
 	}

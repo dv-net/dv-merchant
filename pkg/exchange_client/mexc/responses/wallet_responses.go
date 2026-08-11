@@ -29,3 +29,45 @@ type CoinConfig struct {
 }
 
 type GetCoinsConfigResponse []CoinConfig
+
+type DepositAddress struct {
+	Coin    string `json:"coin"`
+	Network string `json:"network"`
+	Address string `json:"address"`
+	Memo    string `json:"memo"`
+}
+
+type GetDepositAddressResponse []DepositAddress
+
+const (
+	WithdrawalStatusApply         int64 = 1
+	WithdrawalStatusAuditing      int64 = 2
+	WithdrawalStatusWait          int64 = 3
+	WithdrawalStatusProcessing    int64 = 4
+	WithdrawalStatusWaitPackaging int64 = 5
+	WithdrawalStatusWaitConfirm   int64 = 6
+	WithdrawalStatusSuccess       int64 = 7
+	WithdrawalStatusFailed        int64 = 8
+	WithdrawalStatusCancel        int64 = 9
+	WithdrawalStatusManual        int64 = 10
+)
+
+type WithdrawResponse struct {
+	ID string `json:"id"`
+}
+
+type WithdrawHistoryItem struct {
+	ID             string          `json:"id"`
+	TxID           string          `json:"txId"`
+	Coin           string          `json:"coin"`
+	Network        string          `json:"network"`
+	Address        string          `json:"address"`
+	Amount         decimal.Decimal `json:"amount"`
+	Status         int64           `json:"status"`
+	ApplyTime      int64           `json:"applyTime"`
+	TransactionFee decimal.Decimal `json:"transactionFee"`
+	ConfirmNo      int64           `json:"confirmNo"`
+	Memo           string          `json:"memo"`
+}
+
+type GetWithdrawHistoryResponse []WithdrawHistoryItem

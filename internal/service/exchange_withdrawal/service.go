@@ -33,6 +33,7 @@ import (
 	gateio "github.com/dv-net/dv-merchant/pkg/exchange_client/gate"
 	htxmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/htx/models"
 	kucoinmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/kucoin/models"
+	mexcresponses "github.com/dv-net/dv-merchant/pkg/exchange_client/mexc/responses"
 	okxmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/okx/models"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/dv-net/dv-processing/pkg/avalidator"
@@ -599,7 +600,8 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 				},
 			}
 
-			s.logger.Infow("creating withdrawal order",
+			s.logger.Infow(
+				"creating withdrawal order",
 				"userID", userID,
 				"recordID", recordID.String(),
 				"exchange", userExchange.Slug.String(),
@@ -616,7 +618,8 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 			orderData, err = userExchangeClient.CreateWithdrawalOrder(ctx, wdOrderParams)
 			if err != nil { //nolint:nestif
 				if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
-					s.logger.Infow("insufficient balance due to withdrawal block count lock",
+					s.logger.Infow(
+						"insufficient balance due to withdrawal block count lock",
 						"userID", userID,
 						"recordID", recordID.String(),
 						"exchange", userExchange.Slug.String(),
@@ -629,7 +632,8 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 					return err
 				}
 				if errors.Is(err, exchangeclient.ErrMinWithdrawalBalance) {
-					s.logger.Infow("insufficient balance due to withdrawal minimum",
+					s.logger.Infow(
+						"insufficient balance due to withdrawal minimum",
 						"userID", userID,
 						"recordID", recordID.String(),
 						"exchange", userExchange.Slug.String(),
@@ -642,7 +646,8 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 					return err
 				}
 				if errors.Is(err, exchangeclient.ErrSoftLockByUserSecurityAction) {
-					s.logger.Infow("cannot withdrawal due to user recent security actions",
+					s.logger.Infow(
+						"cannot withdrawal due to user recent security actions",
 						"userID", userID,
 						"recordID", recordID.String(),
 						"exchange", userExchange.Slug.String(),
@@ -655,7 +660,8 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 					return err
 				}
 				if errors.Is(err, exchangeclient.ErrWithdrawalAddressNotWhitelisted) {
-					s.logger.Infow("cannot withdrawal due to address not whitelisted",
+					s.logger.Infow(
+						"cannot withdrawal due to address not whitelisted",
 						"userID", userID,
 						"recordID", recordID.String(),
 						"exchange", userExchange.Slug.String(),
@@ -668,7 +674,8 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 					return err
 				}
 				if errors.Is(err, exchangeclient.ErrIncorrectAPIPermissions) {
-					s.logger.Infow("cannot withdrawal due to API key permissions",
+					s.logger.Infow(
+						"cannot withdrawal due to API key permissions",
 						"userID", userID,
 						"recordID", recordID.String(),
 						"exchange", userExchange.Slug.String(),
@@ -681,13 +688,15 @@ func (s *Service) processWithdrawals(ctx context.Context, userID uuid.UUID, sett
 					return err
 				}
 				if errors.Is(err, exchangeclient.ErrRateLimited) {
-					s.logger.Infow("withdrawal rate limited",
+					s.logger.Infow(
+						"withdrawal rate limited",
 						"userID", userID,
 						"recordID", recordID.String(),
 						"exchange", models.ExchangeSlugKucoin.String(),
 					)
 				}
-				s.logger.Warnw("failed to create withdrawal order",
+				s.logger.Warnw(
+					"failed to create withdrawal order",
 					"error", err.Error(),
 					"userID", userID,
 					"recordID", recordID.String(),
@@ -757,9 +766,41 @@ func (s *Service) handleWithdrawal(ctx context.Context, slug models.ExchangeSlug
 		return s.handleGateioWithdrawal(ctx, transferRecord, order, tx)
 	case models.ExchangeSlugBybit:
 		return s.handleBybitWithdrawal(ctx, transferRecord, order, tx)
+	case models.ExchangeSlugMexc:
+		return s.handleMexcWithdrawal(ctx, transferRecord, order, tx)
 	default:
 		return fmt.Errorf("exchange %s not supported", slug.String())
 	}
+}
+
+func (s *Service) handleMexcWithdrawal(ctx context.Context, record *models.WithdrawalStatusDTO, order *models.ExchangeWithdrawalHistory, tx pgx.Tx) error {
+	updateParams := repo_exchange_withdrawal_history.UpdateParams{
+		ID: order.ID,
+	}
+
+	status, err := strconv.ParseInt(record.Status, 10, 64)
+	if err != nil {
+		return fmt.Errorf("parse mexc withdrawal status %s: %w", record.Status, err)
+	}
+
+	switch status {
+	case mexcresponses.WithdrawalStatusApply, mexcresponses.WithdrawalStatusAuditing, mexcresponses.WithdrawalStatusWait,
+		mexcresponses.WithdrawalStatusProcessing, mexcresponses.WithdrawalStatusWaitPackaging, mexcresponses.WithdrawalStatusWaitConfirm:
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusInProgress.String()}
+	case mexcresponses.WithdrawalStatusSuccess:
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusCompleted.String()}
+		updateParams.Txid = pgtype.Text{Valid: true, String: record.TxHash}
+		updateParams.NativeAmount = decimal.NullDecimal{Valid: true, Decimal: record.NativeAmount}
+	case mexcresponses.WithdrawalStatusFailed, mexcresponses.WithdrawalStatusCancel:
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusFailed.String()}
+	case mexcresponses.WithdrawalStatusManual:
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusRecovery.String()}
+		updateParams.FailReason = pgtype.Text{Valid: true, String: "manual verification required"}
+	default:
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusFailed.String()}
+	}
+
+	return s.updateExchangeWithdrawal(ctx, order.UserID, updateParams, tx)
 }
 
 func (s *Service) handleGateioWithdrawal(ctx context.Context, record *models.WithdrawalStatusDTO, order *models.ExchangeWithdrawalHistory, tx pgx.Tx) error {

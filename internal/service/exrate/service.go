@@ -95,6 +95,12 @@ func New(
 		cfChan:  make(chan CurrencyFilter),
 	}
 
+	f = NewMexcFetcher("https://api.mexc.com/api/v3/ticker/price", proxies, httpClient, logger)
+	srv.fetchers[f.Source()] = fetcherData{
+		fetcher: f,
+		cfChan:  make(chan CurrencyFilter),
+	}
+
 	return srv, nil
 }
 

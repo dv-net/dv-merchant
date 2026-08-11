@@ -19,19 +19,31 @@ import (
 
 type IMexcClient interface {
 	Account() IMexcAccount
+	Wallet() IMexcWallet
+	Market() IMexcMarket
+	Spot() IMexcSpot
 }
 
 func NewBaseClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption) (*BaseClient, error) {
 	return &BaseClient{
 		accountClient: NewAccountClient(opt, store, opts...),
+		walletClient:  NewWalletClient(opt, store, opts...),
+		marketClient:  NewMarketClient(opt, store, opts...),
+		spotClient:    NewSpotClient(opt, store, opts...),
 	}, nil
 }
 
 type BaseClient struct {
 	accountClient IMexcAccount
+	walletClient  IMexcWallet
+	marketClient  IMexcMarket
+	spotClient    IMexcSpot
 }
 
 func (o *BaseClient) Account() IMexcAccount { return o.accountClient }
+func (o *BaseClient) Wallet() IMexcWallet   { return o.walletClient }
+func (o *BaseClient) Market() IMexcMarket   { return o.marketClient }
+func (o *BaseClient) Spot() IMexcSpot       { return o.spotClient }
 
 type ClientOption func(c *Client)
 
@@ -97,7 +109,8 @@ func (o *Client) DoPlain(ctx context.Context, method, endpoint string, private b
 	startTime := time.Now()
 
 	if o.log != nil {
-		o.log.Debugln("[EXCHANGE-API]: Preparing request",
+		o.log.Debugln(
+			"[EXCHANGE-API]: Preparing request",
 			"exchange", "mexc",
 			"method", method,
 			"endpoint", endpoint,
@@ -122,7 +135,8 @@ func (o *Client) DoPlain(ctx context.Context, method, endpoint string, private b
 	req.Header.Set("Content-Type", "application/json")
 
 	if o.log != nil {
-		o.log.Debugln("[EXCHANGE-API]: Sending request",
+		o.log.Debugln(
+			"[EXCHANGE-API]: Sending request",
 			"exchange", "mexc",
 			"method", method,
 			"url", req.URL.String(),
@@ -133,7 +147,8 @@ func (o *Client) DoPlain(ctx context.Context, method, endpoint string, private b
 	res, err := o.httpClient.Do(req)
 	if err != nil {
 		if o.log != nil {
-			o.log.Errorln("[EXCHANGE-API]: Request failed",
+			o.log.Errorln(
+				"[EXCHANGE-API]: Request failed",
 				"exchange", "mexc",
 				"method", method,
 				"endpoint", endpoint,
@@ -158,7 +173,8 @@ func (o *Client) DoPlain(ctx context.Context, method, endpoint string, private b
 			return fmt.Errorf("mexc error: status %d, body: %s", res.StatusCode, bb.String())
 		}
 		if o.log != nil {
-			o.log.Errorln("[EXCHANGE-API]: API error response",
+			o.log.Errorln(
+				"[EXCHANGE-API]: API error response",
 				"exchange", "mexc",
 				"method", method,
 				"endpoint", endpoint,
@@ -171,7 +187,8 @@ func (o *Client) DoPlain(ctx context.Context, method, endpoint string, private b
 	}
 
 	if o.log != nil {
-		o.log.Debugln("[EXCHANGE-API]: Request completed",
+		o.log.Debugln(
+			"[EXCHANGE-API]: Request completed",
 			"exchange", "mexc",
 			"method", method,
 			"endpoint", endpoint,

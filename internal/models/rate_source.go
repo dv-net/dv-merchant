@@ -10,6 +10,7 @@ const (
 	RateSourceKucoin  RateSource = "kucoin"
 	RateSourceBybit   RateSource = "bybit"
 	RateSourceGateio  RateSource = "gate"
+	RateSourceMexc    RateSource = "mexc"
 )
 
 func (rs RateSource) String() string {
@@ -31,6 +32,8 @@ func (rs RateSource) Valid() bool {
 	case RateSourceBybit:
 		return true
 	case RateSourceGateio:
+		return true
+	case RateSourceMexc:
 		return true
 	}
 
