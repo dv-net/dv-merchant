@@ -1,6 +1,7 @@
 package mexc
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -13,8 +14,12 @@ type ErrorResponse struct {
 	Msg  string `json:"msg"`
 }
 
+var ErrDepositAddressExists = errors.New("mexc: chain does not support multiple deposit addresses")
+
 func errorFromResponse(errRes *ErrorResponse) error {
 	switch errRes.Code {
+	case 152073:
+		return ErrDepositAddressExists
 	case 602, 700002, 10072:
 		return exchangeclient.ErrInvalidAPICredentials
 	case 700006:

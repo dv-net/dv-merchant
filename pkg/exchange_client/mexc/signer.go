@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -38,7 +39,7 @@ func (s *Signer) SignRequest(_ context.Context, req *http.Request, private bool)
 	q := req.URL.Query()
 	q.Set("timestamp", strconv.FormatInt(time.Now().UnixMilli(), 10))
 	q.Set("recvWindow", strconv.Itoa(defaultRecvWindow))
-	message := q.Encode()
+	message := strings.ReplaceAll(q.Encode(), "+", "%20")
 
 	signature := generateSignature(s.secretKey, message)
 	req.URL.RawQuery = message + "&signature=" + signature

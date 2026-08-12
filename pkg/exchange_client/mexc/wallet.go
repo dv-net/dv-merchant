@@ -23,7 +23,7 @@ const (
 type IMexcWallet interface {
 	GetCoinsConfig(ctx context.Context) (responses.GetCoinsConfigResponse, error)
 	GetDepositAddress(ctx context.Context, req *requests.GetDepositAddressRequest) (responses.GetDepositAddressResponse, error)
-	CreateDepositAddress(ctx context.Context, req *requests.CreateDepositAddressRequest) (responses.GetDepositAddressResponse, error)
+	CreateDepositAddress(ctx context.Context, req *requests.CreateDepositAddressRequest) (*responses.CreateDepositAddressResponse, error)
 	Withdraw(ctx context.Context, req *requests.WithdrawRequest) (*responses.WithdrawResponse, error)
 	GetWithdrawHistory(ctx context.Context, req *requests.GetWithdrawHistoryRequest) (responses.GetWithdrawHistoryResponse, error)
 }
@@ -72,11 +72,11 @@ func (o *WalletClient) GetDepositAddress(ctx context.Context, req *requests.GetD
 	return res, nil
 }
 
-func (o *WalletClient) CreateDepositAddress(ctx context.Context, req *requests.CreateDepositAddressRequest) (responses.GetDepositAddressResponse, error) {
+func (o *WalletClient) CreateDepositAddress(ctx context.Context, req *requests.CreateDepositAddressRequest) (*responses.CreateDepositAddressResponse, error) {
 	params := map[string]string{"coin": req.Coin, "network": req.Network}
 
-	res := responses.GetDepositAddressResponse{}
-	if err := o.client.Do(ctx, http.MethodPost, depositAddressEndpoint, true, &res, params); err != nil {
+	res := &responses.CreateDepositAddressResponse{}
+	if err := o.client.Do(ctx, http.MethodPost, depositAddressEndpoint, true, res, params); err != nil {
 		return nil, err
 	}
 	return res, nil
@@ -87,7 +87,7 @@ func (o *WalletClient) Withdraw(ctx context.Context, req *requests.WithdrawReque
 		"coin":    req.Coin,
 		"address": req.Address,
 		"amount":  req.Amount,
-		"network": req.Network,
+		"netWork": req.Network,
 	}
 	if req.Memo != "" {
 		params["memo"] = req.Memo

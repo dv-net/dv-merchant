@@ -183,12 +183,19 @@ func (o *Service) GetDepositAddresses(ctx context.Context, currency, chain strin
 	}
 
 	if len(exchangeAddresses) == 0 {
-		exchangeAddresses, err = o.exClient.Wallet().CreateDepositAddress(ctx, &mexcrequests.CreateDepositAddressRequest{
+		if _, err = o.exClient.Wallet().CreateDepositAddress(ctx, &mexcrequests.CreateDepositAddressRequest{
+			Coin:    currency,
+			Network: network,
+		}); err != nil && !errors.Is(err, mexc.ErrDepositAddressExists) {
+			return nil, fmt.Errorf("create deposit address for %s: %w", currency, err)
+		}
+
+		exchangeAddresses, err = o.exClient.Wallet().GetDepositAddress(ctx, &mexcrequests.GetDepositAddressRequest{
 			Coin:    currency,
 			Network: network,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("create deposit address for %s: %w", currency, err)
+			return nil, fmt.Errorf("get created deposit address for %s: %w", currency, err)
 		}
 	}
 

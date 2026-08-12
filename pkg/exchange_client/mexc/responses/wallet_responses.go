@@ -40,6 +40,8 @@ type DepositAddress struct {
 
 type GetDepositAddressResponse []DepositAddress
 
+type CreateDepositAddressResponse DepositAddress
+
 const (
 	WithdrawalStatusApply         int64 = 1
 	WithdrawalStatusAuditing      int64 = 2
