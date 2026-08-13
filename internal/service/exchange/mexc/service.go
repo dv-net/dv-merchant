@@ -225,10 +225,16 @@ func (o *Service) GetDepositAddresses(ctx context.Context, currency, chain strin
 		return nil, err
 	}
 
-	address, found := lo.Find(addresses, func(item responses.DepositAddress) bool {
-		return item.NetWork == chain
-	})
-	if !found {
+	matched := filterByNetwork(addresses, chain)
+	if len(matched) == 0 {
+		addresses, err = o.coinDepositAddresses(ctx, currency, true)
+		if err != nil {
+			return nil, err
+		}
+		matched = filterByNetwork(addresses, chain)
+	}
+
+	if len(matched) == 0 {
 		network, err := o.resolveNetworkName(ctx, currency, chain)
 		if err != nil {
 			return nil, err
@@ -246,10 +252,8 @@ func (o *Service) GetDepositAddresses(ctx context.Context, currency, chain strin
 			return nil, err
 		}
 
-		address, found = lo.Find(addresses, func(item responses.DepositAddress) bool {
-			return item.NetWork == chain
-		})
-		if !found {
+		matched = filterByNetwork(addresses, chain)
+		if len(matched) == 0 {
 			return nil, nil
 		}
 	}
@@ -266,14 +270,26 @@ func (o *Service) GetDepositAddresses(ctx context.Context, currency, chain strin
 		return nil, fmt.Errorf("get internal currency id for %s: %w", chain, err)
 	}
 
-	return []*models.DepositAddressDTO{{
-		Address:          address.Address,
-		Currency:         currencyID,
-		Chain:            chain,
-		InternalCurrency: address.Coin,
-		AddressType:      models.DepositAddress,
-		PaymentTag:       address.Memo,
-	}}, nil
+	return lo.Map(matched, func(item responses.DepositAddress, _ int) *models.DepositAddressDTO {
+		return &models.DepositAddressDTO{
+			Address:          item.Address,
+			Currency:         currencyID,
+			Chain:            chain,
+			InternalCurrency: item.Coin,
+			AddressType:      models.DepositAddress,
+			PaymentTag:       item.Memo,
+		}
+	}), nil
+}
+
+func filterByNetwork(addresses responses.GetDepositAddressResponse, chain string) []responses.DepositAddress {
+	matched := lo.Filter(addresses, func(item responses.DepositAddress, _ int) bool {
+		return item.NetWork == chain
+	})
+
+	return lo.UniqBy(matched, func(item responses.DepositAddress) string {
+		return fmt.Sprintf("%s:%s", item.Address, item.Memo)
+	})
 }
 
 func (o *Service) resolveNetworkName(ctx context.Context, currency, chain string) (string, error) {
