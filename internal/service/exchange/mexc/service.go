@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -29,12 +31,61 @@ import (
 	"github.com/dv-net/dv-merchant/pkg/logger"
 )
 
+const coinCacheTTL = time.Minute
+
+type cachedAddresses struct {
+	value responses.GetDepositAddressResponse
+	at    time.Time
+}
+
 type Service struct {
-	exClient *mexc.BaseClient
-	storage  storage.IStorage
-	convSvc  currconv.ICurrencyConvertor
-	l        logger.Logger
-	connHash string
+	exClient  *mexc.BaseClient
+	storage   storage.IStorage
+	convSvc   currconv.ICurrencyConvertor
+	l         logger.Logger
+	connHash  string
+	cacheMu   sync.Mutex
+	coins     responses.GetCoinsConfigResponse
+	coinsAt   time.Time
+	addresses map[string]cachedAddresses
+}
+
+func (o *Service) coinDepositAddresses(ctx context.Context, coin string, refresh bool) (responses.GetDepositAddressResponse, error) {
+	o.cacheMu.Lock()
+	defer o.cacheMu.Unlock()
+
+	if cached, ok := o.addresses[coin]; ok && !refresh && time.Since(cached.at) < coinCacheTTL {
+		return cached.value, nil
+	}
+
+	addresses, err := o.exClient.Wallet().GetDepositAddress(ctx, &mexcrequests.GetDepositAddressRequest{Coin: coin})
+	if err != nil {
+		return nil, fmt.Errorf("get deposit addresses for %s: %w", coin, err)
+	}
+
+	if o.addresses == nil {
+		o.addresses = make(map[string]cachedAddresses)
+	}
+	o.addresses[coin] = cachedAddresses{value: addresses, at: time.Now()}
+
+	return addresses, nil
+}
+
+func (o *Service) coinsConfig(ctx context.Context) (responses.GetCoinsConfigResponse, error) {
+	o.cacheMu.Lock()
+	defer o.cacheMu.Unlock()
+
+	if o.coins != nil && time.Since(o.coinsAt) < coinCacheTTL {
+		return o.coins, nil
+	}
+
+	coins, err := o.exClient.Wallet().GetCoinsConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get coins config: %w", err)
+	}
+	o.coins, o.coinsAt = coins, time.Now()
+
+	return coins, nil
 }
 
 func NewService(logger logger.Logger, apiKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
@@ -169,20 +220,20 @@ func isTradable(symbol responses.SymbolInfo) bool {
 }
 
 func (o *Service) GetDepositAddresses(ctx context.Context, currency, chain string) ([]*models.DepositAddressDTO, error) {
-	network, err := o.resolveNetworkName(ctx, currency, chain)
+	addresses, err := o.coinDepositAddresses(ctx, currency, false)
 	if err != nil {
 		return nil, err
 	}
 
-	exchangeAddresses, err := o.exClient.Wallet().GetDepositAddress(ctx, &mexcrequests.GetDepositAddressRequest{
-		Coin:    currency,
-		Network: network,
+	address, found := lo.Find(addresses, func(item responses.DepositAddress) bool {
+		return item.NetWork == chain
 	})
-	if err != nil {
-		return nil, fmt.Errorf("get deposit address for %s: %w", currency, err)
-	}
+	if !found {
+		network, err := o.resolveNetworkName(ctx, currency, chain)
+		if err != nil {
+			return nil, err
+		}
 
-	if len(exchangeAddresses) == 0 {
 		if _, err = o.exClient.Wallet().CreateDepositAddress(ctx, &mexcrequests.CreateDepositAddressRequest{
 			Coin:    currency,
 			Network: network,
@@ -190,12 +241,16 @@ func (o *Service) GetDepositAddresses(ctx context.Context, currency, chain strin
 			return nil, fmt.Errorf("create deposit address for %s: %w", currency, err)
 		}
 
-		exchangeAddresses, err = o.exClient.Wallet().GetDepositAddress(ctx, &mexcrequests.GetDepositAddressRequest{
-			Coin:    currency,
-			Network: network,
-		})
+		addresses, err = o.coinDepositAddresses(ctx, currency, true)
 		if err != nil {
-			return nil, fmt.Errorf("get created deposit address for %s: %w", currency, err)
+			return nil, err
+		}
+
+		address, found = lo.Find(addresses, func(item responses.DepositAddress) bool {
+			return item.NetWork == chain
+		})
+		if !found {
+			return nil, nil
 		}
 	}
 
@@ -211,29 +266,20 @@ func (o *Service) GetDepositAddresses(ctx context.Context, currency, chain strin
 		return nil, fmt.Errorf("get internal currency id for %s: %w", chain, err)
 	}
 
-	addresses := make([]*models.DepositAddressDTO, 0, len(exchangeAddresses))
-	for _, address := range exchangeAddresses {
-		if address.Network != network || address.Coin != currency {
-			continue
-		}
-
-		addresses = append(addresses, &models.DepositAddressDTO{
-			Address:          address.Address,
-			Currency:         currencyID,
-			Chain:            chain,
-			InternalCurrency: address.Coin,
-			AddressType:      models.DepositAddress,
-			PaymentTag:       address.Memo,
-		})
-	}
-
-	return addresses, nil
+	return []*models.DepositAddressDTO{{
+		Address:          address.Address,
+		Currency:         currencyID,
+		Chain:            chain,
+		InternalCurrency: address.Coin,
+		AddressType:      models.DepositAddress,
+		PaymentTag:       address.Memo,
+	}}, nil
 }
 
 func (o *Service) resolveNetworkName(ctx context.Context, currency, chain string) (string, error) {
-	coins, err := o.exClient.Wallet().GetCoinsConfig(ctx)
+	coins, err := o.coinsConfig(ctx)
 	if err != nil {
-		return "", fmt.Errorf("get coins config: %w", err)
+		return "", err
 	}
 
 	for _, coin := range coins {
@@ -514,9 +560,9 @@ func (o *Service) GetWithdrawalRules(ctx context.Context, currencies ...string) 
 		return lo.Contains(currencies, item.ID.String)
 	})
 
-	coins, err := o.exClient.Wallet().GetCoinsConfig(ctx)
+	coins, err := o.coinsConfig(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get coins config: %w", err)
+		return nil, err
 	}
 
 	rules := make([]*models.WithdrawalRulesDTO, 0, len(currEnabled))

@@ -34,6 +34,7 @@ type GetCoinsConfigResponse []CoinConfig
 type DepositAddress struct {
 	Coin    string `json:"coin"`
 	Network string `json:"network"`
+	NetWork string `json:"netWork"`
 	Address string `json:"address"`
 	Memo    string `json:"memo"`
 }
