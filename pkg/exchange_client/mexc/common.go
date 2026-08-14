@@ -53,11 +53,13 @@ func sentinelByCode(code int) error {
 		return exchangeclient.ErrIncorrectAPIPermissions
 	case 429, 403:
 		return exchangeclient.ErrRateLimited
-	case 10101, 30005:
+	case 10101, 30004, 30005:
 		return exchangeclient.ErrInsufficientBalance
 	case 30002:
 		return exchangeclient.ErrMinOrderValue
-	case 30000, 30016, 30018, 30019:
+	case 30029:
+		return exchangeclient.ErrSkipOrder
+	case 30000, 30016, 30018, 30019, 30041:
 		return exchangeclient.ErrSymbolTradingHalted
 	case 10212:
 		return exchangeclient.ErrWithdrawalAddressNotWhitelisted
