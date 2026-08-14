@@ -363,6 +363,9 @@ func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side 
 
 	info, err := o.exClient.Market().GetExchangeInfo(ctx, ticker)
 	if err != nil {
+		if errors.Is(err, exchangeclient.ErrRateLimited) {
+			return nil, exchangeclient.ErrSkipOrder
+		}
 		return nil, fmt.Errorf("get exchange info for %s: %w", ticker, err)
 	}
 	if len(info.Symbols) == 0 {
@@ -383,6 +386,9 @@ func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side 
 	case mexc.OrderSideSell:
 		balance, err := o.GetCurrencyBalance(ctx, rule.BaseCurrency)
 		if err != nil {
+			if errors.Is(err, exchangeclient.ErrRateLimited) {
+				return nil, exchangeclient.ErrSkipOrder
+			}
 			return nil, fmt.Errorf("get base currency balance %s: %w", rule.BaseCurrency, err)
 		}
 		minOrderAmount, err := decimal.NewFromString(rule.MinOrderAmount)
@@ -400,6 +406,9 @@ func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side 
 		}
 		ticker, err := o.exClient.Market().GetTickerPrice(ctx, req.Symbol)
 		if err != nil {
+			if errors.Is(err, exchangeclient.ErrRateLimited) {
+				return nil, exchangeclient.ErrSkipOrder
+			}
 			return nil, fmt.Errorf("get ticker price for %s: %w", req.Symbol, err)
 		}
 		if !ticker.Price.IsPositive() {
@@ -413,6 +422,9 @@ func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side 
 	case mexc.OrderSideBuy:
 		balance, err := o.GetCurrencyBalance(ctx, rule.QuoteCurrency)
 		if err != nil {
+			if errors.Is(err, exchangeclient.ErrRateLimited) {
+				return nil, exchangeclient.ErrSkipOrder
+			}
 			return nil, fmt.Errorf("get quote currency balance %s: %w", rule.QuoteCurrency, err)
 		}
 		minOrderValue, err := decimal.NewFromString(rule.MinOrderValue)
@@ -467,6 +479,9 @@ func isSideAllowed(symbol responses.SymbolInfo, side string) bool {
 func (o *Service) GetOrderRule(ctx context.Context, ticker string) (*models.OrderRulesDTO, error) {
 	info, err := o.exClient.Market().GetExchangeInfo(ctx, ticker)
 	if err != nil {
+		if errors.Is(err, exchangeclient.ErrRateLimited) {
+			return nil, exchangeclient.ErrSkipOrder
+		}
 		return nil, fmt.Errorf("get order rule for %s: %w", ticker, err)
 	}
 	if len(info.Symbols) == 0 {

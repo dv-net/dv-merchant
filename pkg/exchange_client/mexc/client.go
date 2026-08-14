@@ -3,7 +3,6 @@ package mexc
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -170,8 +169,20 @@ func (o *Client) DoPlain(ctx context.Context, method, endpoint string, private b
 
 	if res.StatusCode >= 400 {
 		errRes := ErrorResponse{}
-		if err = json.Unmarshal(bb.Bytes(), &errRes); err != nil {
-			return fmt.Errorf("mexc error: status %d, body: %s", res.StatusCode, bb.String())
+		if err = json.Unmarshal(bb.Bytes(), &errRes); err != nil || errRes.Code == 0 {
+			statusErr := errorFromStatus(res.StatusCode, bb.String())
+			if o.log != nil {
+				o.log.Errorln(
+					"[EXCHANGE-API]: API error response",
+					"exchange", "mexc",
+					"method", method,
+					"endpoint", endpoint,
+					"status_code", res.StatusCode,
+					"error", statusErr.Error(),
+					"duration_ms", duration.Milliseconds(),
+				)
+			}
+			return statusErr
 		}
 		if o.log != nil {
 			o.log.Errorln(
