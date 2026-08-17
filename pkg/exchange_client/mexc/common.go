@@ -55,6 +55,8 @@ func sentinelByCode(code int) error {
 		return exchangeclient.ErrRateLimited
 	case 10101, 30004, 30005:
 		return exchangeclient.ErrInsufficientBalance
+	case 16021:
+		return exchangeclient.ErrWithdrawalBalanceLocked
 	case 30002:
 		return exchangeclient.ErrMinOrderValue
 	case 30029:

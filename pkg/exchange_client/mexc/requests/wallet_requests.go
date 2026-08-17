@@ -11,11 +11,12 @@ type CreateDepositAddressRequest struct {
 }
 
 type WithdrawRequest struct {
-	Coin    string
-	Address string
-	Amount  string
-	Network string
-	Memo    string
+	Coin            string
+	Address         string
+	Amount          string
+	Network         string
+	ContractAddress string
+	Memo            string
 }
 
 type GetWithdrawHistoryRequest struct {

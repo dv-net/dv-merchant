@@ -292,10 +292,10 @@ func filterByNetwork(addresses responses.GetDepositAddressResponse, chain string
 	})
 }
 
-func (o *Service) resolveNetworkName(ctx context.Context, currency, chain string) (string, error) {
+func (o *Service) resolveNetwork(ctx context.Context, currency, chain string) (*responses.CoinNetwork, error) {
 	coins, err := o.coinsConfig(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	for _, coin := range coins {
@@ -304,12 +304,20 @@ func (o *Service) resolveNetworkName(ctx context.Context, currency, chain string
 		}
 		for _, network := range coin.NetworkList {
 			if network.NetWork == chain {
-				return network.Network, nil
+				return &network, nil
 			}
 		}
 	}
 
-	return "", fmt.Errorf("network %s is not supported for %s on mexc", chain, currency)
+	return nil, fmt.Errorf("network %s is not supported for %s on mexc", chain, currency)
+}
+
+func (o *Service) resolveNetworkName(ctx context.Context, currency, chain string) (string, error) {
+	network, err := o.resolveNetwork(ctx, currency, chain)
+	if err != nil {
+		return "", err
+	}
+	return network.Network, nil
 }
 
 func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.CreateWithdrawalOrderParams) (*models.ExchangeWithdrawalDTO, error) {
@@ -327,6 +335,11 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		return nil, exchangeclient.ErrMinWithdrawalBalance
 	}
 
+	network, err := o.resolveNetwork(ctx, internalCurrency, args.Chain)
+	if err != nil {
+		return nil, err
+	}
+
 	o.l.Infow(
 		"withdrawal request assembled",
 		"exchange", models.ExchangeSlugMexc.String(),
@@ -335,14 +348,16 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		"fee", args.Fee.String(),
 		"currency", internalCurrency,
 		"chain", args.Chain,
+		"contract", network.Contract,
 		"address", args.Address,
 	)
 
 	order, err := o.exClient.Wallet().Withdraw(ctx, &mexcrequests.WithdrawRequest{
-		Coin:    internalCurrency,
-		Network: args.Chain,
-		Address: args.Address,
-		Amount:  args.NativeAmount.String(),
+		Coin:            internalCurrency,
+		Network:         args.Chain,
+		ContractAddress: network.Contract,
+		Address:         args.Address,
+		Amount:          args.NativeAmount.String(),
 	})
 	if err != nil {
 		return nil, err

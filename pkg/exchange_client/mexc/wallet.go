@@ -89,6 +89,9 @@ func (o *WalletClient) Withdraw(ctx context.Context, req *requests.WithdrawReque
 		"amount":  req.Amount,
 		"netWork": req.Network,
 	}
+	if req.ContractAddress != "" {
+		params["contractAddress"] = req.ContractAddress
+	}
 	if req.Memo != "" {
 		params["memo"] = req.Memo
 	}
