@@ -976,6 +976,7 @@ func (h *Handler) generateStoreSecret(c fiber.Ctx) error {
 //	@Success		200	{object}	response.Result[any]
 //	@Failure		400	{object}	apierror.Errors
 //	@Failure		401	{object}	apierror.Errors
+//	@Failure		403	{object}	apierror.Errors
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/store/{id}/resend-verify [post]
 //	@Security		BearerAuth
@@ -983,6 +984,12 @@ func (h *Handler) resendVerifyStore(c fiber.Ctx) error {
 	st, _, err := h.validateAndLoadStoreWithUser(c)
 	if err != nil {
 		return err
+	}
+
+	if st.VerificationStatus == constants.StoreVerificationStatusRejected {
+		return apierror.New().
+			AddError(errors.New("store verification is rejected and cannot be resubmitted")).
+			SetHttpCode(fiber.StatusForbidden)
 	}
 
 	if st.VerificationStatus == constants.StoreVerificationStatusPending {
