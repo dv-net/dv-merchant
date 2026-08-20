@@ -95,6 +95,12 @@ func New(
 		cfChan:  make(chan CurrencyFilter),
 	}
 
+	f = NewBingxFetcher("https://open-api.bingx.com/openApi/spot/v1/ticker/24hr", proxies, httpClient, logger)
+	srv.fetchers[f.Source()] = fetcherData{
+		fetcher: f,
+		cfChan:  make(chan CurrencyFilter),
+	}
+
 	return srv, nil
 }
 

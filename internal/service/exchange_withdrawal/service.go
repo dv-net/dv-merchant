@@ -28,6 +28,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/util"
 	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
 	binancemodels "github.com/dv-net/dv-merchant/pkg/exchange_client/binance/models"
+	bingxresponses "github.com/dv-net/dv-merchant/pkg/exchange_client/bingx/responses"
 	bitgetmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/bitget/models"
 	bybitmodels "github.com/dv-net/dv-merchant/pkg/exchange_client/bybit/models"
 	gateio "github.com/dv-net/dv-merchant/pkg/exchange_client/gate"
@@ -757,9 +758,36 @@ func (s *Service) handleWithdrawal(ctx context.Context, slug models.ExchangeSlug
 		return s.handleGateioWithdrawal(ctx, transferRecord, order, tx)
 	case models.ExchangeSlugBybit:
 		return s.handleBybitWithdrawal(ctx, transferRecord, order, tx)
+	case models.ExchangeSlugBingx:
+		return s.handleBingxWithdrawal(ctx, transferRecord, order, tx)
 	default:
 		return fmt.Errorf("exchange %s not supported", slug.String())
 	}
+}
+
+func (s *Service) handleBingxWithdrawal(ctx context.Context, record *models.WithdrawalStatusDTO, order *models.ExchangeWithdrawalHistory, tx pgx.Tx) error {
+	updateParams := repo_exchange_withdrawal_history.UpdateParams{
+		ID: order.ID,
+	}
+
+	bingxStatus := func(status int64) string { return strconv.FormatInt(status, 10) }
+
+	switch record.Status {
+	case bingxStatus(bingxresponses.WithdrawalStatusApply),
+		bingxStatus(bingxresponses.WithdrawalStatusAuditing),
+		bingxStatus(bingxresponses.WithdrawalStatusProcessing):
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusInProgress.String()}
+	case bingxStatus(bingxresponses.WithdrawalStatusRejected),
+		bingxStatus(bingxresponses.WithdrawalStatusFailed):
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusFailed.String()}
+	case bingxStatus(bingxresponses.WithdrawalStatusCompleted):
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusCompleted.String()}
+		updateParams.Txid = pgtype.Text{Valid: true, String: record.TxHash}
+	default:
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusRecovery.String()}
+	}
+
+	return s.updateExchangeWithdrawal(ctx, order.UserID, updateParams, tx)
 }
 
 func (s *Service) handleGateioWithdrawal(ctx context.Context, record *models.WithdrawalStatusDTO, order *models.ExchangeWithdrawalHistory, tx pgx.Tx) error {
