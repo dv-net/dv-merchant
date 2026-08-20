@@ -6,5 +6,6 @@ values
     ('06fe1230-4689-4d33-909b-a9c15af64838', 'bitget', 'BITGET', 'https://api.bitget.com', now(), now(), true),
     ('2e07b084-ff69-4c09-bc9d-e93578260f67', 'kucoin', 'KUCOIN', 'https://api.kucoin.com', now(), now(), true),
     ('b868db0c-4d51-4842-ab6b-677f62c454fb', 'bybit', 'BYBIT', 'https://api.bybit.com', now(), now(), true),
-    ('2495d8a2-435d-4031-8930-10e82aad9c64', 'gate', 'GATE', 'https://api.gateio.ws', now(), now(), true)
+    ('2495d8a2-435d-4031-8930-10e82aad9c64', 'gate', 'GATE', 'https://api.gateio.ws', now(), now(), true),
+    ('2d22f266-c927-4833-bd6c-c38a965dde0f', 'mexc', 'MEXC', 'https://api.mexc.com', now(), now(), true)
 ON CONFLICT DO NOTHING;

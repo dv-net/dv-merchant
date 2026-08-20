@@ -18,6 +18,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/exchange/gateio"
 	"github.com/dv-net/dv-merchant/internal/service/exchange/htx"
 	"github.com/dv-net/dv-merchant/internal/service/exchange/kucoin"
+	"github.com/dv-net/dv-merchant/internal/service/exchange/mexc"
 	"github.com/dv-net/dv-merchant/internal/service/exchange/okx"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchange_user_keys"
@@ -82,6 +83,8 @@ func (o *Manager) CreateDriver(ctx context.Context, slug models.ExchangeSlug, ap
 		return o.createBybitServiceRaw(ctx, apiKey, secretKey)
 	case models.ExchangeSlugGateio:
 		return o.createGateioServiceRaw(ctx, apiKey, secretKey)
+	case models.ExchangeSlugMexc:
+		return o.createMexcServiceRaw(ctx, apiKey, secretKey)
 	}
 	return nil, fmt.Errorf("slug %s does not exists", slug.String())
 }
@@ -102,6 +105,8 @@ func (o *Manager) GetPublicDriver(ctx context.Context, slug models.ExchangeSlug)
 		return o.createPublicBybitService(ctx)
 	case models.ExchangeSlugGateio:
 		return o.createPublicGateioService(ctx)
+	case models.ExchangeSlugMexc:
+		return nil, fmt.Errorf("mexc public client is not supported")
 	default:
 		return nil, fmt.Errorf("slug %s does not exists", slug.String())
 	}
@@ -132,6 +137,8 @@ func (o *Manager) GetDefaultDriver(ctx context.Context, userID uuid.UUID) (IExch
 		return o.createGateService(ctx, userID)
 	case models.ExchangeSlugBybit:
 		return o.createBybitService(ctx, userID)
+	case models.ExchangeSlugMexc:
+		return o.createMexcService(ctx, userID)
 	default:
 		return nil, fmt.Errorf("user is missing current driver")
 	}
@@ -156,6 +163,8 @@ func (o *Manager) GetDriver(ctx context.Context, slug models.ExchangeSlug, userI
 		return o.createGateService(ctx, userID)
 	case models.ExchangeSlugBybit:
 		return o.createBybitService(ctx, userID)
+	case models.ExchangeSlugMexc:
+		return o.createMexcService(ctx, userID)
 	default:
 		return nil, fmt.Errorf("slug %s does not exists", slug.String())
 	}
@@ -547,4 +556,52 @@ func (o *Manager) createPublicGateioService(ctx context.Context) (IExchangeClien
 	}
 
 	return gateio.NewService(o.l, "-", "-", baseURL, o.storage, o.store, o.currConvService)
+}
+
+func (o *Manager) createMexcServiceRaw(ctx context.Context, apiKey, secretKey string) (IExchangeClient, error) {
+	baseURL, err := o.exchangeBaseURL(ctx, models.ExchangeSlugMexc)
+	if err != nil {
+		return nil, err
+	}
+
+	return mexc.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+}
+
+func (o *Manager) createMexcService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) {
+	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
+		UserID:       userID,
+		ExchangeSlug: models.ExchangeSlugMexc,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	keyMap := make(map[string]string)
+	for _, key := range keys {
+		keyMap[string(key.Name)] = key.Value
+	}
+
+	baseURL, err := o.exchangeBaseURL(ctx, models.ExchangeSlugMexc)
+	if err != nil {
+		return nil, err
+	}
+
+	return mexc.NewService(
+		o.l,
+		keyMap[models.ExchangeKeyNameAPIKey.String()],
+		keyMap[models.ExchangeKeyNameSecretKey.String()],
+		baseURL,
+		o.storage,
+		o.store,
+		o.currConvService,
+	)
+}
+
+func (o *Manager) exchangeBaseURL(ctx context.Context, slug models.ExchangeSlug) (*url.URL, error) {
+	ex, err := o.storage.Exchanges().GetExchangeBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+
+	return url.Parse(ex.Url)
 }
