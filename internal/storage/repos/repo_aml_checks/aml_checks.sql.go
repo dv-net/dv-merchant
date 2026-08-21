@@ -10,6 +10,7 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -35,6 +36,30 @@ func (q *Queries) GetByTransactionID(ctx context.Context, transactionID uuid.Nul
 		&i.UpdatedAt,
 		&i.TransactionID,
 	)
+	return &i, err
+}
+
+const getStatistics = `-- name: GetStatistics :one
+SELECT
+    COUNT(*) FILTER (WHERE status IN ('success', 'failed')) AS checked_today,
+    COUNT(*) FILTER (WHERE status = 'success') AS successful_today,
+    COUNT(*) FILTER (WHERE status = 'failed') AS failed_today
+FROM aml_checks
+WHERE user_id = $1
+  AND created_at >= $2::timestamp
+  AND created_at < $3::timestamp
+`
+
+type GetStatisticsRow struct {
+	CheckedToday    int64 `db:"checked_today" json:"checked_today"`
+	SuccessfulToday int64 `db:"successful_today" json:"successful_today"`
+	FailedToday     int64 `db:"failed_today" json:"failed_today"`
+}
+
+func (q *Queries) GetStatistics(ctx context.Context, userID uuid.UUID, dateFrom pgtype.Timestamp, dateTo pgtype.Timestamp) (*GetStatisticsRow, error) {
+	row := q.db.QueryRow(ctx, getStatistics, userID, dateFrom, dateTo)
+	var i GetStatisticsRow
+	err := row.Scan(&i.CheckedToday, &i.SuccessfulToday, &i.FailedToday)
 	return &i, err
 }
 

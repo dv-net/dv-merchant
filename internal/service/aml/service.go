@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/config"
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/aml_responses"
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/storage"
@@ -46,6 +47,7 @@ type IService interface {
 	ScoreTransaction(ctx context.Context, usr *models.User, dto CheckDTO) (*models.AmlCheck, error)
 	AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, []aml.SignalContribution, error)
 	GetCheckHistory(ctx context.Context, usr *models.User, dto ChecksWithHistoryDTO) (*storecmn.FindResponseWithFullPagination[*repo_aml_checks.FindRow], error)
+	GetStatistics(ctx context.Context, userID uuid.UUID) (*aml_responses.StatisticsResponse, error)
 	GetAllActiveProviders() []models.AMLProvider
 	GetSupportedCurrencies(ctx context.Context, slug models.AMLSlug) ([]*models.CurrencyShort, error)
 	GetSignalsCategorise(ctx context.Context, slug models.AMLSlug) ([]aml.SignalCategory, error)

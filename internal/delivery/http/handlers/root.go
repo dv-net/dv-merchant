@@ -65,7 +65,6 @@ func (h *Handler) getUsers(c fiber.Ctx) error {
 //	@Produce		json
 //	@Success		200	{object}	response.Result[admin_response.DashboardStatisticsResponse]
 //	@Failure		400	{object}	apierror.Errors
-//	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/root/statistics [get]
 //	@Security		BearerAuth
 func (h *Handler) getDashboardStatistics(c fiber.Ctx) error {

@@ -233,6 +233,30 @@ func (h *Handler) amlHistory(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(converters.GetAMLCheckHistoryResponse(result)))
 }
 
+// getAMLStatistics returns today's AML check statistics for the current user.
+//
+//	@Summary		Get AML check statistics
+//	@Description	Get today's completed, successful, and failed AML check counts
+//	@Tags			AML
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	response.Result[aml_responses.StatisticsResponse]
+//	@Failure		400	{object}	apierror.Errors
+//	@Router			/v1/dv-admin/aml/statistics [get]
+func (h *Handler) getAMLStatistics(c fiber.Ctx) error {
+	usr, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	statistics, err := h.services.AMLService.GetStatistics(c.Context(), usr.ID)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(statistics))
+}
+
 // getAMLSignalingCategories returns the list of risk signal categories supported by an AML-provider.
 //
 //	@Summary		Get AML-provider signal categories
@@ -426,6 +450,7 @@ func (h *Handler) initAMLRoutes(v1 fiber.Router) {
 	amlRoutes.Get("/:aml_provider_slug/currencies", h.getAMLCurrencies)
 	amlRoutes.Get("/:aml_provider_slug/signals", h.getAMLSignalingCategories)
 	amlRoutes.Get("/history", h.amlHistory)
+	amlRoutes.Get("/statistics", h.getAMLStatistics)
 	amlRoutes.Post("/score-transaction", h.scoreTransaction)
 
 	amlRoutes.Get("/settings", h.getAmlSettings)
