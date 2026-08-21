@@ -17,3 +17,13 @@ UPDATE aml_checks
 SET external_id = $2,
     updated_at  = now()
 WHERE id = $1;
+
+-- name: GetStatistics :one
+SELECT
+    COUNT(*) FILTER (WHERE status IN ('success', 'failed')) AS checked_today,
+    COUNT(*) FILTER (WHERE status = 'success') AS successful_today,
+    COUNT(*) FILTER (WHERE status = 'failed') AS failed_today
+FROM aml_checks
+WHERE user_id = sqlc.arg(user_id)
+  AND created_at >= sqlc.arg(date_from)::timestamp
+  AND created_at < sqlc.arg(date_to)::timestamp;

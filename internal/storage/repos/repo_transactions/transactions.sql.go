@@ -437,6 +437,38 @@ func (q *Queries) GetAddressBalance(ctx context.Context, arg GetAddressBalancePa
 	return balance, err
 }
 
+const getAdminDashboardStatistics = `-- name: GetAdminDashboardStatistics :one
+SELECT
+    (SELECT COUNT(*) FROM users) AS users_count,
+    (SELECT COUNT(*) FROM stores) AS projects_count,
+    COALESCE((
+        SELECT SUM(tr.amount_usd)
+        FROM transactions tr
+        WHERE tr.type = 'deposit'
+          AND tr.is_system = false
+          AND tr.created_at_index >= $1::bigint
+          AND tr.created_at_index < $2::bigint
+    ), 0)::numeric AS turnover_today_usd
+`
+
+type GetAdminDashboardStatisticsParams struct {
+	DateFromIndex int64 `db:"date_from_index" json:"date_from_index"`
+	DateToIndex   int64 `db:"date_to_index" json:"date_to_index"`
+}
+
+type GetAdminDashboardStatisticsRow struct {
+	UsersCount       int64           `db:"users_count" json:"users_count"`
+	ProjectsCount    int64           `db:"projects_count" json:"projects_count"`
+	TurnoverTodayUsd decimal.Decimal `db:"turnover_today_usd" json:"turnover_today_usd"`
+}
+
+func (q *Queries) GetAdminDashboardStatistics(ctx context.Context, arg GetAdminDashboardStatisticsParams) (*GetAdminDashboardStatisticsRow, error) {
+	row := q.db.QueryRow(ctx, getAdminDashboardStatistics, arg.DateFromIndex, arg.DateToIndex)
+	var i GetAdminDashboardStatisticsRow
+	err := row.Scan(&i.UsersCount, &i.ProjectsCount, &i.TurnoverTodayUsd)
+	return &i, err
+}
+
 const getBalanceNativeToken = `-- name: GetBalanceNativeToken :one
 SELECT (SUM(CASE
                 WHEN type = 'deposit' AND transactions.to_address = $1 THEN amount

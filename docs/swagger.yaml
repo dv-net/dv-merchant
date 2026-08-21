@@ -7,6 +7,15 @@ definitions:
       value:
         type: string
     type: object
+  AMLStatisticsResponse:
+    properties:
+      checked_today:
+        type: integer
+      failed_today:
+        type: integer
+      successful_today:
+        type: integer
+    type: object
   APIError:
     properties:
       field:
@@ -584,6 +593,15 @@ definitions:
       name:
         type: string
       precision:
+        type: integer
+    type: object
+  DashboardStatisticsResponse:
+    properties:
+      projects_count:
+        type: integer
+      turnover_today_usd:
+        type: number
+      users_count:
         type: integer
     type: object
   DeleteTransferRequest:
@@ -1312,6 +1330,15 @@ definitions:
     - role
     - store_ids
     type: object
+  JSONResponse-AMLStatisticsResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/AMLStatisticsResponse'
+      message:
+        type: string
+    type: object
   JSONResponse-AddUserRoleResponse:
     properties:
       code:
@@ -1417,6 +1444,15 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/CurrencyRate'
+      message:
+        type: string
+    type: object
+  JSONResponse-DashboardStatisticsResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/DashboardStatisticsResponse'
       message:
         type: string
     type: object
@@ -4980,6 +5016,25 @@ paths:
       summary: Update AML settings
       tags:
       - AML
+  /v1/dv-admin/aml/statistics:
+    get:
+      consumes:
+      - application/json
+      description: Get today's completed, successful, and failed AML check counts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-AMLStatisticsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get AML check statistics
+      tags:
+      - AML
   /v1/dv-admin/auth/login:
     post:
       consumes:
@@ -6393,6 +6448,28 @@ paths:
       security:
       - BearerAuth: []
       summary: Add user role
+      tags:
+      - Admin
+  /v1/dv-admin/root/statistics:
+    get:
+      consumes:
+      - application/json
+      description: Get total users, total projects, and today's deposit turnover in
+        USD
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-DashboardStatisticsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Get admin dashboard statistics
       tags:
       - Admin
   /v1/dv-admin/root/stores:
