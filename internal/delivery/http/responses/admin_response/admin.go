@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/models"
-	admindto "github.com/dv-net/dv-merchant/internal/service/admin/dto"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -16,11 +15,11 @@ type DashboardStatisticsResponse struct {
 	TurnoverTodayUSD decimal.Decimal `json:"turnover_today_usd"`
 } //	@name	DashboardStatisticsResponse
 
-func NewDashboardStatisticsResponse(dto *admindto.DashboardStatistics) *DashboardStatisticsResponse {
+func NewDashboardStatisticsResponse(usersCount, projectsCount int64, turnoverTodayUSD decimal.Decimal) *DashboardStatisticsResponse {
 	return &DashboardStatisticsResponse{
-		UsersCount:       dto.UsersCount,
-		ProjectsCount:    dto.ProjectsCount,
-		TurnoverTodayUSD: dto.TurnoverTodayUSD,
+		UsersCount:       usersCount,
+		ProjectsCount:    projectsCount,
+		TurnoverTodayUSD: turnoverTodayUSD,
 	}
 }
 

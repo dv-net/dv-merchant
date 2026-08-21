@@ -1,6 +1,6 @@
 package aml_responses
 
-import amldto "github.com/dv-net/dv-merchant/internal/service/aml/dto"
+import "github.com/dv-net/dv-merchant/internal/service/aml"
 
 type StatisticsResponse struct {
 	CheckedToday    int64 `json:"checked_today"`
@@ -8,7 +8,7 @@ type StatisticsResponse struct {
 	FailedToday     int64 `json:"failed_today"`
 } //	@name	AMLStatisticsResponse
 
-func NewStatisticsResponse(dto *amldto.Statistics) *StatisticsResponse {
+func NewStatisticsResponse(dto *aml.StatisticsDTO) *StatisticsResponse {
 	return &StatisticsResponse{
 		CheckedToday:    dto.CheckedToday,
 		SuccessfulToday: dto.SuccessfulToday,

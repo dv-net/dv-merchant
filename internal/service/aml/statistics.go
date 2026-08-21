@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	amldto "github.com/dv-net/dv-merchant/internal/service/aml/dto"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func (s *Service) GetStatistics(ctx context.Context, userID uuid.UUID) (*amldto.Statistics, error) {
+func (s *Service) GetStatistics(ctx context.Context, userID uuid.UUID) (*StatisticsDTO, error) {
 	now := time.Now()
 	dateFrom := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	dateTo := dateFrom.AddDate(0, 0, 1)
@@ -25,7 +24,7 @@ func (s *Service) GetStatistics(ctx context.Context, userID uuid.UUID) (*amldto.
 		return nil, fmt.Errorf("get AML statistics: %w", err)
 	}
 
-	return &amldto.Statistics{
+	return &StatisticsDTO{
 		CheckedToday:    statistics.CheckedToday,
 		SuccessfulToday: statistics.SuccessfulToday,
 		FailedToday:     statistics.FailedToday,

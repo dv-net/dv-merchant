@@ -1,6 +1,6 @@
-package dto
+package aml
 
-type Statistics struct {
+type StatisticsDTO struct {
 	CheckedToday    int64
 	SuccessfulToday int64
 	FailedToday     int64
