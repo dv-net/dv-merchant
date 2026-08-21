@@ -285,6 +285,7 @@ SELECT
         SELECT SUM(tr.amount_usd)
         FROM transactions tr
         WHERE tr.type = 'deposit'
+          AND tr.is_system = false
           AND tr.created_at_index >= sqlc.arg(date_from_index)::bigint
           AND tr.created_at_index < sqlc.arg(date_to_index)::bigint
     ), 0)::numeric AS turnover_today_usd;

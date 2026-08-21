@@ -254,7 +254,7 @@ func (h *Handler) getAMLStatistics(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(http.StatusBadRequest)
 	}
 
-	return c.JSON(response.OkByData(statistics))
+	return c.JSON(response.OkByData(aml_responses.NewStatisticsResponse(statistics)))
 }
 
 // getAMLSignalingCategories returns the list of risk signal categories supported by an AML-provider.

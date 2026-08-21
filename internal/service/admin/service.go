@@ -36,7 +36,7 @@ import (
 )
 
 type IAdmin interface {
-	GetDashboardStatistics(ctx context.Context) (*admin_response.DashboardStatisticsResponse, error)
+	GetDashboardStatistics(ctx context.Context) (*models.AdminDashboardStatisticsDTO, error)
 	GetAllUsersFiltered(ctx context.Context, req admin_request.GetUsersRequest) (*storecmn.FindResponseWithFullPagination[*admin_response.GetUsersResponse], error)
 	BanUserByID(ctx context.Context, userID uuid.UUID) (*admin_response.BanUserResponse, error)
 	UnbanUserByID(ctx context.Context, userID uuid.UUID) (*admin_response.UnbanUserResponse, error)
@@ -72,7 +72,7 @@ func New(
 	}
 }
 
-func (o *Service) GetDashboardStatistics(ctx context.Context) (*admin_response.DashboardStatisticsResponse, error) {
+func (o *Service) GetDashboardStatistics(ctx context.Context) (*models.AdminDashboardStatisticsDTO, error) {
 	now := time.Now()
 	dateFrom := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	dateTo := dateFrom.AddDate(0, 0, 1)
@@ -85,7 +85,7 @@ func (o *Service) GetDashboardStatistics(ctx context.Context) (*admin_response.D
 		return nil, fmt.Errorf("get admin dashboard statistics: %w", err)
 	}
 
-	return &admin_response.DashboardStatisticsResponse{
+	return &models.AdminDashboardStatisticsDTO{
 		UsersCount:       statistics.UsersCount,
 		ProjectsCount:    statistics.ProjectsCount,
 		TurnoverTodayUSD: statistics.TurnoverTodayUsd,

@@ -15,6 +15,14 @@ type DashboardStatisticsResponse struct {
 	TurnoverTodayUSD decimal.Decimal `json:"turnover_today_usd"`
 } //	@name	DashboardStatisticsResponse
 
+func NewDashboardStatisticsResponse(dto *models.AdminDashboardStatisticsDTO) *DashboardStatisticsResponse {
+	return &DashboardStatisticsResponse{
+		UsersCount:       dto.UsersCount,
+		ProjectsCount:    dto.ProjectsCount,
+		TurnoverTodayUSD: dto.TurnoverTodayUSD,
+	}
+}
+
 type AddUserRoleResponse struct {
 	UserID    uuid.UUID         `json:"user_id" validate:"required" format:"uuid"`
 	UserRoles []models.UserRole `json:"user_roles" validate:"required" enums:"root,user"`

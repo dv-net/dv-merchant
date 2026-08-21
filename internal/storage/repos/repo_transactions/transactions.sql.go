@@ -445,6 +445,7 @@ SELECT
         SELECT SUM(tr.amount_usd)
         FROM transactions tr
         WHERE tr.type = 'deposit'
+          AND tr.is_system = false
           AND tr.created_at_index >= $1::bigint
           AND tr.created_at_index < $2::bigint
     ), 0)::numeric AS turnover_today_usd

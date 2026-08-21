@@ -78,7 +78,7 @@ func (h *Handler) getDashboardStatistics(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	return c.JSON(response.OkByData(statistics))
+	return c.JSON(response.OkByData(admin_response.NewDashboardStatisticsResponse(statistics)))
 }
 
 // banUser is a function to ban user

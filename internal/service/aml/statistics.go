@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/aml_responses"
+	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func (s *Service) GetStatistics(ctx context.Context, userID uuid.UUID) (*aml_responses.StatisticsResponse, error) {
+func (s *Service) GetStatistics(ctx context.Context, userID uuid.UUID) (*models.AMLStatisticsDTO, error) {
 	now := time.Now()
 	dateFrom := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	dateTo := dateFrom.AddDate(0, 0, 1)
@@ -25,7 +25,7 @@ func (s *Service) GetStatistics(ctx context.Context, userID uuid.UUID) (*aml_res
 		return nil, fmt.Errorf("get AML statistics: %w", err)
 	}
 
-	return &aml_responses.StatisticsResponse{
+	return &models.AMLStatisticsDTO{
 		CheckedToday:    statistics.CheckedToday,
 		SuccessfulToday: statistics.SuccessfulToday,
 		FailedToday:     statistics.FailedToday,
