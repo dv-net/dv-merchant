@@ -18,6 +18,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/admin_request"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/admin_response"
 	"github.com/dv-net/dv-merchant/internal/models"
+	admindto "github.com/dv-net/dv-merchant/internal/service/admin/dto"
 	"github.com/dv-net/dv-merchant/internal/service/permission"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
@@ -36,7 +37,7 @@ import (
 )
 
 type IAdmin interface {
-	GetDashboardStatistics(ctx context.Context) (*models.AdminDashboardStatisticsDTO, error)
+	GetDashboardStatistics(ctx context.Context) (*admindto.DashboardStatistics, error)
 	GetAllUsersFiltered(ctx context.Context, req admin_request.GetUsersRequest) (*storecmn.FindResponseWithFullPagination[*admin_response.GetUsersResponse], error)
 	BanUserByID(ctx context.Context, userID uuid.UUID) (*admin_response.BanUserResponse, error)
 	UnbanUserByID(ctx context.Context, userID uuid.UUID) (*admin_response.UnbanUserResponse, error)
@@ -72,7 +73,7 @@ func New(
 	}
 }
 
-func (o *Service) GetDashboardStatistics(ctx context.Context) (*models.AdminDashboardStatisticsDTO, error) {
+func (o *Service) GetDashboardStatistics(ctx context.Context) (*admindto.DashboardStatistics, error) {
 	now := time.Now()
 	dateFrom := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	dateTo := dateFrom.AddDate(0, 0, 1)
@@ -85,7 +86,7 @@ func (o *Service) GetDashboardStatistics(ctx context.Context) (*models.AdminDash
 		return nil, fmt.Errorf("get admin dashboard statistics: %w", err)
 	}
 
-	return &models.AdminDashboardStatisticsDTO{
+	return &admindto.DashboardStatistics{
 		UsersCount:       statistics.UsersCount,
 		ProjectsCount:    statistics.ProjectsCount,
 		TurnoverTodayUSD: statistics.TurnoverTodayUsd,
