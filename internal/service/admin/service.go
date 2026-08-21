@@ -21,6 +21,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/permission"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transactions"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_users"
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	"github.com/dv-net/dv-merchant/internal/tools"
@@ -35,6 +36,7 @@ import (
 )
 
 type IAdmin interface {
+	GetDashboardStatistics(ctx context.Context) (*admin_response.DashboardStatisticsResponse, error)
 	GetAllUsersFiltered(ctx context.Context, req admin_request.GetUsersRequest) (*storecmn.FindResponseWithFullPagination[*admin_response.GetUsersResponse], error)
 	BanUserByID(ctx context.Context, userID uuid.UUID) (*admin_response.BanUserResponse, error)
 	UnbanUserByID(ctx context.Context, userID uuid.UUID) (*admin_response.UnbanUserResponse, error)
@@ -68,6 +70,26 @@ func New(
 		userService:       userService,
 		notificationSvc:   notificationSvc,
 	}
+}
+
+func (o *Service) GetDashboardStatistics(ctx context.Context) (*admin_response.DashboardStatisticsResponse, error) {
+	now := time.Now()
+	dateFrom := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	dateTo := dateFrom.AddDate(0, 0, 1)
+
+	statistics, err := o.storage.Transactions().GetAdminDashboardStatistics(ctx, repo_transactions.GetAdminDashboardStatisticsParams{
+		DateFromIndex: dateFrom.UTC().UnixMilli(),
+		DateToIndex:   dateTo.UTC().UnixMilli(),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get admin dashboard statistics: %w", err)
+	}
+
+	return &admin_response.DashboardStatisticsResponse{
+		UsersCount:       statistics.UsersCount,
+		ProjectsCount:    statistics.ProjectsCount,
+		TurnoverTodayUSD: statistics.TurnoverTodayUsd,
+	}, nil
 }
 
 func (o *Service) GetAllUsersFiltered(ctx context.Context, req admin_request.GetUsersRequest) (*storecmn.FindResponseWithFullPagination[*admin_response.GetUsersResponse], error) {

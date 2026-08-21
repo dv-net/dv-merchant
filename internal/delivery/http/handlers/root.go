@@ -56,6 +56,32 @@ func (h *Handler) getUsers(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(users))
 }
 
+// getDashboardStatistics returns aggregate statistics for the admin dashboard.
+//
+//	@Summary		Get admin dashboard statistics
+//	@Description	Get total users, total projects, and today's deposit turnover in USD
+//	@Tags			Admin
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	response.Result[admin_response.DashboardStatisticsResponse]
+//	@Failure		400	{object}	apierror.Errors
+//	@Failure		401	{object}	apierror.Errors
+//	@Router			/v1/dv-admin/root/statistics [get]
+//	@Security		BearerAuth
+func (h *Handler) getDashboardStatistics(c fiber.Ctx) error {
+	_, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	statistics, err := h.services.AdminService.GetDashboardStatistics(c.Context())
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(statistics))
+}
+
 // banUser is a function to ban user
 //
 //	@Summary		Issue ban to user
@@ -447,6 +473,7 @@ func (h *Handler) initRootRoutes(v1 fiber.Router) {
 	root := v1.Group("/root",
 		middleware.AuthMiddleware(h.services.AuthService),
 		middleware.CasbinMiddleware(h.services.PermissionService, []models.UserRole{models.UserRoleRoot}))
+	root.Get("/statistics", h.getDashboardStatistics)
 	root.Get("/users", h.getUsers)
 	root.Post("/invite", h.inviteUser)
 	root.Patch("/ban", h.banUser)

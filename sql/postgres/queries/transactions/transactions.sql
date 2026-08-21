@@ -276,3 +276,15 @@ SELECT EXISTS(
     SELECT 1 FROM transactions
     WHERE to_address = $1 OR from_address = $1
 ) AS exists;
+
+-- name: GetAdminDashboardStatistics :one
+SELECT
+    (SELECT COUNT(*) FROM users) AS users_count,
+    (SELECT COUNT(*) FROM stores) AS projects_count,
+    COALESCE((
+        SELECT SUM(tr.amount_usd)
+        FROM transactions tr
+        WHERE tr.type = 'deposit'
+          AND tr.created_at_index >= sqlc.arg(date_from_index)::bigint
+          AND tr.created_at_index < sqlc.arg(date_to_index)::bigint
+    ), 0)::numeric AS turnover_today_usd;

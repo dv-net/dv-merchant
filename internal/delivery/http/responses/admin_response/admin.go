@@ -6,7 +6,14 @@ import (
 	"github.com/dv-net/dv-merchant/internal/models"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
+
+type DashboardStatisticsResponse struct {
+	UsersCount       int64           `json:"users_count"`
+	ProjectsCount    int64           `json:"projects_count"`
+	TurnoverTodayUSD decimal.Decimal `json:"turnover_today_usd"`
+} //	@name	DashboardStatisticsResponse
 
 type AddUserRoleResponse struct {
 	UserID    uuid.UUID         `json:"user_id" validate:"required" format:"uuid"`
