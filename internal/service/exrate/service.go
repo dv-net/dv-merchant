@@ -42,7 +42,7 @@ func New(
 		storage:         storage,
 		currencyService: currencyService,
 		fetchInterval:   cfg.Exrate.FetchInterval,
-		fetchers:        make(map[string]fetcherData, 8),
+		fetchers:        make(map[string]fetcherData, 9),
 		logger:          logger,
 	}
 
@@ -96,6 +96,12 @@ func New(
 	}
 
 	f = NewBingxFetcher("https://open-api.bingx.com/openApi/spot/v1/ticker/24hr", proxies, httpClient, logger)
+	srv.fetchers[f.Source()] = fetcherData{
+		fetcher: f,
+		cfChan:  make(chan CurrencyFilter),
+	}
+
+	f = NewMexcFetcher("https://api.mexc.com/api/v3/ticker/price", proxies, httpClient, logger)
 	srv.fetchers[f.Source()] = fetcherData{
 		fetcher: f,
 		cfChan:  make(chan CurrencyFilter),

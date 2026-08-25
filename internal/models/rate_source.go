@@ -11,6 +11,7 @@ const (
 	RateSourceBybit   RateSource = "bybit"
 	RateSourceGateio  RateSource = "gate"
 	RateSourceBingx   RateSource = "bingx"
+	RateSourceMexc    RateSource = "mexc"
 )
 
 func (rs RateSource) String() string {
@@ -34,6 +35,8 @@ func (rs RateSource) Valid() bool {
 	case RateSourceGateio:
 		return true
 	case RateSourceBingx:
+		return true
+	case RateSourceMexc:
 		return true
 	}
 
