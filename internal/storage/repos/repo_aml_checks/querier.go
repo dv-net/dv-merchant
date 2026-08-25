@@ -9,11 +9,13 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (*models.AmlCheck, error)
 	GetByTransactionID(ctx context.Context, transactionID uuid.NullUUID) (*models.AmlCheck, error)
+	GetStatistics(ctx context.Context, userID uuid.UUID, dateFrom pgtype.Timestamp, dateTo pgtype.Timestamp) (*GetStatisticsRow, error)
 	UpdateAMLCheck(ctx context.Context, arg UpdateAMLCheckParams) error
 	UpdateExternalID(ctx context.Context, iD uuid.UUID, externalID string) error
 }

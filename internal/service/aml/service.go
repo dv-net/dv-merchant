@@ -46,6 +46,7 @@ type IService interface {
 	ScoreTransaction(ctx context.Context, usr *models.User, dto CheckDTO) (*models.AmlCheck, error)
 	AutoScoreDeposit(ctx context.Context, dto AutoScoreDepositDTO) (*models.AmlCheck, []aml.SignalContribution, error)
 	GetCheckHistory(ctx context.Context, usr *models.User, dto ChecksWithHistoryDTO) (*storecmn.FindResponseWithFullPagination[*repo_aml_checks.FindRow], error)
+	GetStatistics(ctx context.Context, userID uuid.UUID) (*StatisticsDTO, error)
 	GetAllActiveProviders() []models.AMLProvider
 	GetSupportedCurrencies(ctx context.Context, slug models.AMLSlug) ([]*models.CurrencyShort, error)
 	GetSignalsCategorise(ctx context.Context, slug models.AMLSlug) ([]aml.SignalCategory, error)

@@ -19,6 +19,7 @@ type Querier interface {
 	FindLastWalletTransactions(ctx context.Context, arg FindLastWalletTransactionsParams) ([]*FindLastWalletTransactionsRow, error)
 	FindTransactionByHashAndUserID(ctx context.Context, arg FindTransactionByHashAndUserIDParams) (*FindTransactionByHashAndUserIDRow, error)
 	GetAddressBalance(ctx context.Context, arg GetAddressBalanceParams) (decimal.Decimal, error)
+	GetAdminDashboardStatistics(ctx context.Context, arg GetAdminDashboardStatisticsParams) (*GetAdminDashboardStatisticsRow, error)
 	GetBalanceNativeToken(ctx context.Context, arg GetBalanceNativeTokenParams) (decimal.Decimal, error)
 	GetById(ctx context.Context, id uuid.UUID) (*models.Transaction, error)
 	GetExistingWithdrawalAddress(ctx context.Context, arg GetExistingWithdrawalAddressParams) (string, error)

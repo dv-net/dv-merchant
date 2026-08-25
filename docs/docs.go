@@ -507,6 +507,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/aml/statistics": {
+            "get": {
+                "description": "Get today's completed, successful, and failed AML check counts",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AML"
+                ],
+                "summary": "Get AML check statistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-AMLStatisticsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/aml/{aml_provider_slug}/currencies": {
             "get": {
                 "description": "Get supported by AML-provider currencies",
@@ -3028,6 +3057,40 @@ const docTemplate = `{
                     },
                     "503": {
                         "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/root/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get total users, total projects, and today's deposit turnover in USD",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Get admin dashboard statistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-DashboardStatisticsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -10337,6 +10400,20 @@ const docTemplate = `{
                 }
             }
         },
+        "AMLStatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "checked_today": {
+                    "type": "integer"
+                },
+                "failed_today": {
+                    "type": "integer"
+                },
+                "successful_today": {
+                    "type": "integer"
+                }
+            }
+        },
         "APIError": {
             "type": "object",
             "properties": {
@@ -11190,6 +11267,20 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "precision": {
+                    "type": "integer"
+                }
+            }
+        },
+        "DashboardStatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "projects_count": {
+                    "type": "integer"
+                },
+                "turnover_today_usd": {
+                    "type": "number"
+                },
+                "users_count": {
                     "type": "integer"
                 }
             }
@@ -12267,6 +12358,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-AMLStatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/AMLStatisticsResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-AddUserRoleResponse": {
             "type": "object",
             "properties": {
@@ -12429,6 +12534,20 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/CurrencyRate"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-DashboardStatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/DashboardStatisticsResponse"
                 },
                 "message": {
                     "type": "string"
