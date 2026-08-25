@@ -245,15 +245,18 @@ const (
 type ChainConfig struct {
 	NativeTransferGas   int64
 	ERC20TransferGas    int64
+	MinGasTipCapWei     int64
 	IsL2                bool
 	L1DataFeeMultiplier float64
 }
 
+// MinGasTipCapWei values mirror dv-processing/pkg/walletsdk/evm/estimate.go,
+// getMinGasTipCapByBlockchain.
 var ChainConfigs = map[models.Blockchain]ChainConfig{
-	models.BlockchainEthereum:          {NativeTransferGas: 21000, ERC20TransferGas: 65000},
-	models.BlockchainArbitrum:          {NativeTransferGas: 21000, ERC20TransferGas: 80000, IsL2: true, L1DataFeeMultiplier: 1.5},
-	models.BlockchainBinanceSmartChain: {NativeTransferGas: 21000, ERC20TransferGas: 60000},
-	models.BlockchainPolygon:           {NativeTransferGas: 21000, ERC20TransferGas: 65000},
+	models.BlockchainEthereum:          {NativeTransferGas: 21000, ERC20TransferGas: 65000, MinGasTipCapWei: 1_000_000_000},
+	models.BlockchainArbitrum:          {NativeTransferGas: 21000, ERC20TransferGas: 80000, MinGasTipCapWei: 10_000_000, IsL2: true, L1DataFeeMultiplier: 1.5},
+	models.BlockchainBinanceSmartChain: {NativeTransferGas: 21000, ERC20TransferGas: 60000, MinGasTipCapWei: 100_000_000},
+	models.BlockchainPolygon:           {NativeTransferGas: 21000, ERC20TransferGas: 65000, MinGasTipCapWei: 30_000_000_000},
 }
 
 func (s *Service) processBlockchainWallets(ctx context.Context, blockchain models.Blockchain, dto GetProcessingWalletsDTO, enabledCurrencies []*models.Currency) ([]*ProcessingWalletWithAssets, error) {
@@ -426,7 +429,10 @@ func (s *Service) calculateEVMTransfers(evmData *EVMData, nativeTokenBalance, ga
 		return fmt.Errorf("failed to parse gas price: %w", err)
 	}
 
-	gasPriceEth := gasPrice.Div(decimal.NewFromInt(1e18))
+	// explorer-proxy does not expose SuggestGasTipCap, so use the same
+	// blockchain-specific minimum that dv-processing applies to the node value.
+	maxFeePerGas := calculateEVMMaxFeePerGas(gasPrice, decimal.NewFromInt(chainConfig.MinGasTipCapWei))
+	gasPriceEth := maxFeePerGas.Div(decimal.NewFromInt(1e18))
 	balance, err := decimal.NewFromString(nativeTokenBalance)
 	if err != nil {
 		return fmt.Errorf("failed to parse balance: %w", err)
@@ -457,6 +463,45 @@ func (s *Service) calculateEVMTransfers(evmData *EVMData, nativeTokenBalance, ga
 	evmData.CostPerNative = nativeTransferCost.String()
 	evmData.CostPerERC20 = erc20TransferCost.String()
 	return nil
+}
+
+func calculateEVMMaxFeePerGas(suggestedGasPrice, minGasTipCap decimal.Decimal) decimal.Decimal {
+	maxFeePerGas := getEVMBaseFeeMultiplier(suggestedGasPrice)
+	gasPriceWithTip := suggestedGasPrice.Add(minGasTipCap)
+	if maxFeePerGas.LessThan(gasPriceWithTip) {
+		return gasPriceWithTip
+	}
+
+	return maxFeePerGas
+}
+
+// Source: dv-processing/pkg/walletsdk/evm/estimate.go, GetBaseFeeMultiplier.
+func getEVMBaseFeeMultiplier(baseFeeWei decimal.Decimal) decimal.Decimal {
+	items := []struct {
+		threshold  int64
+		multiplier decimal.Decimal
+	}{
+		{threshold: 200, multiplier: decimal.NewFromFloat(1.14)},
+		{threshold: 100, multiplier: decimal.NewFromFloat(1.17)},
+		{threshold: 40, multiplier: decimal.NewFromFloat(1.18)},
+		{threshold: 20, multiplier: decimal.NewFromFloat(1.19)},
+		{threshold: 10, multiplier: decimal.NewFromFloat(1.192)},
+		{threshold: 9, multiplier: decimal.NewFromFloat(1.195)},
+		{threshold: 8, multiplier: decimal.NewFromFloat(1.20)},
+		{threshold: 7, multiplier: decimal.NewFromFloat(1.215)},
+		{threshold: 6, multiplier: decimal.NewFromFloat(1.22)},
+		{threshold: 5, multiplier: decimal.NewFromFloat(1.24)},
+		{threshold: 4, multiplier: decimal.NewFromFloat(1.26)},
+	}
+
+	baseFeeGWei := baseFeeWei.Div(decimal.NewFromInt(1_000_000_000))
+	for _, item := range items {
+		if baseFeeGWei.GreaterThanOrEqual(decimal.NewFromInt(item.threshold)) {
+			return item.multiplier.Mul(baseFeeWei)
+		}
+	}
+
+	return decimal.NewFromFloat(1.30).Mul(baseFeeWei)
 }
 
 func (s *Service) assembleAssets(ctx context.Context, blockchain models.Blockchain, filterCurrencies []string, enabledCurrencies []*models.Currency, processingAssets []*processing.Asset) ([]*Asset, error) {
