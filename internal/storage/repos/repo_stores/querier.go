@@ -17,6 +17,7 @@ type Querier interface {
 	GetByID(ctx context.Context, id uuid.UUID) (*models.Store, error)
 	GetByIDWithPublicFormEnabled(ctx context.Context, storeID uuid.UUID) (*models.Store, error)
 	GetByUser(ctx context.Context, userID uuid.UUID) ([]*models.Store, error)
+	GetStatisticsByStoreIDs(ctx context.Context, storeIds []uuid.UUID) ([]*GetStatisticsByStoreIDsRow, error)
 	GetStoreByStoreApiKey(ctx context.Context, key string) (*models.Store, error)
 	GetStoreByWalletAddress(ctx context.Context, arg GetStoreByWalletAddressParams) (*GetStoreByWalletAddressRow, error)
 	GetStoreByWalletID(ctx context.Context, id uuid.UUID) (*models.Store, error)

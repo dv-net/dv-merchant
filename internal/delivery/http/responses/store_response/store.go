@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/models"
+	store_service "github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_stores"
 	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
@@ -12,25 +13,27 @@ import (
 )
 
 type StoreResponse struct {
-	ID                       uuid.UUID       `json:"id" format:"uuid"`
-	UserID                   uuid.UUID       `json:"user_id" format:"uuid"`
-	OwnerEmail               string          `json:"owner_email,omitempty"`
-	Name                     string          `json:"name"`
-	Description              *string         `json:"description"`
-	Site                     *string         `json:"site" format:"uri"`
-	CurrencyID               string          `json:"currency_id"`
-	RateSource               string          `json:"rate_source"`
-	ReturnURL                *string         `json:"return_url" format:"uri"`
-	SuccessURL               *string         `json:"success_url" format:"uri"`
-	RateScale                decimal.Decimal `json:"rate_scale"`
-	Status                   bool            `json:"status"`
-	MinimalPayment           decimal.Decimal `json:"minimal_payment"`
-	PublicPaymentFormEnabled bool            `json:"public_payment_form_enabled"`
-	CreatedAt                time.Time       `json:"created_at" format:"date-time"`
-	VerificationStatus       string          `json:"verification_status"`
-	VerifiedAt               *time.Time      `json:"verified_at" format:"date-time"`
-	RejectionReason          *string         `json:"rejection_reason"`
-	VerificationComment      *string         `json:"verification_comment"`
+	ID                       uuid.UUID        `json:"id" format:"uuid"`
+	UserID                   uuid.UUID        `json:"user_id" format:"uuid"`
+	OwnerEmail               string           `json:"owner_email,omitempty"`
+	Name                     string           `json:"name"`
+	Description              *string          `json:"description"`
+	Site                     *string          `json:"site" format:"uri"`
+	CurrencyID               string           `json:"currency_id"`
+	RateSource               string           `json:"rate_source"`
+	ReturnURL                *string          `json:"return_url" format:"uri"`
+	SuccessURL               *string          `json:"success_url" format:"uri"`
+	RateScale                decimal.Decimal  `json:"rate_scale"`
+	Status                   bool             `json:"status"`
+	MinimalPayment           decimal.Decimal  `json:"minimal_payment"`
+	PublicPaymentFormEnabled bool             `json:"public_payment_form_enabled"`
+	CreatedAt                time.Time        `json:"created_at" format:"date-time"`
+	VerificationStatus       string           `json:"verification_status"`
+	VerifiedAt               *time.Time       `json:"verified_at" format:"date-time"`
+	RejectionReason          *string          `json:"rejection_reason"`
+	VerificationComment      *string          `json:"verification_comment"`
+	PaymentsCount            *int64           `json:"payments_count,omitempty"`
+	TopUpAmountUSD           *decimal.Decimal `json:"top_up_amount_usd,omitempty" swaggertype:"string"`
 } //	@name	StoreResponse
 
 func NewStoreResponse(o *models.Store) *StoreResponse {
@@ -54,6 +57,21 @@ func NewStoreResponse(o *models.Store) *StoreResponse {
 		RejectionReason:          pgtypeutils.DecodeText(o.RejectionReason),
 		VerificationComment:      pgtypeutils.DecodeText(o.VerificationComment),
 	}
+}
+
+func NewStoreResponseWithStatistics(o *store_service.WithStatisticsDTO) *StoreResponse {
+	res := NewStoreResponse(o.Store)
+	res.PaymentsCount = &o.PaymentsCount
+	res.TopUpAmountUSD = &o.TopUpAmountUSD
+	return res
+}
+
+func NewStoreResponsesWithStatistics(stores ...*store_service.WithStatisticsDTO) []*StoreResponse {
+	res := make([]*StoreResponse, 0, len(stores))
+	for _, st := range stores {
+		res = append(res, NewStoreResponseWithStatistics(st))
+	}
+	return res
 }
 
 func NewStoreResponses(stores ...*models.Store) []*StoreResponse {

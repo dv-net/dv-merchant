@@ -5,6 +5,17 @@ WHERE user_id = $1
   AND deleted_at IS NULL
 ORDER BY created_at DESC;
 
+-- name: GetStatisticsByStoreIDs :many
+SELECT s.id                                      AS store_id,
+       COUNT(t.id)::bigint                       AS payments_count,
+       COALESCE(SUM(t.amount_usd), 0)::numeric   AS top_up_amount_usd
+FROM stores s
+         LEFT JOIN transactions t ON t.store_id = s.id
+    AND t.type = 'deposit'
+    AND t.is_system = false
+WHERE s.id = ANY (sqlc.arg(store_ids)::uuid[])
+GROUP BY s.id;
+
 -- name: GetStoreByStoreApiKey :one
 SELECT s.*
 FROM stores s

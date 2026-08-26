@@ -14909,6 +14909,9 @@ const docTemplate = `{
                 "owner_email": {
                     "type": "string"
                 },
+                "payments_count": {
+                    "type": "integer"
+                },
                 "public_payment_form_enabled": {
                     "type": "boolean"
                 },
@@ -14935,6 +14938,9 @@ const docTemplate = `{
                 "success_url": {
                     "type": "string",
                     "format": "uri"
+                },
+                "top_up_amount_usd": {
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "string",

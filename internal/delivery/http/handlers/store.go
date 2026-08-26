@@ -86,7 +86,11 @@ func (h *Handler) loadUserStore(c fiber.Ctx) error {
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)
 	}
-	res := store_response.NewStoreResponses(stores...)
+	storesWithStatistics, err := h.services.StoreService.GetStoresWithStatistics(c.Context(), stores...)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusInternalServerError)
+	}
+	res := store_response.NewStoreResponsesWithStatistics(storesWithStatistics...)
 	return c.JSON(response.OkByData(res))
 }
 

@@ -33,6 +33,7 @@ type IStore interface { //nolint:interfacebloat
 	GetArchivedList(ctx context.Context, userID uuid.UUID) ([]*models.Store, error)
 	GetStoreByID(ctx context.Context, ID uuid.UUID) (*models.Store, error)
 	GetStoresByUserID(ctx context.Context, ID uuid.UUID) ([]*models.Store, error)
+	GetStoresWithStatistics(ctx context.Context, stores ...*models.Store) ([]*WithStatisticsDTO, error)
 	CreateStore(ctx context.Context, dto CreateStore, user *models.User, opts ...repos.Option) (*models.Store, error)
 	UpdateStore(ctx context.Context, dto UpdateStore, ID uuid.UUID, opts ...repos.Option) (*models.Store, error)
 	GetStoreByStoreAPIKey(ctx context.Context, apiKey string) (*models.Store, error)
@@ -129,6 +130,39 @@ func (s *Service) GetStoresByUserID(ctx context.Context, id uuid.UUID) ([]*model
 		return nil, err
 	}
 	return stores, err
+}
+
+func (s *Service) GetStoresWithStatistics(ctx context.Context, stores ...*models.Store) ([]*WithStatisticsDTO, error) {
+	if len(stores) == 0 {
+		return []*WithStatisticsDTO{}, nil
+	}
+
+	storeIDs := make([]uuid.UUID, 0, len(stores))
+	for _, st := range stores {
+		storeIDs = append(storeIDs, st.ID)
+	}
+
+	statistics, err := s.storage.Stores().GetStatisticsByStoreIDs(ctx, storeIDs)
+	if err != nil {
+		return nil, fmt.Errorf("get store statistics: %w", err)
+	}
+
+	statisticsByStoreID := make(map[uuid.UUID]*repo_stores.GetStatisticsByStoreIDsRow, len(statistics))
+	for _, item := range statistics {
+		statisticsByStoreID[item.StoreID] = item
+	}
+
+	result := make([]*WithStatisticsDTO, 0, len(stores))
+	for _, st := range stores {
+		item := &WithStatisticsDTO{Store: st}
+		if statisticsItem, ok := statisticsByStoreID[st.ID]; ok {
+			item.PaymentsCount = statisticsItem.PaymentsCount
+			item.TopUpAmountUSD = statisticsItem.TopUpAmountUsd
+		}
+		result = append(result, item)
+	}
+
+	return result, nil
 }
 
 func (s *Service) GetStoreByStoreAPIKey(ctx context.Context, apiKey string) (*models.Store, error) {

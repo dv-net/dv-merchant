@@ -152,6 +152,44 @@ func (q *Queries) GetByUser(ctx context.Context, userID uuid.UUID) ([]*models.St
 	return items, nil
 }
 
+const getStatisticsByStoreIDs = `-- name: GetStatisticsByStoreIDs :many
+SELECT s.id                                      AS store_id,
+       COUNT(t.id)::bigint                       AS payments_count,
+       COALESCE(SUM(t.amount_usd), 0)::numeric   AS top_up_amount_usd
+FROM stores s
+         LEFT JOIN transactions t ON t.store_id = s.id
+    AND t.type = 'deposit'
+    AND t.is_system = false
+WHERE s.id = ANY ($1::uuid[])
+GROUP BY s.id
+`
+
+type GetStatisticsByStoreIDsRow struct {
+	StoreID        uuid.UUID       `db:"store_id" json:"store_id"`
+	PaymentsCount  int64           `db:"payments_count" json:"payments_count"`
+	TopUpAmountUsd decimal.Decimal `db:"top_up_amount_usd" json:"top_up_amount_usd"`
+}
+
+func (q *Queries) GetStatisticsByStoreIDs(ctx context.Context, storeIds []uuid.UUID) ([]*GetStatisticsByStoreIDsRow, error) {
+	rows, err := q.db.Query(ctx, getStatisticsByStoreIDs, storeIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetStatisticsByStoreIDsRow{}
+	for rows.Next() {
+		var i GetStatisticsByStoreIDsRow
+		if err := rows.Scan(&i.StoreID, &i.PaymentsCount, &i.TopUpAmountUsd); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getStoreByStoreApiKey = `-- name: GetStoreByStoreApiKey :one
 SELECT s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled, s.verification_status, s.verified_at, s.verified_by, s.rejection_reason, s.description, s.verification_comment
 FROM stores s

@@ -3,7 +3,14 @@ package store
 import (
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
+
+type WithStatisticsDTO struct {
+	Store          *models.Store
+	PaymentsCount  int64
+	TopUpAmountUSD decimal.Decimal
+}
 
 type UpdateStoreCurrencyDTO struct {
 	CurrencyIDs []string `json:"currency_ids"` //nolint:tagliatelle
