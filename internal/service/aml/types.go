@@ -53,3 +53,14 @@ type RiskRuleDTO struct {
 	Threshold decimal.Decimal
 	Action    string
 }
+
+type ApplyVerdictDTO struct {
+	Check         *models.AmlCheck
+	UserID        uuid.UUID
+	StoreID       uuid.UUID
+	TransactionID uuid.UUID
+	WalletID      uuid.NullUUID
+	ToAddress     string
+	Signals       []aml.SignalContribution
+	Rules         []*models.UserAmlRiskRule
+}

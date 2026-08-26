@@ -728,6 +728,53 @@ schemas:
                 created_at_index: extract(epoch from now()) * 1000
             get:
               name: GetById
+      blocked_transactions:
+        primary_column: id
+        crud:
+          methods:
+            create:
+              returning: '*'
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+            get:
+              name: GetById
+            find:
+              name: GetAllByWalletID
+              where:
+                wallet_id: { }
+      refund_requests:
+        primary_column: id
+        crud:
+          methods:
+            create:
+              returning: '*'
+              skip_columns:
+                - id
+                - updated_at
+              column_values:
+                created_at: now()
+            get:
+              name: GetById
+            find:
+              name: GetAllByWalletID
+              where:
+                wallet_id: { }
+            update:
+              name: Update
+              returning: '*'
+              skip_columns:
+                - id
+                - created_at
+                - blocked_transaction_id
+                - wallet_id
+                - store_id
+                - destination_address
+                - email
+              column_values:
+                updated_at: now()
       transfer_transactions:
         primary_column: id
         sqlc:

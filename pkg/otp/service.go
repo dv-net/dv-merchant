@@ -63,3 +63,36 @@ func defaultHashKeyFunc(code int, identifier, purpose string) string {
 func (s *Service) SetHashKeyFunc(f func(code int, identifier, purpose string) string) {
 	s.hashKeyFunc = f
 }
+
+type StringCodeGenerator func() (string, error)
+
+func (s *Service) InitStringCode(ctx context.Context, identifier, purpose string, gen StringCodeGenerator) (string, error) {
+	code, err := gen()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate OTP: %w", err)
+	}
+
+	key := defaultHashKeyFuncStr(code, identifier, purpose)
+	if err := s.store.Set(ctx, key, purpose, s.config.TTL); err != nil {
+		return "", fmt.Errorf("failed to store OTP: %w", err)
+	}
+
+	return code, nil
+}
+
+func (s *Service) VerifyStringCode(ctx context.Context, code, identifier, purpose string) error {
+	key := defaultHashKeyFuncStr(code, identifier, purpose)
+	storedPurpose, err := s.store.Get(ctx, key)
+	if err != nil || storedPurpose == nil || storedPurpose.String() != purpose {
+		return fmt.Errorf("invalid OTP code")
+	}
+
+	return s.store.Delete(ctx, key)
+}
+
+func defaultHashKeyFuncStr(code, identifier, purpose string) string {
+	keyString := fmt.Sprintf("%s:%s:%s", identifier, purpose, code)
+	h := sha256.New()
+	h.Write([]byte(keyString))
+	return hex.EncodeToString(h.Sum(nil))
+}

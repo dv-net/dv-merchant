@@ -611,10 +611,12 @@ func (s *Service) prepareCreateTxParamsByHotWallet(
 
 func (s *Service) HandleUpdateTransferStatusCallback(ctx context.Context, dto processing_request.TransferStatusWebhook) error {
 	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+		step := util.TruncateString(dto.Step, 255)
+
 		if err := s.storage.Transfers(repos.WithTx(tx)).UpdateTransferStatus(ctx, repo_transfers.UpdateTransferStatusParams{
 			Status:  dto.Status,
 			Stage:   models.ResolveTransferStageByStatus(dto.Status),
-			Step:    util.Pointer(dto.Step),
+			Step:    util.Pointer(step),
 			ID:      *dto.RequestID,
 			Message: dto.ErrorMessage,
 		}); err != nil {

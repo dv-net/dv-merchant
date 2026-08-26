@@ -25,6 +25,7 @@ var (
 	ErrWithdrawalAddressEmptyBalances           = errors.New("withdrawal addresses have empty balances")
 	ErrProcessingExplorerUnavailable            = errors.New("explorer is unavailable")
 	ErrPendingProcessingWithdrawal              = errors.New("pending processing withdrawal exists for blockchain")
+	ErrAddressNotDirty                          = errors.New("wallet address is not marked dirty")
 )
 
 type InvalidCurrencyForAddressError struct {

@@ -69,7 +69,7 @@ func (h *Handler) sendTestWh(c fiber.Ctx) error {
 		return err
 	}
 
-	res, err := h.services.StoreWebhooksService.SendMockWebhook(
+	res, err := h.services.TxWebhookService.SendMockWebhook(
 		c.Context(),
 		usr,
 		req.WhID,

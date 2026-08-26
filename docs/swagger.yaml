@@ -241,6 +241,29 @@ definitions:
       blockchain:
         $ref: '#/definitions/Blockchain'
     type: object
+  CabinetItemResponse:
+    properties:
+      blockchain:
+        $ref: '#/definitions/Blockchain'
+      blocked_transaction_id:
+        type: string
+      created_at:
+        type: string
+      currency_id:
+        type: string
+      destination_address:
+        type: string
+      refund_status:
+        type: string
+      risk_level:
+        type: string
+      score:
+        type: number
+      transaction_id:
+        type: string
+      tx_hash:
+        type: string
+    type: object
   CallbackURLResponse:
     properties:
       callback_url:
@@ -819,6 +842,7 @@ definitions:
     - kucoin
     - bybit
     - gate
+    - mexc
     type: string
     x-enum-varnames:
     - ExchangeSlugHtx
@@ -828,6 +852,7 @@ definitions:
     - ExchangeSlugKucoin
     - ExchangeSlugBybit
     - ExchangeSlugGateio
+    - ExchangeSlugMexc
   ExchangeTestConnectionRequest:
     properties:
       credentials:
@@ -1647,6 +1672,24 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-RefundRequest:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/RefundRequest'
+      message:
+        type: string
+    type: object
+  JSONResponse-RefundVerifyResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/RefundVerifyResponse'
+      message:
+        type: string
+    type: object
   JSONResponse-RegisterRootResponse:
     properties:
       code:
@@ -2075,6 +2118,17 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-array_RefundRequest:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/RefundRequest'
+        type: array
+      message:
+        type: string
+    type: object
   JSONResponse-array_RiskRuleResponse:
     properties:
       code:
@@ -2280,6 +2334,15 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-map_string_array_CabinetItemResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/map_string_array_CabinetItemResponse'
+      message:
+        type: string
+    type: object
   JSONResponse-string:
     properties:
       code:
@@ -2407,6 +2470,7 @@ definitions:
     - user_update_setting_verification
     - user_test_email
     - user_crypto_receipt
+    - refund_verification_code
     type: string
     x-enum-varnames:
     - NotificationTypeUserVerification
@@ -2424,6 +2488,7 @@ definitions:
     - NotificationTypeUserUpdateSetting
     - NotificationTypeUserTestEmail
     - NotificationTypeUserCryptoReceipt
+    - NotificationTypeRefundVerificationCode
   NotificationTypeListResponse:
     properties:
       types:
@@ -2688,6 +2753,72 @@ definitions:
         type: string
     required:
     - address
+    type: object
+  RefundClaimRequest:
+    properties:
+      destination_address:
+        type: string
+    required:
+    - destination_address
+    type: object
+  RefundLookupRequest:
+    properties:
+      email:
+        type: string
+      store_id:
+        type: string
+      wallet_id:
+        type: string
+    required:
+    - email
+    - store_id
+    - wallet_id
+    type: object
+  RefundRequest:
+    properties:
+      blocked_transaction_id:
+        type: string
+      created_at:
+        type: string
+      destination_address:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      reviewed_at:
+        type: string
+      status:
+        type: string
+      store_id:
+        type: string
+      transfer_id:
+        type: string
+      updated_at:
+        type: string
+      wallet_id:
+        type: string
+    type: object
+  RefundVerifyRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+      store_id:
+        type: string
+      wallet_id:
+        type: string
+    required:
+    - code
+    - email
+    - store_id
+    - wallet_id
+    type: object
+  RefundVerifyResponse:
+    properties:
+      token:
+        type: string
     type: object
   RegisterOwnerInfo:
     properties:
@@ -4299,6 +4430,7 @@ definitions:
     - kucoin
     - bybit
     - gate
+    - mexc
     type: string
     x-enum-varnames:
     - RateSourceOKX
@@ -4308,6 +4440,7 @@ definitions:
     - RateSourceKucoin
     - RateSourceBybit
     - RateSourceGateio
+    - RateSourceMexc
   github_com_dv-net_dv-merchant_internal_models.WalletType:
     enum:
     - cold
@@ -4463,6 +4596,12 @@ definitions:
   map_string_CombinedStats:
     additionalProperties:
       $ref: '#/definitions/CombinedStats'
+    type: object
+  map_string_array_CabinetItemResponse:
+    additionalProperties:
+      items:
+        $ref: '#/definitions/CabinetItemResponse'
+      type: array
     type: object
   pgtype.Bool:
     properties:
@@ -5782,6 +5921,7 @@ paths:
           - user_update_setting_verification
           - user_test_email
           - user_crypto_receipt
+          - refund_verification_code
           type: string
         name: types
         type: array
@@ -7159,6 +7299,81 @@ paths:
       summary: Update store currency
       tags:
       - Store
+  /v1/dv-admin/store/{id}/refund-requests:
+    get:
+      consumes:
+      - application/json
+      description: Lists refund requests awaiting review for a store owned by the
+        authenticated user
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_RefundRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: List pending refund requests for a store
+      tags:
+      - Store
+      - Refund
+  /v1/dv-admin/store/{id}/refund-requests/{refundId}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Rejects a pending refund request for a store owned by the authenticated
+        user
+      parameters:
+      - description: Store ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Refund request ID
+        in: path
+        name: refundId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Reject a refund request
+      tags:
+      - Store
+      - Refund
   /v1/dv-admin/store/{id}/resend-verify:
     post:
       description: Resend store verification
@@ -7181,6 +7396,10 @@ paths:
             $ref: '#/definitions/APIErrors'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
           schema:
             $ref: '#/definitions/APIErrors'
         "500":
@@ -10880,6 +11099,116 @@ paths:
       summary: Generate random mnemonic
       tags:
       - Mnemonic
+      - Public
+  /v1/public/refund/blocked-transactions/{id}/claim:
+    post:
+      consumes:
+      - application/json
+      description: Creates a refund request for a blocked transaction belonging to
+        the authenticated wallet
+      parameters:
+      - description: Blocked transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: RefundClaimRequest
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/RefundClaimRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Create a refund request
+      tags:
+      - Refund
+      - Public
+  /v1/public/refund/cabinet:
+    get:
+      description: Lists blocked transactions for the authenticated wallet, with refund
+        status if a claim was filed
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-map_string_array_CabinetItemResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: List a wallet's blocked transactions
+      tags:
+      - Refund
+      - Public
+  /v1/public/refund/lookup:
+    post:
+      consumes:
+      - application/json
+      description: Sends an OTP code to the wallet's confirmed email
+      parameters:
+      - description: RefundLookupRequest
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/RefundLookupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Request a refund verification code
+      tags:
+      - Refund
+      - Public
+  /v1/public/refund/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the OTP code and issues a wallet session token
+      parameters:
+      - description: RefundVerifyRequest
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/RefundVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundVerifyResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Verify a refund verification code
+      tags:
+      - Refund
       - Public
   /v1/public/store/topup/{store_id}/{external_id}:
     get:

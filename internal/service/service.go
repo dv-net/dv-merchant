@@ -9,6 +9,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/aml"
 	"github.com/dv-net/dv-merchant/internal/service/analytics"
 	"github.com/dv-net/dv-merchant/internal/service/notification_settings"
+	"github.com/dv-net/dv-merchant/internal/service/refund"
 	"github.com/dv-net/dv-merchant/internal/tools"
 	amlproviders "github.com/dv-net/dv-merchant/pkg/aml"
 	"github.com/dv-net/dv-merchant/pkg/aml/providers"
@@ -53,6 +54,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/system"
 	"github.com/dv-net/dv-merchant/internal/service/templater"
 	"github.com/dv-net/dv-merchant/internal/service/transactions"
+	"github.com/dv-net/dv-merchant/internal/service/txwebhook"
 	"github.com/dv-net/dv-merchant/internal/service/updater"
 	"github.com/dv-net/dv-merchant/internal/service/user"
 	"github.com/dv-net/dv-merchant/internal/service/wallet"
@@ -78,6 +80,7 @@ type Services struct {
 	StoreService                  store.IStore
 	StoreAPIKeyService            store.IStoreAPIKey
 	StoreWebhooksService          store.IStoreWebhooks
+	TxWebhookService              txwebhook.IService
 	StoreCurrencyService          store.IStoreCurrency
 	StoreWhitelistService         store.IStoreWhitelist
 	StoreSecretService            store.ISecret
@@ -85,6 +88,7 @@ type Services struct {
 	TransactionService            transactions.ITransaction
 	WalletTransactionService      transactions.IWalletTransaction
 	UnconfirmedTransactionService transactions.IUnconfirmedTransaction
+	BlockedTransactionService     transactions.IBlockedTransaction
 	WalletRestorer                transactions.TxRestorer
 	WalletService                 wallet.IWalletService
 	WalletConverter               wallet.IWalletAddressConverter
@@ -123,8 +127,10 @@ type Services struct {
 	AMLKeysService                aml.KeysService
 	AMLStatusChecker              aml.StatusChecker
 	AMLUserSettings               aml.IUserAmlSettings
+	RefundService                 refund.IRefundService
 }
 
+//nolint:funlen
 func NewServices(
 	ctx context.Context,
 	conf *config.Config,
@@ -211,18 +217,19 @@ func NewServices(
 		rate.WithDuration(conf.ExternalStoreLimits.RateLimitInterval),
 	)
 
-	amlService, err := prepareAMLService(storage, logger, conf.AML, eventListener)
+	amlService, err := prepareAMLService(storage, logger, conf.AML, eventListener, walletService, transactionService)
 	if err != nil {
 		return nil, err
 	}
 
-	storeService := store.New(storage, currencyService, logger, webhookService, eventListener, exrateService, walletService, notificationService, storeRateLimiter, conf.ExternalStoreLimits.Enabled, processingService, settingService, amlService)
+	storeService := store.New(storage, currencyService, logger, exrateService, walletService, notificationService, storeRateLimiter, conf.ExternalStoreLimits.Enabled, processingService, settingService)
+	txwebhookService := txwebhook.New(storage, logger, webhookService, amlService, eventListener, storeService)
 	otpSvc := otp.New(&otp.Config{TTL: time.Minute * 10}, tools.RandomCodeGenerator, storage.KeyValue())
 	userService := user.New(conf, storage, storeService, permissionService, processingService, notificationService, logger, settingService, adminSvc, otpSvc)
 
 	adminService := admin.New(conf, storage, logger, permissionService, userService, notificationService)
 
-	authService := auth.New(conf, logger, storage, userService, userService, notificationService, settingService)
+	authService := auth.New(conf, logger, storage, userService, userService, notificationService, settingService, walletService, otpSvc)
 	withdrawService := withdraw.New(storage, logger, processingService, processingService, currConvService, currencyService, exrateService, settingService)
 	updaterClient, _ := updater.NewClient(logger, conf)
 	upd := updater.New(logger, conf, processingService, appVersion)
@@ -244,6 +251,7 @@ func NewServices(
 		return nil, err
 	}
 
+	refundService := refund.NewService(logger, storage)
 	return &Services{
 		UserService:                   userService,
 		UserCredentialsService:        userService,
@@ -256,6 +264,7 @@ func NewServices(
 		StoreService:                  storeService,
 		StoreAPIKeyService:            storeService,
 		StoreWebhooksService:          storeService,
+		TxWebhookService:              txwebhookService,
 		StoreCurrencyService:          storeService,
 		StoreWhitelistService:         storeService,
 		StoreSecretService:            storeService,
@@ -263,6 +272,7 @@ func NewServices(
 		TransactionService:            transactionService,
 		WalletTransactionService:      transactionService,
 		UnconfirmedTransactionService: transactionService,
+		BlockedTransactionService:     transactionService,
 		WalletRestorer:                transactionService,
 		WalletService:                 walletService,
 		WalletBalanceService:          walletService,
@@ -301,10 +311,11 @@ func NewServices(
 		AMLKeysService:                amlService,
 		AMLStatusChecker:              amlService,
 		AMLUserSettings:               amlService,
+		RefundService:                 refundService,
 	}, nil
 }
 
-func prepareAMLService(st storage.IStorage, l logger.Logger, conf config.AML, eventListener event.IListener) (*aml.Service, error) {
+func prepareAMLService(st storage.IStorage, l logger.Logger, conf config.AML, eventListener event.IListener, walletService wallet.IWalletService, transactionService transactions.IBlockedTransaction) (*aml.Service, error) {
 	amlProviderFactory := providers.NewFactory()
 
 	if conf.BitOK.Enabled {
@@ -345,5 +356,5 @@ func prepareAMLService(st storage.IStorage, l logger.Logger, conf config.AML, ev
 		)
 	}
 
-	return aml.NewService(st, amlProviderFactory, l, conf, eventListener), nil
+	return aml.NewService(st, amlProviderFactory, l, conf, eventListener, walletService, transactionService), nil
 }

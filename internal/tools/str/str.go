@@ -7,6 +7,10 @@ import (
 
 func RandomString(length int) (string, error) {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	return RandomStringFromCharset(charset, length)
+}
+
+func RandomStringFromCharset(charset string, length int) (string, error) {
 	b := make([]byte, length)
 	if _, err := io.ReadFull(rand.Reader, b); err != nil {
 		return "", err

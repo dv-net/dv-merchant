@@ -61,6 +61,8 @@ func (h *Handler) Init(api *fiber.App) {
 
 	h.initStoreRoutes(securedV1Admin)
 
+	h.initRefundAdminRoutes(securedV1Admin)
+
 	h.initTransactionRoutes(securedV1Admin)
 
 	h.initWalletRoutes(securedV1Admin)
