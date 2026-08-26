@@ -13,6 +13,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/exchange/binance"
+	"github.com/dv-net/dv-merchant/internal/service/exchange/bingx"
 	"github.com/dv-net/dv-merchant/internal/service/exchange/bitget"
 	"github.com/dv-net/dv-merchant/internal/service/exchange/bybit"
 	"github.com/dv-net/dv-merchant/internal/service/exchange/gateio"
@@ -83,6 +84,8 @@ func (o *Manager) CreateDriver(ctx context.Context, slug models.ExchangeSlug, ap
 		return o.createBybitServiceRaw(ctx, apiKey, secretKey)
 	case models.ExchangeSlugGateio:
 		return o.createGateioServiceRaw(ctx, apiKey, secretKey)
+	case models.ExchangeSlugBingx:
+		return o.createBingxServiceRaw(ctx, apiKey, secretKey)
 	case models.ExchangeSlugMexc:
 		return o.createMexcServiceRaw(ctx, apiKey, secretKey)
 	}
@@ -105,6 +108,8 @@ func (o *Manager) GetPublicDriver(ctx context.Context, slug models.ExchangeSlug)
 		return o.createPublicBybitService(ctx)
 	case models.ExchangeSlugGateio:
 		return o.createPublicGateioService(ctx)
+	case models.ExchangeSlugBingx:
+		return nil, fmt.Errorf("bingx public client is not supported")
 	case models.ExchangeSlugMexc:
 		return nil, fmt.Errorf("mexc public client is not supported")
 	default:
@@ -137,6 +142,8 @@ func (o *Manager) GetDefaultDriver(ctx context.Context, userID uuid.UUID) (IExch
 		return o.createGateService(ctx, userID)
 	case models.ExchangeSlugBybit:
 		return o.createBybitService(ctx, userID)
+	case models.ExchangeSlugBingx:
+		return o.createBingxService(ctx, userID)
 	case models.ExchangeSlugMexc:
 		return o.createMexcService(ctx, userID)
 	default:
@@ -163,6 +170,8 @@ func (o *Manager) GetDriver(ctx context.Context, slug models.ExchangeSlug, userI
 		return o.createGateService(ctx, userID)
 	case models.ExchangeSlugBybit:
 		return o.createBybitService(ctx, userID)
+	case models.ExchangeSlugBingx:
+		return o.createBingxService(ctx, userID)
 	case models.ExchangeSlugMexc:
 		return o.createMexcService(ctx, userID)
 	default:
@@ -558,6 +567,45 @@ func (o *Manager) createPublicGateioService(ctx context.Context) (IExchangeClien
 	return gateio.NewService(o.l, "-", "-", baseURL, o.storage, o.store, o.currConvService)
 }
 
+func (o *Manager) createBingxServiceRaw(ctx context.Context, apiKey, secretKey string) (IExchangeClient, error) {
+	baseURL, err := o.exchangeBaseURL(ctx, models.ExchangeSlugBingx)
+	if err != nil {
+		return nil, err
+	}
+
+	return bingx.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+}
+
+func (o *Manager) createBingxService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) {
+	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
+		UserID:       userID,
+		ExchangeSlug: models.ExchangeSlugBingx,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	keyMap := make(map[string]string, len(keys))
+	for _, key := range keys {
+		keyMap[string(key.Name)] = key.Value
+	}
+
+	baseURL, err := o.exchangeBaseURL(ctx, models.ExchangeSlugBingx)
+	if err != nil {
+		return nil, err
+	}
+
+	return bingx.NewService(
+		o.l,
+		keyMap[models.ExchangeKeyNameAPIKey.String()],
+		keyMap[models.ExchangeKeyNameSecretKey.String()],
+		baseURL,
+		o.storage,
+		o.store,
+		o.currConvService,
+	)
+}
+
 func (o *Manager) createMexcServiceRaw(ctx context.Context, apiKey, secretKey string) (IExchangeClient, error) {
 	baseURL, err := o.exchangeBaseURL(ctx, models.ExchangeSlugMexc)
 	if err != nil {
@@ -576,7 +624,7 @@ func (o *Manager) createMexcService(ctx context.Context, userID uuid.UUID) (IExc
 		return nil, err
 	}
 
-	keyMap := make(map[string]string)
+	keyMap := make(map[string]string, len(keys))
 	for _, key := range keys {
 		keyMap[string(key.Name)] = key.Value
 	}

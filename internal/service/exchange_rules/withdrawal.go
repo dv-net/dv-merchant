@@ -45,6 +45,8 @@ func (o *Service) fetchWithdrawalRule(ctx context.Context, exchange models.Excha
 		return o.handleGateioWithdrawal(ctx, userID, currency)
 	case models.ExchangeSlugBybit:
 		return o.handleBybitWithdrawal(ctx, userID, currency)
+	case models.ExchangeSlugBingx:
+		return o.handleBingxWithdrawal(ctx, userID, currency)
 	case models.ExchangeSlugMexc:
 		return o.handleMexcWithdrawal(ctx, userID, currency)
 	default:
@@ -463,4 +465,44 @@ func (o *Service) updateUserWithdrawalRules(ctx context.Context, user *models.Us
 		}
 	}
 	return nil
+}
+
+func (o *Service) handleBingxWithdrawal(ctx context.Context, userID, currency string) (*models.WithdrawalRulesDTO, error) {
+	rule := &models.WithdrawalRulesDTO{}
+	data, err := o.storage.KeyValue().Get(ctx, formatKey(models.ExchangeSlugBingx, WithdrawalRuleType, currency, userID))
+	if err != nil {
+		if errors.Is(err, redis.Nil) || errors.Is(err, key_value.ErrEntryNotFound) {
+			return o.fetchAndCacheBingxWithdrawalRules(ctx, userID, currency)
+		}
+		return nil, err
+	}
+	return rule, json.Unmarshal(data, rule)
+}
+
+func (o *Service) fetchAndCacheBingxWithdrawalRules(ctx context.Context, userID, currency string) (*models.WithdrawalRulesDTO, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("parse user id: %w", err)
+	}
+	rules, err := o.fetchBingxWithdrawalRules(ctx, userUUID, currency)
+	if err != nil {
+		return nil, err
+	}
+	if len(rules) == 0 {
+		return &models.WithdrawalRulesDTO{}, nil
+	}
+	err = o.storage.KeyValue().Set(ctx, formatKey(models.ExchangeSlugBingx, WithdrawalRuleType, currency, userID), structs.Map(rules[0]), 30*time.Minute)
+	return rules[0], err
+}
+
+func (o *Service) fetchBingxWithdrawalRules(ctx context.Context, userID uuid.UUID, currencies ...string) ([]*models.WithdrawalRulesDTO, error) {
+	bingxClient, err := o.manager.GetDriver(ctx, models.ExchangeSlugBingx, userID)
+	if err != nil {
+		return nil, err
+	}
+	rules, err := bingxClient.GetWithdrawalRules(ctx, currencies...)
+	if err != nil {
+		return nil, err
+	}
+	return rules, nil
 }

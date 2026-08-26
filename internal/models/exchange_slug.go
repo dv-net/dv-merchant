@@ -10,6 +10,7 @@ const (
 	ExchangeSlugKucoin  ExchangeSlug = "kucoin"
 	ExchangeSlugBybit   ExchangeSlug = "bybit"
 	ExchangeSlugGateio  ExchangeSlug = "gate"
+	ExchangeSlugBingx   ExchangeSlug = "bingx"
 	ExchangeSlugMexc    ExchangeSlug = "mexc"
 )
 
@@ -28,6 +29,8 @@ func (o ExchangeSlug) Valid() bool {
 	case ExchangeSlugBybit:
 		return true
 	case ExchangeSlugGateio:
+		return true
+	case ExchangeSlugBingx:
 		return true
 	case ExchangeSlugMexc:
 		return true
