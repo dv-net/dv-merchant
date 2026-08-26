@@ -33,6 +33,7 @@ func New(gateway admin_gateway.INotification, settingSvc setting.ISettingService
 		models.NotificationTypeUserEmailReset:          svc.handleUserEmailReset,
 		models.NotificationTypeUserRemindVerification:  svc.handleUserRemindVerification,
 		models.NotificationTypeUserUpdateSetting:       svc.handleUserUpdateSettingVerification,
+		models.NotificationTypeRefundVerificationCode:  svc.handleRefundVerificationCode,
 	}
 
 	return svc

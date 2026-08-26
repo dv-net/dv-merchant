@@ -73,6 +73,26 @@ func (svc *Service) handleUserForgotPassword(ctx context.Context, encodedVariabl
 	return svc.adminNotifications.SendUserForgotPassword(ctx, req)
 }
 
+func (svc *Service) handleRefundVerificationCode(ctx context.Context, encodedVariables []byte, dest string, channel models.DeliveryChannel) error {
+	pBody, err := notify.ParseNotificationBody[notify.RefundVerificationCodeData](encodedVariables)
+	if err != nil {
+		return fmt.Errorf("parse refund verification code payload: %w", err)
+	}
+	clID, domain, err := svc.getBackendSettings(ctx)
+	if err != nil {
+		return err
+	}
+
+	req := admin_requests.VerifyNotification{
+		BackendClientID: clID.Value,
+		BackendDomain:   domain,
+		Locale:          pBody.Language,
+		Identity:        svc.prepareIdentityByType(dest, channel),
+		Code:            pBody.Code,
+	}
+	return svc.adminNotifications.SendRefundVerificationCode(ctx, req)
+}
+
 func (svc *Service) handleUserPasswordReset(ctx context.Context, encodedVariables []byte, dest string, channel models.DeliveryChannel) error {
 	pBody, err := notify.ParseNotificationBody[notify.UserPasswordChanged](encodedVariables)
 	if err != nil {
