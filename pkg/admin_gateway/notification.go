@@ -22,7 +22,7 @@ const (
 	MethodRefundVerificationCode     = "/notify/refund-verification-code"
 )
 
-type INotification interface {
+type INotification interface { //nolint:interfacebloat
 	SendUserVerification(ctx context.Context, notification admin_requests.VerifyNotification) error
 	SendUserRegistration(ctx context.Context, notification admin_requests.VerifyNotification) error
 	SendUserPasswordReset(ctx context.Context, notification admin_requests.VerifyNotification) error
