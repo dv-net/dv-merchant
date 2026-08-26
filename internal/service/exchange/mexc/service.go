@@ -31,7 +31,10 @@ import (
 	"github.com/dv-net/dv-merchant/pkg/logger"
 )
 
-const coinCacheTTL = time.Minute
+const (
+	coinCacheTTL   = time.Minute
+	WithdrawalStep = 10
+)
 
 type cachedAddresses struct {
 	value responses.GetDepositAddressResponse
@@ -340,11 +343,14 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		return nil, err
 	}
 
+	amount := args.NativeAmount
+	minWithdrawal := args.MinWithdrawal
+
 	o.l.Infow(
 		"withdrawal request assembled",
 		"exchange", models.ExchangeSlugMexc.String(),
 		"recordID", args.RecordID.String(),
-		"amount", args.NativeAmount.String(),
+		"amount", amount.String(),
 		"fee", args.Fee.String(),
 		"currency", internalCurrency,
 		"chain", args.Chain,
@@ -352,21 +358,54 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		"address", args.Address,
 	)
 
-	order, err := o.exClient.Wallet().Withdraw(ctx, &mexcrequests.WithdrawRequest{
-		Coin:            internalCurrency,
-		Network:         args.Chain,
-		ContractAddress: network.Contract,
-		Address:         args.Address,
-		Amount:          args.NativeAmount.String(),
-	})
-	if err != nil {
+	dto := &models.ExchangeWithdrawalDTO{}
+
+	for {
+		withdrawalStep, err := o.convSvc.Convert(ctx, currconv.ConvertDTO{
+			Source:     models.ExchangeSlugMexc.String(),
+			From:       models.CurrencyCodeUSDT,
+			To:         internalCurrency,
+			Amount:     decimal.NewFromInt(WithdrawalStep).String(),
+			StableCoin: false,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		order, err := o.exClient.Wallet().Withdraw(ctx, &mexcrequests.WithdrawRequest{
+			Coin:            internalCurrency,
+			Network:         args.Chain,
+			ContractAddress: network.Contract,
+			Address:         args.Address,
+			Amount:          amount.String(),
+		})
+		if err == nil {
+			if order.ID == "" {
+				return nil, fmt.Errorf("withdrawal for %s created without id", internalCurrency)
+			}
+
+			dto.ExternalOrderID = order.ID
+			return dto, nil
+		}
+
+		if errors.Is(err, exchangeclient.ErrWithdrawalBalanceLocked) {
+			o.l.Errorw("insufficient funds, retrying with reduced amount",
+				"error", exchangeclient.ErrWithdrawalBalanceLocked,
+				"exchange", models.ExchangeSlugMexc.String(),
+				"recordID", args.RecordID.String(),
+				"current_amount", amount.String(),
+			)
+
+			amount = amount.Sub(withdrawalStep).RoundDown(int32(args.WithdrawalPrecision)) //nolint:gosec
+			if amount.LessThan(minWithdrawal) {
+				return nil, exchangeclient.ErrMinWithdrawalBalance
+			}
+			dto.RetryReason = exchangeclient.ErrWithdrawalBalanceLocked.Error()
+			continue
+		}
+
 		return nil, err
 	}
-	if order.ID == "" {
-		return nil, fmt.Errorf("withdrawal for %s created without id", internalCurrency)
-	}
-
-	return &models.ExchangeWithdrawalDTO{ExternalOrderID: order.ID}, nil
 }
 
 func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side string, ticker string, _ *decimal.Decimal, rule *models.OrderRulesDTO) (*models.ExchangeOrderDTO, error) {

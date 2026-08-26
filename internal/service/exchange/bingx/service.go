@@ -32,6 +32,7 @@ import (
 const (
 	symbolSeparator = "-"
 	coinCacheTTL    = time.Minute
+	WithdrawalStep  = 10
 )
 
 type Service struct {
@@ -722,6 +723,7 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 	if !amount.IsPositive() {
 		return nil, exchangeclient.ErrMinWithdrawalBalance
 	}
+	minWithdrawal := args.MinWithdrawal
 
 	if _, err := o.ensureFundBalance(ctx, internalCurrency, args.NativeAmount); err != nil {
 		return nil, err
@@ -738,21 +740,54 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 		"address", args.Address,
 	)
 
-	order, err := o.exClient.Wallet().Withdraw(ctx, &bingxrequests.WithdrawRequest{
-		Coin:       internalCurrency,
-		Network:    args.Chain,
-		Address:    args.Address,
-		Amount:     amount.String(),
-		WalletType: bingx.WalletTypeFund,
-	})
-	if err != nil {
+	dto := &models.ExchangeWithdrawalDTO{}
+
+	for {
+		withdrawalStep, err := o.convSvc.Convert(ctx, currconv.ConvertDTO{
+			Source:     models.ExchangeSlugBingx.String(),
+			From:       models.CurrencyCodeUSDT,
+			To:         internalCurrency,
+			Amount:     decimal.NewFromInt(WithdrawalStep).String(),
+			StableCoin: false,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		order, err := o.exClient.Wallet().Withdraw(ctx, &bingxrequests.WithdrawRequest{
+			Coin:       internalCurrency,
+			Network:    args.Chain,
+			Address:    args.Address,
+			Amount:     amount.String(),
+			WalletType: bingx.WalletTypeFund,
+		})
+		if err == nil {
+			if order.ID == "" {
+				return nil, fmt.Errorf("withdrawal for %s created without id", internalCurrency)
+			}
+
+			dto.ExternalOrderID = order.ID
+			return dto, nil
+		}
+
+		if errors.Is(err, exchangeclient.ErrInsufficientBalance) {
+			o.l.Errorw("insufficient funds, retrying with reduced amount",
+				"error", exchangeclient.ErrInsufficientBalance,
+				"exchange", models.ExchangeSlugBingx.String(),
+				"recordID", args.RecordID.String(),
+				"current_amount", amount.String(),
+			)
+
+			amount = amount.Sub(withdrawalStep).RoundDown(int32(args.WithdrawalPrecision)) //nolint:gosec
+			if amount.LessThan(minWithdrawal) {
+				return nil, exchangeclient.ErrMinWithdrawalBalance
+			}
+			dto.RetryReason = exchangeclient.ErrInsufficientBalance.Error()
+			continue
+		}
+
 		return nil, err
 	}
-	if order.ID == "" {
-		return nil, fmt.Errorf("withdrawal for %s created without id", internalCurrency)
-	}
-
-	return &models.ExchangeWithdrawalDTO{ExternalOrderID: order.ID}, nil
 }
 
 func (o *Service) GetWithdrawalByID(ctx context.Context, args *models.GetWithdrawalByIDParams) (*models.WithdrawalStatusDTO, error) {
