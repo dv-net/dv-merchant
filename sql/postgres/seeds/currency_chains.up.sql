@@ -1,3 +1,5 @@
+DELETE FROM exchange_chains WHERE slug = 'gate' AND ticker = 'DAI';
+
 INSERT INTO exchange_chains (slug, currency_id, ticker, chain)
 values
     ('okx','BTC.Bitcoin', 'BTC', 'BTC-Bitcoin'),
@@ -187,8 +189,6 @@ values
     ('gate', 'USDC.BNBSmartChain', 'USDC', 'BSC'),
     ('gate', 'USDC.Polygon', 'USDC', 'MATIC'),
     ('gate', 'BNB.BNBSmartChain', 'BNB', 'BSC'),
-    ('gate', 'DAI.Ethereum', 'DAI', 'ETH'),
-    ('gate', 'DAI.Polygon', 'DAI', 'MATIC'),
     ('gate', 'POL.Polygon', 'POL', 'MATIC'),
     ('gate', 'ENA.Ethereum', 'ENA', 'ETH'),
     ('gate', 'WLD.Ethereum', 'WLD', 'ETH'),
