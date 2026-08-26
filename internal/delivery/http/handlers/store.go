@@ -86,7 +86,11 @@ func (h *Handler) loadUserStore(c fiber.Ctx) error {
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)
 	}
-	res := store_response.NewStoreResponses(stores...)
+	storesWithStatistics, err := h.services.StoreService.GetStoresWithStatistics(c.Context(), stores...)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusInternalServerError)
+	}
+	res := store_response.NewStoreResponsesWithStatistics(storesWithStatistics...)
 	return c.JSON(response.OkByData(res))
 }
 
@@ -151,7 +155,11 @@ func (h *Handler) loadStoreByID(c fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	res := store_response.NewStoreResponse(targetStore)
+	storesWithStatistics, err := h.services.StoreService.GetStoresWithStatistics(c.Context(), targetStore)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusInternalServerError)
+	}
+	res := store_response.NewStoreResponseWithStatistics(storesWithStatistics[0])
 	return c.JSON(response.OkByData(res))
 }
 
@@ -212,8 +220,12 @@ func (h *Handler) archivedStoresList(c fiber.Ctx) error {
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
+	storesWithStatistics, err := h.services.StoreService.GetStoresWithStatistics(c.Context(), stores...)
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusInternalServerError)
+	}
 
-	return c.JSON(response.OkByData(store_response.NewStoreResponses(stores...)))
+	return c.JSON(response.OkByData(store_response.NewStoreResponsesWithStatistics(storesWithStatistics...)))
 }
 
 // storeArchive is a function to init archive store

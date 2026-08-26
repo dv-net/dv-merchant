@@ -102,7 +102,9 @@ func (o *Service) GetAllUsersFiltered(ctx context.Context, req admin_request.Get
 		commonParams.SetPage(req.Page)
 	}
 
-	params := repo_users.GetAllFilteredParams{}
+	params := repo_users.GetAllFilteredParams{
+		CommonFindParams: *commonParams,
+	}
 
 	if req.Roles != nil {
 		roles := strings.Split(*req.Roles, ",")

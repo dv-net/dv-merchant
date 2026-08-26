@@ -3011,6 +3011,8 @@ definitions:
         type: string
       owner_email:
         type: string
+      payments_count:
+        type: integer
       public_payment_form_enabled:
         type: boolean
       rate_scale:
@@ -3029,6 +3031,8 @@ definitions:
         type: boolean
       success_url:
         format: uri
+        type: string
+      top_up_amount_usd:
         type: string
       user_id:
         format: uuid
