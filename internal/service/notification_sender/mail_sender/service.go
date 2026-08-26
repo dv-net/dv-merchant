@@ -81,6 +81,7 @@ func New(ctx context.Context, log logger.Logger, eventListener event.IListener, 
 		models.NotificationTypeUserTestEmail:                  svc.handleUserTestEmail,
 		models.NotificationTypeTwoFactorAuthentication:        svc.handleTwoFactorAuthentication,
 		models.NotificationTypeUserCryptoReceipt:              svc.handleUserCryptoReceipt,
+		models.NotificationTypeRefundVerificationCode:         svc.handleRefundVerificationCode,
 	}
 
 	eventListener.Register(setting.MailerSettingsChanged, svc.handleMailerSettingsChanged)

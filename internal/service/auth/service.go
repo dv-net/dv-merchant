@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"hash/crc32"
+	"strings"
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/config"
@@ -13,6 +14,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/service/user"
+	"github.com/dv-net/dv-merchant/internal/service/wallet"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_personal_access_tokens"
@@ -21,6 +23,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/tools/str"
 	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/logger"
+	"github.com/dv-net/dv-merchant/pkg/otp"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -36,16 +39,22 @@ type IAuth interface {
 	Auth(ctx context.Context, dto auth_request.AuthRequest) (*Token, error)
 	GetUserByToken(ctx context.Context, hashedToken string) (*models.User, error)
 	AuthByUser(ctx context.Context, user *models.User) (*Token, error)
+	AuthByWallet(ctx context.Context, w *models.Wallet) (*Token, error)
+	GetWalletByToken(ctx context.Context, hashedToken string) (*models.Wallet, error)
+	SendWalletVerificationCode(ctx context.Context, walletID, storeID uuid.UUID, email string) error
+	VerifyWalletCode(ctx context.Context, walletID, storeID uuid.UUID, email, code string) (*Token, error)
 }
 
 type Service struct {
 	cfg              *config.Config
 	logger           logger.Logger
+	storage          storage.IStorage
 	userService      user.IUser
 	userCredsService user.IUserCredentials
-	storage          storage.IStorage
 	notifyService    notify.INotificationService
 	settingsService  setting.ISettingService
+	walletService    wallet.IWalletService
+	otpService       *otp.Service
 }
 
 type Token struct {
@@ -62,6 +71,8 @@ func New(
 	userCredsService user.IUserCredentials,
 	notifyService notify.INotificationService,
 	settingsService setting.ISettingService,
+	walletService wallet.IWalletService,
+	otpService *otp.Service,
 ) *Service {
 	return &Service{
 		cfg:              cfg,
@@ -71,10 +82,12 @@ func New(
 		storage:          storage,
 		notifyService:    notifyService,
 		settingsService:  settingsService,
+		walletService:    walletService,
+		otpService:       otpService,
 	}
 }
 
-func (s Service) RegisterUser(ctx context.Context, dto *user.CreateUserDTO) (*user.RegisterUserDTO, error) {
+func (s *Service) RegisterUser(ctx context.Context, dto *user.CreateUserDTO) (*user.RegisterUserDTO, error) {
 	var rUserDto *user.RegisterUserDTO
 	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		registeredUser, err := s.userService.StoreUser(ctx, dto, repos.WithTx(tx))
@@ -96,7 +109,7 @@ func (s Service) RegisterUser(ctx context.Context, dto *user.CreateUserDTO) (*us
 	return rUserDto, nil
 }
 
-func (s Service) Auth(ctx context.Context, dto auth_request.AuthRequest) (*Token, error) {
+func (s *Service) Auth(ctx context.Context, dto auth_request.AuthRequest) (*Token, error) {
 	userForAuth, err := s.userService.GetUserByEmail(ctx, dto.Email)
 	if err != nil {
 		return nil, err
@@ -115,7 +128,7 @@ func (s Service) Auth(ctx context.Context, dto auth_request.AuthRequest) (*Token
 		expiresAt = util.Pointer(time.Now().Add(time.Hour * 24))
 	}
 
-	token, err := s.createNewToken(ctx, expiresAt, userForAuth.ID)
+	token, err := s.createNewToken(ctx, "user", userForAuth.ID, "AuthToken", expiresAt)
 	if err != nil {
 		return nil, err
 	}
@@ -123,49 +136,92 @@ func (s Service) Auth(ctx context.Context, dto auth_request.AuthRequest) (*Token
 	return token, nil
 }
 
-func (s Service) createNewToken(ctx context.Context, expires *time.Time, userID uuid.UUID) (*Token, error) {
-	token, err := generateTokenString()
-	if err != nil {
-		return nil, err
-	}
-	params := repo_personal_access_tokens.CreateParams{
-		TokenableType: "user",
-		TokenableID:   userID,
-		Name:          "AuthToken",
-		Token:         hash.SHA256(token.FullToken),
-		ExpiresAt:     expires,
-	}
-
-	_, err = s.storage.PersonalAccessToken().Create(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	return token, nil
+func (s *Service) AuthByUser(ctx context.Context, user *models.User) (*Token, error) {
+	return s.createNewToken(ctx, "user", user.ID, "AuthToken", util.Pointer(time.Now().Add(time.Hour*24)))
 }
 
-func (s Service) AuthByUser(ctx context.Context, user *models.User) (*Token, error) {
-	token, err := generateTokenString()
+func (s *Service) GetUserByToken(ctx context.Context, hashedToken string) (*models.User, error) {
+	token, err := s.resolveToken(ctx, hashedToken)
 	if err != nil {
 		return nil, err
 	}
 
-	params := repo_personal_access_tokens.CreateParams{
-		TokenableType: "user",
-		TokenableID:   user.ID,
-		Name:          "AuthToken",
-		Token:         hash.SHA256(token.FullToken),
-		ExpiresAt:     util.Pointer(time.Now().Add(time.Hour * 24)),
-	}
-
-	_, err = s.storage.PersonalAccessToken().Create(ctx, params)
+	u, err := s.userService.GetUserByID(ctx, token.TokenableID)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("user not found")
 	}
-	return token, nil
+	return u, nil
 }
 
-func (s Service) GetUserByToken(ctx context.Context, hashedToken string) (*models.User, error) {
+func (s *Service) AuthByWallet(ctx context.Context, w *models.Wallet) (*Token, error) {
+	return s.createNewToken(ctx, "wallet", w.ID, "WalletAuthToken", util.Pointer(time.Now().Add(time.Hour*3)))
+}
+
+func (s *Service) GetWalletByToken(ctx context.Context, hashedToken string) (*models.Wallet, error) {
+	token, err := s.resolveToken(ctx, hashedToken)
+	if err != nil {
+		return nil, err
+	}
+
+	w, err := s.walletService.GetWallet(ctx, token.TokenableID)
+	if err != nil {
+		return nil, errors.New("wallet not found")
+	}
+	return w, nil
+}
+
+func (s *Service) SendWalletVerificationCode(ctx context.Context, walletID, storeID uuid.UUID, email string) error {
+	w, err := s.matchWalletForAuth(ctx, walletID, storeID, email)
+	if err != nil {
+		return err
+	}
+
+	if err := s.storage.KeyValue().IncrementCounterWithLimit(ctx, walletCodeResendCooldownKey(walletID), 1,
+		walletCodeResendCooldown); err != nil {
+		return err
+	}
+
+	code, err := s.otpService.InitStringCode(ctx, "", walletOTPPurpose(walletID), generateWalletCode)
+	if err != nil {
+		return err
+	}
+
+	go s.notifyService.SendSystemEmail(ctx, models.NotificationTypeRefundVerificationCode, email, &notify.RefundVerificationCodeData{
+		Language: w.Locale,
+		Code:     code,
+	}, &models.NotificationArgs{StoreID: &storeID})
+
+	return nil
+}
+
+func (s *Service) VerifyWalletCode(ctx context.Context, walletID, storeID uuid.UUID, email, code string) (*Token, error) {
+	w, err := s.matchWalletForAuth(ctx, walletID, storeID, email)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.otpService.VerifyStringCode(ctx, strings.ToUpper(code), "", walletOTPPurpose(walletID)); err != nil {
+		return nil, ErrInvalidOTPCode
+	}
+
+	return s.AuthByWallet(ctx, w)
+}
+
+func (s *Service) matchWalletForAuth(ctx context.Context, walletID, storeID uuid.UUID, email string) (*models.Wallet, error) {
+	w, err := s.walletService.GetWallet(ctx, walletID)
+	if err != nil {
+		return nil, ErrWalletNotFound
+	}
+	if w.StoreID != storeID {
+		return nil, ErrWalletNotFound
+	}
+	if !w.Email.Valid || !strings.EqualFold(w.Email.String, email) {
+		return nil, ErrEmailMismatch
+	}
+	return w, nil
+}
+
+func (s *Service) resolveToken(ctx context.Context, hashedToken string) (*models.PersonalAccessToken, error) {
 	token, err := s.storage.PersonalAccessToken().GetByToken(ctx, hashedToken)
 	if err != nil || token == nil {
 		return nil, ErrTokenExpired
@@ -179,11 +235,34 @@ func (s Service) GetUserByToken(ctx context.Context, hashedToken string) (*model
 		return nil, ErrTokenExpired
 	}
 
-	u, err := s.userService.GetUserByID(ctx, token.TokenableID)
+	return token, nil
+}
+
+func (s *Service) createNewToken(
+	ctx context.Context,
+	tType string,
+	tID uuid.UUID,
+	name string,
+	expires *time.Time,
+) (*Token, error) {
+	token, err := generateTokenString()
 	if err != nil {
-		return nil, errors.New("user not found")
+		return nil, err
 	}
-	return u, nil
+	params := repo_personal_access_tokens.CreateParams{
+		TokenableType: tType,
+		TokenableID:   tID,
+		Name:          name,
+		Token:         hash.SHA256(token.FullToken),
+		ExpiresAt:     expires,
+	}
+
+	_, err = s.storage.PersonalAccessToken().Create(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
 }
 
 func generateTokenString() (*Token, error) {
@@ -202,7 +281,7 @@ func generateTokenString() (*Token, error) {
 	}, nil
 }
 
-func (s Service) setDefaultUserSettings(ctx context.Context, user *models.User, opt repos.Option) error {
+func (s *Service) setDefaultUserSettings(ctx context.Context, user *models.User, opt repos.Option) error {
 	settings := []setting.UpdateDTO{
 		{
 			Name:  setting.TransferType,

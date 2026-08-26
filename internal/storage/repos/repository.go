@@ -9,6 +9,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_aml_supported_assets"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_aml_user_keys"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_analytics"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_blocked_transactions"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_currencies"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_currency_exrate"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchange_addresses"
@@ -26,6 +27,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_notifications"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_personal_access_tokens"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_receipts"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_refund_requests"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_settings"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_api_keys"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_store_currencies"
@@ -72,10 +74,13 @@ type IRepository interface {
 	StoreSecrets(opts ...Option) repo_store_secrets.Querier
 	Transactions(opts ...Option) repo_transactions.ICustomQuerier
 	UnconfirmedTransactions(opts ...Option) repo_unconfirmed_transactions.Querier
+	BlockedTransactions(opts ...Option) repo_blocked_transactions.Querier
+	TransferTransactions(opts ...Option) repo_transfer_transactions.Querier
 	Wallets(opts ...Option) repo_wallets.ICustomQuerier
 	WalletAddresses(opts ...Option) repo_wallet_addresses.ICustomQuerier
 	WalletAddressesActivityLog(opts ...Option) repo_wallet_addresses_activity_logs.Querier
 	Receipts(opts ...Option) repo_receipts.Querier
+	RefundRequests(opts ...Option) repo_refund_requests.Querier
 	Settings(opts ...Option) repo_settings.Querier
 	WithdrawalWallets(opts ...Option) repo_withdrawal_wallets.Querier
 	WithdrawalWalletAddresses(opts ...Option) repo_withdrawal_wallet_addresses.Querier
@@ -98,7 +103,6 @@ type IRepository interface {
 	Notifications(opts ...Option) repo_notifications.Querier
 	UpdateBalanceQueue(opts ...Option) repo_update_balance_queue.Querier
 	MultiWithdrawalRules(opts ...Option) repo_multi_withdrawal_rules.Querier
-	TransferTransactions(opts ...Option) repo_transfer_transactions.Querier
 	TronWalletBalanceStatistics(opts ...Option) repo_tron_wallet_balance_statistics.Querier
 	Analytics(opts ...Option) repo_analytics.Querier
 	AmlServices(opts ...Option) repo_aml_services.Querier
@@ -128,10 +132,12 @@ type repository struct {
 	webhookSendHistories        *repo_webhook_send_histories.CustomQuerier
 	transactions                *repo_transactions.CustomQuerier
 	unconfirmedTransactions     *repo_unconfirmed_transactions.Queries
+	blockedTransactions         *repo_blocked_transactions.Queries
 	wallets                     *repo_wallets.CustomQuerier
 	walletAddresses             *repo_wallet_addresses.CustomQuerier
 	walletAddressesActivityLog  *repo_wallet_addresses_activity_logs.Queries
 	receipts                    *repo_receipts.Queries
+	refundRequests              *repo_refund_requests.Queries
 	settings                    *repo_settings.Queries
 	transfers                   *repo_transfers.CustomQuerier
 	withdrawalWallets           *repo_withdrawal_wallets.Queries
@@ -187,10 +193,12 @@ func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue)
 		webhookSendHistories:        repo_webhook_send_histories.NewCustom(psql.DB),
 		transactions:                repo_transactions.NewCustom(psql.DB),
 		unconfirmedTransactions:     repo_unconfirmed_transactions.New(psql.DB),
+		blockedTransactions:         repo_blocked_transactions.New(psql.DB),
 		wallets:                     repo_wallets.NewCustom(psql.DB),
 		walletAddresses:             repo_wallet_addresses.NewCustom(psql.DB),
 		walletAddressesActivityLog:  repo_wallet_addresses_activity_logs.New(psql.DB),
 		receipts:                    repo_receipts.New(psql.DB),
+		refundRequests:              repo_refund_requests.New(psql.DB),
 		settings:                    repo_settings.New(psql.DB),
 		transfers:                   repo_transfers.NewCustom(psql.DB),
 		withdrawalWallets:           repo_withdrawal_wallets.New(psql.DB),
@@ -323,6 +331,23 @@ func (r *repository) UnconfirmedTransactions(opts ...Option) repo_unconfirmed_tr
 	return r.unconfirmedTransactions
 }
 
+func (r *repository) BlockedTransactions(opts ...Option) repo_blocked_transactions.Querier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.blockedTransactions.WithTx(options.Tx)
+	}
+	return r.blockedTransactions
+}
+
+func (r *repository) TransferTransactions(opts ...Option) repo_transfer_transactions.Querier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.transferTransactions.WithTx(options.Tx)
+	}
+
+	return r.transferTransactions
+}
+
 func (r *repository) Wallets(opts ...Option) repo_wallets.ICustomQuerier {
 	options := parseOptions(opts...)
 	if options.Tx != nil {
@@ -353,6 +378,14 @@ func (r *repository) Receipts(opts ...Option) repo_receipts.Querier {
 		return r.receipts.WithTx(options.Tx)
 	}
 	return r.receipts
+}
+
+func (r *repository) RefundRequests(opts ...Option) repo_refund_requests.Querier {
+	options := parseOptions(opts...)
+	if options.Tx != nil {
+		return r.refundRequests.WithTx(options.Tx)
+	}
+	return r.refundRequests
 }
 
 func (r *repository) Settings(opts ...Option) repo_settings.Querier {
@@ -545,15 +578,6 @@ func (r *repository) MultiWithdrawalRules(opts ...Option) repo_multi_withdrawal_
 	}
 
 	return r.multiWithdrawalRules
-}
-
-func (r *repository) TransferTransactions(opts ...Option) repo_transfer_transactions.Querier {
-	options := parseOptions(opts...)
-	if options.Tx != nil {
-		return r.transferTransactions.WithTx(options.Tx)
-	}
-
-	return r.transferTransactions
 }
 
 func (r *repository) TronWalletBalanceStatistics(opts ...Option) repo_tron_wallet_balance_statistics.Querier {

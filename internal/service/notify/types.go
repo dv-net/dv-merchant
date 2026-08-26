@@ -122,6 +122,20 @@ func (d *UserForgotPassword) Encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+type RefundVerificationCodeData struct {
+	Language string `json:"language"`
+	Code     string `json:"code"`
+}
+
+func (d *RefundVerificationCodeData) Encode() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if err := json.NewEncoder(buf).Encode(d); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
 type UserPasswordReset struct {
 	Language string `json:"language"`
 	Code     string `json:"code"`

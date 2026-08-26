@@ -1977,7 +1977,8 @@ const docTemplate = `{
                                 "user_remind_verification",
                                 "user_update_setting_verification",
                                 "user_test_email",
-                                "user_crypto_receipt"
+                                "user_crypto_receipt",
+                                "refund_verification_code"
                             ],
                             "type": "string"
                         },
@@ -4217,6 +4218,119 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/store/{id}/refund-requests": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists refund requests awaiting review for a store owned by the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store",
+                    "Refund"
+                ],
+                "summary": "List pending refund requests for a store",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_RefundRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/store/{id}/refund-requests/{refundId}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Rejects a pending refund request for a store owned by the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store",
+                    "Refund"
+                ],
+                "summary": "Reject a refund request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Store ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Refund request ID",
+                        "name": "refundId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-RefundRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/store/{id}/resend-verify": {
             "post": {
                 "security": [
@@ -4256,6 +4370,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -9991,6 +10111,169 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/public/refund/blocked-transactions/{id}/claim": {
+            "post": {
+                "description": "Creates a refund request for a blocked transaction belonging to the authenticated wallet",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Refund",
+                    "Public"
+                ],
+                "summary": "Create a refund request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Blocked transaction ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "RefundClaimRequest",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RefundClaimRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-RefundRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/public/refund/cabinet": {
+            "get": {
+                "description": "Lists blocked transactions for the authenticated wallet, with refund status if a claim was filed",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Refund",
+                    "Public"
+                ],
+                "summary": "List a wallet's blocked transactions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-map_string_array_CabinetItemResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/public/refund/lookup": {
+            "post": {
+                "description": "Sends an OTP code to the wallet's confirmed email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Refund",
+                    "Public"
+                ],
+                "summary": "Request a refund verification code",
+                "parameters": [
+                    {
+                        "description": "RefundLookupRequest",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RefundLookupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/public/refund/verify": {
+            "post": {
+                "description": "Verifies the OTP code and issues a wallet session token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Refund",
+                    "Public"
+                ],
+                "summary": "Verify a refund verification code",
+                "parameters": [
+                    {
+                        "description": "RefundVerifyRequest",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RefundVerifyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-RefundVerifyResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/public/store/topup/{store_id}/{external_id}": {
             "get": {
                 "description": "Get wallet full data",
@@ -10747,6 +11030,41 @@ const docTemplate = `{
                 },
                 "blockchain": {
                     "$ref": "#/definitions/Blockchain"
+                }
+            }
+        },
+        "CabinetItemResponse": {
+            "type": "object",
+            "properties": {
+                "blockchain": {
+                    "$ref": "#/definitions/Blockchain"
+                },
+                "blocked_transaction_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "currency_id": {
+                    "type": "string"
+                },
+                "destination_address": {
+                    "type": "string"
+                },
+                "refund_status": {
+                    "type": "string"
+                },
+                "risk_level": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "transaction_id": {
+                    "type": "string"
+                },
+                "tx_hash": {
+                    "type": "string"
                 }
             }
         },
@@ -11602,7 +11920,8 @@ const docTemplate = `{
                 "bitget",
                 "kucoin",
                 "bybit",
-                "gate"
+                "gate",
+                "mexc"
             ],
             "x-enum-varnames": [
                 "ExchangeSlugHtx",
@@ -11611,7 +11930,8 @@ const docTemplate = `{
                 "ExchangeSlugBitget",
                 "ExchangeSlugKucoin",
                 "ExchangeSlugBybit",
-                "ExchangeSlugGateio"
+                "ExchangeSlugGateio",
+                "ExchangeSlugMexc"
             ]
         },
         "ExchangeTestConnectionRequest": {
@@ -12851,6 +13171,34 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-RefundRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/RefundRequest"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-RefundVerifyResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/RefundVerifyResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-RegisterRootResponse": {
             "type": "object",
             "properties": {
@@ -13515,6 +13863,23 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-array_RefundRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RefundRequest"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-array_RiskRuleResponse": {
             "type": "object",
             "properties": {
@@ -13832,6 +14197,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-map_string_array_CabinetItemResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/map_string_array_CabinetItemResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-string": {
             "type": "object",
             "properties": {
@@ -14018,7 +14397,8 @@ const docTemplate = `{
                 "user_remind_verification",
                 "user_update_setting_verification",
                 "user_test_email",
-                "user_crypto_receipt"
+                "user_crypto_receipt",
+                "refund_verification_code"
             ],
             "x-enum-varnames": [
                 "NotificationTypeUserVerification",
@@ -14035,7 +14415,8 @@ const docTemplate = `{
                 "NotificationTypeUserRemindVerification",
                 "NotificationTypeUserUpdateSetting",
                 "NotificationTypeUserTestEmail",
-                "NotificationTypeUserCryptoReceipt"
+                "NotificationTypeUserCryptoReceipt",
+                "NotificationTypeRefundVerificationCode"
             ]
         },
         "NotificationTypeListResponse": {
@@ -14425,6 +14806,105 @@ const docTemplate = `{
             ],
             "properties": {
                 "address": {
+                    "type": "string"
+                }
+            }
+        },
+        "RefundClaimRequest": {
+            "type": "object",
+            "required": [
+                "destination_address"
+            ],
+            "properties": {
+                "destination_address": {
+                    "type": "string"
+                }
+            }
+        },
+        "RefundLookupRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "store_id",
+                "wallet_id"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "string"
+                },
+                "wallet_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "RefundRequest": {
+            "type": "object",
+            "properties": {
+                "blocked_transaction_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "destination_address": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "reviewed_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "string"
+                },
+                "transfer_id": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "wallet_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "RefundVerifyRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "email",
+                "store_id",
+                "wallet_id"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "string"
+                },
+                "wallet_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "RefundVerifyResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
                     "type": "string"
                 }
             }
@@ -16797,7 +17277,8 @@ const docTemplate = `{
                 "bitget",
                 "kucoin",
                 "bybit",
-                "gate"
+                "gate",
+                "mexc"
             ],
             "x-enum-varnames": [
                 "RateSourceOKX",
@@ -16806,7 +17287,8 @@ const docTemplate = `{
                 "RateSourceBitGet",
                 "RateSourceKucoin",
                 "RateSourceBybit",
-                "RateSourceGateio"
+                "RateSourceGateio",
+                "RateSourceMexc"
             ]
         },
         "github_com_dv-net_dv-merchant_internal_models.WalletType": {
@@ -17040,6 +17522,15 @@ const docTemplate = `{
             "type": "object",
             "additionalProperties": {
                 "$ref": "#/definitions/CombinedStats"
+            }
+        },
+        "map_string_array_CabinetItemResponse": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/definitions/CabinetItemResponse"
+                }
             }
         },
         "pgtype.Bool": {

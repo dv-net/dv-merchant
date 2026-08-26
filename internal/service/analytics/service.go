@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"runtime"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/dv-net/dv-merchant/pkg/admin_gateway"
 	admin_requests "github.com/dv-net/dv-merchant/pkg/admin_gateway/requests"
 
+	"github.com/goccy/go-json"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shopspring/decimal"
 )

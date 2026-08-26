@@ -57,6 +57,29 @@ func (svc *Service) handleUserForgotPassword(_ context.Context, email string, en
 	return bodyBytes, err
 }
 
+func (svc *Service) handleRefundVerificationCode(_ context.Context, email string, encodedVariables []byte) ([]byte, error) {
+	pBody, err := notify.ParseNotificationBody[notify.RefundVerificationCodeData](encodedVariables)
+	if err != nil {
+		return nil, fmt.Errorf("parse refund verification code email payload: %w", err)
+	}
+	emailParams := &templater.RefundVerificationCode{
+		BasePayload: templater.BasePayload{
+			UserEmail: email,
+			Language:  pBody.Language,
+		},
+		RefundVerificationCode: pBody.Code,
+	}
+
+	body, err := svc.templateSvc.AssembleEmail(emailParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create email template: %w", err)
+	}
+
+	bodyBytes := body.Bytes()
+	err = svc.mailerClient.Send(svc.mailerSettings.MailerSender, []string{email}, bytes.NewBuffer(bodyBytes))
+	return bodyBytes, err
+}
+
 func (svc *Service) handleUserPasswordChanged(_ context.Context, email string, encodedVariables []byte) ([]byte, error) {
 	pBody, err := notify.ParseNotificationBody[notify.UserPasswordChanged](encodedVariables)
 	if err != nil {

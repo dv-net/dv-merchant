@@ -1,9 +1,11 @@
 package mailer
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"sync/atomic"
@@ -129,16 +131,40 @@ func (o *SMTPPool) run(ctx context.Context) {
 }
 
 func (o *SMTPPool) Send(from string, to []string, body io.Reader) error {
-	connection, err := o.get()
+	data, err := io.ReadAll(body)
 	if err != nil {
-		return err
+		return fmt.Errorf("read mail body: %w", err)
 	}
-	defer func() {
-		if err := o.put(connection); err != nil {
-			_ = connection.Close()
-		}
-	}()
 
+	var lastErr error
+	for attempt := 0; attempt < o.opt.MaxRetries; attempt++ {
+		connection, err := o.get()
+		if err != nil {
+			return err
+		}
+
+		sendErr := sendOnce(connection, from, to, bytes.NewReader(data))
+		if sendErr == nil {
+			// Only a connection that finished its transaction cleanly is safe to reuse.
+			if putErr := o.put(connection); putErr != nil {
+				_ = connection.Close()
+			}
+			return nil
+		}
+
+		_ = connection.Close()
+		lastErr = sendErr
+
+		var smtpErr *smtp.SMTPError
+		if errors.As(sendErr, &smtpErr) {
+			return sendErr
+		}
+	}
+
+	return lastErr
+}
+
+func sendOnce(connection *conn, from string, to []string, body io.Reader) error {
 	if err := connection.Mail(from); err != nil {
 		return err
 	}

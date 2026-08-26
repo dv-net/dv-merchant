@@ -4,8 +4,7 @@ import (
 	"errors"
 
 	"github.com/dv-net/dv-merchant/internal/models"
-
-	validation "github.com/go-ozzo/ozzo-validation/v4" // todo replace with validator
+	"github.com/go-playground/validator/v10"
 
 	"github.com/dv-net/dv-processing/pkg/avalidator"
 
@@ -29,7 +28,7 @@ func (r *MultiWithdrawalRules) ValidateByBlockchain(b models.Blockchain) error {
 		return errors.New("invalid manual withdraw address")
 	}
 
-	return validation.ValidateStruct(r)
+	return validator.New().Struct(r)
 }
 
 type UpdateRequest struct {
@@ -57,5 +56,5 @@ func (ur *UpdateRequest) Validate() error {
 		return errors.New("invalid withdrawal_interval")
 	}
 
-	return validation.ValidateStruct(ur)
+	return validator.New().Struct(ur)
 }

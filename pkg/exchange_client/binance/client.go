@@ -3,7 +3,6 @@ package binance
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/goccy/go-json"
 	"github.com/google/go-querystring/query"
 
 	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"

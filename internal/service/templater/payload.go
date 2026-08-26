@@ -24,6 +24,7 @@ var validPartials = map[string]struct{}{
 	UserEmailResetPartialName:                 {},
 	TwoFactorAuthenticationPartialName:        {},
 	UserCryptoReceiptPartialName:              {},
+	RefundVerificationCodePartialName:         {},
 }
 
 const (
@@ -42,6 +43,7 @@ const (
 	UserTestEmailPartialName                  = "user_test_email"
 	TwoFactorAuthenticationPartialName        = "two_factor_authentication"
 	UserCryptoReceiptPartialName              = "user_crypto_receipt"
+	RefundVerificationCodePartialName         = "refund_verification_code"
 )
 
 type IEmailPayload interface {
@@ -63,6 +65,7 @@ var (
 	_ IEmailPayload = (*UserRemindVerification)(nil)
 	_ IEmailPayload = (*UserChangeEmail)(nil)
 	_ IEmailPayload = (*UserCryptoReceiptPayload)(nil)
+	_ IEmailPayload = (*RefundVerificationCode)(nil)
 )
 
 type BasePayload struct {
@@ -190,6 +193,27 @@ func (o *UserForgotPassword) GetSubject() string   { return o.EmailSubject }
 func (o *UserForgotPassword) GetUserEmail() string { return o.UserEmail }
 func (o *UserForgotPassword) GetLanguage() string  { return o.Language }
 func (o *UserForgotPassword) GetName() string      { return UserForgotPasswordPartialName }
+
+type RefundVerificationCode struct {
+	BasePayload
+	EmailTitle                    string `json:"refund_verification_code_email_title"`
+	EmailSubject                  string `json:"refund_verification_code_email_subject"`
+	RefundVerificationCode        string `json:"refund_verification_code"`
+	RefundVerificationMessageText string `json:"refund_verification_message_text"`
+}
+
+func (o *RefundVerificationCode) GetPayload() []byte {
+	b := new(bytes.Buffer)
+	if err := json.NewEncoder(b).Encode(o); err != nil {
+		return b.Bytes()
+	}
+	return b.Bytes()
+}
+
+func (o *RefundVerificationCode) GetSubject() string   { return o.EmailSubject }
+func (o *RefundVerificationCode) GetUserEmail() string { return o.UserEmail }
+func (o *RefundVerificationCode) GetLanguage() string  { return o.Language }
+func (o *RefundVerificationCode) GetName() string      { return RefundVerificationCodePartialName }
 
 type UserPasswordChanged struct {
 	BasePayload

@@ -10,6 +10,8 @@ import (
 	"github.com/dv-net/dv-merchant/internal/config"
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/service/transactions"
+	"github.com/dv-net/dv-merchant/internal/service/wallet"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_aml_checks"
@@ -50,6 +52,7 @@ type IService interface {
 	GetAllActiveProviders() []models.AMLProvider
 	GetSupportedCurrencies(ctx context.Context, slug models.AMLSlug) ([]*models.CurrencyShort, error)
 	GetSignalsCategorise(ctx context.Context, slug models.AMLSlug) ([]aml.SignalCategory, error)
+	ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) bool
 }
 
 var _ IService = (*Service)(nil)
@@ -65,9 +68,11 @@ type Service struct {
 
 	maxAttempts   int32
 	eventListener event.IListener
+	wallets       wallet.IWalletService
+	blockedTx     transactions.IBlockedTransaction
 }
 
-func NewService(st storage.IStorage, factory providers.ProviderFactory, log logger.Logger, conf config.AML, eventListener event.IListener) *Service {
+func NewService(st storage.IStorage, factory providers.ProviderFactory, log logger.Logger, conf config.AML, eventListener event.IListener, wallets wallet.IWalletService, blockedTx transactions.IBlockedTransaction) *Service {
 	return &Service{
 		st:                  st,
 		factory:             factory,
@@ -77,7 +82,47 @@ func NewService(st storage.IStorage, factory providers.ProviderFactory, log logg
 		maxAttempts:         conf.MaxAttempts,
 		checkTimeout:        conf.CheckTimeout,
 		eventListener:       eventListener,
+		wallets:             wallets,
+		blockedTx:           blockedTx,
 	}
+}
+
+func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) bool {
+	blocked, shouldMarkDirty := EvaluateRiskRules(dto.Check.Score, dto.Signals, dto.Rules)
+	if shouldMarkDirty {
+		usr, err := s.st.Users().GetByID(ctx, dto.UserID)
+		if err != nil {
+			s.log.Errorw("failed to get user for mark address dirty", "error", err)
+		} else if markErr := s.wallets.MarkAddressDirty(ctx, usr, dto.ToAddress); markErr != nil {
+			s.log.Errorw("failed to mark address as dirty", "error", markErr)
+		}
+	}
+
+	if blocked {
+		if !dto.WalletID.Valid {
+			s.log.Errorw("cannot record blocked transaction: wallet id missing", "tx_id", dto.TransactionID)
+			return blocked
+		}
+
+		riskLevel := models.AmlRiskLevel(models.AmlRiskLevelUndefined)
+		if dto.Check.RiskLevel != nil {
+			riskLevel = *dto.Check.RiskLevel
+		}
+
+		if _, err := s.blockedTx.CreateBlockedTransaction(ctx, transactions.CreateBlockedTransactionDTO{
+			UserID:        dto.UserID,
+			StoreID:       dto.StoreID,
+			TransactionID: dto.TransactionID,
+			AmlCheckID:    dto.Check.ID,
+			WalletID:      dto.WalletID.UUID,
+			RiskLevel:     string(riskLevel),
+			Score:         dto.Check.Score,
+		}); err != nil {
+			s.log.Errorw("failed to record blocked transaction", "error", err, "tx_id", dto.TransactionID)
+		}
+	}
+
+	return blocked
 }
 
 func (s *Service) ScoreTransaction(ctx context.Context, usr *models.User, dto CheckDTO) (*models.AmlCheck, error) {

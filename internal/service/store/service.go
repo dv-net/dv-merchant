@@ -6,17 +6,13 @@ import (
 	"fmt"
 
 	"github.com/dv-net/dv-merchant/internal/constants"
-	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
-	"github.com/dv-net/dv-merchant/internal/service/aml"
 	"github.com/dv-net/dv-merchant/internal/service/currency"
 	"github.com/dv-net/dv-merchant/internal/service/exrate"
 	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/service/processing"
 	"github.com/dv-net/dv-merchant/internal/service/setting"
-	"github.com/dv-net/dv-merchant/internal/service/transactions"
 	"github.com/dv-net/dv-merchant/internal/service/wallet"
-	"github.com/dv-net/dv-merchant/internal/service/webhook"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_stores"
@@ -50,8 +46,6 @@ type Service struct {
 	storage             storage.IStorage
 	currencyService     currency.ICurrency
 	log                 logger.Logger
-	webhookService      webhook.IWebHook
-	eventListener       event.IListener
 	exRate              exrate.IExRateSource
 	rateLimiter         rate.Limiter
 	rateLimitEnabled    bool
@@ -59,7 +53,6 @@ type Service struct {
 	notificationService notify.INotificationService
 	processingSvc       processing.IProcessingOwner
 	settingSvc          setting.ISettingService
-	amlService          aml.IService
 }
 
 var _ IStore = (*Service)(nil)
@@ -68,8 +61,6 @@ func New(
 	storage storage.IStorage,
 	currencyService currency.ICurrency,
 	log logger.Logger,
-	webhookService webhook.IWebHook,
-	eventListener event.IListener,
 	exRate exrate.IExRateSource,
 	wallets wallet.IWalletService,
 	notificationService notify.INotificationService,
@@ -77,14 +68,11 @@ func New(
 	rateLimitEnabled bool,
 	processingSvc processing.IProcessingOwner,
 	settingSvc setting.ISettingService,
-	amlService aml.IService,
 ) *Service {
-	srv := &Service{
+	return &Service{
 		storage:             storage,
 		currencyService:     currencyService,
 		log:                 log,
-		webhookService:      webhookService,
-		eventListener:       eventListener,
 		exRate:              exRate,
 		rateLimiter:         rateLimit,
 		wallets:             wallets,
@@ -92,15 +80,7 @@ func New(
 		notificationService: notificationService,
 		processingSvc:       processingSvc,
 		settingSvc:          settingSvc,
-		amlService:          amlService,
 	}
-	// register event
-	srv.eventListener.Register(transactions.DepositReceivedEventType, srv.handleDepositReceived)
-	srv.eventListener.Register(transactions.DepositUnconfirmedEventType, srv.handleDepositReceived)
-	srv.eventListener.Register(transactions.WithdrawalFromProcessingReceivedEventType, srv.handleWithdrawalReceived)
-	srv.eventListener.Register(aml.CheckCompletedEventType, srv.handleAMLCheckCompleted)
-
-	return srv
 }
 
 func (s *Service) GetAllStores(ctx context.Context, status []constants.StoreVerificationStatus, pagination *storecmn.CommonFindParams) (*storecmn.FindResponseWithFullPagination[*repo_stores.StoreWithOwnerEmail], error) {

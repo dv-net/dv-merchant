@@ -57,3 +57,13 @@ func RequestToGetUserTransactionsDTO(req *transactions_request.GetByUser) GetUse
 		CommonParams:  commonParams,
 	}
 }
+
+type CreateBlockedTransactionDTO struct {
+	UserID        uuid.UUID
+	StoreID       uuid.UUID
+	TransactionID uuid.UUID
+	AmlCheckID    uuid.UUID
+	WalletID      uuid.UUID
+	RiskLevel     string
+	Score         decimal.Decimal
+}

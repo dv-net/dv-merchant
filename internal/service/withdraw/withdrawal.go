@@ -27,6 +27,76 @@ type IWithdrawalService interface {
 	CreateWithdrawalFromProcessing(ctx context.Context, dto CreateWithdrawalFromProcessingDTO) (*models.WithdrawalFromProcessingWallet, error)
 	DeleteWithdrawalFromProcessing(ctx context.Context, id uuid.UUID, storeID uuid.UUID) error
 	GetProcessingWithdrawalWithTransfer(ctx context.Context, requestID string, storeID uuid.UUID) (*WithdrawalFromProcessingDto, error)
+	WithdrawDirtyDepositToAddress(ctx context.Context, user *models.User, refundRequestID uuid.UUID) (*models.Transfer, error)
+}
+
+func (s *service) WithdrawDirtyDepositToAddress(ctx context.Context, user *models.User, refundRequestID uuid.UUID) (*models.Transfer, error) {
+	ref, err := s.storage.RefundRequests().GetById(ctx, refundRequestID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch refund request: %w", err)
+	}
+
+	btx, err := s.storage.BlockedTransactions().GetById(ctx, ref.BlockedTransactionID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch blocked transaction: %w", err)
+	}
+
+	tx, err := s.storage.Transactions().GetById(ctx, btx.TransactionID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch transaction: %w", err)
+	}
+
+	curr, err := s.currencyService.GetCurrencyByID(ctx, tx.CurrencyID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch currency: %w", err)
+	}
+	if curr.Blockchain == nil {
+		return nil, ErrFiatCurrencyIsNotSupported
+	}
+
+	targetWalletAddress, err := s.storage.WalletAddresses().GetByWalletIDAndCurrencyID(ctx, ref.WalletID, tx.CurrencyID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch wallet address: %w", err)
+	}
+
+	if !targetWalletAddress.Dirty {
+		return nil, ErrAddressNotDirty
+	}
+
+	decRate, err := s.currencyRate(ctx, user.RateSource.String(), curr)
+	if err != nil {
+		return nil, err
+	}
+
+	dto := TransferDto{
+		ID:            uuid.New(),
+		UserID:        user.ID,
+		OwnerID:       user.ProcessingOwnerID.UUID,
+		Kind:          models.TransferKindFromAddress,
+		FromAddresses: []string{targetWalletAddress.Address},
+		ToAddress:     ref.DestinationAddress,
+		Contract:      curr.ContractAddress.String,
+		Amount:        targetWalletAddress.Amount,
+		AmountUsd:     decRate.Mul(targetWalletAddress.Amount),
+		CurrencyID:    curr.ID,
+		Blockchain:    targetWalletAddress.Blockchain,
+	}
+
+	transfer, err := s.initializeTransfer(ctx, dto, user, nil)
+	if err != nil {
+		return nil, fmt.Errorf("transfer init: %w", err)
+	}
+
+	if transfer.Status == models.TransferStatusFailed {
+		var msg string
+		if transfer.Message != nil {
+			msg = *transfer.Message
+		}
+
+		return nil, fmt.Errorf("withdrawal failed: %s", msg)
+	}
+
+	return transfer, nil
 }
 
 func (s *service) WithdrawFromAddress(

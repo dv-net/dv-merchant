@@ -175,7 +175,7 @@ func (h *Handler) sendManually(c fiber.Ctx) error {
 		return err
 	}
 
-	if err = h.services.StoreWebhooksService.SendWebhookManual(c.Context(), txID, user.ID); err != nil {
+	if err = h.services.TxWebhookService.SendWebhookManual(c.Context(), txID, user.ID); err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
