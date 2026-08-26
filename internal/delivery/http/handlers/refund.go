@@ -10,7 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 
-	//swag go import
+	// swag go import
 	_ "github.com/dv-net/dv-merchant/internal/models"
 )
 
