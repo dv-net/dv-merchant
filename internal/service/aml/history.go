@@ -8,6 +8,8 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_aml_checks"
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	"github.com/dv-net/dv-merchant/internal/util"
+
+	"github.com/google/uuid"
 )
 
 type ChecksWithHistoryDTO struct {
@@ -16,6 +18,13 @@ type ChecksWithHistoryDTO struct {
 	DateTo         *string
 	Page, PageSize *uint32
 }
+
+type IHistoryService interface {
+	GetCheckHistory(ctx context.Context, usr *models.User, dto ChecksWithHistoryDTO) (*storecmn.FindResponseWithFullPagination[*repo_aml_checks.FindRow], error)
+	GetCheckByTransactionID(ctx context.Context, txID uuid.UUID) (*models.AmlCheck, error)
+}
+
+var _ IHistoryService = (*Service)(nil)
 
 func (s *Service) GetCheckHistory(ctx context.Context, usr *models.User, dto ChecksWithHistoryDTO) (*storecmn.FindResponseWithFullPagination[*repo_aml_checks.FindRow], error) {
 	commonParams := storecmn.NewCommonFindParams()
@@ -48,4 +57,8 @@ func (s *Service) GetCheckHistory(ctx context.Context, usr *models.User, dto Che
 		DateTo:           dateTo,
 		CommonFindParams: *commonParams,
 	})
+}
+
+func (s *Service) GetCheckByTransactionID(ctx context.Context, txID uuid.UUID) (*models.AmlCheck, error) {
+	return s.st.AmlChecks().GetByTransactionID(ctx, uuid.NullUUID{UUID: txID, Valid: true})
 }

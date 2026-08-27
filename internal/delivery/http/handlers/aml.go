@@ -219,7 +219,7 @@ func (h *Handler) amlHistory(c fiber.Ctx) error {
 		return err
 	}
 
-	result, err := h.services.AMLService.GetCheckHistory(c.Context(), usr, aml.ChecksWithHistoryDTO{
+	result, err := h.services.AMLHistoryService.GetCheckHistory(c.Context(), usr, aml.ChecksWithHistoryDTO{
 		Slug:     req.ProviderSlug,
 		DateFrom: req.DateFrom,
 		DateTo:   req.DateTo,

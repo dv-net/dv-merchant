@@ -21,6 +21,7 @@ import (
 type IRefundService interface {
 	CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error)
 	GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error)
+	GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error)
 	GetPendingReview(ctx context.Context, storeID uuid.UUID) ([]*models.RefundRequest, error)
 	RejectRefund(ctx context.Context, dto RejectRefundDTO) (*models.RefundRequest, error)
 }
@@ -99,6 +100,32 @@ func (s *Service) GetCabinet(ctx context.Context, walletID uuid.UUID) (map[strin
 	}
 
 	return buildCabinet(blocked, refunds, txByID), nil
+}
+
+func (s *Service) GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error) {
+	blocked, err := s.storage.BlockedTransactions().GetUnclaimedByWalletID(ctx, walletID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch unclaimed blocked transactions: %w", err)
+	}
+
+	items := make([]*CabinetItem, 0, len(blocked))
+	for _, b := range blocked {
+		tx, err := s.storage.Transactions().GetById(ctx, b.TransactionID)
+		if err != nil {
+			return nil, fmt.Errorf("fetch transaction %s: %w", b.TransactionID, err)
+		}
+		items = append(items, &CabinetItem{
+			BlockedTransactionID: b.ID,
+			TransactionID:        b.TransactionID,
+			TxHash:               tx.TxHash,
+			Blockchain:           tx.Blockchain,
+			CurrencyID:           tx.CurrencyID,
+			RiskLevel:            b.RiskLevel,
+			Score:                b.Score,
+			CreatedAt:            b.CreatedAt,
+		})
+	}
+	return items, nil
 }
 
 func (s *Service) GetPendingReview(ctx context.Context, storeID uuid.UUID) ([]*models.RefundRequest, error) {

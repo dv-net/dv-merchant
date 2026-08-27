@@ -501,6 +501,49 @@ func (q *Queries) GetBalanceNativeToken(ctx context.Context, arg GetBalanceNativ
 	return balance, err
 }
 
+const getByHashAndWalletID = `-- name: GetByHashAndWalletID :one
+SELECT id, user_id, store_id, receipt_id, wallet_id, currency_id, blockchain, tx_hash, bc_uniq_key, type, from_address, to_address, amount, amount_usd, fee, withdrawal_is_manual, network_created_at, created_at, updated_at, created_at_index, is_system
+FROM transactions
+WHERE tx_hash = $1
+  AND wallet_id = $2
+ORDER BY created_at_index DESC
+LIMIT 1
+`
+
+type GetByHashAndWalletIDParams struct {
+	TxHash   string        `db:"tx_hash" json:"tx_hash"`
+	WalletID uuid.NullUUID `db:"wallet_id" json:"wallet_id"`
+}
+
+func (q *Queries) GetByHashAndWalletID(ctx context.Context, arg GetByHashAndWalletIDParams) (*models.Transaction, error) {
+	row := q.db.QueryRow(ctx, getByHashAndWalletID, arg.TxHash, arg.WalletID)
+	var i models.Transaction
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.StoreID,
+		&i.ReceiptID,
+		&i.WalletID,
+		&i.CurrencyID,
+		&i.Blockchain,
+		&i.TxHash,
+		&i.BcUniqKey,
+		&i.Type,
+		&i.FromAddress,
+		&i.ToAddress,
+		&i.Amount,
+		&i.AmountUsd,
+		&i.Fee,
+		&i.WithdrawalIsManual,
+		&i.NetworkCreatedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CreatedAtIndex,
+		&i.IsSystem,
+	)
+	return &i, err
+}
+
 const getExistingWithdrawalAddress = `-- name: GetExistingWithdrawalAddress :one
 SELECT coalesce(to_address, '')::varchar
 FROM transactions

@@ -32,6 +32,7 @@ import (
 type ITransaction interface {
 	GetByID(ctx context.Context, ID uuid.UUID) (*models.Transaction, error)
 	GetByHashAndBcUniq(ctx context.Context, hash string, bcUniqKey string, opts ...repos.Option) (*models.Transaction, error)
+	GetByHashAndWalletID(ctx context.Context, hash string, walletID uuid.UUID, opts ...repos.Option) (*models.Transaction, error)
 	CreateTransaction(ctx context.Context, params repo_transactions.CreateParams, opts ...repos.Option) (*models.Transaction, error)
 	GetStoreTransactions(ctx context.Context, storeID uuid.UUID, page int32) ([]*models.Transaction, error)
 	GetUserTransactions(ctx context.Context, userID uuid.UUID, params GetUserTransactionsDTO) (*storecmn.FindResponseWithFullPagination[*repo_transactions.FindRow], error)
@@ -190,6 +191,13 @@ func (s *Service) GetByHashAndBcUniq(ctx context.Context, hash string, bcUniqKey
 		return nil, err
 	}
 	return transaction, nil
+}
+
+func (s *Service) GetByHashAndWalletID(ctx context.Context, hash string, walletID uuid.UUID, opts ...repos.Option) (*models.Transaction, error) {
+	return s.storage.Transactions(opts...).GetByHashAndWalletID(ctx, repo_transactions.GetByHashAndWalletIDParams{
+		TxHash:   hash,
+		WalletID: uuid.NullUUID{UUID: walletID, Valid: true},
+	})
 }
 
 func (s *Service) CreateTransaction(ctx context.Context, params repo_transactions.CreateParams, opts ...repos.Option) (*models.Transaction, error) {

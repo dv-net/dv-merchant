@@ -11,61 +11,64 @@ import (
 	"github.com/dv-net/dv-merchant/pkg/logger"
 )
 
-func initTickers(ctx context.Context, services *service.Services, conf *config.Config, _ storage.IStorage, l logger.Logger) {
-	if services.ExRateService != nil {
-		go services.ExRateService.Run(ctx)
+func buildWorkers(services *service.Services, conf *config.Config, _ storage.IStorage, l logger.Logger) []worker {
+	var workers []worker
+	add := func(name string, svcEnabled bool, run func(context.Context)) {
+		if !svcEnabled {
+			return
+		}
+		workers = append(workers, asWorker(name, run))
 	}
 
-	if services.WebHookService != nil {
-		go services.WebHookService.Run(ctx)
-	}
+	add("exrate", services.ExRateService != nil, func(ctx context.Context) {
+		services.ExRateService.Run(ctx)
+	})
+	add("webhook", services.WebHookService != nil, func(ctx context.Context) {
+		services.WebHookService.Run(ctx)
+	})
+	add("withdraw", services.WithdrawService != nil, func(ctx context.Context) {
+		services.WithdrawService.Run(ctx, models.AllBlockchain())
+	})
+	add("unconfirmed_collapser", services.UnconfirmedCollapser != nil, func(ctx context.Context) {
+		services.UnconfirmedCollapser.Run(ctx, conf.Transactions.UnconfirmedCollapseInterval)
+	})
+	add("notification", services.NotificationService != nil, func(ctx context.Context) {
+		services.NotificationService.Run(ctx)
+	})
+	add("processing_ping_monitor", true, func(ctx context.Context) {
+		processingPingMonitor(ctx, services, l)
+	})
+	add("exchange", services.ExchangeService != nil, func(ctx context.Context) {
+		services.ExchangeService.Run(ctx)
+	})
+	add("exchange_withdrawal_queue", services.ExchangeWithdrawalService != nil, func(ctx context.Context) {
+		services.ExchangeWithdrawalService.RunWithdrawalQueue(ctx)
+	})
+	add("exchange_withdrawal_updater", services.ExchangeWithdrawalService != nil, func(ctx context.Context) {
+		services.ExchangeWithdrawalService.RunWithdrawalUpdater(ctx)
+	})
+	add("exchange_rules", services.ExchangeRulesService != nil, func(ctx context.Context) {
+		services.ExchangeRulesService.Run(ctx)
+	})
+	add("system_heartbeat", services.SystemService != nil, func(ctx context.Context) {
+		services.SystemService.RunHeartbeatLoop(ctx)
+	})
+	add("balance_updater", services.BalanceUpdater != nil, func(ctx context.Context) {
+		services.BalanceUpdater.Run(ctx, conf.Wallets.UpdateBalancesInterval)
+	})
+	add("wallet_balance_stats", services.WalletBalanceService != nil, func(ctx context.Context) {
+		services.WalletBalanceService.ProcessingBalanceStatsInBackground(ctx, conf.Wallets.UpdateTronResourcesInterval)
+	})
+	add("aml_status_checker", services.AMLStatusChecker != nil, func(ctx context.Context) {
+		services.AMLStatusChecker.Run(ctx)
+	})
 
-	if services.WithdrawService != nil {
-		go services.WithdrawService.Run(ctx, models.AllBlockchain())
-	}
-
-	if services.UnconfirmedCollapser != nil {
-		go services.UnconfirmedCollapser.Run(ctx, conf.Transactions.UnconfirmedCollapseInterval)
-	}
-
-	if services.NotificationService != nil {
-		go services.NotificationService.Run(ctx)
-	}
-
-	go processingPingMonitor(ctx, services, l)
-
-	if services.ExchangeService != nil {
-		go services.ExchangeService.Run(ctx)
-	}
-
-	if services.ExchangeWithdrawalService != nil {
-		go services.ExchangeWithdrawalService.RunWithdrawalQueue(ctx)
-		go services.ExchangeWithdrawalService.RunWithdrawalUpdater(ctx)
-	}
-
-	if services.ExchangeRulesService != nil {
-		go services.ExchangeRulesService.Run(ctx)
-	}
-
-	if services.SystemService != nil {
-		go services.SystemService.RunHeartbeatLoop(ctx)
-	}
-
-	if services.BalanceUpdater != nil {
-		go services.BalanceUpdater.Run(ctx, conf.Wallets.UpdateBalancesInterval)
-	}
-
-	if services.WalletBalanceService != nil {
-		go services.WalletBalanceService.ProcessingBalanceStatsInBackground(ctx, conf.Wallets.UpdateTronResourcesInterval)
-	}
-
-	if services.AMLStatusChecker != nil {
-		go services.AMLStatusChecker.Run(ctx)
-	}
+	return workers
 }
 
 func processingPingMonitor(ctx context.Context, services *service.Services, l logger.Logger) {
 	tickTocker := time.NewTicker(5 * time.Second)
+	defer tickTocker.Stop()
 	for {
 		select {
 		case <-ctx.Done():

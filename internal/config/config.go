@@ -52,6 +52,7 @@ type (
 		ConnectTimeout     time.Duration  `yaml:"connect_timeout" env:"CONNECT_TIMEOUT" default:"5s"`
 		ReadTimeout        time.Duration  `yaml:"read_timeout" env:"READ_TIMEOUT" default:"10s"`
 		WriteTimeout       time.Duration  `yaml:"write_timeout" env:"WRITE_TIMEOUT" default:"10s"`
+		ShutdownTimeout    time.Duration  `yaml:"shutdown_timeout" env:"SHUTDOWN_TIMEOUT" default:"25s"`
 		MaxHeaderMegabytes int            `yaml:"max_header_megabytes" env:"MAX_HEADER_MEGABYTES" default:"1"`
 		Cors               HTTPCorsConfig `yaml:"cors"`
 	}

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -45,6 +46,10 @@ func (s *Server) Run() error {
 
 func (s *Server) Stop() error {
 	return s.app.Shutdown()
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.app.ShutdownWithContext(ctx)
 }
 
 func errorHandler(c fiber.Ctx, err error) error {
