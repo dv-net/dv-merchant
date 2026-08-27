@@ -70,9 +70,9 @@ func Run(ctx context.Context, conf *config.Config, l logger.Logger, currentAppVe
 
 	select {
 	case <-ctx.Done():
-		return shutdown(conf.HTTP.ShutdownTimeout, srv, stopWorkers, workersWG, lg)
+		return shutdown(ctx, conf.HTTP.ShutdownTimeout, srv, stopWorkers, workersWG, lg)
 	case err := <-serverErrCh:
-		_ = shutdown(conf.HTTP.ShutdownTimeout, srv, stopWorkers, workersWG, lg)
+		_ = shutdown(ctx, conf.HTTP.ShutdownTimeout, srv, stopWorkers, workersWG, lg)
 		if err != nil {
 			return fmt.Errorf("server: %w", err)
 		}
@@ -80,12 +80,12 @@ func Run(ctx context.Context, conf *config.Config, l logger.Logger, currentAppVe
 	}
 }
 
-func shutdown(timeout time.Duration, srv *server.Server, stopWorkers context.CancelFunc, workersWG *sync.WaitGroup, lg logger.Logger) error {
+func shutdown(ctx context.Context, timeout time.Duration, srv *server.Server, stopWorkers context.CancelFunc, workersWG *sync.WaitGroup, lg logger.Logger) error {
 	if timeout <= 0 {
 		timeout = 25 * time.Second
 	}
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), timeout)
+	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeout)
 	defer cancel()
 	stopWorkers()
 
