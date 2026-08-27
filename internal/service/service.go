@@ -127,6 +127,7 @@ type Services struct {
 	AMLKeysService                aml.KeysService
 	AMLStatusChecker              aml.StatusChecker
 	AMLUserSettings               aml.IUserAmlSettings
+	AMLHistoryService             aml.IHistoryService
 	RefundService                 refund.IRefundService
 }
 
@@ -311,6 +312,7 @@ func NewServices(
 		AMLKeysService:                amlService,
 		AMLStatusChecker:              amlService,
 		AMLUserSettings:               amlService,
+		AMLHistoryService:             amlService,
 		RefundService:                 refundService,
 	}, nil
 }

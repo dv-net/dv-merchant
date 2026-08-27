@@ -21,6 +21,7 @@ type Querier interface {
 	GetAddressBalance(ctx context.Context, arg GetAddressBalanceParams) (decimal.Decimal, error)
 	GetAdminDashboardStatistics(ctx context.Context, arg GetAdminDashboardStatisticsParams) (*GetAdminDashboardStatisticsRow, error)
 	GetBalanceNativeToken(ctx context.Context, arg GetBalanceNativeTokenParams) (decimal.Decimal, error)
+	GetByHashAndWalletID(ctx context.Context, arg GetByHashAndWalletIDParams) (*models.Transaction, error)
 	GetById(ctx context.Context, id uuid.UUID) (*models.Transaction, error)
 	GetExistingWithdrawalAddress(ctx context.Context, arg GetExistingWithdrawalAddressParams) (string, error)
 	GetLastByHashAndBlockchain(ctx context.Context, arg GetLastByHashAndBlockchainParams) (*models.Transaction, error)

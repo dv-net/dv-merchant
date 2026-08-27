@@ -13,6 +13,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/wallet"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/public_request"
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/aml_responses"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 // getWalletData is a function to get full wallet data
@@ -265,10 +267,96 @@ func (h *Handler) refreshWalletAddress(c fiber.Ctx) error {
 	return c.JSON(response.OkByMessage("address refreshed"))
 }
 
+// getBlockedTransactions lists the wallet's AML-blocked transactions that the user
+// has not filed a refund request for yet.
+//
+//	@Summary		Get wallet blocked transactions
+//	@Description	Lists AML-blocked transactions of the wallet with no refund request filed yet
+//	@Tags			Wallet,Public
+//	@Produce		json
+//	@Param			id	path		string	true	"Wallet ID"
+//	@Success		200	{object}	response.Result[[]public_request.CabinetItemResponse]
+//	@Failure		400	{object}	apierror.Errors
+//	@Failure		500	{object}	apierror.Errors
+//	@Router			/v1/public/wallet/{id}/blocked-transactions [get]
+func (h *Handler) getBlockedTransactions(c fiber.Ctx) error {
+	walletID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return apierror.New().AddError(fmt.Errorf("bad wallet id")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	items, err := h.services.RefundService.GetUnclaimed(c.Context(), walletID)
+	if err != nil {
+		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	result := make([]public_request.CabinetItemResponse, 0, len(items))
+	for _, item := range items {
+		result = append(result, public_request.CabinetItemResponse{
+			BlockedTransactionID: item.BlockedTransactionID,
+			TransactionID:        item.TransactionID,
+			TxHash:               item.TxHash,
+			Blockchain:           item.Blockchain,
+			CurrencyID:           item.CurrencyID,
+			RiskLevel:            item.RiskLevel,
+			Score:                item.Score,
+			CreatedAt:            pgtypeutils.DecodeTime(item.CreatedAt),
+			RefundStatus:         item.RefundStatus,
+			DestinationAddress:   item.DestinationAddress,
+		})
+	}
+
+	return c.JSON(response.OkByData(result))
+}
+
+// getAmlChecks reports the AML check of one of the wallet's transactions, looked
+// up by transaction hash: whether a check is still in progress and its status.
+//
+//	@Summary		Get transaction AML check
+//	@Description	Returns the AML check status for a wallet transaction identified by hash
+//	@Tags			Wallet,Public
+//	@Produce		json
+//	@Param			id		path		string	true	"Wallet ID"
+//	@Param			hash	query		string	true	"Transaction hash"
+//	@Success		200		{object}	response.Result[aml_responses.AmlCheckStatusResponse]
+//	@Failure		400		{object}	apierror.Errors
+//	@Failure		404		{object}	apierror.Errors
+//	@Router			/v1/public/wallet/{id}/aml-checks [get]
+//
+// Returns an empty (null) data payload when no AML check has been created for the transaction.
+func (h *Handler) getAmlChecks(c fiber.Ctx) error {
+	walletID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return apierror.New().AddError(fmt.Errorf("bad wallet id")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	req := &public_request.GetAmlCheckRequest{}
+	if err := c.Bind().Query(req); err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	tx, err := h.services.TransactionService.GetByHashAndWalletID(c.Context(), req.Hash, walletID)
+	if err != nil {
+		return apierror.New().AddError(errors.New("transaction not found")).SetHttpCode(fiber.StatusNotFound)
+	}
+
+	check, err := h.services.AMLHistoryService.GetCheckByTransactionID(c.Context(), tx.ID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return c.JSON(response.OkByData[*aml_responses.AmlCheckStatusResponse](nil))
+		}
+		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(aml_responses.NewAmlCheckStatusResponse(tx, check)))
+}
+
 func (h *Handler) initWalletRoutes(v1 fiber.Router) {
 	w := v1.Group("/wallet")
 	w.Get("/:id", h.getWalletData)
 	w.Get("/:id/tx-find", h.findTransactionsByWallet)
+	w.Get("/:id/blocked-transactions", h.getBlockedTransactions)
+	w.Get("/:id/aml-checks", h.getAmlChecks)
 	w.Get("/:id/confirm", h.notifyWalletEmail)
 	w.Post("/:id/refresh-address",
 		middleware.LimiterMiddleware(3, 60, middleware.WithSlidingWindow),

@@ -43,6 +43,14 @@ WHERE tx_hash = $1
   and bc_uniq_key = $2
 LIMIT 1;
 
+-- name: GetByHashAndWalletID :one
+SELECT *
+FROM transactions
+WHERE tx_hash = $1
+  AND wallet_id = $2
+ORDER BY created_at_index DESC
+LIMIT 1;
+
 -- name: GetAddressBalance :one
 SELECT SUM(
                CASE
