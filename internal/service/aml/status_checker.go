@@ -34,9 +34,12 @@ func (s *Service) Run(ctx context.Context) {
 		s.log.Warnw("aml status checker", "error", fmt.Errorf("max_attempts must be positive"))
 	}
 
+	s.checkInProgress.Store(false)
+
 	go s.processQueue(ctx)
 
 	ticker := time.NewTicker(s.checkStatusInterval)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
@@ -60,19 +63,29 @@ func (s *Service) processQueue(ctx context.Context) {
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(len(queue))
-
 	sema := make(chan struct{}, maxWorkers)
 	for _, check := range queue {
-		sema <- struct{}{}
-		go func() {
-			defer wg.Done()
-			if err = s.processCheckQueueElement(ctx, check); err != nil {
-				s.log.Errorw("failed to process check", "error", err, "check_id", check.AmlCheck.ID)
-			}
+		select {
+		case <-ctx.Done():
+			wg.Wait()
+			return
+		case sema <- struct{}{}:
+		}
 
-			<-sema
-		}()
+		wg.Add(1)
+		go func(check *repo_aml_check_queue.FetchPendingRow) {
+			defer wg.Done()
+			defer func() { <-sema }()
+			defer func() {
+				if r := recover(); r != nil {
+					s.log.Errorw("panic while processing aml check", "recover", r, "check_id", check.AmlCheck.ID)
+				}
+			}()
+
+			if procErr := s.processCheckQueueElement(ctx, check); procErr != nil {
+				s.log.Errorw("failed to process check", "error", procErr, "check_id", check.AmlCheck.ID)
+			}
+		}(check)
 	}
 
 	wg.Wait()
@@ -119,7 +132,12 @@ func (s *Service) handleCheckResult(
 	result *amlproviders.CheckResponse,
 	fetchErr error,
 ) error {
-	return repos.BeginTxFunc(ctx, s.st.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+	var completedEvent *CheckCompletedEvent
+
+	txErr := repos.BeginTxFunc(ctx, s.st.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+		// Reset so a re-executed tx body can never fire a stale event.
+		completedEvent = nil
+
 		if err := s.createCheckHistory(ctx, tx, check, result, fetchErr); err != nil {
 			return fmt.Errorf("failed to create check history: %w", err)
 		}
@@ -127,9 +145,13 @@ func (s *Service) handleCheckResult(
 		if fetchErr != nil {
 			var reqErr *amlproviders.RequestFailedError
 			if errors.As(fetchErr, &reqErr) && !reqErr.Retryable {
-				return s.updateCheckAndClearQueue(ctx, tx, check, models.AmlCheckStatusFailed, decimal.Zero, nil)
+				res, err := s.finalizeCheck(ctx, tx, check, models.AmlCheckStatusFailed, decimal.Zero, nil)
+				completedEvent = res.event
+				return err
 			}
-			return s.continueOrFailCheck(ctx, tx, check, decimal.Zero)
+			res, err := s.continueOrFailCheck(ctx, tx, check, decimal.Zero)
+			completedEvent = res.event
+			return err
 		}
 
 		if result.ExternalID != "" && result.ExternalID != check.AmlCheck.ExternalID {
@@ -141,7 +163,9 @@ func (s *Service) handleCheckResult(
 
 		resolvedStatus := convertAmlStatusToModel(result.Status)
 		if resolvedStatus == models.AmlCheckStatusPending {
-			return s.continueOrFailCheck(ctx, tx, check, result.Score)
+			res, err := s.continueOrFailCheck(ctx, tx, check, result.Score)
+			completedEvent = res.event
+			return err
 		}
 
 		riskLevel, err := convertAmlRiskLevelToModel(*result.RiskLevel)
@@ -149,39 +173,85 @@ func (s *Service) handleCheckResult(
 			return fmt.Errorf("failed to convert risk level: %w", err)
 		}
 
-		return s.updateCheckAndClearQueue(ctx, tx, check, resolvedStatus, result.Score, riskLevel)
+		res, err := s.finalizeCheck(ctx, tx, check, resolvedStatus, result.Score, riskLevel)
+		completedEvent = res.event
+		return err
 	})
-}
-
-// continueOrFailCheck increments attempts or finalizes check as failed if max_attempts was reached
-func (s *Service) continueOrFailCheck(ctx context.Context, tx pgx.Tx, check *repo_aml_check_queue.FetchPendingRow, score decimal.Decimal) error {
-	if check.IsLastAttempt {
-		return s.updateCheckAndClearQueue(ctx, tx, check, models.AmlCheckStatusFailed, score, nil)
+	if txErr != nil {
+		return txErr
 	}
 
-	if err := s.st.AmlCheckQueue(repos.WithTx(tx)).IncrementAttempts(ctx, check.AmlCheckQueue.ID); err != nil {
-		return fmt.Errorf("failed to increment attempts: %w", err)
+	if completedEvent != nil {
+		s.dispatchCompletedEvent(*completedEvent)
 	}
 
 	return nil
 }
 
-// updateCheckAndClearQueue finalize and complete queue element
-func (s *Service) updateCheckAndClearQueue(
+func (s *Service) dispatchCompletedEvent(ev CheckCompletedEvent) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				s.log.Errorw("panic in aml check completed handler", "recover", r, "check_id", ev.Check.ID)
+			}
+		}()
+
+		if err := s.eventListener.Fire(ev); err != nil {
+			s.log.Errorw("aml check completed event handler failed",
+				"error", err,
+				"check_id", ev.Check.ID,
+				"transaction_id", ev.Check.TransactionID.UUID,
+				"status", ev.Check.Status,
+			)
+		}
+	}()
+}
+
+// checkResolution carries what handleCheckResult must do once the transaction
+// commits. A zero value means "nothing further to do".
+type checkResolution struct {
+	// event is set when the check reached a terminal state and its completion
+	// event must be fired after the transaction commits.
+	event *CheckCompletedEvent
+}
+
+func (s *Service) continueOrFailCheck(ctx context.Context, tx pgx.Tx, check *repo_aml_check_queue.FetchPendingRow, score decimal.Decimal) (checkResolution, error) {
+	if check.IsLastAttempt {
+		return s.finalizeCheck(ctx, tx, check, models.AmlCheckStatusFailed, score, nil)
+	}
+
+	if err := s.st.AmlCheckQueue(repos.WithTx(tx)).IncrementAttempts(ctx, check.AmlCheckQueue.ID); err != nil {
+		return checkResolution{}, fmt.Errorf("failed to increment attempts: %w", err)
+	}
+
+	return checkResolution{}, nil
+}
+
+func (s *Service) finalizeCheck(
 	ctx context.Context,
 	tx pgx.Tx,
 	check *repo_aml_check_queue.FetchPendingRow,
 	status models.AMLCheckStatus,
 	score decimal.Decimal,
 	riskLevel *models.AmlRiskLevel,
-) error {
+) (checkResolution, error) {
 	if err := s.st.AmlChecks(repos.WithTx(tx)).UpdateAMLCheck(ctx, repo_aml_checks.UpdateAMLCheckParams{
 		ID:        check.AmlCheck.ID,
 		Status:    status,
 		Score:     score,
 		RiskLevel: riskLevel,
 	}); err != nil {
-		return fmt.Errorf("failed to update aml check to %s: %w", status, err)
+		return checkResolution{}, fmt.Errorf("failed to update aml check to %s: %w", status, err)
+	}
+
+	if err := s.st.AmlCheckQueue(repos.WithTx(tx)).Delete(ctx, check.AmlCheckQueue.ID); err != nil {
+		return checkResolution{}, fmt.Errorf("failed to delete from queue: %w", err)
+	}
+
+	s.log.Debugw("finalized check", "check_id", check.AmlCheck.ID, "status", status, "attempts", check.AmlCheckQueue.Attempts+1)
+
+	if !check.AmlCheck.TransactionID.Valid {
+		return checkResolution{}, nil
 	}
 
 	updatedCheck := check.AmlCheck
@@ -189,20 +259,7 @@ func (s *Service) updateCheckAndClearQueue(
 	updatedCheck.Score = score
 	updatedCheck.RiskLevel = riskLevel
 
-	if check.AmlCheck.TransactionID.Valid {
-		err := s.eventListener.Fire(CheckCompletedEvent{Check: updatedCheck})
-		if err != nil {
-			return fmt.Errorf("failed to fire check: %w", err)
-		}
-	}
-
-	if err := s.st.AmlCheckQueue(repos.WithTx(tx)).Delete(ctx, check.AmlCheckQueue.ID); err != nil {
-		return fmt.Errorf("failed to delete from queue: %w", err)
-	}
-
-	s.log.Debugw("finalized check", "check_id", check.AmlCheck.ID, "status", status, "attempts", check.AmlCheckQueue.Attempts+1)
-
-	return nil
+	return checkResolution{event: &CheckCompletedEvent{Check: updatedCheck}}, nil
 }
 
 func (s *Service) createCheckHistory(
