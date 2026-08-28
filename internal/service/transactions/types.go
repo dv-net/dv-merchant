@@ -88,8 +88,19 @@ type TransactionInfoDto struct {
 	Fee              decimal.Decimal
 	NetworkCreatedAt *time.Time
 	WebhookHistory   []TransactionWhHistoryDto
+	AmlCheck         *TransactionAmlCheckDto
 	CreatedAt        *time.Time
 	UpdatedAt        *time.Time
+}
+
+type TransactionAmlCheckDto struct {
+	ID         uuid.UUID
+	Status     models.AMLCheckStatus
+	InProgress bool
+	Score      decimal.Decimal
+	RiskLevel  *models.AmlRiskLevel
+	CreatedAt  *time.Time
+	UpdatedAt  *time.Time
 }
 
 type ShortTransactionInfo struct {
