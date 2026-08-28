@@ -3,6 +3,8 @@ package transaction_response
 import (
 	"time"
 
+	"github.com/dv-net/dv-merchant/internal/models"
+
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
@@ -27,9 +29,20 @@ type TransactionInfoResponse struct {
 	WithdrawalIsManual bool                    `json:"withdrawal_is_manual"`
 	NetworkCreatedAt   *time.Time              `json:"network_created_at"`
 	WebhookHistory     []WhSendHistoryResponse `json:"webhook_history"`
+	AmlCheck           *AmlCheckResponse       `json:"aml_check"`
 	CreatedAt          *time.Time              `json:"created_at"`
 	UpdatedAt          *time.Time              `json:"updated_at"`
 } //	@name	TransactionInfoResponse
+
+type AmlCheckResponse struct {
+	ID         uuid.UUID             `json:"id"`
+	Status     models.AMLCheckStatus `json:"status"`
+	InProgress bool                  `json:"in_progress"`
+	Score      decimal.Decimal       `json:"score"`
+	RiskLevel  *models.AmlRiskLevel  `json:"risk_level"`
+	CreatedAt  *time.Time            `json:"created_at"`
+	UpdatedAt  *time.Time            `json:"updated_at"`
+} //	@name	TransactionAmlCheckResponse
 
 type WhSendHistoryResponse struct {
 	ID         uuid.UUID  `json:"id"`

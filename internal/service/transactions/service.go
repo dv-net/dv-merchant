@@ -178,6 +178,23 @@ func (s *Service) GetTransactionInfo(ctx context.Context, userID uuid.UUID, hash
 	}
 
 	preparedResult.WebhookHistory = whSendData
+
+	amlCheck, err := s.storage.AmlChecks().GetByTransactionID(ctx, uuid.NullUUID{UUID: res.ID, Valid: true})
+	switch {
+	case err == nil:
+		preparedResult.AmlCheck = &TransactionAmlCheckDto{
+			ID:         amlCheck.ID,
+			Status:     amlCheck.Status,
+			InProgress: amlCheck.Status == models.AmlCheckStatusPending,
+			Score:      amlCheck.Score,
+			RiskLevel:  amlCheck.RiskLevel,
+			CreatedAt:  pgtypeutils.DecodeTime(amlCheck.CreatedAt),
+			UpdatedAt:  pgtypeutils.DecodeTime(amlCheck.UpdatedAt),
+		}
+	case !errors.Is(err, pgx.ErrNoRows):
+		return preparedResult, fmt.Errorf("get aml check: %w", err)
+	}
+
 	return preparedResult, nil
 }
 

@@ -26,8 +26,25 @@ func NewTransactionInfoResponseFromDto(dto transactions.TransactionInfoDto) tran
 		Fee:              dto.Fee,
 		NetworkCreatedAt: dto.NetworkCreatedAt,
 		WebhookHistory:   NewSendHistoryListResponseFromDto(dto.WebhookHistory),
+		AmlCheck:         NewAmlCheckResponseFromDto(dto.AmlCheck),
 		CreatedAt:        dto.CreatedAt,
 		UpdatedAt:        dto.UpdatedAt,
+	}
+}
+
+func NewAmlCheckResponseFromDto(dto *transactions.TransactionAmlCheckDto) *transaction_response.AmlCheckResponse {
+	if dto == nil {
+		return nil
+	}
+
+	return &transaction_response.AmlCheckResponse{
+		ID:         dto.ID,
+		Status:     dto.Status,
+		InProgress: dto.InProgress,
+		Score:      dto.Score,
+		RiskLevel:  dto.RiskLevel,
+		CreatedAt:  dto.CreatedAt,
+		UpdatedAt:  dto.UpdatedAt,
 	}
 }
 
