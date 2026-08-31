@@ -13,7 +13,7 @@ import (
 
 type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (*models.RefundRequest, error)
-	GetAllByStoreIDAndStatus(ctx context.Context, arg GetAllByStoreIDAndStatusParams) ([]*models.RefundRequest, error)
+	GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserIDAndStatusParams) ([]*models.RefundRequest, error)
 	GetAllByWalletID(ctx context.Context, walletID uuid.UUID) ([]*models.RefundRequest, error)
 	GetByBlockedTransactionID(ctx context.Context, blockedTransactionID uuid.UUID) (*models.RefundRequest, error)
 	GetById(ctx context.Context, id uuid.UUID) (*models.RefundRequest, error)

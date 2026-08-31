@@ -2709,6 +2709,91 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/refund-requests": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists refund requests awaiting review across all stores owned by the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store",
+                    "Refund"
+                ],
+                "summary": "List pending refund requests",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_RefundRequest"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/refund-requests/{refundId}/reject": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Rejects a pending refund request that belongs to a store owned by the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store",
+                    "Refund"
+                ],
+                "summary": "Reject a refund request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Refund request ID",
+                        "name": "refundId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-RefundRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/root-setting/": {
             "get": {
                 "security": [
@@ -4211,119 +4296,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/dv-admin/store/{id}/refund-requests": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Lists refund requests awaiting review for a store owned by the authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Store",
-                    "Refund"
-                ],
-                "summary": "List pending refund requests for a store",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Store ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_RefundRequest"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/dv-admin/store/{id}/refund-requests/{refundId}/reject": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Rejects a pending refund request for a store owned by the authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Store",
-                    "Refund"
-                ],
-                "summary": "Reject a refund request",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Store ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Refund request ID",
-                        "name": "refundId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-RefundRequest"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -10511,6 +10483,97 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/public/wallet/{id}/aml-checks": {
+            "get": {
+                "description": "Returns the AML check status for a wallet transaction identified by hash",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wallet",
+                    "Public"
+                ],
+                "summary": "Get transaction AML check",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Wallet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Transaction hash",
+                        "name": "hash",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-AmlCheckStatusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/public/wallet/{id}/blocked-transactions": {
+            "get": {
+                "description": "Lists AML-blocked transactions of the wallet with no refund request filed yet",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Wallet",
+                    "Public"
+                ],
+                "summary": "Get wallet blocked transactions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Wallet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-array_CabinetItemResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/public/wallet/{id}/confirm": {
             "get": {
                 "description": "Notify wallet email",
@@ -10832,6 +10895,38 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/UniversalAddressGroupResponse"
                     }
+                }
+            }
+        },
+        "AmlCheckStatusResponse": {
+            "type": "object",
+            "properties": {
+                "blockchain": {
+                    "$ref": "#/definitions/Blockchain"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "in_progress": {
+                    "type": "boolean"
+                },
+                "risk_level": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus"
+                },
+                "transaction_id": {
+                    "type": "string"
+                },
+                "tx_hash": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -11921,6 +12016,7 @@ const docTemplate = `{
                 "kucoin",
                 "bybit",
                 "gate",
+                "bingx",
                 "mexc"
             ],
             "x-enum-varnames": [
@@ -11931,6 +12027,7 @@ const docTemplate = `{
                 "ExchangeSlugKucoin",
                 "ExchangeSlugBybit",
                 "ExchangeSlugGateio",
+                "ExchangeSlugBingx",
                 "ExchangeSlugMexc"
             ]
         },
@@ -12728,6 +12825,20 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/AddressBookListResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-AmlCheckStatusResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/AmlCheckStatusResponse"
                 },
                 "message": {
                     "type": "string"
@@ -13686,6 +13797,23 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/AMLKey"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-array_CabinetItemResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CabinetItemResponse"
                     }
                 },
                 "message": {
@@ -15640,9 +15768,38 @@ const docTemplate = `{
                 }
             }
         },
+        "TransactionAmlCheckResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "in_progress": {
+                    "type": "boolean"
+                },
+                "risk_level": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "TransactionInfoResponse": {
             "type": "object",
             "properties": {
+                "aml_check": {
+                    "$ref": "#/definitions/TransactionAmlCheckResponse"
+                },
                 "amount": {
                     "type": "number"
                 },
@@ -17278,6 +17435,7 @@ const docTemplate = `{
                 "kucoin",
                 "bybit",
                 "gate",
+                "bingx",
                 "mexc"
             ],
             "x-enum-varnames": [
@@ -17288,6 +17446,7 @@ const docTemplate = `{
                 "RateSourceKucoin",
                 "RateSourceBybit",
                 "RateSourceGateio",
+                "RateSourceBingx",
                 "RateSourceMexc"
             ]
         },

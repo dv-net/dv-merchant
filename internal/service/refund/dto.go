@@ -16,7 +16,7 @@ type CreateRefundDTO struct {
 
 type RejectRefundDTO struct {
 	RefundRequestID uuid.UUID
-	StoreID         uuid.UUID
+	UserID          uuid.UUID
 }
 
 const CabinetBucketAvailable = "available"
