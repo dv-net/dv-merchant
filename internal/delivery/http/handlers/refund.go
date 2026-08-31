@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"errors"
-
 	"github.com/dv-net/dv-merchant/internal/service/refund"
 	"github.com/dv-net/dv-merchant/internal/tools"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
@@ -14,40 +12,25 @@ import (
 	_ "github.com/dv-net/dv-merchant/internal/models"
 )
 
-// loadStorePendingRefunds lists refund requests awaiting the merchant's decision
-// (status pending_review) for one of their own stores.
+// loadUserPendingRefunds lists refund requests awaiting the merchant's decision
+// (status pending_review) across all stores owned by the authenticated user.
 //
-//	@Summary		List pending refund requests for a store
-//	@Description	Lists refund requests awaiting review for a store owned by the authenticated user
+//	@Summary		List pending refund requests
+//	@Description	Lists refund requests awaiting review across all stores owned by the authenticated user
 //	@Tags			Store,Refund
 //	@Accept			json
 //	@Produce		json
-//	@Param			id	path		string	true	"Store ID"
 //	@Success		200	{object}	response.Result[[]models.RefundRequest]
 //	@Failure		401	{object}	apierror.Errors
-//	@Failure		404	{object}	apierror.Errors
-//	@Router			/v1/dv-admin/store/{id}/refund-requests [get]
+//	@Router			/v1/dv-admin/refund-requests [get]
 //	@Security		BearerAuth
-func (h *Handler) loadStorePendingRefunds(c fiber.Ctx) error {
+func (h *Handler) loadUserPendingRefunds(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
 
-	storeID, err := tools.ValidateUUID(c.Params("id"))
-	if err != nil {
-		return err
-	}
-
-	targetStore, err := h.services.StoreService.GetStoreByID(c.Context(), storeID)
-	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)
-	}
-	if usr.ID != targetStore.UserID {
-		return apierror.New().AddError(errors.New("this is not your store")).SetHttpCode(fiber.StatusUnauthorized)
-	}
-
-	list, err := h.services.RefundService.GetPendingReview(c.Context(), targetStore.ID)
+	list, err := h.services.RefundService.GetPendingReviewByUser(c.Context(), usr.ID)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -55,40 +38,25 @@ func (h *Handler) loadStorePendingRefunds(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(list))
 }
 
-// rejectStoreRefund declines a pending refund request for one of the caller's own stores.
-// It never moves money — only RefundService.RejectRefund's state-machine check
-// (must currently be pending_review) and a plain status update.
+// rejectRefund declines a pending refund request that belongs to one of the caller's
+// own stores. It never moves money — only RefundService.RejectRefund's ownership and
+// state-machine check (must currently be pending_review) and a plain status update.
 //
 //	@Summary		Reject a refund request
-//	@Description	Rejects a pending refund request for a store owned by the authenticated user
+//	@Description	Rejects a pending refund request that belongs to a store owned by the authenticated user
 //	@Tags			Store,Refund
 //	@Accept			json
 //	@Produce		json
-//	@Param			id			path		string	true	"Store ID"
 //	@Param			refundId	path		string	true	"Refund request ID"
 //	@Success		200			{object}	response.Result[models.RefundRequest]
 //	@Failure		400			{object}	apierror.Errors
 //	@Failure		401			{object}	apierror.Errors
-//	@Failure		404			{object}	apierror.Errors
-//	@Router			/v1/dv-admin/store/{id}/refund-requests/{refundId}/reject [post]
+//	@Router			/v1/dv-admin/refund-requests/{refundId}/reject [post]
 //	@Security		BearerAuth
-func (h *Handler) rejectStoreRefund(c fiber.Ctx) error {
+func (h *Handler) rejectRefund(c fiber.Ctx) error {
 	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
-	}
-
-	storeID, err := tools.ValidateUUID(c.Params("id"))
-	if err != nil {
-		return err
-	}
-
-	targetStore, err := h.services.StoreService.GetStoreByID(c.Context(), storeID)
-	if err != nil {
-		return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)
-	}
-	if usr.ID != targetStore.UserID {
-		return apierror.New().AddError(errors.New("this is not your store")).SetHttpCode(fiber.StatusUnauthorized)
 	}
 
 	refundID, err := tools.ValidateUUID(c.Params("refundId"))
@@ -98,7 +66,7 @@ func (h *Handler) rejectStoreRefund(c fiber.Ctx) error {
 
 	ref, err := h.services.RefundService.RejectRefund(c.Context(), refund.RejectRefundDTO{
 		RefundRequestID: refundID,
-		StoreID:         targetStore.ID,
+		UserID:          usr.ID,
 	})
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
@@ -108,7 +76,7 @@ func (h *Handler) rejectStoreRefund(c fiber.Ctx) error {
 }
 
 func (h *Handler) initRefundAdminRoutes(v1 fiber.Router) {
-	storeHandlers := v1.Group("/store")
-	storeHandlers.Get("/:id/refund-requests", h.loadStorePendingRefunds)
-	storeHandlers.Post("/:id/refund-requests/:refundId/reject", h.rejectStoreRefund)
+	storeHandlers := v1.Group("/refund-requests")
+	storeHandlers.Get("/", h.loadUserPendingRefunds)
+	storeHandlers.Post("/:refundId/reject", h.rejectRefund)
 }

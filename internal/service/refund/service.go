@@ -22,7 +22,7 @@ type IRefundService interface {
 	CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error)
 	GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error)
 	GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error)
-	GetPendingReview(ctx context.Context, storeID uuid.UUID) ([]*models.RefundRequest, error)
+	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*models.RefundRequest, error)
 	RejectRefund(ctx context.Context, dto RejectRefundDTO) (*models.RefundRequest, error)
 }
 
@@ -128,10 +128,10 @@ func (s *Service) GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*Cabi
 	return items, nil
 }
 
-func (s *Service) GetPendingReview(ctx context.Context, storeID uuid.UUID) ([]*models.RefundRequest, error) {
-	list, err := s.storage.RefundRequests().GetAllByStoreIDAndStatus(ctx, repo_refund_requests.GetAllByStoreIDAndStatusParams{
-		StoreID: storeID,
-		Status:  constants.RefundStatusPendingReview,
+func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*models.RefundRequest, error) {
+	list, err := s.storage.RefundRequests().GetAllByUserIDAndStatus(ctx, repo_refund_requests.GetAllByUserIDAndStatusParams{
+		UserID: userID,
+		Status: constants.RefundStatusPendingReview,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("fetch pending refund requests: %w", err)
@@ -145,8 +145,12 @@ func (s *Service) RejectRefund(ctx context.Context, dto RejectRefundDTO) (*model
 		return nil, fmt.Errorf("fetch refund request: %w", err)
 	}
 
-	if ref.StoreID != dto.StoreID {
-		return nil, fmt.Errorf("store id mismatch: refund request store id")
+	store, err := s.storage.Stores().GetByID(ctx, ref.StoreID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch refund request store: %w", err)
+	}
+	if store.UserID != dto.UserID {
+		return nil, fmt.Errorf("refund request does not belong to the user")
 	}
 
 	if ref.Status != constants.RefundStatusPendingReview {

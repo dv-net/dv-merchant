@@ -106,6 +106,27 @@ definitions:
           $ref: '#/definitions/UniversalAddressGroupResponse'
         type: array
     type: object
+  AmlCheckStatusResponse:
+    properties:
+      blockchain:
+        $ref: '#/definitions/Blockchain'
+      created_at:
+        type: string
+      in_progress:
+        type: boolean
+      risk_level:
+        type: string
+      score:
+        type: number
+      status:
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus'
+      transaction_id:
+        type: string
+      tx_hash:
+        type: string
+      updated_at:
+        type: string
+    type: object
   AmlHistoryResponse:
     properties:
       created_at:
@@ -842,6 +863,7 @@ definitions:
     - kucoin
     - bybit
     - gate
+    - bingx
     - mexc
     type: string
     x-enum-varnames:
@@ -852,6 +874,7 @@ definitions:
     - ExchangeSlugKucoin
     - ExchangeSlugBybit
     - ExchangeSlugGateio
+    - ExchangeSlugBingx
     - ExchangeSlugMexc
   ExchangeTestConnectionRequest:
     properties:
@@ -1388,6 +1411,15 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/AddressBookListResponse'
+      message:
+        type: string
+    type: object
+  JSONResponse-AmlCheckStatusResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/AmlCheckStatusResponse'
       message:
         type: string
     type: object
@@ -2004,6 +2036,17 @@ definitions:
       data:
         items:
           $ref: '#/definitions/AMLKey'
+        type: array
+      message:
+        type: string
+    type: object
+  JSONResponse-array_CabinetItemResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/CabinetItemResponse'
         type: array
       message:
         type: string
@@ -3312,8 +3355,27 @@ definitions:
       name:
         type: string
     type: object
+  TransactionAmlCheckResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      in_progress:
+        type: boolean
+      risk_level:
+        type: string
+      score:
+        type: number
+      status:
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus'
+      updated_at:
+        type: string
+    type: object
   TransactionInfoResponse:
     properties:
+      aml_check:
+        $ref: '#/definitions/TransactionAmlCheckResponse'
       amount:
         type: number
       amount_usd:
@@ -4430,6 +4492,7 @@ definitions:
     - kucoin
     - bybit
     - gate
+    - bingx
     - mexc
     type: string
     x-enum-varnames:
@@ -4440,6 +4503,7 @@ definitions:
     - RateSourceKucoin
     - RateSourceBybit
     - RateSourceGateio
+    - RateSourceBingx
     - RateSourceMexc
   github_com_dv-net_dv-merchant_internal_models.WalletType:
     enum:
@@ -6367,6 +6431,62 @@ paths:
       summary: Load receipt
       tags:
       - Receipt
+  /v1/dv-admin/refund-requests:
+    get:
+      consumes:
+      - application/json
+      description: Lists refund requests awaiting review across all stores owned by
+        the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_RefundRequest'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: List pending refund requests
+      tags:
+      - Store
+      - Refund
+  /v1/dv-admin/refund-requests/{refundId}/reject:
+    post:
+      consumes:
+      - application/json
+      description: Rejects a pending refund request that belongs to a store owned
+        by the authenticated user
+      parameters:
+      - description: Refund request ID
+        in: path
+        name: refundId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Reject a refund request
+      tags:
+      - Store
+      - Refund
   /v1/dv-admin/root-setting/:
     get:
       consumes:
@@ -7299,81 +7419,6 @@ paths:
       summary: Update store currency
       tags:
       - Store
-  /v1/dv-admin/store/{id}/refund-requests:
-    get:
-      consumes:
-      - application/json
-      description: Lists refund requests awaiting review for a store owned by the
-        authenticated user
-      parameters:
-      - description: Store ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-array_RefundRequest'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: List pending refund requests for a store
-      tags:
-      - Store
-      - Refund
-  /v1/dv-admin/store/{id}/refund-requests/{refundId}/reject:
-    post:
-      consumes:
-      - application/json
-      description: Rejects a pending refund request for a store owned by the authenticated
-        user
-      parameters:
-      - description: Store ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Refund request ID
-        in: path
-        name: refundId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-RefundRequest'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/APIErrors'
-      security:
-      - BearerAuth: []
-      summary: Reject a refund request
-      tags:
-      - Store
-      - Refund
   /v1/dv-admin/store/{id}/resend-verify:
     post:
       description: Resend store verification
@@ -11364,6 +11409,69 @@ paths:
           schema:
             $ref: '#/definitions/APIErrors'
       summary: Get wallet full data
+      tags:
+      - Wallet
+      - Public
+  /v1/public/wallet/{id}/aml-checks:
+    get:
+      description: Returns the AML check status for a wallet transaction identified
+        by hash
+      parameters:
+      - description: Wallet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Transaction hash
+        in: query
+        name: hash
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-AmlCheckStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get transaction AML check
+      tags:
+      - Wallet
+      - Public
+  /v1/public/wallet/{id}/blocked-transactions:
+    get:
+      description: Lists AML-blocked transactions of the wallet with no refund request
+        filed yet
+      parameters:
+      - description: Wallet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-array_CabinetItemResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Get wallet blocked transactions
       tags:
       - Wallet
       - Public

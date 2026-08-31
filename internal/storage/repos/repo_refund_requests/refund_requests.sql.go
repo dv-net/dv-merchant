@@ -12,21 +12,22 @@ import (
 	"github.com/google/uuid"
 )
 
-const getAllByStoreIDAndStatus = `-- name: GetAllByStoreIDAndStatus :many
-SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at
-FROM refund_requests
-WHERE store_id = $1
-  AND status = $2
-ORDER BY created_at DESC
+const getAllByUserIDAndStatus = `-- name: GetAllByUserIDAndStatus :many
+SELECT rr.id, rr.blocked_transaction_id, rr.wallet_id, rr.store_id, rr.transfer_id, rr.destination_address, rr.status, rr.email, rr.reviewed_at, rr.created_at, rr.updated_at
+FROM refund_requests rr
+INNER JOIN stores s ON rr.store_id = s.id
+WHERE s.user_id = $1
+  AND rr.status = $2
+ORDER BY rr.created_at DESC
 `
 
-type GetAllByStoreIDAndStatusParams struct {
-	StoreID uuid.UUID `db:"store_id" json:"store_id"`
-	Status  string    `db:"status" json:"status"`
+type GetAllByUserIDAndStatusParams struct {
+	UserID uuid.UUID `db:"user_id" json:"user_id"`
+	Status string    `db:"status" json:"status"`
 }
 
-func (q *Queries) GetAllByStoreIDAndStatus(ctx context.Context, arg GetAllByStoreIDAndStatusParams) ([]*models.RefundRequest, error) {
-	rows, err := q.db.Query(ctx, getAllByStoreIDAndStatus, arg.StoreID, arg.Status)
+func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserIDAndStatusParams) ([]*models.RefundRequest, error) {
+	rows, err := q.db.Query(ctx, getAllByUserIDAndStatus, arg.UserID, arg.Status)
 	if err != nil {
 		return nil, err
 	}
