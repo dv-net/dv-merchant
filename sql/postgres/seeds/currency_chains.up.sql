@@ -1,4 +1,5 @@
 DELETE FROM exchange_chains WHERE slug = 'gate' AND ticker = 'DAI';
+DELETE FROM exchange_chains WHERE slug = 'htx' AND ticker = 'dai';
 
 INSERT INTO exchange_chains (slug, currency_id, ticker, chain)
 values
@@ -29,11 +30,9 @@ values
     ('htx','USDC.Ethereum', 'usdc', 'usdc'),
     ('htx','LTC.Litecoin', 'ltc', 'ltc'),
     ('htx', 'BCH.Bitcoincash', 'bch', 'bcc'),
-    ('htx', 'DAI.Ethereum', 'dai', 'dai'),
     ('htx', 'BNB.BNBSmartChain', 'bnb', 'bnb1'),
     ('htx', 'USDT.BNBSmartChain', 'usdt', 'bep20usdt'),
     ('htx', 'USDC.BNBSmartChain', 'usdc', 'bep20usdc'),
-    ('htx', 'DAI.BNBSmartChain', 'dai', 'bep20dai'),
     ('htx', 'POL.Polygon', 'pol', 'matic1'),
     ('htx', 'SAND.Ethereum', 'sand', 'sand'),
     ('htx', 'XAUT.Ethereum', 'xaut', 'xaut'),
