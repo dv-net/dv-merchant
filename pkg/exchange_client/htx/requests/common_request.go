@@ -2,7 +2,7 @@
 package requests
 
 type GetAllSupportedCurrenciesRequest struct {
-	Timestamp int64 `json:"ts" url:"ts,omitempty"`
+	Timestamp int64 `json:"ts,omitempty" url:"ts,omitempty"`
 }
 
 type GetCurrencyReferenceRequest struct {
@@ -10,5 +10,5 @@ type GetCurrencyReferenceRequest struct {
 }
 
 type GetMarketSymbolsRequest struct {
-	Symbols string `json:"symbols" url:"symbols,omitempty"`
+	Symbols string `json:"symbols,omitempty" url:"symbols,omitempty"`
 }
