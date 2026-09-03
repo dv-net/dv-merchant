@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.24]
 - fix: coordinated graceful shutdown - HTTP server and background workers now stop within a bounded budget (`MERCHANT_HTTP_SHUTDOWN_TIMEOUT`)
 - feat: supervise background workers with panic recovery and exponential-backoff restart; expose `backend_background_worker_running` / `backend_background_worker_restarts_total` metrics
+- fix: aml bitok add support for bsc network
+- fix: dai remove assets for htx
 
 ## [0.9.23]
 - feat: aml check by group
