@@ -127,10 +127,12 @@ func (s *Service) LoadPrivateAddresses(ctx context.Context, dto LoadPrivateKeyDT
 	return bb, nil
 }
 
-// getOrCreateWalletAddress returns existing or creates a new wallet address
+// getOrCreateWalletAddress returns existing or creates a new wallet address.
+// It runs outside any DB transaction on purpose: creating an address means calling
+// out to processing, and the check-then-create is made safe by the per-key mutex
+// plus the duplicate-aware retry loop below.
 func (s *Service) getOrCreateWalletAddress(
 	ctx context.Context,
-	dbTx pgx.Tx,
 	storeOwner *models.User,
 	wallet *models.Wallet,
 	c *models.Currency,
@@ -162,7 +164,7 @@ func (s *Service) getOrCreateWalletAddress(
 	var lastErr error
 
 	for attempt := 1; attempt <= maxRetries; attempt++ {
-		walletAddress, err := s.storage.WalletAddresses(repos.WithTx(dbTx)).GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
+		walletAddress, err := s.storage.WalletAddresses().GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("failed to get wallet address: %w", err)
 		}
@@ -175,7 +177,7 @@ func (s *Service) getOrCreateWalletAddress(
 			return walletAddress, nil
 		}
 
-		addr, err := s.createNewWalletAddress(ctx, dbTx, storeOwner, wallet, c, nil)
+		addr, err := s.createNewWalletAddress(ctx, storeOwner, wallet, c, nil)
 		if err != nil {
 			lastErr = err
 			if isDuplicateErr(err) {
@@ -194,7 +196,7 @@ func (s *Service) getOrCreateWalletAddress(
 		return addr, nil
 	}
 
-	walletAddress, err := s.storage.WalletAddresses(repos.WithTx(dbTx)).GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
+	walletAddress, err := s.storage.WalletAddresses().GetByWalletIDAndCurrencyID(ctx, wallet.ID, c.ID)
 	if err == nil {
 		s.logger.Warnw("address found after retries", "wallet_id", wallet.ID, "currency_id", c.ID)
 		return walletAddress, nil
@@ -205,7 +207,6 @@ func (s *Service) getOrCreateWalletAddress(
 
 func (s *Service) createNewWalletAddress(
 	ctx context.Context,
-	dbTx pgx.Tx,
 	storeOwner *models.User,
 	wallet *models.Wallet,
 	c *models.Currency,
@@ -233,7 +234,7 @@ func (s *Service) createNewWalletAddress(
 		return nil, fmt.Errorf("failed to create new wallet address: new address is the same as the old one")
 	}
 
-	walletAddress, err := s.storage.WalletAddresses(repos.WithTx(dbTx)).Create(ctx, repo_wallet_addresses.CreateParams{
+	walletAddress, err := s.storage.WalletAddresses().Create(ctx, repo_wallet_addresses.CreateParams{
 		WalletID:   wallet.ID,
 		UserID:     storeOwner.ID,
 		CurrencyID: c.ID,

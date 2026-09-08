@@ -10,14 +10,17 @@ SELECT whsq.id,
        whsq.last_sent_at,
        sw.store_id,
        sw.url,
-       (select count(distinct id)
-        from webhook_send_histories
-        where webhook_send_histories.status = 'failed'
-          and webhook_send_histories.send_queue_job_id = whsq.id) as retries_count
+       count(whsh_failed.id) as retries_count
 FROM webhook_send_queue whsq
          join store_webhooks sw on whsq.webhook_id = sw.id and sw.enabled = true
-         left join webhook_send_histories whsh on whsh.send_queue_job_id = whsq.id and whsh.status = 'success'
-WHERE whsh.id is null
+         left join webhook_send_histories whsh_success
+                   on whsh_success.send_queue_job_id = whsq.id and whsh_success.status = 'success'
+         left join webhook_send_histories whsh_failed
+                   on whsh_failed.send_queue_job_id = whsq.id and whsh_failed.status = 'failed'
+WHERE whsh_success.id is null
+  AND (whsq.last_sent_at is null
+       OR whsq.last_sent_at + make_interval(secs => whsq.seconds_delay) <= now())
+GROUP BY whsq.id, sw.id
 ORDER BY whsq.created_at
 LIMIT 500;
 

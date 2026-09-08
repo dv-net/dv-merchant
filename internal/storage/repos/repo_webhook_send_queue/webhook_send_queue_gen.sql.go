@@ -21,7 +21,7 @@ INSERT INTO webhook_send_queue (webhook_id, seconds_delay, transaction_id, paylo
 
 type CreateParams struct {
 	WebhookID     uuid.UUID        `db:"webhook_id" json:"webhook_id"`
-	SecondsDelay  int16            `db:"seconds_delay" json:"seconds_delay"`
+	SecondsDelay  int32            `db:"seconds_delay" json:"seconds_delay"`
 	TransactionID uuid.UUID        `db:"transaction_id" json:"transaction_id"`
 	Payload       []byte           `db:"payload" json:"payload"`
 	Signature     string           `db:"signature" json:"signature"`

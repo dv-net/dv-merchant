@@ -1,0 +1,7 @@
+DROP INDEX CONCURRENTLY IF EXISTS wallet_addresses_user_currency_amount_idx;
+DROP INDEX CONCURRENTLY IF EXISTS wallet_addresses_user_id_currency_id_idx;
+DROP INDEX CONCURRENTLY IF EXISTS transactions_user_is_system_created_idx;
+DROP INDEX CONCURRENTLY IF EXISTS aml_checks_transaction_id_idx;
+DROP INDEX CONCURRENTLY IF EXISTS transfers_user_id_kind_currency_id_blockchain_idx;
+DROP INDEX CONCURRENTLY IF EXISTS transactions_to_address_currency_id_idx;
+DROP INDEX CONCURRENTLY IF EXISTS transactions_from_address_currency_id_blockchain_idx;
