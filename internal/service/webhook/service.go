@@ -57,7 +57,10 @@ type service struct {
 var _ IWebHook = (*service)(nil)
 
 func New(c config.WebHook, s storage.IStorage, l logger.Logger) IWebHook {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport := &http.Transport{}
+	if dt, ok := http.DefaultTransport.(*http.Transport); ok {
+		transport = dt.Clone()
+	}
 	transport.MaxIdleConnsPerHost = 10
 
 	srv := service{
