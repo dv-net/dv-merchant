@@ -35,14 +35,17 @@ SELECT whsq.id,
        whsq.last_sent_at,
        sw.store_id,
        sw.url,
-       (select count(distinct id)
-        from webhook_send_histories
-        where webhook_send_histories.status = 'failed'
-          and webhook_send_histories.send_queue_job_id = whsq.id) as retries_count
+       count(whsh_failed.id) as retries_count
 FROM webhook_send_queue whsq
          join store_webhooks sw on whsq.webhook_id = sw.id and sw.enabled = true
-         left join webhook_send_histories whsh on whsh.send_queue_job_id = whsq.id and whsh.status = 'success'
-WHERE whsh.id is null
+         left join webhook_send_histories whsh_success
+                   on whsh_success.send_queue_job_id = whsq.id and whsh_success.status = 'success'
+         left join webhook_send_histories whsh_failed
+                   on whsh_failed.send_queue_job_id = whsq.id and whsh_failed.status = 'failed'
+WHERE whsh_success.id is null
+  AND (whsq.last_sent_at is null
+       OR whsq.last_sent_at + make_interval(secs => whsq.seconds_delay) <= now())
+GROUP BY whsq.id, sw.id
 ORDER BY whsq.created_at
 LIMIT 500
 `
@@ -50,7 +53,7 @@ LIMIT 500
 type GetQueuedWebhooksRow struct {
 	ID            uuid.UUID        `db:"id" json:"id"`
 	WebhookID     uuid.UUID        `db:"webhook_id" json:"webhook_id"`
-	SecondsDelay  int16            `db:"seconds_delay" json:"seconds_delay"`
+	SecondsDelay  int32            `db:"seconds_delay" json:"seconds_delay"`
 	TransactionID uuid.UUID        `db:"transaction_id" json:"transaction_id"`
 	Event         string           `db:"event" json:"event"`
 	Payload       []byte           `db:"payload" json:"payload"`
@@ -103,7 +106,7 @@ where id = $1
 
 type UpdateDelayParams struct {
 	ID    uuid.UUID `db:"id" json:"id"`
-	Delay int16     `db:"delay" json:"delay"`
+	Delay int32     `db:"delay" json:"delay"`
 }
 
 func (q *Queries) UpdateDelay(ctx context.Context, arg UpdateDelayParams) error {

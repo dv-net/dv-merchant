@@ -27,7 +27,7 @@ type Message struct {
 	WebhookID uuid.UUID `json:"webhook_id"`
 	Type      string    `json:"type"`
 	Data      []byte    `json:"data"`
-	Delay     int16     `json:"delay"`
+	Delay     int32     `json:"delay"`
 	Signature string    `json:"signature"`
 }
 

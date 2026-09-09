@@ -14,7 +14,13 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallets"
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/sync/errgroup"
 )
+
+// walletAddressGenConcurrency bounds parallel address generation across a store's
+// currencies. Each cache miss is a round-trip to processing (HD-key derivation),
+// so the per-currency loop is fanned out instead of run sequentially.
+const walletAddressGenConcurrency = 6
 
 var ErrStoreNotVerified = errors.New("store is not verified")
 
@@ -67,7 +73,7 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 		return nil, err
 	}
 
-	err = repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+	err = func() error {
 		feURL, err := s.settingService.GetRootSetting(ctx, setting.MerchantPayFormDomain)
 		if err != nil {
 			return err
@@ -91,7 +97,7 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 			return err
 		}
 
-		address, err := s.generateWalletAddresses(ctx, tx, storeOwner, wallet, str, currencies, amountUSD)
+		address, err := s.generateWalletAddresses(ctx, storeOwner, wallet, str, currencies, amountUSD)
 		if err != nil {
 			return err
 		}
@@ -105,7 +111,7 @@ func (s *Service) StoreWalletWithAddress(ctx context.Context, dto CreateStoreWal
 		walletWithAddress.AmountUSD = amountUSD
 
 		return nil
-	})
+	}()
 	if err != nil {
 		return nil, fmt.Errorf("failed to store wallet with address for store external id %s: %w", dto.StoreExternalID, err)
 	}
@@ -151,57 +157,68 @@ func (s *Service) updateWalletMeta(ctx context.Context, wallet *models.Wallet, p
 	return nil
 }
 
-func (s *Service) generateWalletAddresses(ctx context.Context, tx pgx.Tx, owner *models.User, wallet *models.Wallet, str *models.Store, currencies []*models.Currency, amount string) ([]*models.WalletAddress, error) {
+func (s *Service) generateWalletAddresses(ctx context.Context, owner *models.User, wallet *models.Wallet, str *models.Store, currencies []*models.Currency, amount string) ([]*models.WalletAddress, error) {
+	nonFiat := make([]*models.Currency, 0, len(currencies))
 	currencyIDs := make([]string, 0, len(currencies))
-	for _, c := range currencies {
-		if !c.IsFiat {
-			currencyIDs = append(currencyIDs, c.ID)
-		}
-	}
-
-	cleanAddresses, err := s.storage.WalletAddresses(repos.WithTx(tx)).GetAllClearByWalletID(ctx, wallet.ID, currencyIDs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get wallet addresses: %w", err)
-	}
-
-	result := make([]*models.WalletAddress, 0, len(currencies))
 	for _, c := range currencies {
 		if c.IsFiat {
 			continue
 		}
+		nonFiat = append(nonFiat, c)
+		currencyIDs = append(currencyIDs, c.ID)
+	}
 
-		idx := slices.IndexFunc(cleanAddresses, func(wa *models.WalletAddress) bool {
-			return wa.CurrencyID == c.ID
-		})
+	cleanAddresses, err := s.storage.WalletAddresses().GetAllClearByWalletID(ctx, wallet.ID, currencyIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get wallet addresses: %w", err)
+	}
 
-		var addr *models.WalletAddress
-		if idx >= 0 {
-			addr = cleanAddresses[idx]
-			if logErr := s.logProcessingAddressReceived(ctx, addr, pgtypeutils.DecodeText(wallet.IpAddress)); logErr != nil {
-				s.logger.Errorw("failed create log to process processing addresses", "error", logErr)
-			}
-		} else {
-			addr, err = s.getOrCreateWalletAddress(ctx, tx, owner, wallet, c)
+	result := make([]*models.WalletAddress, len(nonFiat))
+	eg, egCtx := errgroup.WithContext(ctx)
+	eg.SetLimit(walletAddressGenConcurrency)
+	for i, c := range nonFiat {
+		eg.Go(func() error {
+			addr, err := s.resolveWalletAddress(egCtx, owner, wallet, c, cleanAddresses)
 			if err != nil {
-				return nil, fmt.Errorf("failed to get or create wallet address: %w", err)
+				return fmt.Errorf("failed to get or create wallet address for currency %s: %w", c.ID, err)
 			}
-		}
 
-		amt, err := s.currConvService.Convert(ctx, currconv.ConvertDTO{
-			Source:     str.RateSource.String(),
-			From:       models.CurrencyCodeUSDT,
-			To:         c.Code,
-			Amount:     amount,
-			StableCoin: c.IsStablecoin,
-			Scale:      &str.RateScale,
+			amt, err := s.currConvService.Convert(egCtx, currconv.ConvertDTO{
+				Source:     str.RateSource.String(),
+				From:       models.CurrencyCodeUSDT,
+				To:         c.Code,
+				Amount:     amount,
+				StableCoin: c.IsStablecoin,
+				Scale:      &str.RateScale,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to convert rate source: %w", err)
+			}
+
+			addr.Amount = amt
+			result[i] = addr
+			return nil
 		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert rate source: %w", err)
-		}
-
-		addr.Amount = amt
-		result = append(result, addr)
+	}
+	if err := eg.Wait(); err != nil {
+		return nil, err
 	}
 
 	return result, nil
+}
+
+// resolveWalletAddress returns the existing clean address for the currency, or
+// creates a new one via processing when there is none.
+func (s *Service) resolveWalletAddress(ctx context.Context, owner *models.User, wallet *models.Wallet, c *models.Currency, cleanAddresses []*models.WalletAddress) (*models.WalletAddress, error) {
+	if idx := slices.IndexFunc(cleanAddresses, func(wa *models.WalletAddress) bool {
+		return wa.CurrencyID == c.ID
+	}); idx >= 0 {
+		addr := cleanAddresses[idx]
+		if logErr := s.logProcessingAddressReceived(ctx, addr, pgtypeutils.DecodeText(wallet.IpAddress)); logErr != nil {
+			s.logger.Errorw("failed create log to process processing addresses", "error", logErr)
+		}
+		return addr, nil
+	}
+
+	return s.getOrCreateWalletAddress(ctx, owner, wallet, c)
 }

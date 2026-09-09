@@ -1,5 +1,7 @@
 DELETE FROM exchange_chains WHERE slug = 'gate' AND ticker = 'DAI';
 DELETE FROM exchange_chains WHERE slug = 'htx' AND ticker = 'dai';
+DELETE FROM exchange_chains WHERE slug = 'bitget' AND ticker = 'DAI';
+DELETE FROM exchange_chains WHERE slug = 'bybit' AND ticker = 'DAI';
 
 INSERT INTO exchange_chains (slug, currency_id, ticker, chain)
 values
@@ -87,17 +89,12 @@ values
     ('bitget', 'USDC.Ethereum', 'USDC', 'ERC20'),
     ('bitget', 'LTC.Litecoin', 'LTC', 'LTC'),
     ('bitget', 'BCH.Bitcoincash', 'BCH', 'BCH'),
-    ('bitget', 'DAI.Ethereum', 'DAI', 'ERC20'),
     ('bitget', 'BNB.BNBSmartChain', 'BNB', 'BEP20'),
     ('bitget', 'USDT.BNBSmartChain', 'USDT', 'BEP20'),
     ('bitget', 'USDC.BNBSmartChain', 'USDC', 'BEP20'),
-    ('bitget', 'DAI.BNBSmartChain', 'DAI', 'BEP20'),
-    ('bitget', 'DAI.BNBSmartChain', 'DAI', 'BEP20'),
     ('bitget', 'POL.Polygon', 'POL', 'Polygon'),
     ('bitget', 'USDT.Polygon', 'USDT', 'Polygon'),
     ('bitget', 'USDC.Polygon', 'USDC', 'POLYGON'),
-    ('bitget', 'DAI.Polygon', 'DAI', 'Polygon'),
-    ('bitget', 'DAI.BNBSmartChain', 'DAI', 'BEP20'),
     ('bitget', 'SAND.Ethereum', 'SAND', 'ERC20'),
     ('bitget', 'XAUT.Ethereum', 'XAUT', 'ERC20'),
     ('bitget', 'PYUSD.Ethereum', 'PYUSD', 'ERC20'),
@@ -156,8 +153,6 @@ values
     ('bybit', 'USDC.Arbitrum', 'USDC', 'ARBI'),
     ('bybit', 'USDC.BNBSmartChain', 'USDC', 'BSC'),
     ('bybit', 'USDC.Polygon', 'USDC', 'MATIC'),
-    ('bybit', 'DAI.Ethereum', 'DAI', 'ETH'),
-    ('bybit', 'DAI.BNBSmartChain', 'DAI', 'BSC'),
     ('bybit', 'BNB.BNBSmartChain', 'BNB', 'BSC'),
     ('bybit', 'POL.Polygon', 'POL', 'MATIC'),
     ('bybit', 'DOGE.Dogecoin', 'DOGE', 'DOGE'),

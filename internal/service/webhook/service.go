@@ -12,6 +12,7 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/dv-net/dv-merchant/internal/config"
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -30,9 +31,11 @@ import (
 )
 
 const (
-	WebhookSendStatusFailed  string = "failed"
-	WebhookSendStatusSuccess string = "success"
-	webhookPollingInterval          = time.Second * 2
+	WebhookSendStatusFailed    string = "failed"
+	WebhookSendStatusSuccess   string = "success"
+	webhookPollingInterval            = time.Second * 2
+	webhookHTTPTimeout                = 30 * time.Second
+	webhookDeliveryConcurrency        = 16
 )
 
 type IWebHook interface {
@@ -44,15 +47,22 @@ type IWebHook interface {
 }
 
 type service struct {
-	storage  storage.IStorage
-	log      logger.Logger
-	maxTries int
-	locker   queueLocker
+	storage    storage.IStorage
+	log        logger.Logger
+	maxTries   int
+	locker     queueLocker
+	httpClient *http.Client
 }
 
 var _ IWebHook = (*service)(nil)
 
 func New(c config.WebHook, s storage.IStorage, l logger.Logger) IWebHook {
+	transport := &http.Transport{}
+	if dt, ok := http.DefaultTransport.(*http.Transport); ok {
+		transport = dt.Clone()
+	}
+	transport.MaxIdleConnsPerHost = 10
+
 	srv := service{
 		storage:  s,
 		log:      l,
@@ -60,6 +70,10 @@ func New(c config.WebHook, s storage.IStorage, l logger.Logger) IWebHook {
 		locker: queueLocker{
 			mu:           &sync.Mutex{},
 			whInProgress: make(map[uuid.UUID]struct{}),
+		},
+		httpClient: &http.Client{
+			Timeout:   webhookHTTPTimeout,
+			Transport: transport,
 		},
 	}
 
@@ -92,11 +106,9 @@ func (s *service) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			go func() {
-				if err := s.processWhQueue(ctx); err != nil {
-					s.log.Errorw("Precess webhook queue error", "error", err)
-				}
-			}()
+			if err := s.processWhQueue(ctx); err != nil {
+				s.log.Errorw("Precess webhook queue error", "error", err)
+			}
 		case <-ctx.Done():
 			return
 		}
@@ -118,7 +130,7 @@ func (s *service) SendWebhook(ctx context.Context, url string, payload []byte, s
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("X-Sign", sign)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		s.log.Errorw("webhook sent http", "error", err)
 		return result, nil
@@ -158,24 +170,24 @@ func (s *service) processWhQueue(ctx context.Context) error {
 		return fmt.Errorf("fetch wh queue: %w", err)
 	}
 
+	eg, egCtx := errgroup.WithContext(ctx)
+	eg.SetLimit(webhookDeliveryConcurrency)
 	for _, v := range webhooksData {
-		if v.LastSentAt.Valid && time.Now().Before(v.LastSentAt.Time.Add(time.Second*time.Duration(v.SecondsDelay))) {
-			continue
-		}
-
 		if !s.locker.Acquire(v.WebhookID) {
 			// Webhook currently processing from another goroutine
 			continue
 		}
 
-		if err := s.ProcessPlainMessage(ctx, prepareHookDtoByRaw(v)); err != nil {
-			s.log.Errorw("Processing wh message", "error", err)
-		}
-
-		s.locker.Release(v.WebhookID)
+		eg.Go(func() error {
+			defer s.locker.Release(v.WebhookID)
+			if err := s.ProcessPlainMessage(egCtx, prepareHookDtoByRaw(v)); err != nil {
+				s.log.Errorw("Processing wh message", "error", err)
+			}
+			return nil
+		})
 	}
 
-	return nil
+	return eg.Wait()
 }
 
 func (s *service) ProcessPlainMessage(ctx context.Context, dto PreparedHookDto) error {
@@ -195,7 +207,7 @@ func (s *service) ProcessPlainMessage(ctx context.Context, dto PreparedHookDto) 
 
 		return s.storage.WebHookSendQueue().UpdateDelay(ctx, repo_webhook_send_queue.UpdateDelayParams{
 			ID:    dto.ID.UUID,
-			Delay: int16(60 * math.Pow(float64(2), float64(dto.RetriesCount))),
+			Delay: nextWebhookDelay(dto.RetriesCount),
 		})
 	}
 
@@ -204,6 +216,21 @@ func (s *service) ProcessPlainMessage(ctx context.Context, dto PreparedHookDto) 
 	}
 
 	return nil
+}
+
+// maxWebhookDelaySeconds is the ceiling of the exponential retry backoff: once
+// 60 * 2^retries reaches a day, the entry is retried once per day.
+const maxWebhookDelaySeconds = 24 * 60 * 60
+
+func nextWebhookDelay(retries int64) int32 {
+	if retries < 0 {
+		retries = 0
+	}
+	delay := 60 * math.Pow(2, float64(retries))
+	if delay >= maxWebhookDelaySeconds {
+		return maxWebhookDelaySeconds
+	}
+	return int32(delay)
 }
 
 func (s *service) GetHistory(

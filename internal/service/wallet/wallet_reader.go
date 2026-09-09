@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/samber/lo"
 	"github.com/shopspring/decimal"
+	"golang.org/x/sync/errgroup"
 )
 
 func (s *Service) GetWallet(ctx context.Context, id uuid.UUID) (*models.Wallet, error) {
@@ -59,32 +60,44 @@ func (s *Service) GetFullDataByID(ctx context.Context, id uuid.UUID) (*GetAllByS
 		return nil, fmt.Errorf("failed to get all clear addresses by wallet id: %w", err)
 	}
 
-	var storeOwner *models.User
+	missing := make([]*models.Currency, 0, len(availableCurrencies))
 	for _, c := range availableCurrencies {
 		if c.IsFiat {
 			continue
 		}
-
-		exists := slices.ContainsFunc(addresses, func(wa *models.WalletAddress) bool {
+		if slices.ContainsFunc(addresses, func(wa *models.WalletAddress) bool {
 			return wa.CurrencyID == c.ID
-		})
-		if exists {
+		}) {
 			continue
 		}
+		missing = append(missing, c)
+	}
 
-		if storeOwner == nil {
-			storeOwner, err = s.storage.Users().GetByID(ctx, data.Store.UserID)
-			if err != nil {
-				return nil, fmt.Errorf("failed to get store owner by id: %w", err)
-			}
-		}
-
-		newWalletAddress, err := s.getOrCreateWalletAddress(ctx, nil, storeOwner, &data.Wallet, c)
+	if len(missing) > 0 {
+		storeOwner, err := s.storage.Users().GetByID(ctx, data.Store.UserID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get or create wallet address: %w", err)
+			return nil, fmt.Errorf("failed to get store owner by id: %w", err)
 		}
 
-		addresses = append(addresses, newWalletAddress)
+		// Fan out: each missing currency is a round-trip to processing.
+		created := make([]*models.WalletAddress, len(missing))
+		eg, egCtx := errgroup.WithContext(ctx)
+		eg.SetLimit(walletAddressGenConcurrency)
+		for i, c := range missing {
+			eg.Go(func() error {
+				addr, err := s.getOrCreateWalletAddress(egCtx, storeOwner, &data.Wallet, c)
+				if err != nil {
+					return fmt.Errorf("failed to get or create wallet address for currency %s: %w", c.ID, err)
+				}
+				created[i] = addr
+				return nil
+			})
+		}
+		if err := eg.Wait(); err != nil {
+			return nil, err
+		}
+
+		addresses = append(addresses, created...)
 	}
 
 	return &GetAllByStoreIDResponse{

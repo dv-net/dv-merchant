@@ -627,7 +627,7 @@ type WebhookSendHistory struct {
 type WebhookSendQueue struct {
 	ID            uuid.UUID        `db:"id" json:"id"`
 	WebhookID     uuid.UUID        `db:"webhook_id" json:"webhook_id"`
-	SecondsDelay  int16            `db:"seconds_delay" json:"seconds_delay"`
+	SecondsDelay  int32            `db:"seconds_delay" json:"seconds_delay"`
 	TransactionID uuid.UUID        `db:"transaction_id" json:"transaction_id"`
 	Payload       []byte           `db:"payload" json:"payload"`
 	Signature     string           `db:"signature" json:"signature"`
