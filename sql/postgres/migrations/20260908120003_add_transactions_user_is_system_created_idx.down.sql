@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS transactions_user_is_system_created_idx;

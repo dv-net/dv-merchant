@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS wallet_addresses_user_id_currency_id_idx;
