@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- fix: split hot-path index migration into one `CREATE INDEX CONCURRENTLY` statement per file so it no longer fails with "cannot run inside a transaction block"
+- fix: set `lock_timeout` on the migration session so a stale advisory lock or a blocked statement fails fast instead of hanging `migrate` indefinitely
 
 ## [0.9.24]
 - fix: coordinated graceful shutdown - HTTP server and background workers now stop within a bounded budget (`MERCHANT_HTTP_SHUTDOWN_TIMEOUT`)

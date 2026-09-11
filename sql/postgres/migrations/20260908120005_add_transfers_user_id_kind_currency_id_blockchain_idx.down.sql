@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS transfers_user_id_kind_currency_id_blockchain_idx;

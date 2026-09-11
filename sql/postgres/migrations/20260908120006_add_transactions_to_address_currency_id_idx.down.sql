@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS transactions_to_address_currency_id_idx;

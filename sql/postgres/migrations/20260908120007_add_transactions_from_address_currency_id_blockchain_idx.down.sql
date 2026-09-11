@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS transactions_from_address_currency_id_blockchain_idx;
