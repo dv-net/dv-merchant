@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"crypto/subtle"
+
 	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 	"github.com/dv-net/dv-merchant/internal/tools/hash"
@@ -20,7 +22,7 @@ func SignMiddleware(service setting.ISettingService) fiber.Handler {
 		hashBody := hash.SHA256Signature(body, clientKey.Value)
 		signHeader := ctx.Get("X-Sign")
 
-		if signHeader != hashBody {
+		if subtle.ConstantTimeCompare([]byte(signHeader), []byte(hashBody)) != 1 {
 			return apierror.New().AddError(fiber.NewError(fiber.StatusTeapot, "Invalid signature")).SetHttpCode(fiber.StatusTeapot)
 		}
 		return ctx.Next()

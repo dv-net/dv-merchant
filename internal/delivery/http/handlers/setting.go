@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/setting_request"
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -126,7 +127,16 @@ func (h *Handler) getRootSettings(c fiber.Ctx) error {
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusUnprocessableEntity)
 	}
-	res := converters.FromSettingModelToResponses(settings...)
+
+	visibleSettings := make([]*models.Setting, 0, len(settings))
+	for _, s := range settings {
+		if slices.Contains(setting.SensitiveSettings, s.Name) {
+			continue
+		}
+		visibleSettings = append(visibleSettings, s)
+	}
+
+	res := converters.FromSettingModelToResponses(visibleSettings...)
 	return c.JSON(response.OkByData(res))
 }
 

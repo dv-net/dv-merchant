@@ -69,6 +69,8 @@ var MailerSettings = []string{
 
 var SensitiveSettings = []string{
 	DvAdminSecretKey,
+	ProcessingClientID,
+	ProcessingClientKey,
 }
 
 var validRootSettings = map[string][]string{
