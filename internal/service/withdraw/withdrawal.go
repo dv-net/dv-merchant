@@ -422,7 +422,6 @@ func (s *service) DeleteWithdrawalFromProcessing(ctx context.Context, id uuid.UU
 		ID:      id,
 		StoreID: storeID,
 	})
-
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrWithdrawalNotFound

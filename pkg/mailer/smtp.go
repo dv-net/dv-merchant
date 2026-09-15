@@ -99,8 +99,7 @@ func NewSMTPPool(ctx context.Context, o *PoolOptions) (*SMTPPool, error) {
 	pool.cons = make(chan *conn, o.MaxConn)
 
 	if o.Username != nil && o.Password != nil {
-		authClient := sasl.NewPlainClient("", *o.Username, *o.Password)
-		o.Auth = &authClient
+		o.Auth = new(sasl.NewPlainClient("", *o.Username, *o.Password))
 	}
 
 	go pool.run(ctx)
@@ -155,8 +154,7 @@ func (o *SMTPPool) Send(from string, to []string, body io.Reader) error {
 		_ = connection.Close()
 		lastErr = sendErr
 
-		var smtpErr *smtp.SMTPError
-		if errors.As(sendErr, &smtpErr) {
+		if _, ok := errors.AsType[*smtp.SMTPError](sendErr); ok {
 			return sendErr
 		}
 	}

@@ -87,7 +87,7 @@ lint: build_custom_linter
 	$(CUSTOM_CI_LINTER) run --timeout=10m --show-stats --config .golangci.yml
 
 fmt:
-	go tool gofumpt -l -w .
+	@gofumpt -l -w .
 
 genmocks:
 	mockery

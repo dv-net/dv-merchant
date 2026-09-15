@@ -19,12 +19,15 @@ type OwnerHotWalletParams struct {
 	LitecoinAddressType *LitecoinAddressType
 }
 
-type BitcoinAddressType int32
-type LitecoinAddressType int32
+type (
+	BitcoinAddressType  int32
+	LitecoinAddressType int32
+)
 
 func (o BitcoinAddressType) ToPb() commonv1.BitcoinAddressType {
 	return commonv1.BitcoinAddressType(o)
 }
+
 func (o LitecoinAddressType) ToPb() commonv1.LitecoinAddressType {
 	return commonv1.LitecoinAddressType(o)
 }

@@ -38,8 +38,7 @@ func (h *Handler) getTopUpDataByStore(c fiber.Ctx) error {
 	}
 
 	if request.Locale != nil && *request.Locale != "" {
-		normalizedLocale := util.ParseLanguageTag(*request.Locale).String()
-		request.Locale = &normalizedLocale
+		request.Locale = new(util.ParseLanguageTag(*request.Locale).String())
 	}
 
 	storeID, err := tools.ValidateUUID(c.Params("store_id"))

@@ -69,7 +69,7 @@ func TestEventListener(t *testing.T) {
 		return fmt.Errorf("unexpected event object: %s", ev)
 	})
 	// Expected
-	expectedEvents := []event.IEvent{}
+	expectedEvents := make([]event.IEvent, 0, 6)
 	var err error
 	// Fire event1
 	expectedEvents = append(expectedEvents, event1{handler: "ev1:h1"})

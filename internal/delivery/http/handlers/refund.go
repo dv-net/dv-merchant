@@ -7,9 +7,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/tools/response"
 
 	"github.com/gofiber/fiber/v3"
-
-	// swag go import
-	_ "github.com/dv-net/dv-merchant/internal/models"
 )
 
 // loadUserPendingRefunds lists refund requests awaiting the merchant's decision
@@ -20,7 +17,7 @@ import (
 //	@Tags			Store,Refund
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	response.Result[[]models.RefundRequest]
+//	@Success		200	{object}	response.Result[[]refund.RequestWithTxDTO]
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/refund-requests [get]
 //	@Security		BearerAuth

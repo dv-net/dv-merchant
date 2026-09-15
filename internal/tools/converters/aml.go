@@ -51,12 +51,10 @@ func GetAMLCheckHistoryResponse(m *storecmn.FindResponseWithFullPagination[*repo
 		}
 
 		if v.CreatedAt.Valid {
-			createdAt := v.CreatedAt.Time
-			item.CreatedAt = &createdAt
+			item.CreatedAt = new(v.CreatedAt.Time)
 		}
 		if v.UpdatedAt.Valid {
-			updatedAt := v.UpdatedAt.Time
-			item.UpdatedAt = &updatedAt
+			item.UpdatedAt = new(v.UpdatedAt.Time)
 		}
 
 		requestHistory := make([]aml_responses.CheckHistory, 0, len(v.History))
@@ -70,17 +68,14 @@ func GetAMLCheckHistoryResponse(m *storecmn.FindResponseWithFullPagination[*repo
 			}
 
 			if h.ErrorMsg.Valid {
-				errorMsg := h.ErrorMsg.String
-				historyItem.ErrorMsg = &errorMsg
+				historyItem.ErrorMsg = new(h.ErrorMsg.String)
 			}
 
 			if h.CreatedAt.Valid {
-				createdAt := h.CreatedAt.Time
-				historyItem.CreatedAt = &createdAt
+				historyItem.CreatedAt = new(h.CreatedAt.Time)
 			}
 			if h.UpdatedAt.Valid {
-				updatedAt := h.UpdatedAt.Time
-				historyItem.UpdatedAt = &updatedAt
+				historyItem.UpdatedAt = new(h.UpdatedAt.Time)
 			}
 
 			requestHistory = append(requestHistory, historyItem)

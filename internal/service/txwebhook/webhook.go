@@ -18,13 +18,17 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_aml_settings"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_webhook_send_histories"
 	"github.com/dv-net/dv-merchant/internal/tools/hash"
-	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+)
+
+const (
+	fieldCreatedAt = "created_at"
+	fieldAmount    = "amount"
 )
 
 func (s *Service) handleDepositReceived(ev event.IEvent) error {
@@ -145,20 +149,20 @@ func (s *Service) handleWithdrawalReceived(ev event.IEvent) error {
 
 	payload := map[string]any{
 		"type":          convertedEv.GetWebhookEvent(),
-		"created_at":    convertedEv.Tx.CreatedAt,
+		fieldCreatedAt:  convertedEv.Tx.CreatedAt,
 		"paid_at":       convertedEv.Tx.NetworkCreatedAt,
-		"amount":        convertedEv.Tx.GetAmountUsd().String(),
+		fieldAmount:     convertedEv.Tx.GetAmountUsd().String(),
 		"withdrawal_id": convertedEv.WithdrawalID,
 		"transactions": map[string]any{
-			"tx_id":       convertedEv.Tx.ID.String(),
-			"tx_hash":     convertedEv.Tx.TxHash,
-			"bc_uniq_key": convertedEv.Tx.BcUniqKey,
-			"created_at":  convertedEv.Tx.CreatedAt,
-			"currency":    convertedEv.Currency.Code,
-			"currency_id": convertedEv.Currency.ID,
-			"blockchain":  convertedEv.Currency.Blockchain.String(),
-			"amount":      convertedEv.Tx.GetAmount().String(),
-			"amount_usd":  convertedEv.Tx.GetAmountUsd().String(),
+			"tx_id":        convertedEv.Tx.ID.String(),
+			"tx_hash":      convertedEv.Tx.TxHash,
+			"bc_uniq_key":  convertedEv.Tx.BcUniqKey,
+			fieldCreatedAt: convertedEv.Tx.CreatedAt,
+			"currency":     convertedEv.Currency.Code,
+			"currency_id":  convertedEv.Currency.ID,
+			"blockchain":   convertedEv.Currency.Blockchain.String(),
+			fieldAmount:    convertedEv.Tx.GetAmount().String(),
+			"amount_usd":   convertedEv.Tx.GetAmountUsd().String(),
 		},
 	}
 
@@ -330,21 +334,21 @@ func (s *Service) prepareDepositHookPayload(
 		prefix = "unconfirmed_"
 	}
 	payload := map[string]any{
-		prefix + "type":       whType,
-		prefix + "status":     models.TransactionStatusCompleted,
-		prefix + "created_at": tx.GetCreatedAt(),
-		prefix + "paid_at":    tx.GetNetworkCreatedAt(),
-		prefix + "amount":     tx.GetAmountUsd().String(),
+		prefix + "type":         whType,
+		prefix + "status":       models.TransactionStatusCompleted,
+		prefix + fieldCreatedAt: tx.GetCreatedAt(),
+		prefix + "paid_at":      tx.GetNetworkCreatedAt(),
+		prefix + fieldAmount:    tx.GetAmountUsd().String(),
 		prefix + "transactions": map[string]any{
-			prefix + "tx_id":       tx.GetID().String(),
-			prefix + "tx_hash":     tx.GetTxHash(),
-			prefix + "bc_uniq_key": tx.GetBcUniqKey(),
-			prefix + "created_at":  tx.GetCreatedAt(),
-			prefix + "currency":    curr.Code,
-			prefix + "currency_id": curr.ID,
-			prefix + "blockchain":  curr.Blockchain.String(),
-			prefix + "amount":      tx.GetAmount().String(),
-			prefix + "amount_usd":  tx.GetAmountUsd().String(),
+			prefix + "tx_id":        tx.GetID().String(),
+			prefix + "tx_hash":      tx.GetTxHash(),
+			prefix + "bc_uniq_key":  tx.GetBcUniqKey(),
+			prefix + fieldCreatedAt: tx.GetCreatedAt(),
+			prefix + "currency":     curr.Code,
+			prefix + "currency_id":  curr.ID,
+			prefix + "blockchain":   curr.Blockchain.String(),
+			prefix + fieldAmount:    tx.GetAmount().String(),
+			prefix + "amount_usd":   tx.GetAmountUsd().String(),
 		},
 		prefix + "wallet": map[string]any{
 			prefix + "id":                tx.GetWalletID(),
@@ -426,7 +430,7 @@ func (s *Service) prepareMockTransactionDataForWhTest(whType models.WebhookEvent
 			CurrencyID:         curr,
 			Blockchain:         models.BlockchainBitcoin,
 			TxHash:             "tx_hash_example",
-			BcUniqKey:          util.Pointer("bc_uniq_key_example"),
+			BcUniqKey:          new("bc_uniq_key_example"),
 			Type:               models.TransactionsTypeDeposit,
 			FromAddress:        "15muvlleOFc9nh10zTJSoM08Fil96tXBfn",
 			ToAddress:          "1pmlFcSaUPBhJYeuG7ahQvTWQGWJff0IW1",
@@ -447,7 +451,7 @@ func (s *Service) prepareMockTransactionDataForWhTest(whType models.WebhookEvent
 			WalletID:         preparedWalletID,
 			CurrencyID:       curr,
 			TxHash:           "tx_hash_example",
-			BcUniqKey:        util.Pointer("bc_uniq_key_example"),
+			BcUniqKey:        new("bc_uniq_key_example"),
 			Type:             models.TransactionsTypeDeposit,
 			FromAddress:      "15muvlleOFc9nh10zTJSoM08Fil96tXBfn",
 			ToAddress:        "1pmlFcSaUPBhJYeuG7ahQvTWQGWJff0IW1",
@@ -632,33 +636,33 @@ func (s *Service) prepareAMLBlockedHookPayload(
 	amlCheck *models.AmlCheck,
 ) ([]byte, error) {
 	payload := map[string]any{
-		"type":       models.WebhookEventPaymentAMLBlocked,
-		"status":     models.TransactionStatusCompleted,
-		"created_at": tx.GetCreatedAt(),
-		"paid_at":    tx.GetNetworkCreatedAt(),
-		"amount":     tx.GetAmountUsd().String(),
+		"type":         models.WebhookEventPaymentAMLBlocked,
+		"status":       models.TransactionStatusCompleted,
+		fieldCreatedAt: tx.GetCreatedAt(),
+		"paid_at":      tx.GetNetworkCreatedAt(),
+		fieldAmount:    tx.GetAmountUsd().String(),
 		"transactions": map[string]any{
-			"tx_id":       tx.GetID().String(),
-			"tx_hash":     tx.GetTxHash(),
-			"bc_uniq_key": tx.GetBcUniqKey(),
-			"created_at":  tx.GetCreatedAt(),
-			"currency":    curr.Code,
-			"currency_id": curr.ID,
-			"blockchain":  curr.Blockchain.String(),
-			"amount":      tx.GetAmount().String(),
-			"amount_usd":  tx.GetAmountUsd().String(),
+			"tx_id":        tx.GetID().String(),
+			"tx_hash":      tx.GetTxHash(),
+			"bc_uniq_key":  tx.GetBcUniqKey(),
+			fieldCreatedAt: tx.GetCreatedAt(),
+			"currency":     curr.Code,
+			"currency_id":  curr.ID,
+			"blockchain":   curr.Blockchain.String(),
+			fieldAmount:    tx.GetAmount().String(),
+			"amount_usd":   tx.GetAmountUsd().String(),
 		},
 		"wallet": map[string]any{
 			"id":                tx.GetWalletID(),
 			"store_external_id": storeExternalID,
 		},
 		"aml_check": map[string]any{
-			"id":         amlCheck.ID.String(),
-			"score":      amlCheck.Score,
-			"status":     amlCheck.Status,
-			"risk_level": amlCheck.RiskLevel,
-			"created_at": amlCheck.CreatedAt,
-			"updated_at": amlCheck.UpdatedAt,
+			"id":           amlCheck.ID.String(),
+			"score":        amlCheck.Score,
+			"status":       amlCheck.Status,
+			"risk_level":   amlCheck.RiskLevel,
+			fieldCreatedAt: amlCheck.CreatedAt,
+			"updated_at":   amlCheck.UpdatedAt,
 		},
 	}
 

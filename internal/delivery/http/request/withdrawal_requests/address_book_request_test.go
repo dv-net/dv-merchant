@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/dv-net/dv-merchant/internal/models"
-	"github.com/dv-net/dv-merchant/internal/util"
 )
 
 func Test_CreateAddressBook(t *testing.T) {
@@ -64,7 +63,7 @@ func Test_CreateAddressBook(t *testing.T) {
 				Address:     "0xf98048Fa59B15efA1EC392bCE24bf8eA6d8aA422",
 				IsUniversal: true,
 				IsEVM:       false,
-				Blockchain:  util.Pointer(models.BlockchainEthereum),
+				Blockchain:  new(models.BlockchainEthereum),
 				TOTP:        "123456",
 			},
 			wantError: false,
@@ -85,7 +84,7 @@ func Test_CreateAddressBook(t *testing.T) {
 				Address:     "0xf98048Fa59B15efA1EC392bCE24bf8eA6d8aA422",
 				IsUniversal: true,
 				IsEVM:       true,
-				Blockchain:  util.Pointer(models.BlockchainEthereum),
+				Blockchain:  new(models.BlockchainEthereum),
 				TOTP:        "123456",
 			},
 			wantError: true,

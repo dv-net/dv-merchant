@@ -22,7 +22,7 @@ type IRefundService interface {
 	CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error)
 	GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error)
 	GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error)
-	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*models.RefundRequest, error)
+	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestWithTxDTO, error)
 	RejectRefund(ctx context.Context, dto RejectRefundDTO) (*models.RefundRequest, error)
 }
 
@@ -128,14 +128,38 @@ func (s *Service) GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*Cabi
 	return items, nil
 }
 
-func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*models.RefundRequest, error) {
-	list, err := s.storage.RefundRequests().GetAllByUserIDAndStatus(ctx, repo_refund_requests.GetAllByUserIDAndStatusParams{
+func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestWithTxDTO, error) {
+	rows, err := s.storage.RefundRequests().GetAllByUserIDAndStatus(ctx, repo_refund_requests.GetAllByUserIDAndStatusParams{
 		UserID: userID,
 		Status: constants.RefundStatusPendingReview,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("fetch pending refund requests: %w", err)
 	}
+
+	list := make([]*RequestWithTxDTO, 0, len(rows))
+	for _, row := range rows {
+		list = append(list, &RequestWithTxDTO{
+			RefundRequest: models.RefundRequest{
+				ID:                   row.ID,
+				BlockedTransactionID: row.BlockedTransactionID,
+				WalletID:             row.WalletID,
+				StoreID:              row.StoreID,
+				TransferID:           row.TransferID,
+				DestinationAddress:   row.DestinationAddress,
+				Status:               row.Status,
+				Email:                row.Email,
+				ReviewedAt:           row.ReviewedAt,
+				CreatedAt:            row.CreatedAt,
+				UpdatedAt:            row.UpdatedAt,
+			},
+			Amount:     row.Amount,
+			CurrencyID: row.CurrencyID,
+			TxHash:     row.TxHash,
+			Blockchain: row.Blockchain,
+		})
+	}
+
 	return list, nil
 }
 

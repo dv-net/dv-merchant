@@ -117,6 +117,7 @@ func (e WithdrawalFromProcessingReceivedEvent) GetDatabaseTx() pgx.Tx {
 func (e WithdrawalFromProcessingReceivedEvent) GetWalletLocale() string {
 	return ""
 }
+
 func (e WithdrawalFromProcessingReceivedEvent) GetWalletEmail() string {
 	return ""
 }
@@ -170,6 +171,7 @@ func (e DepositReceivedEvent) String() string {
 func (e DepositReceivedEvent) GetWalletLocale() string {
 	return ""
 }
+
 func (e DepositReceivedEvent) GetWalletEmail() string {
 	return ""
 }
@@ -223,6 +225,7 @@ func (e DepositUnconfirmedEvent) String() string {
 func (e DepositUnconfirmedEvent) GetWalletLocale() string {
 	return ""
 }
+
 func (e DepositUnconfirmedEvent) GetWalletEmail() string {
 	return ""
 }

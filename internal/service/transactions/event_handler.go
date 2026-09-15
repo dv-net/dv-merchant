@@ -9,7 +9,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/notify"
-	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/shopspring/decimal"
 )
 
@@ -63,7 +62,7 @@ func (s *Service) handleDepositReceiptSent(ev event.IEvent) error {
 		PlatformFeeUSD:       decimal.Zero.String(),
 		PlatformFeeCurrency:  currency.Code,
 	}, &models.NotificationArgs{
-		StoreID: util.Pointer(storeData.ID),
+		StoreID: new(storeData.ID),
 	})
 
 	return nil

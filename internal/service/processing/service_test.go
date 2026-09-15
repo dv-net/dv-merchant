@@ -6,10 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dv-net/dv-merchant/internal/service/processing"
-	"github.com/dv-net/dv-merchant/internal/util"
-
 	"connectrpc.com/connect"
+	"github.com/dv-net/dv-merchant/internal/service/processing"
 	commonv1 "github.com/dv-net/dv-processing/api/processing/common/v1"
 	transferv1 "github.com/dv-net/dv-processing/api/processing/transfer/v1"
 	"github.com/stretchr/testify/require"
@@ -38,7 +36,7 @@ func TestCreateTransfer(t *testing.T) {
 		ToAddresses:     []string{"TQ6DkBmxz3Zk7neh8mwmmkfJsVjrE9wwjY"},
 		AssetIdentifier: "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
 		WholeAmount:     true,
-		Kind:            util.Pointer("resources"),
+		Kind:            new("resources"),
 	}))
 	if err != nil {
 		if code, ok := processing.ErrorRPCCode(err); ok {

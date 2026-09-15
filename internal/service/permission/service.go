@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 
 	"github.com/dv-net/dv-merchant/internal/config"
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -16,8 +17,6 @@ import (
 	fiber_casbin "github.com/dv-net/dv-merchant/third_party/fiber_casbin"
 
 	"github.com/casbin/casbin/v2"
-
-	"slices"
 
 	"github.com/gofiber/fiber/v3"
 )

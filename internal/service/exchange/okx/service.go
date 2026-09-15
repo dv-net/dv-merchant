@@ -215,8 +215,7 @@ func (o *Service) GetCurrencyBalance(ctx context.Context, currency string) (*dec
 			}
 		}
 	}
-	amt := assetAmt.Add(fundingAmt)
-	return &amt, nil
+	return new(assetAmt.Add(fundingAmt)), nil
 }
 
 func (o *Service) GetWithdrawalRules(ctx context.Context, currencies ...string) ([]*models.WithdrawalRulesDTO, error) {
@@ -707,7 +706,6 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 			From: okxmodels.BeneficiaryAccountTypeTrading.Int(),
 			To:   okxmodels.BeneficiaryAccountTypeFunding.Int(),
 		})
-
 		if err != nil {
 			return nil, err
 		}

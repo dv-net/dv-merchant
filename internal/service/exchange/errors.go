@@ -4,6 +4,4 @@ import (
 	"errors"
 )
 
-var (
-	ErrExchangeNotFound = errors.New("exchange not found")
-)
+var ErrExchangeNotFound = errors.New("exchange not found")

@@ -427,9 +427,9 @@ func (s *Service) processExchangeOrders(ctx context.Context) {
 				}
 
 				exOrder, err := exClient.GetOrderDetails(ctx, &models.GetOrderByIDParams{
-					InstrumentID:    util.Pointer(order.Symbol),
-					ExternalOrderID: util.Pointer(order.ExchangeOrderID.String),
-					ClientOrderID:   util.Pointer(order.ClientOrderID.String),
+					InstrumentID:    new(order.Symbol),
+					ExternalOrderID: new(order.ExchangeOrderID.String),
+					ClientOrderID:   new(order.ClientOrderID.String),
 					InternalOrder:   order,
 				})
 				if err != nil {
@@ -460,7 +460,6 @@ func (s *Service) processExchangeOrders(ctx context.Context) {
 
 				return s.st.ExchangeOrders(repos.WithTx(tx)).Update(ctx, updateParams)
 			})
-
 			if err != nil {
 				s.log.Errorw("failed to update exchange order", "error", err)
 			}
@@ -487,7 +486,7 @@ func (s *Service) processExchangePairs(ctx context.Context) {
 				s.log.Errorw("failed to fetch exchange swap state", "error", err, "userID", userID)
 				continue
 			}
-			if swapState == util.Pointer(models.ExchangeSwapStateDisabled) {
+			if swapState == new(models.ExchangeSwapStateDisabled) {
 				s.log.Debugw("skipping exchange swap - disabled", "userID", userID, "exchangeID", exchangeID)
 				continue
 			}
@@ -1066,7 +1065,7 @@ func (s *Service) GetAvailableExchangesList(ctx context.Context, userID uuid.UUI
 			if err != nil {
 				return nil, fmt.Errorf("fetch exchange by slug: %w", err)
 			}
-			r.CurrentExchange = util.Pointer(usr.ExchangeSlug.String())
+			r.CurrentExchange = new(usr.ExchangeSlug.String())
 			exInfo, err := s.st.UserExchanges().GetByUserAndExchangeID(ctx, repo_user_exchanges.GetByUserAndExchangeIDParams{
 				UserID:     userID,
 				ExchangeID: exchange.ID,
@@ -1075,8 +1074,8 @@ func (s *Service) GetAvailableExchangesList(ctx context.Context, userID uuid.UUI
 				return nil, fmt.Errorf("fetch user exchange info: %w", err)
 			}
 			if exInfo != nil {
-				r.SwapState = util.Pointer(exInfo.SwapState.String())
-				r.WithdrawalState = util.Pointer(exInfo.WithdrawalState.String())
+				r.SwapState = new(exInfo.SwapState.String())
+				r.WithdrawalState = new(exInfo.WithdrawalState.String())
 			}
 		}
 	}

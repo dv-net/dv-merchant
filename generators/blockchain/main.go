@@ -65,7 +65,7 @@ func main() {
 		log.Fatalf("Failed to generate Go code: %v", err)
 	}
 
-	err = os.WriteFile(outputFile, code, 0600)
+	err = os.WriteFile(outputFile, code, 0o600)
 	if err != nil {
 		log.Fatalf("Failed to write output file: %v", err)
 	}

@@ -10,14 +10,17 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/shopspring/decimal"
 )
 
 const getAllByUserIDAndStatus = `-- name: GetAllByUserIDAndStatus :many
-SELECT rr.id, rr.blocked_transaction_id, rr.wallet_id, rr.store_id, rr.transfer_id, rr.destination_address, rr.status, rr.email, rr.reviewed_at, rr.created_at, rr.updated_at
+SELECT rr.id, rr.blocked_transaction_id, rr.wallet_id, rr.store_id, rr.transfer_id, rr.destination_address, rr.status, rr.email, rr.reviewed_at, rr.created_at, rr.updated_at, t.amount, t.currency_id, t.tx_hash, t.blockchain
 FROM refund_requests rr
-INNER JOIN stores s ON rr.store_id = s.id
-WHERE s.user_id = $1
-  AND rr.status = $2
+         INNER JOIN stores s ON rr.store_id = s.id
+         INNER JOIN blocked_transactions bt ON bt.id = rr.blocked_transaction_id
+         INNER JOIN transactions t ON t.id = bt.transaction_id
+WHERE s.user_id = $1 AND rr.status = $2
 ORDER BY rr.created_at DESC
 `
 
@@ -26,15 +29,33 @@ type GetAllByUserIDAndStatusParams struct {
 	Status string    `db:"status" json:"status"`
 }
 
-func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserIDAndStatusParams) ([]*models.RefundRequest, error) {
+type GetAllByUserIDAndStatusRow struct {
+	ID                   uuid.UUID         `db:"id" json:"id"`
+	BlockedTransactionID uuid.UUID         `db:"blocked_transaction_id" json:"blocked_transaction_id"`
+	WalletID             uuid.UUID         `db:"wallet_id" json:"wallet_id"`
+	StoreID              uuid.UUID         `db:"store_id" json:"store_id"`
+	TransferID           uuid.NullUUID     `db:"transfer_id" json:"transfer_id"`
+	DestinationAddress   string            `db:"destination_address" json:"destination_address"`
+	Status               string            `db:"status" json:"status"`
+	Email                string            `db:"email" json:"email"`
+	ReviewedAt           pgtype.Timestamp  `db:"reviewed_at" json:"reviewed_at"`
+	CreatedAt            pgtype.Timestamp  `db:"created_at" json:"created_at"`
+	UpdatedAt            pgtype.Timestamp  `db:"updated_at" json:"updated_at"`
+	Amount               decimal.Decimal   `db:"amount" json:"amount"`
+	CurrencyID           string            `db:"currency_id" json:"currency_id"`
+	TxHash               string            `db:"tx_hash" json:"tx_hash"`
+	Blockchain           models.Blockchain `db:"blockchain" json:"blockchain"`
+}
+
+func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserIDAndStatusParams) ([]*GetAllByUserIDAndStatusRow, error) {
 	rows, err := q.db.Query(ctx, getAllByUserIDAndStatus, arg.UserID, arg.Status)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*models.RefundRequest{}
+	items := []*GetAllByUserIDAndStatusRow{}
 	for rows.Next() {
-		var i models.RefundRequest
+		var i GetAllByUserIDAndStatusRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.BlockedTransactionID,
@@ -47,6 +68,10 @@ func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserI
 			&i.ReviewedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Amount,
+			&i.CurrencyID,
+			&i.TxHash,
+			&i.Blockchain,
 		); err != nil {
 			return nil, err
 		}

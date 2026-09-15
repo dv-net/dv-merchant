@@ -68,3 +68,11 @@ func buildCabinet(blocked []*models.BlockedTransaction, refunds []*models.Refund
 	}
 	return grouped
 }
+
+type RequestWithTxDTO struct {
+	models.RefundRequest
+	Amount     decimal.Decimal   `json:"amount"`
+	CurrencyID string            `json:"currency_id"`
+	TxHash     string            `json:"tx_hash"`
+	Blockchain models.Blockchain `json:"blockchain"`
+} //	@name	RefundRequestWithTx
