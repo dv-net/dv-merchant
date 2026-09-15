@@ -99,6 +99,15 @@ linters:
           - dupl
         path: internal/delivery/http/handlers/*
       - linters:
+          - goconst
+        path: pkg/exchange_client/.*
+      - linters:
+          - goconst
+        path: internal/service/exchange/.*
+      - linters:
+          - goconst
+        path: internal/service/exrate/.*
+      - linters:
           - interfacebloat
         path: internal/storage/*
       - linters:

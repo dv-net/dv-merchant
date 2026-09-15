@@ -3,7 +3,6 @@ package wallet
 import (
 	"context"
 	"fmt"
-
 	"sync"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_tron_wallet_balance_statistics"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_users"
-	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/retry"
 
 	"github.com/google/uuid"
@@ -22,8 +20,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const MaxWorkers = 50
-const MinUpdateInterval = time.Hour * 1
+const (
+	MaxWorkers        = 50
+	MinUpdateInterval = time.Hour * 1
+)
 
 func (s *Service) ProcessingBalanceStatsInBackground(ctx context.Context, updateInterval time.Duration) {
 	ticker := time.NewTicker(max(updateInterval, MinUpdateInterval))
@@ -74,8 +74,8 @@ func (s *Service) processingBalanceStats(ctx context.Context) error {
 			).Do(func() error {
 				wallets, err := s.processingService.GetOwnerProcessingWallets(egCtx, processing.GetOwnerProcessingWalletsParams{
 					OwnerID:    ownerID.UUID,
-					Blockchain: util.Pointer(models.BlockchainTron),
-					Tiny:       util.Pointer(false),
+					Blockchain: new(models.BlockchainTron),
+					Tiny:       new(false),
 				})
 				if err != nil {
 					return err

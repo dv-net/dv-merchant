@@ -178,11 +178,10 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 		signals = append(signals, aml.SignalContribution{Category: category, Weight: weight})
 	}
 
-	riskLevel := response.ToAMLRiskLevel()
 	return &aml.CheckResponse{
 		ExternalID: response.ID,
 		Score:      response.RiskScore.Mul(decimal.NewFromInt(100)),
-		RiskLevel:  &riskLevel,
+		RiskLevel:  new(response.ToAMLRiskLevel()),
 		Status:     aml.CheckStatusSuccess,
 		HTTPStatus: resp.StatusCode,
 		Request:    reqJSON,

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dv-net/mx/util"
 	"github.com/huandu/go-sqlbuilder"
 )
 
@@ -69,7 +68,7 @@ func (s StringOrderBy[T]) ToStruct() ([]*OrderBy[T], error) {
 		for _, orderByString := range orderByStrings {
 			orderByStrings := strings.Split(orderByString, " ")
 
-			orderBy = append(orderBy, util.Pointer(OrderBy[T]{
+			orderBy = append(orderBy, new(OrderBy[T]{
 				Attribute: T(orderByStrings[0]),
 				Direction: OrderDirection(orderByStrings[1]),
 			}))

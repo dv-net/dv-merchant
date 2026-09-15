@@ -13,7 +13,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallets"
 	"github.com/dv-net/dv-merchant/internal/util"
 
-	"github.com/dv-net/dv-processing/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/samber/lo"
@@ -113,7 +112,7 @@ func (s *Service) FetchTronResourceStatistics(ctx context.Context, user *models.
 		Timezone:   userLocation.String(),
 		DateFrom:   dateFrom,
 		DateTo:     dateTo,
-		Blockchain: utils.Pointer(models.BlockchainTron),
+		Blockchain: new(models.BlockchainTron),
 		Resolution: resolution,
 		TxTypes: []string{
 			models.TransferTransactionTypeTransfer.String(),
@@ -164,9 +163,9 @@ func formatDateKey(t time.Time, resolution string) string {
 }
 
 func prepareDateRange(params FetchTronStatisticsParams) (pgtype.Timestamp, pgtype.Timestamp, error) {
-	now := utils.Pointer(time.Now().UTC())
+	now := new(time.Now().UTC())
 	defaultTo := now
-	defaultFrom := utils.Pointer(now.AddDate(0, 0, -7))
+	defaultFrom := new(now.AddDate(0, 0, -7))
 
 	from := defaultFrom
 	if params.DateFrom != nil {

@@ -256,7 +256,7 @@ func addMethodsToMap(payload interface{}, targetMap map[string]interface{}) erro
 	t := reflect.TypeOf(payload)
 
 	// Handle pointer types
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 		t = t.Elem()
 	}

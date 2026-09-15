@@ -1021,7 +1021,6 @@ func (h *Handler) resendVerifyStore(c fiber.Ctx) error {
 		StoreID: st.ID,
 		Comment: req.Comment,
 	})
-
 	if err != nil {
 		return apierror.New().AddError(fmt.Errorf("failed to resend store verification")).SetHttpCode(fiber.StatusBadRequest)
 	}

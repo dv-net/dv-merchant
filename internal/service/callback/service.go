@@ -426,7 +426,7 @@ func (s *Service) updateTransferTxHash(ctx context.Context, dto TransferWebhookD
 
 	return s.storage.Transfers(repos.WithTx(tx)).UpdateTxHash(ctx, repo_transfers.UpdateTxHashParams{
 		ID:     dto.TransferID.UUID,
-		TxHash: util.Pointer(dto.Hash),
+		TxHash: new(dto.Hash),
 	})
 }
 
@@ -616,7 +616,7 @@ func (s *Service) HandleUpdateTransferStatusCallback(ctx context.Context, dto pr
 		if err := s.storage.Transfers(repos.WithTx(tx)).UpdateTransferStatus(ctx, repo_transfers.UpdateTransferStatusParams{
 			Status:  dto.Status,
 			Stage:   models.ResolveTransferStageByStatus(dto.Status),
-			Step:    util.Pointer(step),
+			Step:    new(step),
 			ID:      *dto.RequestID,
 			Message: dto.ErrorMessage,
 		}); err != nil {

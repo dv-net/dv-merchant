@@ -145,8 +145,7 @@ func (s *Service) groupWalletsData(ctx context.Context, rows []*repo_wallets.Sea
 				Logs:            logs,
 			}
 			if row.Email.Valid {
-				email := row.Email.String
-				w.Email = &email
+				w.Email = new(row.Email.String)
 			}
 			walletMap[row.Address] = w
 		}

@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"errors"
+	"net/http"
+
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/aml_requests"
 	"github.com/dv-net/dv-merchant/internal/service/aml"
 	"github.com/dv-net/dv-merchant/internal/tools/converters"
@@ -10,9 +13,6 @@ import (
 
 	// Blank imports for swagger gen
 	_ "github.com/dv-net/dv-merchant/internal/storage/storecmn"
-
-	"errors"
-	"net/http"
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
@@ -354,7 +354,6 @@ func (h *Handler) updateAmlSettings(c fiber.Ctx) error {
 		Enabled:      req.Enabled,
 		ProviderSlug: &slug,
 	})
-
 	if err != nil {
 		return h.handleError(err, "aml settings")
 	}

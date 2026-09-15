@@ -16,6 +16,11 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const (
+	orderByAmount    = "amount"
+	orderByAmountUSD = "amount_usd"
+)
+
 type FindParams struct {
 	Amount     *decimal.Decimal
 	CurrencyID *string
@@ -133,16 +138,16 @@ func (s *CustomQuerier) Find(ctx context.Context, params FindParams) (*storecmn.
 	}
 
 	if params.OrderBy == "" {
-		params.OrderBy = "amount_usd"
+		params.OrderBy = orderByAmountUSD
 	}
 
 	if params.SortByAmount {
-		params.OrderBy = "amount"
+		params.OrderBy = orderByAmount
 	}
 
-	var allowedOrderBy = map[string]string{
-		"amount":     "amount",
-		"amount_usd": "amount_usd",
+	allowedOrderBy := map[string]string{
+		orderByAmount:    orderByAmount,
+		orderByAmountUSD: orderByAmountUSD,
 	}
 
 	safeOrderBy, err := storecmn.SafeOrderBy(params.OrderBy, allowedOrderBy)

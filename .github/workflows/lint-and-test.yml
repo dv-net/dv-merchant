@@ -5,7 +5,7 @@ on:
     branches: [ main, dev ]
 
 env:
-  GO_VERSION: '1.25.0'
+  GO_VERSION: '1.27.0'
 
 jobs:
   lint:
@@ -40,7 +40,7 @@ jobs:
 
       - name: Install golangci-lint
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.7.2
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.13.2
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Build custom linter

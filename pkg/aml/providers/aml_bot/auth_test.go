@@ -12,8 +12,6 @@ import (
 func TestMD5Authorizer_Authorize(t *testing.T) {
 	const accessID = "123"
 	const accessKey = "test-key"
-	var uid = "tx123"
-
 	tests := []struct {
 		name     string
 		method   string
@@ -37,7 +35,7 @@ func TestMD5Authorizer_Authorize(t *testing.T) {
 			method:   http.MethodPost,
 			path:     "/recheck/",
 			body:     "uid=tx123&locale=en",
-			uid:      &uid,
+			uid:      new("tx123"),
 			wantBody: "accessId=123&locale=en&token=b40e20561487cce62636bad5f0a16d38&uid=tx123",
 			wantErr:  false,
 		},

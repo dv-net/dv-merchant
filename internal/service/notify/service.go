@@ -125,7 +125,6 @@ func (svc *Service) SendUser(
 			Type:   notificationType,
 		},
 	)
-
 	if err != nil {
 		svc.logger.Errorw("failed to fetch notification channels", "error", err)
 		return
@@ -207,7 +206,6 @@ func (svc *Service) SendSystemEmail(
 		Args:        args,
 	}
 	_, err = svc.storage.NotificationSendQueue().Create(ctx, params)
-
 	if err != nil {
 		svc.logger.Errorw("failed to enqueue system email ", "error", err, "destination ", email, "notification_type ", notificationType)
 	}

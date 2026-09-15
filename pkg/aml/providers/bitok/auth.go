@@ -48,7 +48,6 @@ func (a *HMACAuthorizer) Authorize(_ context.Context, req *http.Request) error {
 	if len(body) > 0 {
 		var err error
 		body, err = prepareBody(body)
-
 		if err != nil {
 			return fmt.Errorf("prepare body: %w", err)
 		}
@@ -71,7 +70,7 @@ func (a *HMACAuthorizer) Authorize(_ context.Context, req *http.Request) error {
 	builder.WriteByte('\n')
 	builder.WriteString(endpoint)
 	builder.WriteByte('\n')
-	builder.WriteString(fmt.Sprintf("%d", timestamp))
+	fmt.Fprintf(&builder, "%d", timestamp)
 	if len(body) > 0 {
 		builder.WriteByte('\n')
 		builder.Write(body)

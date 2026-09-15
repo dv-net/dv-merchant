@@ -158,7 +158,7 @@ func (s *CustomQuerier) GetByUser(
 		return nil, err
 	}
 
-	var allowedOrderBy = map[string]string{
+	allowedOrderBy := map[string]string{
 		"created_at_index": "transactions.created_at_index",
 		"amount_usd":       "transactions.amount_usd",
 		"tx_hash":          "transactions.tx_hash",

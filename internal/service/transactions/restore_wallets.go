@@ -17,7 +17,6 @@ import (
 	transactionsv2 "github.com/dv-net/dv-proto/gen/go/eproxy/transactions/v2"
 
 	"connectrpc.com/connect"
-	"github.com/dv-net/dv-processing/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -108,12 +107,12 @@ func (s *Service) fetchAndProcessTransactionsPage(ctx context.Context, wallet mo
 	const defaultPageSize uint32 = 50
 	txs, err := s.epr.Transactions().Find(ctx, connect.NewRequest(&transactionsv2.FindRequest{
 		Blockchain:      blockchainEPB,
-		ContractAddress: utils.Pointer(curr.ContractAddress.String),
+		ContractAddress: new(curr.ContractAddress.String),
 		Common: &commonv2.FindRequestCommon{
-			Page:     utils.Pointer(page),
-			PageSize: utils.Pointer(defaultPageSize),
+			Page:     new(page),
+			PageSize: new(defaultPageSize),
 		},
-		Address: utils.Pointer(wallet.Address),
+		Address: new(wallet.Address),
 	}))
 	if err != nil {
 		return false, fmt.Errorf("eproxy: %w", err)

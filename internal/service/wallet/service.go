@@ -80,8 +80,10 @@ type Service struct {
 	muMap sync.Map
 }
 
-var _ IWalletService = (*Service)(nil)
-var _ IWalletBalances = (*Service)(nil)
+var (
+	_ IWalletService  = (*Service)(nil)
+	_ IWalletBalances = (*Service)(nil)
+)
 
 func New(
 	cfg *config.Config,

@@ -2,13 +2,13 @@ package admin_gateway
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 
 	admin_errors "github.com/dv-net/dv-merchant/pkg/admin_gateway/errors"
 	admin_requests "github.com/dv-net/dv-merchant/pkg/admin_gateway/requests"
 	admin_responses "github.com/dv-net/dv-merchant/pkg/admin_gateway/responses"
+	"github.com/goccy/go-json"
 
 	"github.com/google/uuid"
 )
@@ -19,6 +19,8 @@ const (
 	MethodRequestUnlinkTg    = "/telegram/unlink-account"
 	MethodRequestUnlinkCode  = "/telegram/unlink/code"
 	MethodGetOwnerBalance    = "/owner-data"
+
+	headerAuthorization = "Authorization"
 )
 
 var ErrUnauthenticated = errors.New("unauthenticated")
@@ -41,11 +43,10 @@ func (s *Service) UnlinkOwnerTg(ctx context.Context, ownerID uuid.UUID, ownerTok
 	}
 
 	_, err = s.sendRequest(ctx, MethodRequestUnlinkCode, http.MethodPost, encodedReq, map[string]string{
-		"Authorization": "Bearer " + ownerToken,
+		headerAuthorization: "Bearer " + ownerToken,
 	})
 	if err != nil {
-		var reqErr *admin_errors.RequestFailedError
-		if errors.As(err, &reqErr) && reqErr.StatusCode == http.StatusUnauthorized {
+		if reqErr, ok := errors.AsType[*admin_errors.RequestFailedError](err); ok && reqErr.StatusCode == http.StatusUnauthorized {
 			err = ErrUnauthenticated
 		}
 
@@ -63,11 +64,10 @@ func (s *Service) ConfirmUnlinkTg(ctx context.Context, code, ownerToken string) 
 	}
 
 	_, err = s.sendRequest(ctx, MethodRequestUnlinkTg, http.MethodPost, encodedReq, map[string]string{
-		"Authorization": "Bearer " + ownerToken,
+		headerAuthorization: "Bearer " + ownerToken,
 	})
 	if err != nil {
-		var reqErr *admin_errors.RequestFailedError
-		if errors.As(err, &reqErr) && reqErr.StatusCode == http.StatusUnauthorized {
+		if reqErr, ok := errors.AsType[*admin_errors.RequestFailedError](err); ok && reqErr.StatusCode == http.StatusUnauthorized {
 			err = ErrUnauthenticated
 		}
 
@@ -98,11 +98,10 @@ func (s *Service) GetAuthCode(ctx context.Context, req admin_requests.InitAuthRe
 
 func (s *Service) GetOwnerData(ctx context.Context, token string) (*admin_responses.OwnerDataResponse, error) {
 	resp, err := s.sendRequest(ctx, MethodGetOwnerBalance, http.MethodGet, nil, map[string]string{
-		"Authorization": "Bearer " + token,
+		headerAuthorization: "Bearer " + token,
 	})
 	if err != nil {
-		var reqErr *admin_errors.RequestFailedError
-		if errors.As(err, &reqErr) && reqErr.StatusCode == http.StatusUnauthorized {
+		if reqErr, ok := errors.AsType[*admin_errors.RequestFailedError](err); ok && reqErr.StatusCode == http.StatusUnauthorized {
 			err = ErrUnauthenticated
 		}
 
@@ -119,7 +118,7 @@ func (s *Service) GetOwnerData(ctx context.Context, token string) (*admin_respon
 
 func (s *Service) InitOwnerTg(ctx context.Context, ownerToken string) (*admin_responses.InitOwnerTgResponse, error) {
 	resp, err := s.sendRequest(ctx, MethodRequestOwnerInitTg, http.MethodPost, nil, map[string]string{
-		"Authorization": "Bearer " + ownerToken,
+		headerAuthorization: "Bearer " + ownerToken,
 	})
 	if err != nil {
 		return nil, err

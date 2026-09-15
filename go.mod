@@ -1,6 +1,6 @@
 module github.com/dv-net/dv-merchant
 
-go 1.25.0
+go 1.27.0
 
 replace github.com/xuri/excelize/v2 => github.com/go-mods/excelize/v2 v2.0.0-20231116122542-ce766d7021db
 

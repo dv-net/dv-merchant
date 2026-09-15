@@ -6,7 +6,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/models"
 	store_service "github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_stores"
-	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -172,11 +171,11 @@ func NewStoreTransactionResponse(t *models.Transaction) *StoreTransactionRespons
 	}
 
 	if t.ReceiptID.Valid {
-		res.ReceiptID = util.Pointer(t.ReceiptID.UUID.String())
+		res.ReceiptID = new(t.ReceiptID.UUID.String())
 	}
 
 	if t.WalletID.Valid {
-		res.WalletID = util.Pointer(t.WalletID.UUID.String())
+		res.WalletID = new(t.WalletID.UUID.String())
 	}
 
 	return res

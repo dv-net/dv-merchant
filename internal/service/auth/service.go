@@ -21,7 +21,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/tools"
 	"github.com/dv-net/dv-merchant/internal/tools/hash"
 	"github.com/dv-net/dv-merchant/internal/tools/str"
-	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/dv-net/dv-merchant/pkg/otp"
 	"github.com/google/uuid"
@@ -125,7 +124,7 @@ func (s *Service) Auth(ctx context.Context, dto auth_request.AuthRequest) (*Toke
 
 	var expiresAt *time.Time
 	if !dto.RememberMe {
-		expiresAt = util.Pointer(time.Now().Add(time.Hour * 24))
+		expiresAt = new(time.Now().Add(time.Hour * 24))
 	}
 
 	token, err := s.createNewToken(ctx, "user", userForAuth.ID, "AuthToken", expiresAt)
@@ -137,7 +136,7 @@ func (s *Service) Auth(ctx context.Context, dto auth_request.AuthRequest) (*Toke
 }
 
 func (s *Service) AuthByUser(ctx context.Context, user *models.User) (*Token, error) {
-	return s.createNewToken(ctx, "user", user.ID, "AuthToken", util.Pointer(time.Now().Add(time.Hour*24)))
+	return s.createNewToken(ctx, "user", user.ID, "AuthToken", new(time.Now().Add(time.Hour*24)))
 }
 
 func (s *Service) GetUserByToken(ctx context.Context, hashedToken string) (*models.User, error) {
@@ -154,7 +153,7 @@ func (s *Service) GetUserByToken(ctx context.Context, hashedToken string) (*mode
 }
 
 func (s *Service) AuthByWallet(ctx context.Context, w *models.Wallet) (*Token, error) {
-	return s.createNewToken(ctx, "wallet", w.ID, "WalletAuthToken", util.Pointer(time.Now().Add(time.Hour*3)))
+	return s.createNewToken(ctx, "wallet", w.ID, "WalletAuthToken", new(time.Now().Add(time.Hour*3)))
 }
 
 func (s *Service) GetWalletByToken(ctx context.Context, hashedToken string) (*models.Wallet, error) {

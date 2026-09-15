@@ -349,7 +349,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, _ string, _ string, side 
 	sellMarketMinOrderAmt := decimal.NewFromFloat(symbol.SellMarketMinOrderAmount)
 	buyMarketMaxOrderValue := decimal.NewFromFloat(symbol.BuyMarketMaxOrderValue)
 
-	maxAmount := decimal.Zero
+	var maxAmount decimal.Decimal
 	switch spotOrderRequest.Type {
 	case htxmodels.OrderTypeSellMarket.String():
 		maxAmount = o.getMaxAmount(symbol.BaseCurrency, balances)

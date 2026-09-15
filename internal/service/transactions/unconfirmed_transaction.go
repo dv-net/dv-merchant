@@ -89,7 +89,6 @@ func (s *Service) CollapseTransfers(ctx context.Context) error {
 			Hash:       uTx.TxHash,
 			Blockchain: blockchain,
 		}))
-
 		if err != nil {
 			s.log.Errorw("failed to get transaction info from eproxy", "hash", uTx.TxHash, "blockchain", uTx.Blockchain, "error", err)
 			continue

@@ -68,8 +68,7 @@ func (h *Handler) getWithdrawalCurrencyRule(c fiber.Ctx) error {
 
 	wallets, err := h.services.WithdrawalWalletService.GetWithdrawalWalletsByCurrencyID(c.Context(), usr, currencyID)
 	if err != nil {
-		var httpErr *apierror.Errors
-		if errors.As(err, &httpErr) {
+		if httpErr, ok := errors.AsType[*apierror.Errors](err); ok {
 			return apierror.New().AddError(err).SetHttpCode(httpErr.HttpCode)
 		}
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
@@ -384,8 +383,7 @@ func prepareWithdrawalHTTPError(err error) error {
 		errCode = fiber.StatusForbidden
 	}
 
-	var targetErr *withdraw.InvalidCurrencyForAddressError
-	if errors.As(err, &targetErr) {
+	if _, ok := errors.AsType[*withdraw.InvalidCurrencyForAddressError](err); ok {
 		errCode = fiber.StatusConflict
 	}
 

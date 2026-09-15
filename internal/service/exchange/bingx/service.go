@@ -214,9 +214,7 @@ func (o *Service) GetCurrencyBalance(ctx context.Context, currency string) (*dec
 		return nil, err
 	}
 
-	total := spot.Add(fund)
-
-	return &total, nil
+	return new(spot.Add(fund)), nil
 }
 
 func isTradable(symbol responses.SymbolInfo, side string) bool {

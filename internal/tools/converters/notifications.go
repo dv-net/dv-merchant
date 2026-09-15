@@ -40,8 +40,7 @@ func FromNotificationHistoryList(models []*stdmodels.NotificationSendHistory) []
 		if model.MessageText.Valid {
 			switch model.Channel {
 			case stdmodels.EmailDeliveryChannel:
-				msgText := extractHTML(model.MessageText.String)
-				response.MessageText = &msgText
+				response.MessageText = new(extractHTML(model.MessageText.String))
 			case stdmodels.TelegramDeliveryChannel:
 				response.MessageText = &model.MessageText.String
 			}

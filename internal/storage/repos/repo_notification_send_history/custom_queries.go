@@ -97,7 +97,7 @@ func (s *CustomQuerier) GetHistoryByUser(ctx context.Context, userID uuid.UUID, 
 
 	// Add ID filtering
 	if len(params.IDs) > 0 {
-		var idStrings []string
+		idStrings := make([]string, 0, len(params.IDs))
 		for _, id := range params.IDs {
 			idStrings = append(idStrings, id.String())
 		}
@@ -136,7 +136,7 @@ func (s *CustomQuerier) GetHistoryByUser(ctx context.Context, userID uuid.UUID, 
 		return nil, err
 	}
 
-	var allowedOrderBy = map[string]string{
+	allowedOrderBy := map[string]string{
 		"created_at": "nsh.created_at",
 		"sent_at":    "nsh.sent_at",
 		"type":       "nsh.type",
