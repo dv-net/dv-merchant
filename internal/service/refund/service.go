@@ -22,8 +22,8 @@ type IRefundService interface {
 	CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error)
 	GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error)
 	GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error)
-	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RefundRequestDetails, error)
-	RejectRefund(ctx context.Context, dto RejectRefundDTO) (*RefundRequestDetails, error)
+	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestDetails, error)
+	RejectRefund(ctx context.Context, dto RejectRefundDTO) (*RequestDetails, error)
 }
 
 var ErrRefundAlreadyRequested = errors.New("a refund request already exists for this transaction")
@@ -159,7 +159,7 @@ func (s *Service) currencyCodesForTransactions(ctx context.Context, txByID map[u
 	return currencyCodeByID, nil
 }
 
-func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RefundRequestDetails, error) {
+func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestDetails, error) {
 	list, err := s.storage.RefundRequests().GetAllByUserIDAndStatus(ctx, repo_refund_requests.GetAllByUserIDAndStatusParams{
 		UserID: userID,
 		Status: constants.RefundStatusPendingReview,
@@ -168,7 +168,7 @@ func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) 
 		return nil, fmt.Errorf("fetch pending refund requests: %w", err)
 	}
 
-	items := make([]*RefundRequestDetails, 0, len(list))
+	items := make([]*RequestDetails, 0, len(list))
 	for _, ref := range list {
 		item, err := s.enrichRefundRequest(ctx, ref)
 		if err != nil {
@@ -179,7 +179,7 @@ func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) 
 	return items, nil
 }
 
-func (s *Service) RejectRefund(ctx context.Context, dto RejectRefundDTO) (*RefundRequestDetails, error) {
+func (s *Service) RejectRefund(ctx context.Context, dto RejectRefundDTO) (*RequestDetails, error) {
 	ref, err := s.storage.RefundRequests().GetById(ctx, dto.RefundRequestID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch refund request: %w", err)
@@ -210,7 +210,7 @@ func (s *Service) RejectRefund(ctx context.Context, dto RejectRefundDTO) (*Refun
 	return s.enrichRefundRequest(ctx, updated)
 }
 
-func (s *Service) enrichRefundRequest(ctx context.Context, ref *models.RefundRequest) (*RefundRequestDetails, error) {
+func (s *Service) enrichRefundRequest(ctx context.Context, ref *models.RefundRequest) (*RequestDetails, error) {
 	btx, err := s.storage.BlockedTransactions().GetById(ctx, ref.BlockedTransactionID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch blocked transaction %s: %w", ref.BlockedTransactionID, err)
@@ -228,7 +228,7 @@ func (s *Service) enrichRefundRequest(ctx context.Context, ref *models.RefundReq
 	}
 	currencyCode = currency.Code
 
-	return &RefundRequestDetails{
+	return &RequestDetails{
 		ID:                   ref.ID,
 		BlockedTransactionID: ref.BlockedTransactionID,
 		WalletID:             ref.WalletID,

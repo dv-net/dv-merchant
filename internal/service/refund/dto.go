@@ -19,9 +19,9 @@ type RejectRefundDTO struct {
 	UserID          uuid.UUID
 }
 
-// RefundRequestDetails is a pending/reviewed refund request enriched with the
+// RequestDetails is a pending/reviewed refund request enriched with the
 // underlying blocked deposit transaction data for admin UI.
-type RefundRequestDetails struct {
+type RequestDetails struct {
 	ID                   uuid.UUID
 	BlockedTransactionID uuid.UUID
 	WalletID             uuid.UUID
