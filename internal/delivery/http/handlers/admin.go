@@ -23,7 +23,7 @@ import (
 // getUsers is a function to get all users
 //
 //	@Summary		Get all users
-//	@Description	Get all users
+//	@Description	Get all non-root users (root accounts are excluded from the list)
 //	@Tags			Admin
 //	@Accept			json
 //	@Produce		json
