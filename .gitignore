@@ -2,6 +2,7 @@
 .bin
 .idea
 .vscode
+.cursor
 vendor
 *config.yml
 *config.yaml
