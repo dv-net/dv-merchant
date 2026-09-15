@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 - Add reset 2fa handler [DV-4312]
+- fix: exclude root users from admin users list [DNS-168]
+- fix: sort admin users by created_at and return correct pagination total [DNS-167]
 
 ## [0.9.16] - 2026-02-12
 
