@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 
 	"github.com/dv-net/dv-merchant/internal/config"
@@ -39,7 +40,7 @@ func NewServer(cfg config.HTTPConfig, services *service.Services, logger logger.
 }
 
 func (s *Server) Run() error {
-	return s.app.Listen(":"+s.cfg.Port, fiber.ListenConfig{
+	return s.app.Listen(net.JoinHostPort(s.cfg.Host, s.cfg.Port), fiber.ListenConfig{
 		DisableStartupMessage: true,
 	})
 }
