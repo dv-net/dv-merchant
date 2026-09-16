@@ -13,11 +13,11 @@ import (
 // (status pending_review) across all stores owned by the authenticated user.
 //
 //	@Summary		List pending refund requests
-//	@Description	Lists refund requests awaiting review across all stores owned by the authenticated user
+//	@Description	Lists refund requests awaiting review across all stores owned by the authenticated user, including blocked deposit details
 //	@Tags			Store,Refund
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	response.Result[[]refund.RequestWithTxDTO]
+//	@Success		200	{object}	response.Result[[]refund_response.RefundRequestResponse]
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/refund-requests [get]
 //	@Security		BearerAuth
