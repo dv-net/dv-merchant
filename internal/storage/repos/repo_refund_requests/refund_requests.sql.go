@@ -15,11 +15,23 @@ import (
 )
 
 const getAllByUserIDAndStatus = `-- name: GetAllByUserIDAndStatus :many
-SELECT rr.id, rr.blocked_transaction_id, rr.wallet_id, rr.store_id, rr.transfer_id, rr.destination_address, rr.status, rr.email, rr.reviewed_at, rr.created_at, rr.updated_at, t.amount, t.currency_id, t.tx_hash, t.blockchain
+SELECT rr.id, rr.blocked_transaction_id, rr.wallet_id, rr.store_id, rr.transfer_id, rr.destination_address, rr.status, rr.email, rr.reviewed_at, rr.created_at, rr.updated_at,
+       t.id AS transaction_id,
+       t.tx_hash,
+       t.amount,
+       t.amount_usd,
+       t.currency_id,
+       c.code AS currency_code,
+       t.blockchain,
+       t.from_address,
+       t.to_address,
+       bt.risk_level,
+       bt.score
 FROM refund_requests rr
          INNER JOIN stores s ON rr.store_id = s.id
          INNER JOIN blocked_transactions bt ON bt.id = rr.blocked_transaction_id
          INNER JOIN transactions t ON t.id = bt.transaction_id
+         INNER JOIN currencies c ON c.id = t.currency_id
 WHERE s.user_id = $1 AND rr.status = $2
 ORDER BY rr.created_at DESC
 `
@@ -30,21 +42,28 @@ type GetAllByUserIDAndStatusParams struct {
 }
 
 type GetAllByUserIDAndStatusRow struct {
-	ID                   uuid.UUID         `db:"id" json:"id"`
-	BlockedTransactionID uuid.UUID         `db:"blocked_transaction_id" json:"blocked_transaction_id"`
-	WalletID             uuid.UUID         `db:"wallet_id" json:"wallet_id"`
-	StoreID              uuid.UUID         `db:"store_id" json:"store_id"`
-	TransferID           uuid.NullUUID     `db:"transfer_id" json:"transfer_id"`
-	DestinationAddress   string            `db:"destination_address" json:"destination_address"`
-	Status               string            `db:"status" json:"status"`
-	Email                string            `db:"email" json:"email"`
-	ReviewedAt           pgtype.Timestamp  `db:"reviewed_at" json:"reviewed_at"`
-	CreatedAt            pgtype.Timestamp  `db:"created_at" json:"created_at"`
-	UpdatedAt            pgtype.Timestamp  `db:"updated_at" json:"updated_at"`
-	Amount               decimal.Decimal   `db:"amount" json:"amount"`
-	CurrencyID           string            `db:"currency_id" json:"currency_id"`
-	TxHash               string            `db:"tx_hash" json:"tx_hash"`
-	Blockchain           models.Blockchain `db:"blockchain" json:"blockchain"`
+	ID                   uuid.UUID           `db:"id" json:"id"`
+	BlockedTransactionID uuid.UUID           `db:"blocked_transaction_id" json:"blocked_transaction_id"`
+	WalletID             uuid.UUID           `db:"wallet_id" json:"wallet_id"`
+	StoreID              uuid.UUID           `db:"store_id" json:"store_id"`
+	TransferID           uuid.NullUUID       `db:"transfer_id" json:"transfer_id"`
+	DestinationAddress   string              `db:"destination_address" json:"destination_address"`
+	Status               string              `db:"status" json:"status"`
+	Email                string              `db:"email" json:"email"`
+	ReviewedAt           pgtype.Timestamp    `db:"reviewed_at" json:"reviewed_at"`
+	CreatedAt            pgtype.Timestamp    `db:"created_at" json:"created_at"`
+	UpdatedAt            pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
+	TransactionID        uuid.UUID           `db:"transaction_id" json:"transaction_id"`
+	TxHash               string              `db:"tx_hash" json:"tx_hash"`
+	Amount               decimal.Decimal     `db:"amount" json:"amount"`
+	AmountUsd            decimal.NullDecimal `db:"amount_usd" json:"amount_usd"`
+	CurrencyID           string              `db:"currency_id" json:"currency_id"`
+	CurrencyCode         string              `db:"currency_code" json:"currency_code"`
+	Blockchain           models.Blockchain   `db:"blockchain" json:"blockchain"`
+	FromAddress          string              `db:"from_address" json:"from_address"`
+	ToAddress            string              `db:"to_address" json:"to_address"`
+	RiskLevel            string              `db:"risk_level" json:"risk_level"`
+	Score                decimal.Decimal     `db:"score" json:"score"`
 }
 
 func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserIDAndStatusParams) ([]*GetAllByUserIDAndStatusRow, error) {
@@ -68,10 +87,17 @@ func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserI
 			&i.ReviewedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Amount,
-			&i.CurrencyID,
+			&i.TransactionID,
 			&i.TxHash,
+			&i.Amount,
+			&i.AmountUsd,
+			&i.CurrencyID,
+			&i.CurrencyCode,
 			&i.Blockchain,
+			&i.FromAddress,
+			&i.ToAddress,
+			&i.RiskLevel,
+			&i.Score,
 		); err != nil {
 			return nil, err
 		}

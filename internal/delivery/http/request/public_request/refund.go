@@ -1,11 +1,6 @@
 package public_request
 
 import (
-	"time"
-
-	"github.com/dv-net/dv-merchant/internal/models"
-	"github.com/shopspring/decimal"
-
 	"github.com/google/uuid"
 )
 
@@ -29,16 +24,3 @@ type RefundVerifyResponse struct {
 type RefundClaimRequest struct {
 	DestinationAddress string `json:"destination_address" validate:"required"`
 } //	@name	RefundClaimRequest
-
-type CabinetItemResponse struct {
-	BlockedTransactionID uuid.UUID         `json:"blocked_transaction_id"`
-	TransactionID        uuid.UUID         `json:"transaction_id"`
-	TxHash               string            `json:"tx_hash"`
-	Blockchain           models.Blockchain `json:"blockchain"`
-	CurrencyID           string            `json:"currency_id"`
-	RiskLevel            string            `json:"risk_level"`
-	Score                decimal.Decimal   `json:"score"`
-	CreatedAt            *time.Time        `json:"created_at"`
-	RefundStatus         *string           `json:"refund_status,omitempty"`
-	DestinationAddress   *string           `json:"destination_address,omitempty"`
-} //	@name	CabinetItemResponse

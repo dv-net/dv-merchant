@@ -10,29 +10,57 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/shopspring/decimal"
 )
 
-const getUnclaimedByWalletID = `-- name: GetUnclaimedByWalletID :many
-SELECT bt.id, bt.user_id, bt.store_id, bt.transaction_id, bt.aml_check_id, bt.wallet_id, bt.risk_level, bt.score, bt.created_at, bt.updated_at
+const getAllWithTxByWalletID = `-- name: GetAllWithTxByWalletID :many
+SELECT bt.id, bt.user_id, bt.store_id, bt.transaction_id, bt.aml_check_id, bt.wallet_id, bt.risk_level, bt.score, bt.created_at, bt.updated_at,
+       t.tx_hash,
+       t.amount,
+       t.amount_usd,
+       t.currency_id,
+       c.code AS currency_code,
+       t.blockchain,
+       t.from_address,
+       t.to_address
 FROM blocked_transactions bt
+         INNER JOIN transactions t ON t.id = bt.transaction_id
+         INNER JOIN currencies c ON c.id = t.currency_id
 WHERE bt.wallet_id = $1
-  AND NOT EXISTS (
-    SELECT 1
-    FROM refund_requests rr
-    WHERE rr.blocked_transaction_id = bt.id
-  )
 ORDER BY bt.created_at DESC
 `
 
-func (q *Queries) GetUnclaimedByWalletID(ctx context.Context, walletID uuid.UUID) ([]*models.BlockedTransaction, error) {
-	rows, err := q.db.Query(ctx, getUnclaimedByWalletID, walletID)
+type GetAllWithTxByWalletIDRow struct {
+	ID            uuid.UUID           `db:"id" json:"id"`
+	UserID        uuid.UUID           `db:"user_id" json:"user_id"`
+	StoreID       uuid.UUID           `db:"store_id" json:"store_id"`
+	TransactionID uuid.UUID           `db:"transaction_id" json:"transaction_id"`
+	AmlCheckID    uuid.UUID           `db:"aml_check_id" json:"aml_check_id"`
+	WalletID      uuid.UUID           `db:"wallet_id" json:"wallet_id"`
+	RiskLevel     string              `db:"risk_level" json:"risk_level"`
+	Score         decimal.Decimal     `db:"score" json:"score"`
+	CreatedAt     pgtype.Timestamp    `db:"created_at" json:"created_at"`
+	UpdatedAt     pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
+	TxHash        string              `db:"tx_hash" json:"tx_hash"`
+	Amount        decimal.Decimal     `db:"amount" json:"amount"`
+	AmountUsd     decimal.NullDecimal `db:"amount_usd" json:"amount_usd"`
+	CurrencyID    string              `db:"currency_id" json:"currency_id"`
+	CurrencyCode  string              `db:"currency_code" json:"currency_code"`
+	Blockchain    models.Blockchain   `db:"blockchain" json:"blockchain"`
+	FromAddress   string              `db:"from_address" json:"from_address"`
+	ToAddress     string              `db:"to_address" json:"to_address"`
+}
+
+func (q *Queries) GetAllWithTxByWalletID(ctx context.Context, walletID uuid.UUID) ([]*GetAllWithTxByWalletIDRow, error) {
+	rows, err := q.db.Query(ctx, getAllWithTxByWalletID, walletID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []*models.BlockedTransaction{}
+	items := []*GetAllWithTxByWalletIDRow{}
 	for rows.Next() {
-		var i models.BlockedTransaction
+		var i GetAllWithTxByWalletIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -44,6 +72,96 @@ func (q *Queries) GetUnclaimedByWalletID(ctx context.Context, walletID uuid.UUID
 			&i.Score,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.TxHash,
+			&i.Amount,
+			&i.AmountUsd,
+			&i.CurrencyID,
+			&i.CurrencyCode,
+			&i.Blockchain,
+			&i.FromAddress,
+			&i.ToAddress,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUnclaimedByWalletID = `-- name: GetUnclaimedByWalletID :many
+SELECT bt.id, bt.user_id, bt.store_id, bt.transaction_id, bt.aml_check_id, bt.wallet_id, bt.risk_level, bt.score, bt.created_at, bt.updated_at,
+       t.tx_hash,
+       t.amount,
+       t.amount_usd,
+       t.currency_id,
+       c.code AS currency_code,
+       t.blockchain,
+       t.from_address,
+       t.to_address
+FROM blocked_transactions bt
+         INNER JOIN transactions t ON t.id = bt.transaction_id
+         INNER JOIN currencies c ON c.id = t.currency_id
+WHERE bt.wallet_id = $1
+  AND NOT EXISTS (
+    SELECT 1
+    FROM refund_requests rr
+    WHERE rr.blocked_transaction_id = bt.id
+  )
+ORDER BY bt.created_at DESC
+`
+
+type GetUnclaimedByWalletIDRow struct {
+	ID            uuid.UUID           `db:"id" json:"id"`
+	UserID        uuid.UUID           `db:"user_id" json:"user_id"`
+	StoreID       uuid.UUID           `db:"store_id" json:"store_id"`
+	TransactionID uuid.UUID           `db:"transaction_id" json:"transaction_id"`
+	AmlCheckID    uuid.UUID           `db:"aml_check_id" json:"aml_check_id"`
+	WalletID      uuid.UUID           `db:"wallet_id" json:"wallet_id"`
+	RiskLevel     string              `db:"risk_level" json:"risk_level"`
+	Score         decimal.Decimal     `db:"score" json:"score"`
+	CreatedAt     pgtype.Timestamp    `db:"created_at" json:"created_at"`
+	UpdatedAt     pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
+	TxHash        string              `db:"tx_hash" json:"tx_hash"`
+	Amount        decimal.Decimal     `db:"amount" json:"amount"`
+	AmountUsd     decimal.NullDecimal `db:"amount_usd" json:"amount_usd"`
+	CurrencyID    string              `db:"currency_id" json:"currency_id"`
+	CurrencyCode  string              `db:"currency_code" json:"currency_code"`
+	Blockchain    models.Blockchain   `db:"blockchain" json:"blockchain"`
+	FromAddress   string              `db:"from_address" json:"from_address"`
+	ToAddress     string              `db:"to_address" json:"to_address"`
+}
+
+func (q *Queries) GetUnclaimedByWalletID(ctx context.Context, walletID uuid.UUID) ([]*GetUnclaimedByWalletIDRow, error) {
+	rows, err := q.db.Query(ctx, getUnclaimedByWalletID, walletID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*GetUnclaimedByWalletIDRow{}
+	for rows.Next() {
+		var i GetUnclaimedByWalletIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.StoreID,
+			&i.TransactionID,
+			&i.AmlCheckID,
+			&i.WalletID,
+			&i.RiskLevel,
+			&i.Score,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.TxHash,
+			&i.Amount,
+			&i.AmountUsd,
+			&i.CurrencyID,
+			&i.CurrencyCode,
+			&i.Blockchain,
+			&i.FromAddress,
+			&i.ToAddress,
 		); err != nil {
 			return nil, err
 		}

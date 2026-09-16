@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/refund_response"
 	"github.com/dv-net/dv-merchant/internal/service/refund"
 	"github.com/dv-net/dv-merchant/internal/tools"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
@@ -13,11 +14,11 @@ import (
 // (status pending_review) across all stores owned by the authenticated user.
 //
 //	@Summary		List pending refund requests
-//	@Description	Lists refund requests awaiting review across all stores owned by the authenticated user
+//	@Description	Lists refund requests awaiting review across all stores owned by the authenticated user, including blocked deposit details
 //	@Tags			Store,Refund
 //	@Accept			json
 //	@Produce		json
-//	@Success		200	{object}	response.Result[[]refund.RequestWithTxDTO]
+//	@Success		200	{object}	response.Result[[]refund_response.RefundRequestResponse]
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/dv-admin/refund-requests [get]
 //	@Security		BearerAuth
@@ -32,7 +33,7 @@ func (h *Handler) loadUserPendingRefunds(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	return c.JSON(response.OkByData(list))
+	return c.JSON(response.OkByData(refund_response.NewRefundRequestResponses(list)))
 }
 
 // rejectRefund declines a pending refund request that belongs to one of the caller's
@@ -45,7 +46,7 @@ func (h *Handler) loadUserPendingRefunds(c fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Param			refundId	path		string	true	"Refund request ID"
-//	@Success		200			{object}	response.Result[models.RefundRequest]
+//	@Success		200			{object}	response.Result[refund_response.RefundRequestResponse]
 //	@Failure		400			{object}	apierror.Errors
 //	@Failure		401			{object}	apierror.Errors
 //	@Router			/v1/dv-admin/refund-requests/{refundId}/reject [post]
@@ -69,7 +70,7 @@ func (h *Handler) rejectRefund(c fiber.Ctx) error {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	return c.JSON(response.OkByData(ref))
+	return c.JSON(response.OkByData(refund_response.NewRefundRequestResponse(ref)))
 }
 
 func (h *Handler) initRefundAdminRoutes(v1 fiber.Router) {
