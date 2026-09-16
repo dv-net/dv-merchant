@@ -168,7 +168,7 @@ func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) 
 
 	items := make([]*RequestDetails, 0, len(list))
 	for _, ref := range list {
-		item, err := s.enrichRefundRequestRow(ctx, ref)
+		item, err := s.enrichRefundRequest(ctx, refundRequestFromPendingRow(ref))
 		if err != nil {
 			return nil, err
 		}
@@ -250,44 +250,18 @@ func (s *Service) enrichRefundRequest(ctx context.Context, ref *models.RefundReq
 	}, nil
 }
 
-func (s *Service) enrichRefundRequestRow(ctx context.Context, ref *repo_refund_requests.GetAllByUserIDAndStatusRow) (*RequestDetails, error) {
-	btx, err := s.storage.BlockedTransactions().GetById(ctx, ref.BlockedTransactionID)
-	if err != nil {
-		return nil, fmt.Errorf("fetch blocked transaction %s: %w", ref.BlockedTransactionID, err)
+func refundRequestFromPendingRow(row *repo_refund_requests.GetAllByUserIDAndStatusRow) *models.RefundRequest {
+	return &models.RefundRequest{
+		ID:                   row.ID,
+		BlockedTransactionID: row.BlockedTransactionID,
+		WalletID:             row.WalletID,
+		StoreID:              row.StoreID,
+		TransferID:           row.TransferID,
+		DestinationAddress:   row.DestinationAddress,
+		Status:               row.Status,
+		Email:                row.Email,
+		ReviewedAt:           row.ReviewedAt,
+		CreatedAt:            row.CreatedAt,
+		UpdatedAt:            row.UpdatedAt,
 	}
-
-	tx, err := s.storage.Transactions().GetById(ctx, btx.TransactionID)
-	if err != nil {
-		return nil, fmt.Errorf("fetch transaction %s: %w", btx.TransactionID, err)
-	}
-
-	currency, err := s.storage.Currencies().GetByID(ctx, tx.CurrencyID)
-	if err != nil {
-		return nil, fmt.Errorf("fetch currency %s: %w", tx.CurrencyID, err)
-	}
-
-	return &RequestDetails{
-		ID:                   ref.ID,
-		BlockedTransactionID: ref.BlockedTransactionID,
-		WalletID:             ref.WalletID,
-		StoreID:              ref.StoreID,
-		TransferID:           ref.TransferID,
-		DestinationAddress:   ref.DestinationAddress,
-		Status:               ref.Status,
-		Email:                ref.Email,
-		ReviewedAt:           ref.ReviewedAt,
-		CreatedAt:            ref.CreatedAt,
-		UpdatedAt:            ref.UpdatedAt,
-		TransactionID:        tx.ID,
-		TxHash:               tx.TxHash,
-		Amount:               tx.Amount,
-		AmountUsd:            tx.AmountUsd,
-		CurrencyID:           tx.CurrencyID,
-		CurrencyCode:         currency.Code,
-		Blockchain:           tx.Blockchain,
-		FromAddress:          tx.FromAddress,
-		ToAddress:            tx.ToAddress,
-		RiskLevel:            btx.RiskLevel,
-		Score:                btx.Score,
-	}, nil
 }
