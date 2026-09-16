@@ -36,7 +36,7 @@ type RefundRequestResponse struct {
 	Score                decimal.Decimal     `json:"score"`
 } //	@name	RefundRequestResponse
 
-func NewRefundRequestResponse(item *refund.RequestDetails) *RefundRequestResponse {
+func NewRefundRequestResponse(item *refund.RequestWithTxDTO) *RefundRequestResponse {
 	var transferID *uuid.UUID
 	if item.TransferID.Valid {
 		id := item.TransferID.UUID
@@ -69,7 +69,7 @@ func NewRefundRequestResponse(item *refund.RequestDetails) *RefundRequestRespons
 	}
 }
 
-func NewRefundRequestResponses(items []*refund.RequestDetails) []*RefundRequestResponse {
+func NewRefundRequestResponses(items []*refund.RequestWithTxDTO) []*RefundRequestResponse {
 	res := make([]*RefundRequestResponse, 0, len(items))
 	for _, item := range items {
 		res = append(res, NewRefundRequestResponse(item))

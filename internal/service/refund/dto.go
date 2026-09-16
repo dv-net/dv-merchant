@@ -2,6 +2,7 @@ package refund
 
 import (
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_blocked_transactions"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
@@ -17,34 +18,6 @@ type CreateRefundDTO struct {
 type RejectRefundDTO struct {
 	RefundRequestID uuid.UUID
 	UserID          uuid.UUID
-}
-
-// RequestDetails is a pending/reviewed refund request enriched with the
-// underlying blocked deposit transaction data for admin UI.
-type RequestDetails struct {
-	ID                   uuid.UUID
-	BlockedTransactionID uuid.UUID
-	WalletID             uuid.UUID
-	StoreID              uuid.UUID
-	TransferID           uuid.NullUUID
-	DestinationAddress   string
-	Status               string
-	Email                string
-	ReviewedAt           pgtype.Timestamp
-	CreatedAt            pgtype.Timestamp
-	UpdatedAt            pgtype.Timestamp
-
-	TransactionID uuid.UUID
-	TxHash        string
-	Amount        decimal.Decimal
-	AmountUsd     decimal.NullDecimal
-	CurrencyID    string
-	CurrencyCode  string
-	Blockchain    models.Blockchain
-	FromAddress   string
-	ToAddress     string
-	RiskLevel     string
-	Score         decimal.Decimal
 }
 
 const CabinetBucketAvailable = "available"
@@ -67,14 +40,12 @@ type CabinetItem struct {
 	DestinationAddress   *string
 }
 
-// buildCabinet groups a wallet's blocked transactions by refund status. txByID looks
-// up the underlying transaction (for tx hash/blockchain/currency) by TransactionID —
-// callers fetch it themselves since blocked_transactions doesn't carry those fields.
+// buildCabinet groups a wallet's blocked transactions by refund status. blocked rows
+// already carry their underlying transaction/currency details via the enriching JOIN
+// in GetAllByWalletID.
 func buildCabinet(
-	blocked []*models.BlockedTransaction,
+	blocked []*repo_blocked_transactions.GetAllWithTxByWalletIDRow,
 	refunds []*models.RefundRequest,
-	txByID map[uuid.UUID]*models.Transaction,
-	currencyCodeByID map[string]string,
 ) map[string][]*CabinetItem {
 	refundByBlockedTx := make(map[uuid.UUID]*models.RefundRequest, len(refunds))
 	for _, r := range refunds {
@@ -86,19 +57,17 @@ func buildCabinet(
 		item := &CabinetItem{
 			BlockedTransactionID: b.ID,
 			TransactionID:        b.TransactionID,
+			TxHash:               b.TxHash,
+			Blockchain:           b.Blockchain,
+			CurrencyID:           b.CurrencyID,
+			CurrencyCode:         b.CurrencyCode,
+			Amount:               b.Amount,
+			AmountUsd:            b.AmountUsd,
+			FromAddress:          b.FromAddress,
+			ToAddress:            b.ToAddress,
 			RiskLevel:            b.RiskLevel,
 			Score:                b.Score,
 			CreatedAt:            b.CreatedAt,
-		}
-		if tx, ok := txByID[b.TransactionID]; ok {
-			item.TxHash = tx.TxHash
-			item.Blockchain = tx.Blockchain
-			item.CurrencyID = tx.CurrencyID
-			item.CurrencyCode = currencyCodeByID[tx.CurrencyID]
-			item.Amount = tx.Amount
-			item.AmountUsd = tx.AmountUsd
-			item.FromAddress = tx.FromAddress
-			item.ToAddress = tx.ToAddress
 		}
 
 		bucket := CabinetBucketAvailable
@@ -114,8 +83,15 @@ func buildCabinet(
 
 type RequestWithTxDTO struct {
 	models.RefundRequest
-	Amount     decimal.Decimal   `json:"amount"`
-	CurrencyID string            `json:"currency_id"`
-	TxHash     string            `json:"tx_hash"`
-	Blockchain models.Blockchain `json:"blockchain"`
+	TransactionID uuid.UUID           `json:"transaction_id"`
+	TxHash        string              `json:"tx_hash"`
+	Amount        decimal.Decimal     `json:"amount"`
+	AmountUsd     decimal.NullDecimal `json:"amount_usd"`
+	CurrencyID    string              `json:"currency_id"`
+	CurrencyCode  string              `json:"currency_code"`
+	Blockchain    models.Blockchain   `json:"blockchain"`
+	FromAddress   string              `json:"from_address"`
+	ToAddress     string              `json:"to_address"`
+	RiskLevel     string              `json:"risk_level"`
+	Score         decimal.Decimal     `json:"score"`
 } //	@name	RefundRequestWithTx

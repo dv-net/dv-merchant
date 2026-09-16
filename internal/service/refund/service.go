@@ -22,8 +22,8 @@ type IRefundService interface {
 	CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error)
 	GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error)
 	GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error)
-	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestDetails, error)
-	RejectRefund(ctx context.Context, dto RejectRefundDTO) (*RequestDetails, error)
+	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestWithTxDTO, error)
+	RejectRefund(ctx context.Context, dto RejectRefundDTO) (*RequestWithTxDTO, error)
 }
 
 var ErrRefundAlreadyRequested = errors.New("a refund request already exists for this transaction")
@@ -80,7 +80,7 @@ func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*model
 }
 
 func (s *Service) GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error) {
-	blocked, err := s.storage.BlockedTransactions().GetAllByWalletID(ctx, walletID)
+	blocked, err := s.storage.BlockedTransactions().GetAllWithTxByWalletID(ctx, walletID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch blocked transactions: %w", err)
 	}
@@ -90,21 +90,7 @@ func (s *Service) GetCabinet(ctx context.Context, walletID uuid.UUID) (map[strin
 		return nil, fmt.Errorf("fetch refund requests: %w", err)
 	}
 
-	txByID := make(map[uuid.UUID]*models.Transaction, len(blocked))
-	for _, b := range blocked {
-		tx, err := s.storage.Transactions().GetById(ctx, b.TransactionID)
-		if err != nil {
-			return nil, fmt.Errorf("fetch transaction %s: %w", b.TransactionID, err)
-		}
-		txByID[b.TransactionID] = tx
-	}
-
-	currencyCodeByID, err := s.currencyCodesForTransactions(ctx, txByID)
-	if err != nil {
-		return nil, err
-	}
-
-	return buildCabinet(blocked, refunds, txByID, currencyCodeByID), nil
+	return buildCabinet(blocked, refunds), nil
 }
 
 func (s *Service) GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error) {
@@ -115,25 +101,17 @@ func (s *Service) GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*Cabi
 
 	items := make([]*CabinetItem, 0, len(blocked))
 	for _, b := range blocked {
-		tx, err := s.storage.Transactions().GetById(ctx, b.TransactionID)
-		if err != nil {
-			return nil, fmt.Errorf("fetch transaction %s: %w", b.TransactionID, err)
-		}
-		currency, err := s.storage.Currencies().GetByID(ctx, tx.CurrencyID)
-		if err != nil {
-			return nil, fmt.Errorf("fetch currency %s: %w", tx.CurrencyID, err)
-		}
 		items = append(items, &CabinetItem{
 			BlockedTransactionID: b.ID,
 			TransactionID:        b.TransactionID,
-			TxHash:               tx.TxHash,
-			Blockchain:           tx.Blockchain,
-			CurrencyID:           tx.CurrencyID,
-			CurrencyCode:         currency.Code,
-			Amount:               tx.Amount,
-			AmountUsd:            tx.AmountUsd,
-			FromAddress:          tx.FromAddress,
-			ToAddress:            tx.ToAddress,
+			TxHash:               b.TxHash,
+			Blockchain:           b.Blockchain,
+			CurrencyID:           b.CurrencyID,
+			CurrencyCode:         b.CurrencyCode,
+			Amount:               b.Amount,
+			AmountUsd:            b.AmountUsd,
+			FromAddress:          b.FromAddress,
+			ToAddress:            b.ToAddress,
 			RiskLevel:            b.RiskLevel,
 			Score:                b.Score,
 			CreatedAt:            b.CreatedAt,
@@ -142,22 +120,7 @@ func (s *Service) GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*Cabi
 	return items, nil
 }
 
-func (s *Service) currencyCodesForTransactions(ctx context.Context, txByID map[uuid.UUID]*models.Transaction) (map[string]string, error) {
-	currencyCodeByID := make(map[string]string)
-	for _, tx := range txByID {
-		if _, ok := currencyCodeByID[tx.CurrencyID]; ok {
-			continue
-		}
-		currency, err := s.storage.Currencies().GetByID(ctx, tx.CurrencyID)
-		if err != nil {
-			return nil, fmt.Errorf("fetch currency %s: %w", tx.CurrencyID, err)
-		}
-		currencyCodeByID[tx.CurrencyID] = currency.Code
-	}
-	return currencyCodeByID, nil
-}
-
-func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestDetails, error) {
+func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestWithTxDTO, error) {
 	list, err := s.storage.RefundRequests().GetAllByUserIDAndStatus(ctx, repo_refund_requests.GetAllByUserIDAndStatusParams{
 		UserID: userID,
 		Status: constants.RefundStatusPendingReview,
@@ -166,18 +129,27 @@ func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) 
 		return nil, fmt.Errorf("fetch pending refund requests: %w", err)
 	}
 
-	items := make([]*RequestDetails, 0, len(list))
-	for _, ref := range list {
-		item, err := s.enrichRefundRequest(ctx, refundRequestFromPendingRow(ref))
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, item)
+	items := make([]*RequestWithTxDTO, 0, len(list))
+	for _, row := range list {
+		items = append(items, &RequestWithTxDTO{
+			RefundRequest: *refundRequestFromPendingRow(row),
+			TransactionID: row.TransactionID,
+			TxHash:        row.TxHash,
+			Amount:        row.Amount,
+			AmountUsd:     row.AmountUsd,
+			CurrencyID:    row.CurrencyID,
+			CurrencyCode:  row.CurrencyCode,
+			Blockchain:    row.Blockchain,
+			FromAddress:   row.FromAddress,
+			ToAddress:     row.ToAddress,
+			RiskLevel:     row.RiskLevel,
+			Score:         row.Score,
+		})
 	}
 	return items, nil
 }
 
-func (s *Service) RejectRefund(ctx context.Context, dto RejectRefundDTO) (*RequestDetails, error) {
+func (s *Service) RejectRefund(ctx context.Context, dto RejectRefundDTO) (*RequestWithTxDTO, error) {
 	ref, err := s.storage.RefundRequests().GetById(ctx, dto.RefundRequestID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch refund request: %w", err)
@@ -208,7 +180,7 @@ func (s *Service) RejectRefund(ctx context.Context, dto RejectRefundDTO) (*Reque
 	return s.enrichRefundRequest(ctx, updated)
 }
 
-func (s *Service) enrichRefundRequest(ctx context.Context, ref *models.RefundRequest) (*RequestDetails, error) {
+func (s *Service) enrichRefundRequest(ctx context.Context, ref *models.RefundRequest) (*RequestWithTxDTO, error) {
 	btx, err := s.storage.BlockedTransactions().GetById(ctx, ref.BlockedTransactionID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch blocked transaction %s: %w", ref.BlockedTransactionID, err)
@@ -224,29 +196,19 @@ func (s *Service) enrichRefundRequest(ctx context.Context, ref *models.RefundReq
 		return nil, fmt.Errorf("fetch currency %s: %w", tx.CurrencyID, err)
 	}
 
-	return &RequestDetails{
-		ID:                   ref.ID,
-		BlockedTransactionID: ref.BlockedTransactionID,
-		WalletID:             ref.WalletID,
-		StoreID:              ref.StoreID,
-		TransferID:           ref.TransferID,
-		DestinationAddress:   ref.DestinationAddress,
-		Status:               ref.Status,
-		Email:                ref.Email,
-		ReviewedAt:           ref.ReviewedAt,
-		CreatedAt:            ref.CreatedAt,
-		UpdatedAt:            ref.UpdatedAt,
-		TransactionID:        tx.ID,
-		TxHash:               tx.TxHash,
-		Amount:               tx.Amount,
-		AmountUsd:            tx.AmountUsd,
-		CurrencyID:           tx.CurrencyID,
-		CurrencyCode:         currency.Code,
-		Blockchain:           tx.Blockchain,
-		FromAddress:          tx.FromAddress,
-		ToAddress:            tx.ToAddress,
-		RiskLevel:            btx.RiskLevel,
-		Score:                btx.Score,
+	return &RequestWithTxDTO{
+		RefundRequest: *ref,
+		TransactionID: tx.ID,
+		TxHash:        tx.TxHash,
+		Amount:        tx.Amount,
+		AmountUsd:     tx.AmountUsd,
+		CurrencyID:    tx.CurrencyID,
+		CurrencyCode:  currency.Code,
+		Blockchain:    tx.Blockchain,
+		FromAddress:   tx.FromAddress,
+		ToAddress:     tx.ToAddress,
+		RiskLevel:     btx.RiskLevel,
+		Score:         btx.Score,
 	}, nil
 }
 
