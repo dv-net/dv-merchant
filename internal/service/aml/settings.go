@@ -32,7 +32,6 @@ func (s *Service) UpdateAmlSettings(ctx context.Context, userID uuid.UUID, dto U
 		Enabled:      dto.Enabled,
 		ProviderSlug: dto.ProviderSlug,
 	})
-
 	if err != nil {
 		s.log.Errorw("could not update settings", "error", err, "user_id", userID, "enabled", dto.Enabled, "provider_slug", dto.ProviderSlug)
 		return nil, pgerror.ParseError(err)
@@ -46,7 +45,6 @@ func (s *Service) ListRiskRules(ctx context.Context, userID uuid.UUID, providerS
 		UserID:       userID,
 		ProviderSlug: providerSlug.String(),
 	})
-
 	if err != nil {
 		return nil, pgerror.ParseError(err)
 	}
@@ -65,7 +63,6 @@ func (s *Service) UpsertRiskRules(ctx context.Context, userID uuid.UUID, provide
 			Threshold:    r.Threshold,
 			Action:       r.Action,
 		})
-
 		if err != nil {
 			return nil, pgerror.ParseError(err)
 		}

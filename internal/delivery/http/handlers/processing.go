@@ -24,6 +24,8 @@ import (
 	"github.com/dv-net/dv-merchant/internal/tools/response"
 )
 
+const responseKeySuccess = "success"
+
 // processingCallback is a function to callback webhook from processing
 //
 //	@Summary		Processing callback
@@ -49,8 +51,8 @@ func (h *Handler) processingCallback(c fiber.Ctx) error {
 			return apierror.New().AddError(errors.New("failed update transfer status")).SetHttpCode(fiber.StatusBadRequest)
 		}
 		return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-			"success":    true,
-			"request_id": statusCheckRequest.RequestID,
+			responseKeySuccess: true,
+			"request_id":       statusCheckRequest.RequestID,
 		})
 	}
 
@@ -73,12 +75,12 @@ func (h *Handler) processingCallback(c fiber.Ctx) error {
 		// TODO: Handle cold wallets
 		h.logger.Warn("deposit cold wallet not processed")
 		return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-			"success": true,
+			responseKeySuccess: true,
 		})
 	case models.WalletTypeProcessing:
 		if req.Kind == models.WebhookKindDeposit {
 			return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-				"success": true,
+				responseKeySuccess: true,
 			})
 		}
 	}
@@ -129,7 +131,7 @@ func (h *Handler) processingCallback(c fiber.Ctx) error {
 	if errors.Is(err, pgx.ErrNoRows) {
 		// skip unsupported contract
 		return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-			"success": true,
+			responseKeySuccess: true,
 			"message": fmt.Sprintf(
 				"unknown currency %s: %s (tx: %s, key: %s)",
 				req.Blockchain,
@@ -165,7 +167,7 @@ func (h *Handler) processingCallback(c fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
-		"success": true,
+		responseKeySuccess: true,
 	})
 }
 
@@ -391,7 +393,7 @@ func (h *Handler) list(c fiber.Ctx) error {
 	}
 
 	resp := []MockResponseElem{
-		{"http://127.0.0.1:9000", "aws", "RU"},
+		{"http://127.0.0.1:9000", "aws", "RU"}, //nolint:goconst // mock data, not a real duplicated value
 		{"http://127.0.0.1:9000", "aws", "DE"},
 		{"http://127.0.0.1:9000", "local", "RU"},
 	}

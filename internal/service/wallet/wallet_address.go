@@ -13,7 +13,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/processing"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallet_addresses"
-	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/dbutils/pgerror"
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 	"github.com/gocarina/gocsv"
@@ -66,7 +65,6 @@ func (s *Service) MarkAddressDirty(ctx context.Context, usr *models.User, addres
 
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -220,9 +218,9 @@ func (s *Service) createNewWalletAddress(
 	s.logger.Infof("creating new hot wallet: owner_id=%s customer_id=%s blockchain=%s", params.OwnerID, params.CustomerID, params.Blockchain)
 	switch *c.Blockchain {
 	case models.BlockchainBitcoin:
-		params.BitcoinAddressType = util.Pointer(processing.ConvertToBitcoinAddressType(s.cfg.Blockchain.Bitcoin.AddressType))
+		params.BitcoinAddressType = new(processing.ConvertToBitcoinAddressType(s.cfg.Blockchain.Bitcoin.AddressType))
 	case models.BlockchainLitecoin:
-		params.LitecoinAddressType = util.Pointer(processing.ConvertToLitecoinAddressType(s.cfg.Blockchain.Litecoin.AddressType))
+		params.LitecoinAddressType = new(processing.ConvertToLitecoinAddressType(s.cfg.Blockchain.Litecoin.AddressType))
 	}
 
 	newWallet, err := s.processingService.CreateOwnerHotWallet(ctx, params)

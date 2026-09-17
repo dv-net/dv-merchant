@@ -2,7 +2,6 @@ package withdraw
 
 import (
 	"context"
-
 	"fmt"
 
 	"github.com/google/uuid"

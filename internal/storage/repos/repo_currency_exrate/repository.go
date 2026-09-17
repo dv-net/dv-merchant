@@ -38,7 +38,6 @@ func (r *Repo) GetRate(ctx context.Context, source, from, to string) (string, er
 
 func (r *Repo) getBestRate(ctx context.Context, pattern string) (string, error) {
 	keys, err := r.driver.Keys(ctx, pattern)
-
 	if err != nil {
 		return "", err
 	}

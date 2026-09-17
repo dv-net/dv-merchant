@@ -17,5 +17,5 @@ type GetSymbolPriceTickerRequest struct {
 }
 
 type GetSymbolsPriceTickerRequest struct {
-	Symbols []string `json:"symbols,omitempty" url:"symbols,brackets,comma,omitempty"` //fixme: brackets
+	Symbols []string `json:"symbols,omitempty" url:"symbols,brackets,comma,omitempty"` // fixme: brackets
 }

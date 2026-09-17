@@ -14,8 +14,7 @@ func (u *User) ModelID() uuid.NullUUID {
 }
 
 func (u *User) ModelName() *string {
-	res := string(SettingModelNameUser)
-	return &res
+	return new(string(SettingModelNameUser))
 }
 
 func (s *Store) ModelID() uuid.NullUUID {
@@ -23,6 +22,5 @@ func (s *Store) ModelID() uuid.NullUUID {
 }
 
 func (s *Store) ModelName() *string {
-	res := string(SettingModelNameStore)
-	return &res
+	return new(string(SettingModelNameStore))
 }

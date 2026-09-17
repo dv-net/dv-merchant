@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/models"
-	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/redis/go-redis/v9"
 	"github.com/shopspring/decimal"
 
@@ -283,7 +282,7 @@ func (srv *service) GetAllCurrencyRate(ctx context.Context, source string, scale
 			Source:     source,
 			From:       pair.From,
 			To:         pair.To,
-			UpdatedAt:  util.Pointer(time.Now().UTC()),
+			UpdatedAt:  new(time.Now().UTC()),
 			Value:      rateStr,
 			ValueScale: valScale.String(),
 		})

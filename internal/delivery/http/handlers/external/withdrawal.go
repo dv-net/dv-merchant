@@ -155,8 +155,7 @@ func prepareWithdrawalHTTPError(err error) error {
 		errCode = fiber.StatusForbidden
 	}
 
-	var targetErr *withdraw.InvalidCurrencyForAddressError
-	if errors.As(err, &targetErr) {
+	if _, ok := errors.AsType[*withdraw.InvalidCurrencyForAddressError](err); ok {
 		errCode = fiber.StatusConflict
 	}
 

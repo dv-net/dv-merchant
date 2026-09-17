@@ -17,7 +17,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/processing"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallet_addresses"
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
-	"github.com/dv-net/dv-merchant/internal/util"
 	addressesv2 "github.com/dv-net/dv-proto/gen/go/eproxy/addresses/v2"
 	evmv2 "github.com/dv-net/dv-proto/gen/go/eproxy/evm/v2"
 	"github.com/jackc/pgx/v5"
@@ -262,7 +261,7 @@ var ChainConfigs = map[models.Blockchain]ChainConfig{
 func (s *Service) processBlockchainWallets(ctx context.Context, blockchain models.Blockchain, dto GetProcessingWalletsDTO, enabledCurrencies []*models.Currency) ([]*ProcessingWalletWithAssets, error) {
 	wallets, err := s.processingService.GetOwnerProcessingWallets(ctx, processing.GetOwnerProcessingWalletsParams{
 		OwnerID:    dto.OwnerID,
-		Blockchain: util.Pointer(blockchain),
+		Blockchain: new(blockchain),
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "not available") {

@@ -3,7 +3,6 @@ package withdraw
 import (
 	"context"
 	"errors"
-
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -31,7 +30,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_from_processing_wallets"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_wallet_addresses"
 	"github.com/dv-net/dv-merchant/internal/tools"
-	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 )
 
@@ -411,9 +409,9 @@ func (s *service) initializeTransfer(
 	if dto.Blockchain.KindWithdrawalRequired() {
 		tronTransferType, err := s.settings.GetModelSetting(ctx, setting.TransferType, setting.IModelSetting(user))
 		if err != nil || tronTransferType == nil {
-			params.Kind = util.Pointer(string(setting.TransferByBurnTRX))
+			params.Kind = new(string(setting.TransferByBurnTRX))
 		} else {
-			params.Kind = util.Pointer(tronTransferType.Value)
+			params.Kind = new(tronTransferType.Value)
 		}
 	}
 
@@ -441,7 +439,7 @@ func (s *service) initializeTransfer(
 		}
 
 		transferStatus = models.TransferStatusFailed
-		errMessage = util.Pointer(processingErr.Error())
+		errMessage = new(processingErr.Error())
 	}
 
 	transfer, err := s.storage.Transfers(repos.WithTx(tx)).Create(ctx, repo_transfers.CreateParams{

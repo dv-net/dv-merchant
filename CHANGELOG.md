@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- feat: extend admin refund-requests response with blocked deposit details [DNS-164]
+- feat: extend public refund cabinet items with amount, currency code and addresses [DNS-164]
 - fix: exclude root users from admin users list [DNS-168]
 - fix: sort admin users by created_at and return correct pagination total [DNS-167]
 

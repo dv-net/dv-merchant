@@ -143,8 +143,7 @@ func (s *Service) handleCheckResult(
 		}
 
 		if fetchErr != nil {
-			var reqErr *amlproviders.RequestFailedError
-			if errors.As(fetchErr, &reqErr) && !reqErr.Retryable {
+			if reqErr, ok := errors.AsType[*amlproviders.RequestFailedError](fetchErr); ok && !reqErr.Retryable {
 				res, err := s.finalizeCheck(ctx, tx, check, models.AmlCheckStatusFailed, decimal.Zero, nil)
 				completedEvent = res.event
 				return err
@@ -278,8 +277,7 @@ func (s *Service) createCheckHistory(
 	params.ServiceResponse = json.RawMessage(`{}`)
 
 	if fetchErr != nil {
-		errMsg := fetchErr.Error()
-		params.ErrorMsg = pgtypeutils.EncodeText(&errMsg)
+		params.ErrorMsg = pgtypeutils.EncodeText(new(fetchErr.Error()))
 	}
 	if result != nil && result.Response != nil {
 		params.ServiceResponse = result.Response

@@ -9,7 +9,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_currencies"
-	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -103,7 +102,7 @@ func (s Service) GetCurrenciesByBlockchain(ctx context.Context, blockchain model
 func (s Service) GetEnabledCurrencyByCode(ctx context.Context, code string, blockchain models.Blockchain) (*models.Currency, error) {
 	args := repo_currencies.GetEnabledCurrencyByCodeParams{
 		Code:       code,
-		Blockchain: util.Pointer(blockchain),
+		Blockchain: new(blockchain),
 	}
 
 	currency, err := s.storage.Currencies().GetEnabledCurrencyByCode(ctx, args)

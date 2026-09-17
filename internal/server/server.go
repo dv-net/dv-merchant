@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 
 	"github.com/dv-net/dv-merchant/internal/config"
@@ -39,7 +40,7 @@ func NewServer(cfg config.HTTPConfig, services *service.Services, logger logger.
 }
 
 func (s *Server) Run() error {
-	return s.app.Listen(":"+s.cfg.Port, fiber.ListenConfig{
+	return s.app.Listen(net.JoinHostPort(s.cfg.Host, s.cfg.Port), fiber.ListenConfig{
 		DisableStartupMessage: true,
 	})
 }
@@ -53,21 +54,18 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 func errorHandler(c fiber.Ctx, err error) error {
-	var ae *apierror.Errors
-	if errors.As(err, &ae) && ae.HttpCode != 0 {
+	if ae, ok := errors.AsType[*apierror.Errors](err); ok && ae.HttpCode != 0 {
 		return c.Status(ae.HttpCode).JSON(ae)
 	}
 
-	var be *fiber.BindError
-	if errors.As(err, &be) {
+	if _, ok := errors.AsType[*fiber.BindError](err); ok {
 		return c.Status(fiber.StatusBadRequest).JSON(
 			apierror.New().AddError(errors.New("invalid request")).SetHttpCode(fiber.StatusBadRequest),
 		)
 	}
 
 	code := fiber.StatusInternalServerError
-	var e *fiber.Error
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[*fiber.Error](err); ok {
 		code = e.Code
 	}
 

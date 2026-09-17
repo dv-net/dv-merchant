@@ -2716,7 +2716,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Lists refund requests awaiting review across all stores owned by the authenticated user",
+                "description": "Lists refund requests awaiting review across all stores owned by the authenticated user, including blocked deposit details",
                 "consumes": [
                     "application/json"
                 ],
@@ -2732,7 +2732,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-array_RefundRequest"
+                            "$ref": "#/definitions/JSONResponse-array_RefundRequestResponse"
                         }
                     },
                     "401": {
@@ -2776,7 +2776,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-RefundRequest"
+                            "$ref": "#/definitions/JSONResponse-RefundRequestResponse"
                         }
                     },
                     "400": {
@@ -11131,6 +11131,12 @@ const docTemplate = `{
         "CabinetItemResponse": {
             "type": "object",
             "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "amount_usd": {
+                    "type": "number"
+                },
                 "blockchain": {
                     "$ref": "#/definitions/Blockchain"
                 },
@@ -11140,10 +11146,16 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "currency_code": {
+                    "type": "string"
+                },
                 "currency_id": {
                     "type": "string"
                 },
                 "destination_address": {
+                    "type": "string"
+                },
+                "from_address": {
                     "type": "string"
                 },
                 "refund_status": {
@@ -11154,6 +11166,9 @@ const docTemplate = `{
                 },
                 "score": {
                     "type": "number"
+                },
+                "to_address": {
+                    "type": "string"
                 },
                 "transaction_id": {
                     "type": "string"
@@ -13296,6 +13311,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-RefundRequestResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/RefundRequestResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-RefundVerifyResponse": {
             "type": "object",
             "properties": {
@@ -13991,7 +14020,7 @@ const docTemplate = `{
                 }
             }
         },
-        "JSONResponse-array_RefundRequest": {
+        "JSONResponse-array_RefundRequestResponse": {
             "type": "object",
             "properties": {
                 "code": {
@@ -14000,7 +14029,7 @@ const docTemplate = `{
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/RefundRequest"
+                        "$ref": "#/definitions/RefundRequestResponse"
                     }
                 },
                 "message": {
@@ -15003,6 +15032,86 @@ const docTemplate = `{
                 },
                 "wallet_id": {
                     "type": "string"
+                }
+            }
+        },
+        "RefundRequestResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "amount_usd": {
+                    "type": "number"
+                },
+                "blockchain": {
+                    "type": "string"
+                },
+                "blocked_transaction_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "currency_code": {
+                    "type": "string"
+                },
+                "currency_id": {
+                    "type": "string"
+                },
+                "destination_address": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "from_address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "reviewed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "risk_level": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "to_address": {
+                    "type": "string"
+                },
+                "transaction_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "transfer_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "tx_hash": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "wallet_id": {
+                    "type": "string",
+                    "format": "uuid"
                 }
             }
         },

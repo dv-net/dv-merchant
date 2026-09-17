@@ -138,7 +138,7 @@ func (s *Service) StoreUser(ctx context.Context, dto *CreateUserDTO, opts ...rep
 		return nil, errors.New("user with this email already exists")
 	}
 
-	var rUserInfo = &RegisterUserDTO{}
+	rUserInfo := &RegisterUserDTO{}
 	// Start transaction
 	err = repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		// Create the user

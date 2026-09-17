@@ -2,6 +2,7 @@ package refund
 
 import (
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_blocked_transactions"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
@@ -27,6 +28,11 @@ type CabinetItem struct {
 	TxHash               string
 	Blockchain           models.Blockchain
 	CurrencyID           string
+	CurrencyCode         string
+	Amount               decimal.Decimal
+	AmountUsd            decimal.NullDecimal
+	FromAddress          string
+	ToAddress            string
 	RiskLevel            string
 	Score                decimal.Decimal
 	CreatedAt            pgtype.Timestamp
@@ -34,10 +40,13 @@ type CabinetItem struct {
 	DestinationAddress   *string
 }
 
-// buildCabinet groups a wallet's blocked transactions by refund status. txByID looks
-// up the underlying transaction (for tx hash/blockchain/currency) by TransactionID —
-// callers fetch it themselves since blocked_transactions doesn't carry those fields.
-func buildCabinet(blocked []*models.BlockedTransaction, refunds []*models.RefundRequest, txByID map[uuid.UUID]*models.Transaction) map[string][]*CabinetItem {
+// buildCabinet groups a wallet's blocked transactions by refund status. blocked rows
+// already carry their underlying transaction/currency details via the enriching JOIN
+// in GetAllByWalletID.
+func buildCabinet(
+	blocked []*repo_blocked_transactions.GetAllWithTxByWalletIDRow,
+	refunds []*models.RefundRequest,
+) map[string][]*CabinetItem {
 	refundByBlockedTx := make(map[uuid.UUID]*models.RefundRequest, len(refunds))
 	for _, r := range refunds {
 		refundByBlockedTx[r.BlockedTransactionID] = r
@@ -48,14 +57,17 @@ func buildCabinet(blocked []*models.BlockedTransaction, refunds []*models.Refund
 		item := &CabinetItem{
 			BlockedTransactionID: b.ID,
 			TransactionID:        b.TransactionID,
+			TxHash:               b.TxHash,
+			Blockchain:           b.Blockchain,
+			CurrencyID:           b.CurrencyID,
+			CurrencyCode:         b.CurrencyCode,
+			Amount:               b.Amount,
+			AmountUsd:            b.AmountUsd,
+			FromAddress:          b.FromAddress,
+			ToAddress:            b.ToAddress,
 			RiskLevel:            b.RiskLevel,
 			Score:                b.Score,
 			CreatedAt:            b.CreatedAt,
-		}
-		if tx, ok := txByID[b.TransactionID]; ok {
-			item.TxHash = tx.TxHash
-			item.Blockchain = tx.Blockchain
-			item.CurrencyID = tx.CurrencyID
 		}
 
 		bucket := CabinetBucketAvailable
@@ -68,3 +80,18 @@ func buildCabinet(blocked []*models.BlockedTransaction, refunds []*models.Refund
 	}
 	return grouped
 }
+
+type RequestWithTxDTO struct {
+	models.RefundRequest
+	TransactionID uuid.UUID           `json:"transaction_id"`
+	TxHash        string              `json:"tx_hash"`
+	Amount        decimal.Decimal     `json:"amount"`
+	AmountUsd     decimal.NullDecimal `json:"amount_usd"`
+	CurrencyID    string              `json:"currency_id"`
+	CurrencyCode  string              `json:"currency_code"`
+	Blockchain    models.Blockchain   `json:"blockchain"`
+	FromAddress   string              `json:"from_address"`
+	ToAddress     string              `json:"to_address"`
+	RiskLevel     string              `json:"risk_level"`
+	Score         decimal.Decimal     `json:"score"`
+} //	@name	RefundRequestWithTx

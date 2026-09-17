@@ -61,7 +61,7 @@ func NewExchangeKeyResponseByDto(dto exchange.KeysExchangeDTO) exchange_response
 		maskedLength := len(*dto.Value) - 4
 		mask := strings.Repeat("*", maskedLength)
 		suffix := (*dto.Value)[len(*dto.Value)-4:]
-		maskedValue = lo.ToPtr(mask + suffix)
+		maskedValue = new(mask + suffix)
 	} else {
 		maskedValue = dto.Value
 	}
@@ -136,12 +136,10 @@ func GetWithdrawalsHistoryResponse(m *storecmn.FindResponseWithFullPagination[*m
 			item.TxID = &v.Txid.String
 		}
 		if v.NativeAmount.Valid {
-			amt := v.NativeAmount.Decimal.String()
-			item.AmountNative = &amt
+			item.AmountNative = new(v.NativeAmount.Decimal.String())
 		}
 		if v.FiatAmount.Valid {
-			amt := v.FiatAmount.Decimal.String()
-			item.AmountUSD = &amt
+			item.AmountUSD = new(v.FiatAmount.Decimal.String())
 		}
 		if v.FailReason.Valid {
 			item.FailReason = &v.FailReason.String
@@ -168,12 +166,10 @@ func GetWithdrawalHistoryResponse(m *models.ExchangeWithdrawalHistoryDTO) *excha
 		item.TxID = &m.Txid.String
 	}
 	if m.NativeAmount.Valid {
-		amt := m.NativeAmount.Decimal.String()
-		item.AmountNative = &amt
+		item.AmountNative = new(m.NativeAmount.Decimal.String())
 	}
 	if m.FiatAmount.Valid {
-		amt := m.FiatAmount.Decimal.String()
-		item.AmountUSD = &amt
+		item.AmountUSD = new(m.FiatAmount.Decimal.String())
 	}
 	return item
 }
@@ -229,8 +225,7 @@ func GetWithdrawalRulesResponse(m []*models.WithdrawalRulesDTO) []*exchange_resp
 			item.MaxWithdrawAmount = &v.MaxWithdrawAmount
 		}
 		if v.WithdrawFeeType != "" {
-			fType := v.WithdrawFeeType.String()
-			item.WithdrawFeeType = &fType
+			item.WithdrawFeeType = new(v.WithdrawFeeType.String())
 		}
 		if v.WithdrawQuotaPerDay != "" {
 			item.WithdrawQuotaPerDay = &v.WithdrawQuotaPerDay

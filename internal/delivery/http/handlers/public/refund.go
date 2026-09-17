@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/public_request"
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/refund_response"
 	"github.com/dv-net/dv-merchant/internal/delivery/middleware"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/refund"
@@ -118,7 +119,7 @@ func (h *Handler) refundClaim(c fiber.Ctx) error {
 //	@Description	Lists blocked transactions for the authenticated wallet, with refund status if a claim was filed
 //	@Tags			Refund,Public
 //	@Produce		json
-//	@Success		200	{object}	response.Result[map[string][]public_request.CabinetItemResponse]
+//	@Success		200	{object}	response.Result[map[string][]refund_response.CabinetItemResponse]
 //	@Failure		401	{object}	apierror.Errors
 //	@Router			/v1/public/refund/cabinet [get]
 func (h *Handler) refundCabinet(c fiber.Ctx) error {
@@ -132,16 +133,21 @@ func (h *Handler) refundCabinet(c fiber.Ctx) error {
 		return apierror.New().AddError(errors.New("failed to fetch cabinet")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	result := make(map[string][]public_request.CabinetItemResponse, len(grouped))
+	result := make(map[string][]refund_response.CabinetItemResponse, len(grouped))
 	for bucket, items := range grouped {
-		bucketItems := make([]public_request.CabinetItemResponse, 0, len(items))
+		bucketItems := make([]refund_response.CabinetItemResponse, 0, len(items))
 		for _, item := range items {
-			bucketItems = append(bucketItems, public_request.CabinetItemResponse{
+			bucketItems = append(bucketItems, refund_response.CabinetItemResponse{
 				BlockedTransactionID: item.BlockedTransactionID,
 				TransactionID:        item.TransactionID,
 				TxHash:               item.TxHash,
 				Blockchain:           item.Blockchain,
 				CurrencyID:           item.CurrencyID,
+				CurrencyCode:         item.CurrencyCode,
+				Amount:               item.Amount,
+				AmountUsd:            item.AmountUsd,
+				FromAddress:          item.FromAddress,
+				ToAddress:            item.ToAddress,
 				RiskLevel:            item.RiskLevel,
 				Score:                item.Score,
 				CreatedAt:            pgtypeutils.DecodeTime(item.CreatedAt),

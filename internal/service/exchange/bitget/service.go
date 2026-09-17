@@ -367,7 +367,7 @@ func (o *Service) CreateSpotOrder(ctx context.Context, from string, to string, s
 		return nil, err
 	}
 
-	maxAmount := decimal.Zero
+	var maxAmount decimal.Decimal
 	switch spotOrderRequest.Side {
 	case bitgetmodels.OrderSideSell:
 		maxAmount = baseBalance

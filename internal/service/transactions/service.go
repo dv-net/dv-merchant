@@ -426,8 +426,7 @@ func (s *Service) GetLastWalletDepositTransactions(ctx context.Context, walletID
 
 		var blockchain *string
 		if val.CurrBlockchain != nil {
-			bc := string(*val.CurrBlockchain)
-			blockchain = &bc
+			blockchain = new(string(*val.CurrBlockchain))
 		}
 
 		preparedRes = append(preparedRes, ShortTransactionInfo{

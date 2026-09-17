@@ -122,19 +122,15 @@ func (h *Handler) configureBinders() {
 }
 
 func (h *Handler) handleError(err error, modelName string) error {
-	var (
-		notFoundErr *pgerror.NotFoundError
-		uniqueErr   *pgerror.UniqueConstraintError
-		fkErr       *pgerror.ForeignKeyViolationError
-	)
+	var notFoundErr *pgerror.NotFoundError
 
 	if errors.Is(err, pgx.ErrNoRows) || errors.As(err, &notFoundErr) {
 		return apierror.New().AddError(errors.New(modelName + " not found")).SetHttpCode(fiber.StatusNotFound)
 	}
-	if errors.As(err, &uniqueErr) {
+	if uniqueErr, ok := errors.AsType[*pgerror.UniqueConstraintError](err); ok {
 		return apierror.New().AddError(uniqueErr).SetHttpCode(fiber.StatusUnprocessableEntity)
 	}
-	if errors.As(err, &fkErr) {
+	if _, ok := errors.AsType[*pgerror.ForeignKeyViolationError](err); ok {
 		return apierror.New().AddError(errors.New("referenced " + modelName + " does not exist")).SetHttpCode(fiber.StatusUnprocessableEntity)
 	}
 	return apierror.New().AddError(errors.New("failed to process request")).SetHttpCode(fiber.StatusBadRequest)

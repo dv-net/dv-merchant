@@ -17,7 +17,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallet_addresses"
-	"github.com/dv-net/dv-merchant/internal/util"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 
 	clientv1 "github.com/dv-net/dv-processing/api/processing/client/v1"
@@ -223,11 +222,11 @@ func (s *Service) CreateOwnerHotWallet(ctx context.Context, params CreateOwnerHo
 		Blockchain:       blockchain,
 	}
 	if params.BitcoinAddressType != nil {
-		req.BitcoinAddressType = util.Pointer(params.BitcoinAddressType.ToPb())
+		req.BitcoinAddressType = new(params.BitcoinAddressType.ToPb())
 	}
 
 	if params.LitecoinAddressType != nil {
-		req.LitecoinAddressType = util.Pointer(params.LitecoinAddressType.ToPb())
+		req.LitecoinAddressType = new(params.LitecoinAddressType.ToPb())
 	}
 
 	resp, err := s.processingService.Wallet().CreateOwnerHotWallet(
@@ -314,7 +313,7 @@ func (s *Service) GetOwnerProcessingWallet(ctx context.Context, params GetOwnerP
 		if err != nil {
 			return nil, err
 		}
-		req.Blockchain = util.Pointer(blockchain)
+		req.Blockchain = new(blockchain)
 	}
 
 	resp, err := s.processingService.Wallet().GetOwnerProcessingWallets(
@@ -329,7 +328,7 @@ func (s *Service) GetOwnerProcessingWallet(ctx context.Context, params GetOwnerP
 		Blockchain: models.ConvertToModel(resp.Msg.Items[0].Blockchain),
 	}
 
-	return util.Pointer(wp), nil
+	return new(wp), nil
 }
 
 func (s *Service) GetOwnerProcessingWallets(ctx context.Context, params GetOwnerProcessingWalletsParams) ([]WalletProcessing, error) {
@@ -346,7 +345,7 @@ func (s *Service) GetOwnerProcessingWallets(ctx context.Context, params GetOwner
 		if err != nil {
 			return nil, err
 		}
-		req.Blockchain = util.Pointer(blockchain)
+		req.Blockchain = new(blockchain)
 	}
 
 	resp, err := s.processingService.Wallet().GetOwnerProcessingWallets(

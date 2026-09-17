@@ -14,6 +14,7 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/public_request"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/aml_responses"
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/refund_response"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
@@ -275,7 +276,7 @@ func (h *Handler) refreshWalletAddress(c fiber.Ctx) error {
 //	@Tags			Wallet,Public
 //	@Produce		json
 //	@Param			id	path		string	true	"Wallet ID"
-//	@Success		200	{object}	response.Result[[]public_request.CabinetItemResponse]
+//	@Success		200	{object}	response.Result[[]refund_response.CabinetItemResponse]
 //	@Failure		400	{object}	apierror.Errors
 //	@Failure		500	{object}	apierror.Errors
 //	@Router			/v1/public/wallet/{id}/blocked-transactions [get]
@@ -290,14 +291,19 @@ func (h *Handler) getBlockedTransactions(c fiber.Ctx) error {
 		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	result := make([]public_request.CabinetItemResponse, 0, len(items))
+	result := make([]refund_response.CabinetItemResponse, 0, len(items))
 	for _, item := range items {
-		result = append(result, public_request.CabinetItemResponse{
+		result = append(result, refund_response.CabinetItemResponse{
 			BlockedTransactionID: item.BlockedTransactionID,
 			TransactionID:        item.TransactionID,
 			TxHash:               item.TxHash,
 			Blockchain:           item.Blockchain,
 			CurrencyID:           item.CurrencyID,
+			CurrencyCode:         item.CurrencyCode,
+			Amount:               item.Amount,
+			AmountUsd:            item.AmountUsd,
+			FromAddress:          item.FromAddress,
+			ToAddress:            item.ToAddress,
 			RiskLevel:            item.RiskLevel,
 			Score:                item.Score,
 			CreatedAt:            pgtypeutils.DecodeTime(item.CreatedAt),

@@ -6,7 +6,6 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 
-	"github.com/dv-net/dv-processing/pkg/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -56,7 +55,7 @@ func (s *CustomQueries) GetServiceCredentials(ctx context.Context, userID uuid.U
 
 	creds := make(ServiceCredentials, len(rows))
 	result := &ServiceCredsResult{
-		Service: utils.Pointer(rows[0].AmlService),
+		Service: new(rows[0].AmlService),
 		Creds:   creds,
 	}
 

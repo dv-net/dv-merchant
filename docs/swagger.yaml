@@ -264,15 +264,23 @@ definitions:
     type: object
   CabinetItemResponse:
     properties:
+      amount:
+        type: number
+      amount_usd:
+        type: number
       blockchain:
         $ref: '#/definitions/Blockchain'
       blocked_transaction_id:
         type: string
       created_at:
         type: string
+      currency_code:
+        type: string
       currency_id:
         type: string
       destination_address:
+        type: string
+      from_address:
         type: string
       refund_status:
         type: string
@@ -280,6 +288,8 @@ definitions:
         type: string
       score:
         type: number
+      to_address:
+        type: string
       transaction_id:
         type: string
       tx_hash:
@@ -1713,6 +1723,15 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-RefundRequestResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/RefundRequestResponse'
+      message:
+        type: string
+    type: object
   JSONResponse-RefundVerifyResponse:
     properties:
       code:
@@ -2161,13 +2180,13 @@ definitions:
       message:
         type: string
     type: object
-  JSONResponse-array_RefundRequest:
+  JSONResponse-array_RefundRequestResponse:
     properties:
       code:
         type: integer
       data:
         items:
-          $ref: '#/definitions/RefundRequest'
+          $ref: '#/definitions/RefundRequestResponse'
         type: array
       message:
         type: string
@@ -2840,6 +2859,62 @@ definitions:
       updated_at:
         type: string
       wallet_id:
+        type: string
+    type: object
+  RefundRequestResponse:
+    properties:
+      amount:
+        type: number
+      amount_usd:
+        type: number
+      blockchain:
+        type: string
+      blocked_transaction_id:
+        format: uuid
+        type: string
+      created_at:
+        format: date-time
+        type: string
+      currency_code:
+        type: string
+      currency_id:
+        type: string
+      destination_address:
+        type: string
+      email:
+        type: string
+      from_address:
+        type: string
+      id:
+        format: uuid
+        type: string
+      reviewed_at:
+        format: date-time
+        type: string
+      risk_level:
+        type: string
+      score:
+        type: number
+      status:
+        type: string
+      store_id:
+        format: uuid
+        type: string
+      to_address:
+        type: string
+      transaction_id:
+        format: uuid
+        type: string
+      transfer_id:
+        format: uuid
+        type: string
+      tx_hash:
+        type: string
+      updated_at:
+        format: date-time
+        type: string
+      wallet_id:
+        format: uuid
         type: string
     type: object
   RefundVerifyRequest:
@@ -6436,14 +6511,14 @@ paths:
       consumes:
       - application/json
       description: Lists refund requests awaiting review across all stores owned by
-        the authenticated user
+        the authenticated user, including blocked deposit details
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-array_RefundRequest'
+            $ref: '#/definitions/JSONResponse-array_RefundRequestResponse'
         "401":
           description: Unauthorized
           schema:
@@ -6472,7 +6547,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-RefundRequest'
+            $ref: '#/definitions/JSONResponse-RefundRequestResponse'
         "400":
           description: Bad Request
           schema:

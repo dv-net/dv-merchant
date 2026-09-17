@@ -167,8 +167,7 @@ func (o *Service) GetCurrencyBalance(ctx context.Context, currency string) (*dec
 			return nil, err
 		}
 	}
-	amt := spotAmt.Add(fundingAmt)
-	return &amt, nil
+	return new(spotAmt.Add(fundingAmt)), nil
 }
 
 func (o *Service) GetExchangeSymbols(ctx context.Context) ([]*models.ExchangeSymbolDTO, error) {

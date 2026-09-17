@@ -91,7 +91,6 @@ func (s *Service) createSingleAddress(ctx context.Context, params CreateAddressD
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +150,6 @@ func (s *Service) createUniversalAddress(ctx context.Context, params CreateAddre
 		}
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +227,6 @@ func (s *Service) createEVMAddress(ctx context.Context, params CreateAddressDTO)
 		}
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -459,7 +456,6 @@ func (s *Service) addWithdrawalRulesForUniversalAddress(ctx context.Context, use
 
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
@@ -513,7 +509,6 @@ func (s *Service) addWithdrawalRulesForEVMAddress(ctx context.Context, userID uu
 
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}

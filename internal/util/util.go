@@ -7,8 +7,6 @@ import (
 	"golang.org/x/text/language"
 )
 
-func Pointer[T any](v T) *T { return &v }
-
 // TruncateString cuts s down to at most maxLen runes, leaving it untouched if it's already short enough.
 func TruncateString(s string, maxLen int) string {
 	r := []rune(s)

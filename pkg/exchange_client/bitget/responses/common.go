@@ -7,7 +7,7 @@ import (
 type ResponseCode = int64
 
 const (
-	ResponseCodeOK                  ResponseCode = 00000
+	ResponseCodeOK                  ResponseCode = 0o0000
 	ResponseCodeEmptyAccessKey      ResponseCode = 40001
 	ResponseCodeInvalidAccessKey    ResponseCode = 40006
 	ResponseCodeEmptyPassphrase     ResponseCode = 40011

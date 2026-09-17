@@ -99,7 +99,6 @@ func (s *Service) deleteEVMAddress(ctx context.Context, usr *models.User, addres
 		deletedCount = len(evmEntries)
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}
