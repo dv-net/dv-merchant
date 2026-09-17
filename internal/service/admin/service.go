@@ -102,8 +102,23 @@ func (o *Service) GetAllUsersFiltered(ctx context.Context, req admin_request.Get
 		commonParams.SetPage(req.Page)
 	}
 
+	rootUserIDs, err := o.permissionService.RoleUsers(models.UserRoleRoot)
+	if err != nil {
+		return nil, apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	excludeUserIDs := make([]uuid.UUID, 0, len(rootUserIDs))
+	for _, id := range rootUserIDs {
+		parsed, err := uuid.Parse(id)
+		if err != nil {
+			return nil, apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+		}
+		excludeUserIDs = append(excludeUserIDs, parsed)
+	}
+
 	params := repo_users.GetAllFilteredParams{
 		CommonFindParams: *commonParams,
+		ExcludeUserIDs:   excludeUserIDs,
 	}
 
 	if req.Roles != nil {
