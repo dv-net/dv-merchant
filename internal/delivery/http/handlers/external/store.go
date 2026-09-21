@@ -64,26 +64,26 @@ func (h *Handler) storeCurrencies(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(converters.FromCurrencyModelToResponses(res...)))
 }
 
-// storeCurrencyRate is a function to get all active store currencies
+// storeCurrenciesRates returns rates for all currencies enabled on the authenticated store.
 //
-//	@Summary		Get store currency rate
-//	@Description	Get store currency rate
+//	@Summary		Get rates for all store currencies
+//	@Description	Get exchange rates for all currencies enabled on the store (uses store rate source and scale)
 //	@Tags			Store
 //	@Accept			json
-//	@Param			id		path		string	true	"Currency ID"
+//	@Produce		json
 //	@Param			api_key	query		string	false	"Store API key"
-//	@Success		200		{object}	response.Result[store.CurrencyRate]
+//	@Success		200		{object}	response.Result[[]store.CurrencyRate]
 //	@Failure		401		{object}	apierror.Errors
-//	@Failure		500		{object}	apierror.Errors
-//	@Router			/v1/external/store/currencies/{id}/rate [get]
+//	@Failure		400		{object}	apierror.Errors
+//	@Router			/v1/external/store/currencies/rate [get]
 //	@Security		XApiKey
-func (h *Handler) storeCurrencyRate(c fiber.Ctx) error {
+func (h *Handler) storeCurrenciesRates(c fiber.Ctx) error {
 	targetStore, err := loadAuthStore(c)
 	if err != nil {
 		return err
 	}
 
-	res, err := h.services.StoreCurrencyService.GetCurrencyWithRate(c.Context(), *targetStore, c.Params("id"))
+	res, err := h.services.StoreCurrencyService.GetCurrenciesWithRate(c.Context(), *targetStore)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -95,5 +95,5 @@ func (h *Handler) initStoreRoutes(v3 fiber.Router) {
 	storeRoutes := v3.Group("/store")
 	storeRoutes.Get("/currencies-extended", h.storeCurrenciesExtended)
 	storeRoutes.Get("/currencies", h.storeCurrencies)
-	storeRoutes.Get("/currencies/:id/rate", h.storeCurrencyRate) // Deprecated remove after update lib
+	storeRoutes.Get("/currencies/rate", h.storeCurrenciesRates)
 }
