@@ -235,29 +235,25 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/external/store/currencies/{id}/rate": {
+        "/v1/external/store/currencies/rate": {
             "get": {
                 "security": [
                     {
                         "XApiKey": []
                     }
                 ],
-                "description": "Get store currency rate",
+                "description": "Get exchange rates for all currencies enabled on the store (rate is scale-adjusted; original_rate is without store rate_scale)",
                 "consumes": [
+                    "application/json"
+                ],
+                "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Store"
                 ],
-                "summary": "Get store currency rate",
+                "summary": "Get rates for all store currencies",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Currency ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
                     {
                         "type": "string",
                         "description": "Store API key",
@@ -269,17 +265,17 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/JSONResponse-CurrencyRate"
+                            "$ref": "#/definitions/JSONResponse-array_CurrencyRate"
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -1117,6 +1113,9 @@ const docTemplate = `{
                 "code": {
                     "type": "string"
                 },
+                "original_rate": {
+                    "type": "string"
+                },
                 "rate": {
                     "type": "string"
                 },
@@ -1257,20 +1256,6 @@ const docTemplate = `{
                 }
             }
         },
-        "JSONResponse-CurrencyRate": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "data": {
-                    "$ref": "#/definitions/CurrencyRate"
-                },
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
         "JSONResponse-ExternalExchangeBalanceResponse": {
             "type": "object",
             "properties": {
@@ -1338,6 +1323,23 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/WithdrawalFromProcessingDto"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-array_CurrencyRate": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CurrencyRate"
+                    }
                 },
                 "message": {
                     "type": "string"

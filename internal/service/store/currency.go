@@ -16,7 +16,7 @@ type IStoreCurrency interface {
 	DeleteStoreCurrency(ctx context.Context, store *models.Store, currency *models.Currency, opts ...repos.Option) error
 	UpdateStoreCurrency(ctx context.Context, store *models.Store, dto *UpdateStoreCurrencyDTO, opts ...repos.Option) error
 	GetAllByStoreID(ctx context.Context, storeID uuid.UUID) ([]*models.Currency, error)
-	GetCurrencyWithRate(ctx context.Context, store models.Store, currID string) (*CurrencyRate, error)
+	GetCurrenciesWithRate(ctx context.Context, store models.Store) ([]*CurrencyRate, error)
 }
 
 func (s *Service) GetCurrenciesByStoreID(ctx context.Context, storeID uuid.UUID) ([]*models.StoreCurrency, error) {
@@ -87,20 +87,44 @@ func (s *Service) GetAllByStoreID(ctx context.Context, storeID uuid.UUID) ([]*mo
 	return storeCurrencies, nil
 }
 
-func (s *Service) GetCurrencyWithRate(ctx context.Context, store models.Store, currID string) (*CurrencyRate, error) {
-	curr, err := s.storage.Currencies().GetByID(ctx, currID)
+// GetCurrenciesWithRate returns rates for all currencies enabled on the store,
+// using the store rate source and scale.
+// Rate is adjusted by store.RateScale; OriginalRate is the source rate without scale.
+func (s *Service) GetCurrenciesWithRate(ctx context.Context, store models.Store) ([]*CurrencyRate, error) {
+	currencies, err := s.GetAllByStoreID(ctx, store.ID)
 	if err != nil {
-		return nil, fmt.Errorf("fetch curr: %w", err)
+		return nil, fmt.Errorf("fetch store currencies: %w", err)
 	}
 
-	rate, err := s.exRate.GetCurrencyRate(ctx, store.RateSource.String(), curr.Code, models.CurrencyCodeUSD)
+	rateSource := store.RateSource.String()
+
+	originalByID, err := s.exRate.GetStoreCurrencyRate(ctx, currencies, rateSource)
 	if err != nil {
-		return nil, fmt.Errorf("fetch rate: %w", err)
+		return nil, fmt.Errorf("fetch original rates: %w", err)
 	}
 
-	return &CurrencyRate{
-		Code:       curr.Code,
-		RateSource: store.RateSource.String(),
-		Rate:       rate,
-	}, nil
+	adjustedByID, err := s.exRate.GetStoreCurrencyRate(ctx, currencies, rateSource, store.RateScale)
+	if err != nil {
+		return nil, fmt.Errorf("fetch adjusted rates: %w", err)
+	}
+
+	result := make([]*CurrencyRate, 0, len(currencies))
+	for _, curr := range currencies {
+		original, ok := originalByID[curr.ID]
+		if !ok {
+			continue
+		}
+		adjusted, ok := adjustedByID[curr.ID]
+		if !ok {
+			continue
+		}
+		result = append(result, &CurrencyRate{
+			Code:         curr.Code,
+			RateSource:   rateSource,
+			Rate:         adjusted,
+			OriginalRate: original,
+		})
+	}
+
+	return result, nil
 }

@@ -215,6 +215,8 @@ definitions:
     properties:
       code:
         type: string
+      original_rate:
+        type: string
       rate:
         type: string
       rate_source:
@@ -306,15 +308,6 @@ definitions:
       message:
         type: string
     type: object
-  JSONResponse-CurrencyRate:
-    properties:
-      code:
-        type: integer
-      data:
-        $ref: '#/definitions/CurrencyRate'
-      message:
-        type: string
-    type: object
   JSONResponse-ExternalExchangeBalanceResponse:
     properties:
       code:
@@ -359,6 +352,17 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/WithdrawalFromProcessingDto'
+      message:
+        type: string
+    type: object
+  JSONResponse-array_CurrencyRate:
+    properties:
+      code:
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/CurrencyRate'
+        type: array
       message:
         type: string
     type: object
@@ -799,37 +803,35 @@ paths:
       summary: Get extended list of store currencies
       tags:
       - Store
-  /v1/external/store/currencies/{id}/rate:
+  /v1/external/store/currencies/rate:
     get:
       consumes:
       - application/json
-      description: Get store currency rate
+      description: Get exchange rates for all currencies enabled on the store (rate
+        is scale-adjusted; original_rate is without store rate_scale)
       parameters:
-      - description: Currency ID
-        in: path
-        name: id
-        required: true
-        type: string
       - description: Store API key
         in: query
         name: api_key
         type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/JSONResponse-CurrencyRate'
+            $ref: '#/definitions/JSONResponse-array_CurrencyRate'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
         "401":
           description: Unauthorized
           schema:
             $ref: '#/definitions/APIErrors'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/APIErrors'
       security:
       - XApiKey: []
-      summary: Get store currency rate
+      summary: Get rates for all store currencies
       tags:
       - Store
   /v1/external/transactions/unconfirmed/transfer:
