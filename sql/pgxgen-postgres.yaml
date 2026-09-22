@@ -941,6 +941,7 @@ schemas:
                 - amount
                 - updated_at
                 - deleted_at
+                - risk_flags
               column_values:
                 created_at: now()
             get:

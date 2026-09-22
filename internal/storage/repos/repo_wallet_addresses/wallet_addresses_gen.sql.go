@@ -13,8 +13,8 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO wallet_addresses (wallet_id, user_id, currency_id, blockchain, address, created_at, dirty, risk_flags)
-	VALUES ($1, $2, $3, $4, $5, now(), $6, $7)
+INSERT INTO wallet_addresses (wallet_id, user_id, currency_id, blockchain, address, created_at, dirty)
+	VALUES ($1, $2, $3, $4, $5, now(), $6)
 	RETURNING id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, risk_flags
 `
 
@@ -25,7 +25,6 @@ type CreateParams struct {
 	Blockchain models.Blockchain `db:"blockchain" json:"blockchain"`
 	Address    string            `db:"address" json:"address"`
 	Dirty      bool              `db:"dirty" json:"dirty"`
-	RiskFlags  []byte            `db:"risk_flags" json:"risk_flags"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.WalletAddress, error) {
@@ -36,7 +35,6 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.WalletA
 		arg.Blockchain,
 		arg.Address,
 		arg.Dirty,
-		arg.RiskFlags,
 	)
 	var i models.WalletAddress
 	err := row.Scan(
