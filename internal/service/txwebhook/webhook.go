@@ -516,9 +516,10 @@ func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
 		}
 	}
 
-	// signals aren't persisted on models.AmlCheck, so only TOTAL_RISK_SCORE rules can
-	// fire here; this async path is only reached by BitOK, which never populates
-	// Signals anyway, so category/SUM_OF_SIGNALS rules are a no-op here, not a regression.
+	// Signals aren't persisted on models.AmlCheck, so CheckCompletedEvent carries them
+	// separately (set in aml.Service.finalizeCheck) — every provider resolves through
+	// this async path, not just BitOK, so category/SUM_OF_SIGNALS rules need this to
+	// fire here at all.
 	blocked := s.amlService.ApplyVerdict(ctx, aml.ApplyVerdictDTO{
 		Check:         &completedEv.Check,
 		UserID:        str.UserID,
@@ -526,6 +527,7 @@ func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
 		TransactionID: tx.ID,
 		WalletID:      tx.WalletID,
 		ToAddress:     tx.ToAddress,
+		Signals:       completedEv.Signals,
 		Rules:         rules,
 	})
 	if blocked {

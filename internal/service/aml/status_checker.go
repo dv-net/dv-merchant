@@ -144,11 +144,11 @@ func (s *Service) handleCheckResult(
 
 		if fetchErr != nil {
 			if reqErr, ok := errors.AsType[*amlproviders.RequestFailedError](fetchErr); ok && !reqErr.Retryable {
-				res, err := s.finalizeCheck(ctx, tx, check, models.AmlCheckStatusFailed, decimal.Zero, nil)
+				res, err := s.finalizeCheck(ctx, tx, check, models.AmlCheckStatusFailed, decimal.Zero, nil, nil)
 				completedEvent = res.event
 				return err
 			}
-			res, err := s.continueOrFailCheck(ctx, tx, check, decimal.Zero)
+			res, err := s.continueOrFailCheck(ctx, tx, check, decimal.Zero, nil)
 			completedEvent = res.event
 			return err
 		}
@@ -162,7 +162,7 @@ func (s *Service) handleCheckResult(
 
 		resolvedStatus := convertAmlStatusToModel(result.Status)
 		if resolvedStatus == models.AmlCheckStatusPending {
-			res, err := s.continueOrFailCheck(ctx, tx, check, result.Score)
+			res, err := s.continueOrFailCheck(ctx, tx, check, result.Score, result.Signals)
 			completedEvent = res.event
 			return err
 		}
@@ -172,7 +172,7 @@ func (s *Service) handleCheckResult(
 			return fmt.Errorf("failed to convert risk level: %w", err)
 		}
 
-		res, err := s.finalizeCheck(ctx, tx, check, resolvedStatus, result.Score, riskLevel)
+		res, err := s.finalizeCheck(ctx, tx, check, resolvedStatus, result.Score, riskLevel, result.Signals)
 		completedEvent = res.event
 		return err
 	})
@@ -214,9 +214,9 @@ type checkResolution struct {
 	event *CheckCompletedEvent
 }
 
-func (s *Service) continueOrFailCheck(ctx context.Context, tx pgx.Tx, check *repo_aml_check_queue.FetchPendingRow, score decimal.Decimal) (checkResolution, error) {
+func (s *Service) continueOrFailCheck(ctx context.Context, tx pgx.Tx, check *repo_aml_check_queue.FetchPendingRow, score decimal.Decimal, signals []amlproviders.SignalContribution) (checkResolution, error) {
 	if check.IsLastAttempt {
-		return s.finalizeCheck(ctx, tx, check, models.AmlCheckStatusFailed, score, nil)
+		return s.finalizeCheck(ctx, tx, check, models.AmlCheckStatusFailed, score, nil, signals)
 	}
 
 	if err := s.st.AmlCheckQueue(repos.WithTx(tx)).IncrementAttempts(ctx, check.AmlCheckQueue.ID); err != nil {
@@ -233,6 +233,7 @@ func (s *Service) finalizeCheck(
 	status models.AMLCheckStatus,
 	score decimal.Decimal,
 	riskLevel *models.AmlRiskLevel,
+	signals []amlproviders.SignalContribution,
 ) (checkResolution, error) {
 	if err := s.st.AmlChecks(repos.WithTx(tx)).UpdateAMLCheck(ctx, repo_aml_checks.UpdateAMLCheckParams{
 		ID:        check.AmlCheck.ID,
@@ -258,7 +259,7 @@ func (s *Service) finalizeCheck(
 	updatedCheck.Score = score
 	updatedCheck.RiskLevel = riskLevel
 
-	return checkResolution{event: &CheckCompletedEvent{Check: updatedCheck}}, nil
+	return checkResolution{event: &CheckCompletedEvent{Check: updatedCheck, Signals: signals}}, nil
 }
 
 func (s *Service) createCheckHistory(
