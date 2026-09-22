@@ -41,6 +41,7 @@ type UpdateAddressesListDTO struct {
 }
 
 type AddressDTO struct {
-	Name    *string
-	Address string
+	Name       *string
+	Address    string
+	ForFlagged bool
 }

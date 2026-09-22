@@ -3457,7 +3457,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get all users",
+                "description": "Get all non-root users (root accounts are excluded from the list)",
                 "consumes": [
                     "application/json"
                 ],
@@ -16609,6 +16609,9 @@
                     "maxLength": 100,
                     "minLength": 1
                 },
+                "for_flagged": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 100,
@@ -17054,6 +17057,9 @@
                 },
                 "deleted_at": {
                     "type": "string"
+                },
+                "for_flagged": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "string"

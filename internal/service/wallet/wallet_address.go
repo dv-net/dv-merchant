@@ -72,6 +72,29 @@ func (s *Service) MarkAddressDirty(ctx context.Context, usr *models.User, addres
 	return nil
 }
 
+func (s *Service) MarkAddressFlags(ctx context.Context, usr *models.User, address string, flags []models.AmlRiskFlag, amlCheckID uuid.UUID) error {
+	if len(flags) == 0 {
+		return nil
+	}
+
+	slugs := make([]string, len(flags))
+	for i, f := range flags {
+		slugs[i] = string(f)
+	}
+
+	_, err := s.storage.WalletAddresses().MarkAddressFlags(ctx, repo_wallet_addresses.MarkAddressFlagsParams{
+		Address:    address,
+		UserID:     usr.ID,
+		Flags:      slugs,
+		AmlCheckID: amlCheckID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to mark address flags: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Service) LoadPrivateAddresses(ctx context.Context, dto LoadPrivateKeyDTO) (*bytes.Buffer, error) {
 	data, err := s.processingService.GetOwnerHotWalletKeys(ctx, dto.User, dto.Otp, processing.GetOwnerHotWalletKeysParams{
 		WalletAddressIDs:           dto.WalletAddressIDs,

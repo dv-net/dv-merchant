@@ -364,7 +364,15 @@ func (s *service) prepareTransferDto(
 		return TransferDto{}, fmt.Errorf("get hot wallet user:%q %w", wallet.UserID, err)
 	}
 
-	withdrawalAddrList, err := s.storage.WithdrawalWalletAddresses().GetAddressesList(ctx, wallet.ID)
+	riskFlags, err := models.ParseAddressRiskFlags(targetHotWallet.RiskFlags)
+	if err != nil {
+		return TransferDto{}, fmt.Errorf("parse risk flags for address %q: %w", targetHotWallet.Address, err)
+	}
+
+	withdrawalAddrList, err := s.storage.WithdrawalWalletAddresses().GetAddressesList(ctx, repo_withdrawal_wallet_addresses.GetAddressesListParams{
+		WithdrawalWalletID: wallet.ID,
+		ForFlagged:         len(riskFlags) > 0,
+	})
 	if err != nil || len(withdrawalAddrList) == 0 {
 		return TransferDto{}, ErrWithdrawalAddressListEmpty
 	}
@@ -381,6 +389,7 @@ func (s *service) prepareTransferDto(
 		AmountUsd:     targetHotWallet.AmountUsd,
 		CurrencyID:    targetHotWallet.CurrencyID,
 		Blockchain:    targetHotWallet.Blockchain,
+		RoutedFlagged: len(riskFlags) > 0,
 	}, nil
 }
 
@@ -455,6 +464,7 @@ func (s *service) initializeTransfer(
 		AmountUsd:     dto.AmountUsd,
 		Blockchain:    dto.Blockchain,
 		Message:       errMessage,
+		RoutedFlagged: dto.RoutedFlagged,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("transfer creation: %w", err)

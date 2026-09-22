@@ -134,7 +134,7 @@ func (q *Queries) GetAddressForMultiWithdrawal(ctx context.Context, arg GetAddre
 }
 
 const getAddressForWithdrawal = `-- name: GetAddressForWithdrawal :one
-select wallet_addresses.id, wallet_addresses.wallet_id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty, currencies.id, currencies.code, currencies.name, currencies.precision, currencies.is_fiat, currencies.blockchain, currencies.contract_address, currencies.withdrawal_min_balance, currencies.has_balance, currencies.status, currencies.sort_order, currencies.min_confirmation, currencies.created_at, currencies.updated_at, currencies.is_stablecoin, currencies.currency_label, currencies.token_label, currencies.is_native, currencies.is_new_store_default, (amount * exchange_rate)::decimal as amount_usd
+select wallet_addresses.id, wallet_addresses.wallet_id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty, wallet_addresses.risk_flags, currencies.id, currencies.code, currencies.name, currencies.precision, currencies.is_fiat, currencies.blockchain, currencies.contract_address, currencies.withdrawal_min_balance, currencies.has_balance, currencies.status, currencies.sort_order, currencies.min_confirmation, currencies.created_at, currencies.updated_at, currencies.is_stablecoin, currencies.currency_label, currencies.token_label, currencies.is_native, currencies.is_new_store_default, (amount * exchange_rate)::decimal as amount_usd
 from wallet_addresses
          left join currencies
                    on wallet_addresses.currency_id = currencies.id
@@ -195,6 +195,7 @@ type GetAddressForWithdrawalRow struct {
 	UpdatedAt            pgtype.Timestamp   `db:"updated_at" json:"updated_at"`
 	DeletedAt            pgtype.Timestamp   `db:"deleted_at" json:"deleted_at"`
 	Dirty                bool               `db:"dirty" json:"dirty"`
+	RiskFlags            []byte             `db:"risk_flags" json:"risk_flags"`
 	ID_2                 pgtype.Text        `db:"id_2" json:"id_2"`
 	Code                 pgtype.Text        `db:"code" json:"code"`
 	Name                 pgtype.Text        `db:"name" json:"name"`
@@ -240,6 +241,7 @@ func (q *Queries) GetAddressForWithdrawal(ctx context.Context, arg GetAddressFor
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Dirty,
+		&i.RiskFlags,
 		&i.ID_2,
 		&i.Code,
 		&i.Name,
@@ -265,7 +267,7 @@ func (q *Queries) GetAddressForWithdrawal(ctx context.Context, arg GetAddressFor
 }
 
 const getAllClearByWalletID = `-- name: GetAllClearByWalletID :many
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, risk_flags
 FROM wallet_addresses
 WHERE wallet_id = $1
   AND dirty = false
@@ -295,6 +297,7 @@ func (q *Queries) GetAllClearByWalletID(ctx context.Context, walletID uuid.UUID,
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Dirty,
+			&i.RiskFlags,
 		); err != nil {
 			return nil, err
 		}
@@ -307,7 +310,7 @@ func (q *Queries) GetAllClearByWalletID(ctx context.Context, walletID uuid.UUID,
 }
 
 const getByWalletIDAndCurrencyID = `-- name: GetByWalletIDAndCurrencyID :one
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, risk_flags
 FROM wallet_addresses
 WHERE wallet_id = $1
   AND currency_id = $2
@@ -332,6 +335,7 @@ func (q *Queries) GetByWalletIDAndCurrencyID(ctx context.Context, walletID uuid.
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Dirty,
+		&i.RiskFlags,
 	)
 	return &i, err
 }
@@ -431,7 +435,7 @@ func (q *Queries) GetListByCurrencyWithAmount(ctx context.Context, arg GetListBy
 
 const getPrefetchWalletAddressByUserID = `-- name: GetPrefetchWalletAddressByUserID :many
 select withdrawal_wallets.id             as withdrawal_wallet_id,
-       wallet_addresses.id, wallet_addresses.wallet_id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty,
+       wallet_addresses.id, wallet_addresses.wallet_id, wallet_addresses.user_id, wallet_addresses.currency_id, wallet_addresses.blockchain, wallet_addresses.address, wallet_addresses.amount, wallet_addresses.created_at, wallet_addresses.updated_at, wallet_addresses.deleted_at, wallet_addresses.dirty, wallet_addresses.risk_flags,
        currencies.id, currencies.code, currencies.name, currencies.precision, currencies.is_fiat, currencies.blockchain, currencies.contract_address, currencies.withdrawal_min_balance, currencies.has_balance, currencies.status, currencies.sort_order, currencies.min_confirmation, currencies.created_at, currencies.updated_at, currencies.is_stablecoin, currencies.currency_label, currencies.token_label, currencies.is_native, currencies.is_new_store_default,
        (amount * exchange_rate)::decimal as amount_usd
 from wallet_addresses
@@ -506,6 +510,7 @@ func (q *Queries) GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetP
 			&i.WalletAddress.UpdatedAt,
 			&i.WalletAddress.DeletedAt,
 			&i.WalletAddress.Dirty,
+			&i.WalletAddress.RiskFlags,
 			&i.Currency.ID,
 			&i.Currency.Code,
 			&i.Currency.Name,
@@ -538,7 +543,7 @@ func (q *Queries) GetPrefetchWalletAddressByUserID(ctx context.Context, arg GetP
 }
 
 const getWalletAddressesByAddress = `-- name: GetWalletAddressesByAddress :one
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, risk_flags
 FROM wallet_addresses
 WHERE deleted_at IS NULL
   AND wallet_id = $1
@@ -568,12 +573,13 @@ func (q *Queries) GetWalletAddressesByAddress(ctx context.Context, arg GetWallet
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Dirty,
+		&i.RiskFlags,
 	)
 	return &i, err
 }
 
 const getWalletAddressesByUserID = `-- name: GetWalletAddressesByUserID :many
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, risk_flags
 FROM wallet_addresses
 WHERE user_id = $1
   AND deleted_at IS NULL
@@ -600,6 +606,7 @@ func (q *Queries) GetWalletAddressesByUserID(ctx context.Context, userID uuid.UU
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Dirty,
+			&i.RiskFlags,
 		); err != nil {
 			return nil, err
 		}
@@ -612,7 +619,7 @@ func (q *Queries) GetWalletAddressesByUserID(ctx context.Context, userID uuid.UU
 }
 
 const getWalletAddressesByWalletId = `-- name: GetWalletAddressesByWalletId :many
-SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, risk_flags
 FROM wallet_addresses
 WHERE deleted_at IS NULL
   AND wallet_id = $1
@@ -639,6 +646,7 @@ func (q *Queries) GetWalletAddressesByWalletId(ctx context.Context, walletID uui
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Dirty,
+			&i.RiskFlags,
 		); err != nil {
 			return nil, err
 		}
@@ -685,7 +693,7 @@ func (q *Queries) GetWalletAddressesTotalWithCurrencyID(ctx context.Context, use
 }
 
 const getWalletsDataForRestoreByBlockchains = `-- name: GetWalletsDataForRestoreByBlockchains :many
-SELECT wa.id, wa.wallet_id, wa.user_id, wa.currency_id, wa.blockchain, wa.address, wa.amount, wa.created_at, wa.updated_at, wa.deleted_at, wa.dirty, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_native, c.is_new_store_default, s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled, s.verification_status, s.verified_at, s.verified_by, s.rejection_reason, s.description, s.verification_comment
+SELECT wa.id, wa.wallet_id, wa.user_id, wa.currency_id, wa.blockchain, wa.address, wa.amount, wa.created_at, wa.updated_at, wa.deleted_at, wa.dirty, wa.risk_flags, c.id, c.code, c.name, c.precision, c.is_fiat, c.blockchain, c.contract_address, c.withdrawal_min_balance, c.has_balance, c.status, c.sort_order, c.min_confirmation, c.created_at, c.updated_at, c.is_stablecoin, c.currency_label, c.token_label, c.is_native, c.is_new_store_default, s.id, s.user_id, s.name, s.site, s.currency_id, s.rate_source, s.return_url, s.success_url, s.rate_scale, s.status, s.minimal_payment, s.created_at, s.updated_at, s.deleted_at, s.public_payment_form_enabled, s.verification_status, s.verified_at, s.verified_by, s.rejection_reason, s.description, s.verification_comment
 FROM wallet_addresses wa
          JOIN currencies c ON wa.currency_id = c.id
          JOIN wallets w ON wa.wallet_id = w.id
@@ -720,6 +728,7 @@ func (q *Queries) GetWalletsDataForRestoreByBlockchains(ctx context.Context, blo
 			&i.WalletAddress.UpdatedAt,
 			&i.WalletAddress.DeletedAt,
 			&i.WalletAddress.Dirty,
+			&i.WalletAddress.RiskFlags,
 			&i.Currency.ID,
 			&i.Currency.Code,
 			&i.Currency.Name,
@@ -772,7 +781,7 @@ func (q *Queries) GetWalletsDataForRestoreByBlockchains(ctx context.Context, blo
 }
 
 const isWalletExistsByAddress = `-- name: IsWalletExistsByAddress :one
-SELECT EXISTS(SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty FROM wallet_addresses WHERE address = $1)
+SELECT EXISTS(SELECT id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, risk_flags FROM wallet_addresses WHERE address = $1)
 LIMIT 1
 `
 
@@ -789,7 +798,7 @@ SET updated_at=now(),
     dirty= true
 WHERE address = $1
   AND user_id = $2
-RETURNING id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty
+RETURNING id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, risk_flags
 `
 
 func (q *Queries) MarkAddressDirty(ctx context.Context, address string, userID uuid.UUID) ([]*models.WalletAddress, error) {
@@ -813,6 +822,79 @@ func (q *Queries) MarkAddressDirty(ctx context.Context, address string, userID u
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Dirty,
+			&i.RiskFlags,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const markAddressFlags = `-- name: MarkAddressFlags :many
+UPDATE wallet_addresses
+SET updated_at = now(),
+    risk_flags  = risk_flags || COALESCE(
+            (SELECT jsonb_agg(
+                            jsonb_build_object(
+                                    'slug', new_flag,
+                                    'aml_check_id', $1::uuid,
+                                    'created_at', now()
+                            )
+                    )
+             FROM unnest($2::varchar[]) AS new_flag
+             WHERE NOT EXISTS (SELECT 1
+                                FROM jsonb_array_elements(wallet_addresses.risk_flags) AS existing
+                                WHERE existing ->> 'slug' = new_flag)),
+            '[]'::jsonb
+                  )
+WHERE address = $3
+  AND user_id = $4
+RETURNING id, wallet_id, user_id, currency_id, blockchain, address, amount, created_at, updated_at, deleted_at, dirty, risk_flags
+`
+
+type MarkAddressFlagsParams struct {
+	AmlCheckID uuid.UUID `db:"aml_check_id" json:"aml_check_id"`
+	Flags      []string  `db:"flags" json:"flags"`
+	Address    string    `db:"address" json:"address"`
+	UserID     uuid.UUID `db:"user_id" json:"user_id"`
+}
+
+// Appends any of sqlc.arg(flags) not already present (matched by their "slug") to
+// risk_flags, in one statement so concurrent callers on the same row can't lose an
+// update to each other (the subquery reads the row's current risk_flags under the
+// row lock this UPDATE takes, so a blocked concurrent call re-evaluates against the
+// already-applied changes once it proceeds).
+func (q *Queries) MarkAddressFlags(ctx context.Context, arg MarkAddressFlagsParams) ([]*models.WalletAddress, error) {
+	rows, err := q.db.Query(ctx, markAddressFlags,
+		arg.AmlCheckID,
+		arg.Flags,
+		arg.Address,
+		arg.UserID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*models.WalletAddress{}
+	for rows.Next() {
+		var i models.WalletAddress
+		if err := rows.Scan(
+			&i.ID,
+			&i.WalletID,
+			&i.UserID,
+			&i.CurrencyID,
+			&i.Blockchain,
+			&i.Address,
+			&i.Amount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Dirty,
+			&i.RiskFlags,
 		); err != nil {
 			return nil, err
 		}

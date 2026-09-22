@@ -6,6 +6,7 @@ type UpdateAddressesListRequest struct {
 } //	@name	UpdateAddressesListRequest
 
 type WalletAddress struct {
-	Address string  `json:"address" validate:"required,max=100,min=1"`
-	Name    *string `json:"name" validate:"omitempty,max=100,min=1"`
+	Address    string  `json:"address" validate:"required,max=100,min=1"`
+	Name       *string `json:"name" validate:"omitempty,max=100,min=1"`
+	ForFlagged bool    `json:"for_flagged"`
 } //	@name	WalletAddress

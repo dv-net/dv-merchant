@@ -18,12 +18,13 @@ var (
 )
 
 const updateList = `-- name: UpdateList :batchexec
-INSERT INTO withdrawal_wallet_addresses (address, name, withdrawal_wallet_id, created_at, updated_at)
-VALUES ($1, $2, $3, now(), now())
+INSERT INTO withdrawal_wallet_addresses (address, name, withdrawal_wallet_id, for_flagged, created_at, updated_at)
+VALUES ($1, $2, $3, $4, now(), now())
 ON CONFLICT (withdrawal_wallet_id, address) DO UPDATE
-    SET name       = $2,
-        updated_at = now(),
-        deleted_at = null
+    SET name        = $2,
+        for_flagged = $4,
+        updated_at  = now(),
+        deleted_at  = null
 `
 
 type UpdateListBatchResults struct {
@@ -36,6 +37,7 @@ type UpdateListParams struct {
 	Address            string    `db:"address" json:"address"`
 	Name               *string   `db:"name" json:"name"`
 	WithdrawalWalletID uuid.UUID `db:"withdrawal_wallet_id" json:"withdrawal_wallet_id"`
+	ForFlagged         bool      `db:"for_flagged" json:"for_flagged"`
 }
 
 func (q *Queries) UpdateList(ctx context.Context, arg []UpdateListParams) *UpdateListBatchResults {
@@ -45,6 +47,7 @@ func (q *Queries) UpdateList(ctx context.Context, arg []UpdateListParams) *Updat
 			a.Address,
 			a.Name,
 			a.WithdrawalWalletID,
+			a.ForFlagged,
 		}
 		batch.Queue(updateList, vals...)
 	}

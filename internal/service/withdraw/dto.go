@@ -49,6 +49,7 @@ type TransferDto struct {
 	AmountUsd     decimal.Decimal     `json:"amount_usd"`
 	CurrencyID    string              `json:"currency_id"`
 	Blockchain    models.Blockchain   `json:"blockchain"`
+	RoutedFlagged bool                `json:"routed_flagged"`
 }
 
 type WithdrawalToProcessingDTO struct {

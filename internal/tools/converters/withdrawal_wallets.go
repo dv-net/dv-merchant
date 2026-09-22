@@ -24,8 +24,9 @@ func NewAddressesListDtoFromRequestsList(addresses []withdrawal_wallets_request.
 	res := make([]withdrawal_wallet.AddressDTO, 0, len(addresses))
 	for _, val := range addresses {
 		res = append(res, withdrawal_wallet.AddressDTO{
-			Name:    val.Name,
-			Address: val.Address,
+			Name:       val.Name,
+			Address:    val.Address,
+			ForFlagged: val.ForFlagged,
 		})
 	}
 
