@@ -21,6 +21,32 @@ WHERE address = $1
   AND user_id = $2
 RETURNING *;
 
+-- name: MarkAddressFlags :many
+-- Appends any of sqlc.arg(flags) not already present (matched by their "slug") to
+-- risk_flags, in one statement so concurrent callers on the same row can't lose an
+-- update to each other (the subquery reads the row's current risk_flags under the
+-- row lock this UPDATE takes, so a blocked concurrent call re-evaluates against the
+-- already-applied changes once it proceeds).
+UPDATE wallet_addresses
+SET updated_at = now(),
+    risk_flags  = risk_flags || COALESCE(
+            (SELECT jsonb_agg(
+                            jsonb_build_object(
+                                    'slug', new_flag,
+                                    'aml_check_id', sqlc.arg(aml_check_id)::uuid,
+                                    'created_at', now()
+                            )
+                    )
+             FROM unnest(sqlc.arg(flags)::varchar[]) AS new_flag
+             WHERE NOT EXISTS (SELECT 1
+                                FROM jsonb_array_elements(wallet_addresses.risk_flags) AS existing
+                                WHERE existing ->> 'slug' = new_flag)),
+            '[]'::jsonb
+                  )
+WHERE address = sqlc.arg(address)
+  AND user_id = sqlc.arg(user_id)
+RETURNING *;
+
 -- name: UpdateWalletBalance :exec
 WITH balances as (SELECT SUM(
                                  CASE

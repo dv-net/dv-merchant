@@ -29,6 +29,12 @@ type Querier interface {
 	GetWalletsDataForRestoreByBlockchains(ctx context.Context, blockchains []string) ([]*GetWalletsDataForRestoreByBlockchainsRow, error)
 	IsWalletExistsByAddress(ctx context.Context, address string) (bool, error)
 	MarkAddressDirty(ctx context.Context, address string, userID uuid.UUID) ([]*models.WalletAddress, error)
+	// Appends any of sqlc.arg(flags) not already present (matched by their "slug") to
+	// risk_flags, in one statement so concurrent callers on the same row can't lose an
+	// update to each other (the subquery reads the row's current risk_flags under the
+	// row lock this UPDATE takes, so a blocked concurrent call re-evaluates against the
+	// already-applied changes once it proceeds).
+	MarkAddressFlags(ctx context.Context, arg MarkAddressFlagsParams) ([]*models.WalletAddress, error)
 	RestoreByWallets(ctx context.Context, dollar_1 []uuid.UUID) error
 	SoftDeleteByWallets(ctx context.Context, dollar_1 []uuid.UUID) error
 	UpdateWalletBalance(ctx context.Context, address string, currencyID string) error

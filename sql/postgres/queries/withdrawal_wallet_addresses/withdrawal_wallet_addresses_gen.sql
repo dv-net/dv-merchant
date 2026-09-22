@@ -1,6 +1,6 @@
 -- name: Create :one
-INSERT INTO withdrawal_wallet_addresses (withdrawal_wallet_id, name, address, created_at)
-	VALUES ($1, $2, $3, now())
+INSERT INTO withdrawal_wallet_addresses (withdrawal_wallet_id, name, address, created_at, for_flagged)
+	VALUES ($1, $2, $3, now(), $4)
 	RETURNING *;
 
 -- name: GetById :one

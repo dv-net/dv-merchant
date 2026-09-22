@@ -70,7 +70,7 @@ func (q *Queries) GetAddressWithCurrencyByUserID(ctx context.Context, userID uui
 }
 
 const getAddresses = `-- name: GetAddresses :many
-select id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at
+select id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at, for_flagged
 from withdrawal_wallet_addresses
 where withdrawal_wallet_id = $1::uuid
   and deleted_at is null
@@ -93,6 +93,7 @@ func (q *Queries) GetAddresses(ctx context.Context, dollar_1 uuid.UUID) ([]*mode
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.ForFlagged,
 		); err != nil {
 			return nil, err
 		}
@@ -108,11 +109,17 @@ const getAddressesList = `-- name: GetAddressesList :many
 select address
 from withdrawal_wallet_addresses
 where withdrawal_wallet_id = $1::uuid
+  and for_flagged = $2
   and deleted_at is null
 `
 
-func (q *Queries) GetAddressesList(ctx context.Context, dollar_1 uuid.UUID) ([]string, error) {
-	rows, err := q.db.Query(ctx, getAddressesList, dollar_1)
+type GetAddressesListParams struct {
+	WithdrawalWalletID uuid.UUID `db:"withdrawal_wallet_id" json:"withdrawal_wallet_id"`
+	ForFlagged         bool      `db:"for_flagged" json:"for_flagged"`
+}
+
+func (q *Queries) GetAddressesList(ctx context.Context, arg GetAddressesListParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, getAddressesList, arg.WithdrawalWalletID, arg.ForFlagged)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +139,7 @@ func (q *Queries) GetAddressesList(ctx context.Context, dollar_1 uuid.UUID) ([]s
 }
 
 const getByAddress = `-- name: GetByAddress :one
-select id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at
+select id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at, for_flagged
 from withdrawal_wallet_addresses
 where withdrawal_wallet_id = $2::uuid
   and address = $1
@@ -154,12 +161,13 @@ func (q *Queries) GetByAddress(ctx context.Context, arg GetByAddressParams) (*mo
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ForFlagged,
 	)
 	return &i, err
 }
 
 const getByAddressWithTrashed = `-- name: GetByAddressWithTrashed :one
-select id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at
+select id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at, for_flagged
 from withdrawal_wallet_addresses
 where withdrawal_wallet_id = $2::uuid
   and address = $1
@@ -181,6 +189,7 @@ func (q *Queries) GetByAddressWithTrashed(ctx context.Context, arg GetByAddressW
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ForFlagged,
 	)
 	return &i, err
 }
@@ -303,7 +312,7 @@ set name       = $1,
     deleted_at = NULL,
     updated_at = now()
 where id = $2::uuid
-RETURNING id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at
+RETURNING id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at, for_flagged
 `
 
 type UpdateDeletedAddressParams struct {
@@ -322,6 +331,7 @@ func (q *Queries) UpdateDeletedAddress(ctx context.Context, arg UpdateDeletedAdd
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ForFlagged,
 	)
 	return &i, err
 }

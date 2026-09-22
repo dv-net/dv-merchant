@@ -334,6 +334,7 @@ func (s Service) processWalletAddresses(ctx context.Context, list []AddressDTO, 
 			Address:            dto.Address,
 			Name:               dto.Name,
 			WithdrawalWalletID: walletID,
+			ForFlagged:         dto.ForFlagged,
 		})
 		actualAddresses = append(actualAddresses, dto.Address)
 	}

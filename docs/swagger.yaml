@@ -3933,6 +3933,8 @@ definitions:
         maxLength: 100
         minLength: 1
         type: string
+      for_flagged:
+        type: boolean
       name:
         maxLength: 100
         minLength: 1
@@ -4237,6 +4239,8 @@ definitions:
         type: string
       deleted_at:
         type: string
+      for_flagged:
+        type: boolean
       id:
         type: string
       name:
@@ -6988,7 +6992,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get all users
+      description: Get all non-root users (root accounts are excluded from the list)
       parameters:
       - in: query
         name: page

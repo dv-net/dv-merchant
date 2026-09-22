@@ -13,19 +13,25 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO withdrawal_wallet_addresses (withdrawal_wallet_id, name, address, created_at)
-	VALUES ($1, $2, $3, now())
-	RETURNING id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at
+INSERT INTO withdrawal_wallet_addresses (withdrawal_wallet_id, name, address, created_at, for_flagged)
+	VALUES ($1, $2, $3, now(), $4)
+	RETURNING id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at, for_flagged
 `
 
 type CreateParams struct {
 	WithdrawalWalletID uuid.UUID `db:"withdrawal_wallet_id" json:"withdrawal_wallet_id"`
 	Name               *string   `db:"name" json:"name"`
 	Address            string    `db:"address" json:"address"`
+	ForFlagged         bool      `db:"for_flagged" json:"for_flagged"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.WithdrawalWalletAddress, error) {
-	row := q.db.QueryRow(ctx, create, arg.WithdrawalWalletID, arg.Name, arg.Address)
+	row := q.db.QueryRow(ctx, create,
+		arg.WithdrawalWalletID,
+		arg.Name,
+		arg.Address,
+		arg.ForFlagged,
+	)
 	var i models.WithdrawalWalletAddress
 	err := row.Scan(
 		&i.ID,
@@ -35,12 +41,13 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Withdra
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ForFlagged,
 	)
 	return &i, err
 }
 
 const getById = `-- name: GetById :one
-SELECT id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at FROM withdrawal_wallet_addresses WHERE deleted_at IS NULL AND id=$1 LIMIT 1
+SELECT id, withdrawal_wallet_id, name, address, created_at, updated_at, deleted_at, for_flagged FROM withdrawal_wallet_addresses WHERE deleted_at IS NULL AND id=$1 LIMIT 1
 `
 
 func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.WithdrawalWalletAddress, error) {
@@ -54,6 +61,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Withdrawal
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ForFlagged,
 	)
 	return &i, err
 }

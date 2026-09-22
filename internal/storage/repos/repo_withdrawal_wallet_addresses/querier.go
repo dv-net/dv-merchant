@@ -16,7 +16,7 @@ type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (*models.WithdrawalWalletAddress, error)
 	GetAddressWithCurrencyByUserID(ctx context.Context, userID uuid.UUID) ([]*GetAddressWithCurrencyByUserIDRow, error)
 	GetAddresses(ctx context.Context, dollar_1 uuid.UUID) ([]*models.WithdrawalWalletAddress, error)
-	GetAddressesList(ctx context.Context, dollar_1 uuid.UUID) ([]string, error)
+	GetAddressesList(ctx context.Context, arg GetAddressesListParams) ([]string, error)
 	GetByAddress(ctx context.Context, arg GetByAddressParams) (*models.WithdrawalWalletAddress, error)
 	GetByAddressWithTrashed(ctx context.Context, arg GetByAddressWithTrashedParams) (*models.WithdrawalWalletAddress, error)
 	GetById(ctx context.Context, id uuid.UUID) (*models.WithdrawalWalletAddress, error)

@@ -1,7 +1,8 @@
 -- name: GetAddressesList :many
 select address
 from withdrawal_wallet_addresses
-where withdrawal_wallet_id = $1::uuid
+where withdrawal_wallet_id = sqlc.arg(withdrawal_wallet_id)::uuid
+  and for_flagged = sqlc.arg(for_flagged)
   and deleted_at is null;
 
 -- name: GetAddresses :many
@@ -67,12 +68,13 @@ where w.blockchain = $1
   and wa.deleted_at is null;
 
 -- name: UpdateList :batchexec
-INSERT INTO withdrawal_wallet_addresses (address, name, withdrawal_wallet_id, created_at, updated_at)
-VALUES ($1, $2, $3, now(), now())
+INSERT INTO withdrawal_wallet_addresses (address, name, withdrawal_wallet_id, for_flagged, created_at, updated_at)
+VALUES ($1, $2, $3, $4, now(), now())
 ON CONFLICT (withdrawal_wallet_id, address) DO UPDATE
-    SET name       = $2,
-        updated_at = now(),
-        deleted_at = null;
+    SET name        = $2,
+        for_flagged = $4,
+        updated_at  = now(),
+        deleted_at  = null;
 
 -- name: GetAddressWithCurrencyByUserID :many
 SELECT distinct address,

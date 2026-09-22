@@ -86,13 +86,23 @@ func NewService(st storage.IStorage, factory providers.ProviderFactory, log logg
 }
 
 func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) bool {
-	blocked, shouldMarkDirty := EvaluateRiskRules(dto.Check.Score, dto.Signals, dto.Rules)
-	if shouldMarkDirty {
+	blocked, matchedFlags := EvaluateRiskRules(dto.Check.Score, dto.Signals, dto.Rules)
+
+	if blocked || len(matchedFlags) > 0 {
 		usr, err := s.st.Users().GetByID(ctx, dto.UserID)
 		if err != nil {
-			s.log.Errorw("failed to get user for mark address dirty", "error", err)
-		} else if markErr := s.wallets.MarkAddressDirty(ctx, usr, dto.ToAddress); markErr != nil {
-			s.log.Errorw("failed to mark address as dirty", "error", markErr)
+			s.log.Errorw("failed to get user for aml verdict", "error", err)
+		} else {
+			if blocked {
+				if markErr := s.wallets.MarkAddressDirty(ctx, usr, dto.ToAddress); markErr != nil {
+					s.log.Errorw("failed to mark address as dirty", "error", markErr)
+				}
+			}
+			if len(matchedFlags) > 0 {
+				if markErr := s.wallets.MarkAddressFlags(ctx, usr, dto.ToAddress, matchedFlags, dto.Check.ID); markErr != nil {
+					s.log.Errorw("failed to mark address flags", "error", markErr)
+				}
+			}
 		}
 	}
 

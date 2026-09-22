@@ -14,9 +14,9 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO transfers (id, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now(), $10, $11, $12, $13, $14)
-	RETURNING id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash
+INSERT INTO transfers (id, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now(), $10, $11, $12, $13, $14, $15)
+	RETURNING id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged
 `
 
 type CreateParams struct {
@@ -34,6 +34,7 @@ type CreateParams struct {
 	ToAddresses   []string              `db:"to_addresses" json:"to_addresses"`
 	Step          *string               `db:"step" json:"step"`
 	TxHash        *string               `db:"tx_hash" json:"tx_hash"`
+	RoutedFlagged bool                  `db:"routed_flagged" json:"routed_flagged"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transfer, error) {
@@ -52,6 +53,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transfe
 		arg.ToAddresses,
 		arg.Step,
 		arg.TxHash,
+		arg.RoutedFlagged,
 	)
 	var i models.Transfer
 	err := row.Scan(
@@ -72,12 +74,13 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transfe
 		&i.ToAddresses,
 		&i.Step,
 		&i.TxHash,
+		&i.RoutedFlagged,
 	)
 	return &i, err
 }
 
 const getAll = `-- name: GetAll :many
-SELECT id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash FROM transfers ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged FROM transfers ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type GetAllParams struct {
@@ -112,6 +115,7 @@ func (q *Queries) GetAll(ctx context.Context, arg GetAllParams) ([]*models.Trans
 			&i.ToAddresses,
 			&i.Step,
 			&i.TxHash,
+			&i.RoutedFlagged,
 		); err != nil {
 			return nil, err
 		}
@@ -124,7 +128,7 @@ func (q *Queries) GetAll(ctx context.Context, arg GetAllParams) ([]*models.Trans
 }
 
 const getById = `-- name: GetById :one
-SELECT id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash FROM transfers WHERE id=$1 LIMIT 1
+SELECT id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged FROM transfers WHERE id=$1 LIMIT 1
 `
 
 func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Transfer, error) {
@@ -148,6 +152,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Transfer, 
 		&i.ToAddresses,
 		&i.Step,
 		&i.TxHash,
+		&i.RoutedFlagged,
 	)
 	return &i, err
 }

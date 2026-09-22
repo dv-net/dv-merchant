@@ -3464,7 +3464,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get all users",
+                "description": "Get all non-root users (root accounts are excluded from the list)",
                 "consumes": [
                     "application/json"
                 ],
@@ -16616,6 +16616,9 @@ const docTemplate = `{
                     "maxLength": 100,
                     "minLength": 1
                 },
+                "for_flagged": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string",
                     "maxLength": 100,
@@ -17061,6 +17064,9 @@ const docTemplate = `{
                 },
                 "deleted_at": {
                     "type": "string"
+                },
+                "for_flagged": {
+                    "type": "boolean"
                 },
                 "id": {
                     "type": "string"

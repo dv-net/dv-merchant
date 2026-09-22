@@ -14,6 +14,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/exrate"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transactions"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallet_addresses"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_wallet_addresses"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -135,7 +136,11 @@ func (s *service) GetPrefetchWithdrawalAddress(ctx context.Context, user *models
 	data = append(data, multiWithdrawalPrefetch...)
 	for _, prefetchedRow := range prefetchData {
 		addressesTo := make([]string, 0, 1)
-		addr, fetchAddrErr := s.getWithdrawalAddress(ctx, prefetchedRow.WithdrawalWalletID, prefetchedRow.WalletAddress.Address)
+		riskFlags, riskFlagsErr := models.ParseAddressRiskFlags(prefetchedRow.WalletAddress.RiskFlags)
+		if riskFlagsErr != nil {
+			return nil, fmt.Errorf("parse risk flags for address %q: %w", prefetchedRow.WalletAddress.Address, riskFlagsErr)
+		}
+		addr, fetchAddrErr := s.getWithdrawalAddress(ctx, prefetchedRow.WithdrawalWalletID, prefetchedRow.WalletAddress.Address, len(riskFlags) > 0)
 		if fetchAddrErr != nil && !errors.Is(fetchAddrErr, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("fetch address for withdrawal: %w", err)
 		}
@@ -213,8 +218,8 @@ func (s *service) getPrefetchData(ctx context.Context, userID uuid.UUID, rates *
 	return prefetchData, nil
 }
 
-func (s *service) getWithdrawalAddress(ctx context.Context, withdrawalWalletID uuid.UUID, fromAddr string) (*string, error) {
-	withdrawalAddrList, err := s.getWithdrawalAddressList(ctx, withdrawalWalletID)
+func (s *service) getWithdrawalAddress(ctx context.Context, withdrawalWalletID uuid.UUID, fromAddr string, forFlagged bool) (*string, error) {
+	withdrawalAddrList, err := s.getWithdrawalAddressList(ctx, withdrawalWalletID, forFlagged)
 	if err != nil {
 		return nil, err
 	}
@@ -233,8 +238,11 @@ func (s *service) getWithdrawalAddress(ctx context.Context, withdrawalWalletID u
 	return &addr, nil
 }
 
-func (s *service) getWithdrawalAddressList(ctx context.Context, walletID uuid.UUID) ([]string, error) {
-	withdrawalAddrList, err := s.storage.WithdrawalWalletAddresses().GetAddressesList(ctx, walletID)
+func (s *service) getWithdrawalAddressList(ctx context.Context, walletID uuid.UUID, forFlagged bool) ([]string, error) {
+	withdrawalAddrList, err := s.storage.WithdrawalWalletAddresses().GetAddressesList(ctx, repo_withdrawal_wallet_addresses.GetAddressesListParams{
+		WithdrawalWalletID: walletID,
+		ForFlagged:         forFlagged,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("fetch addresses by withdrawal wallet: %w", err)
 	}

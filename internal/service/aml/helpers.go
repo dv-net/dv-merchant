@@ -46,17 +46,21 @@ func convertAmlStatusToModel(status aml.CheckStatus) models.AMLCheckStatus {
 // score is the provider's aggregate score (used by AmlRiskTypeTotalScore rules);
 // signals is the per-category breakdown (used by category rules and summed for
 // AmlRiskTypeSumOfSignals, which only counts categories that have their own enabled
-// rule). Disabled rules are ignored; rule order doesn't matter, since the sum is fully
-// computed before any rule is evaluated against its threshold.
+// "reject" rule — "accept_and_flag" rules are deliberately excluded from the sum, since
+// each one must act as an independent, unweighted per-category check rather than
+// silently contributing to some other rule's blocking threshold). Disabled rules are
+// ignored; rule order doesn't matter, since the sum is fully computed before any rule
+// is evaluated against its threshold.
 //
 // Example: SANCTIONS{30,reject} and GAMBLING{20,reject} both pass individually
 // (28 < 30, 19 < 20), but SUM_OF_SIGNALS{40,reject} still fires on 28+19=47, so
-// EvaluateRiskRules returns (true, true).
+// EvaluateRiskRules returns (true, nil).
 //
 // Returns blocked (a "reject" rule fired — send the AML-blocked webhook instead of the
-// normal one) and flagged (any rule fired at all, reject or accept_and_flag — mark the
-// address dirty regardless of which).
-func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, rules []*models.UserAmlRiskRule) (blocked, flagged bool) {
+// normal one and mark the address dirty) and matchedFlags (the deduplicated set of
+// canonical AmlRiskFlag values from any fired "accept_and_flag" rules — the address is
+// tagged with these but is otherwise untouched: not blocked, not marked dirty).
+func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, rules []*models.UserAmlRiskRule) (blocked bool, matchedFlags []models.AmlRiskFlag) {
 	signalWeights := make(map[string]decimal.Decimal, len(signals))
 	for _, s := range signals {
 		signalWeights[s.Category] = signalWeights[s.Category].Add(s.Weight)
@@ -64,11 +68,15 @@ func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, 
 
 	var categorySum decimal.Decimal
 	for _, rule := range rules {
-		if rule.Enabled && rule.RiskType != constants.AmlRiskTypeTotalScore && rule.RiskType != constants.AmlRiskTypeSumOfSignals {
+		if rule.Enabled &&
+			rule.RiskType != constants.AmlRiskTypeTotalScore &&
+			rule.RiskType != constants.AmlRiskTypeSumOfSignals &&
+			rule.Action != constants.AmlRiskRuleActionAcceptAndFlag {
 			categorySum = categorySum.Add(signalWeights[rule.RiskType])
 		}
 	}
 
+	seenFlags := make(map[models.AmlRiskFlag]bool, len(rules))
 	for _, rule := range rules {
 		if !rule.Enabled {
 			continue
@@ -83,12 +91,16 @@ func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, 
 			actual = signalWeights[rule.RiskType]
 		}
 		if actual.GreaterThanOrEqual(rule.Threshold) {
-			if rule.Action == constants.AmlRiskRuleActionReject {
+			switch rule.Action {
+			case constants.AmlRiskRuleActionReject:
 				blocked = true
-			} else {
-				flagged = true
+			case constants.AmlRiskRuleActionAcceptAndFlag:
+				if rule.FlagSlug != nil && !seenFlags[*rule.FlagSlug] {
+					seenFlags[*rule.FlagSlug] = true
+					matchedFlags = append(matchedFlags, *rule.FlagSlug)
+				}
 			}
 		}
 	}
-	return blocked, blocked || flagged
+	return blocked, matchedFlags
 }
