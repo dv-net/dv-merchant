@@ -120,9 +120,9 @@ func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) bool {
 }
 
 // applyAddressEffects marks dto.ToAddress dirty (for a "reject" verdict) and/or tags it
-// with the matched canonical risk flags (for "accept_and_flag" rules) — the two effects
-// are independent of each other.
-func (s *Service) applyAddressEffects(ctx context.Context, dto ApplyVerdictDTO, blocked bool, matchedFlags []models.AmlRiskFlag) {
+// with the matched risk flags (the risk_type of any fired "accept_and_flag" rules) — the
+// two effects are independent of each other.
+func (s *Service) applyAddressEffects(ctx context.Context, dto ApplyVerdictDTO, blocked bool, matchedFlags []string) {
 	usr, err := s.st.Users().GetByID(ctx, dto.UserID)
 	if err != nil {
 		s.log.Errorw("failed to get user for aml verdict", "error", err)

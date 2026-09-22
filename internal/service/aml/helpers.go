@@ -57,10 +57,12 @@ func convertAmlStatusToModel(status aml.CheckStatus) models.AMLCheckStatus {
 // EvaluateRiskRules returns (true, nil).
 //
 // Returns blocked (a "reject" rule fired — send the AML-blocked webhook instead of the
-// normal one and mark the address dirty) and matchedFlags (the deduplicated set of
-// canonical AmlRiskFlag values from any fired "accept_and_flag" rules — the address is
-// tagged with these but is otherwise untouched: not blocked, not marked dirty).
-func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, rules []*models.UserAmlRiskRule) (blocked bool, matchedFlags []models.AmlRiskFlag) {
+// normal one and mark the address dirty) and matchedFlags (the risk_type of every fired
+// "accept_and_flag" rule — the address is tagged with these but is otherwise untouched:
+// not blocked, not marked dirty). There's no separate canonical flag enum: the rule's
+// own risk_type is the tag, deduplicated in case the same risk_type somehow appears
+// more than once in rules.
+func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, rules []*models.UserAmlRiskRule) (blocked bool, matchedFlags []string) {
 	signalWeights := make(map[string]decimal.Decimal, len(signals))
 	for _, s := range signals {
 		signalWeights[s.Category] = signalWeights[s.Category].Add(s.Weight)
@@ -76,7 +78,7 @@ func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, 
 		}
 	}
 
-	seenFlags := make(map[models.AmlRiskFlag]bool, len(rules))
+	seenFlags := make(map[string]bool, len(rules))
 	for _, rule := range rules {
 		if !rule.Enabled {
 			continue
@@ -95,9 +97,9 @@ func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, 
 			case constants.AmlRiskRuleActionReject:
 				blocked = true
 			case constants.AmlRiskRuleActionAcceptAndFlag:
-				if rule.FlagSlug != nil && !seenFlags[*rule.FlagSlug] {
-					seenFlags[*rule.FlagSlug] = true
-					matchedFlags = append(matchedFlags, *rule.FlagSlug)
+				if !seenFlags[rule.RiskType] {
+					seenFlags[rule.RiskType] = true
+					matchedFlags = append(matchedFlags, rule.RiskType)
 				}
 			}
 		}

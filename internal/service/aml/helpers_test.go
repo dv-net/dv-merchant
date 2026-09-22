@@ -21,11 +21,10 @@ func rule(riskType string, threshold int64, action string, enabled bool) *models
 	}
 }
 
-// flagRule builds an "accept_and_flag" rule tagged with the given canonical flag.
-func flagRule(riskType string, threshold int64, flag models.AmlRiskFlag, enabled bool) *models.UserAmlRiskRule {
-	r := rule(riskType, threshold, constants.AmlRiskRuleActionAcceptAndFlag, enabled)
-	r.FlagSlug = &flag
-	return r
+// flagRule builds an "accept_and_flag" rule. Its own risk_type is what ends up in
+// matchedFlags — there's no separate canonical flag value to pick.
+func flagRule(riskType string, threshold int64, enabled bool) *models.UserAmlRiskRule {
+	return rule(riskType, threshold, constants.AmlRiskRuleActionAcceptAndFlag, enabled)
 }
 
 func signal(category string, weight int64) externalaml.SignalContribution {
@@ -66,18 +65,18 @@ func TestEvaluateRiskRules(t *testing.T) {
 		require.Empty(t, flags)
 	})
 
-	t.Run("accept_and_flag flags without blocking", func(t *testing.T) {
+	t.Run("accept_and_flag flags without blocking, tagged with its own risk_type", func(t *testing.T) {
 		rules := []*models.UserAmlRiskRule{
-			flagRule(constants.AmlRiskTypeTotalScore, 50, models.AmlRiskFlagHighRiskExchange, true),
+			flagRule(constants.AmlRiskTypeTotalScore, 50, true),
 		}
 		blocked, flags := aml.EvaluateRiskRules(decimal.NewFromInt(60), nil, rules)
 		require.False(t, blocked)
-		require.Equal(t, []models.AmlRiskFlag{models.AmlRiskFlagHighRiskExchange}, flags)
+		require.Equal(t, []string{constants.AmlRiskTypeTotalScore}, flags)
 	})
 
 	t.Run("accept_and_flag below its own threshold does not fire", func(t *testing.T) {
 		rules := []*models.UserAmlRiskRule{
-			flagRule("SANCTIONS", 30, models.AmlRiskFlagSanctions, true),
+			flagRule("SANCTIONS", 30, true),
 		}
 		signals := []externalaml.SignalContribution{signal("SANCTIONS", 20)}
 		blocked, flags := aml.EvaluateRiskRules(decimal.Zero, signals, rules)
@@ -141,7 +140,7 @@ func TestEvaluateRiskRules(t *testing.T) {
 	t.Run("sum of signals excludes accept_and_flag category rules", func(t *testing.T) {
 		rules := []*models.UserAmlRiskRule{
 			rule("SANCTIONS", 30, constants.AmlRiskRuleActionReject, true),
-			flagRule("GAMBLING", 15, models.AmlRiskFlagHighRiskExchange, true), // accept_and_flag, must not count toward the sum
+			flagRule("GAMBLING", 15, true), // accept_and_flag, must not count toward the sum
 			rule(constants.AmlRiskTypeSumOfSignals, 40, constants.AmlRiskRuleActionReject, true),
 		}
 		signals := []externalaml.SignalContribution{
@@ -151,12 +150,12 @@ func TestEvaluateRiskRules(t *testing.T) {
 		blocked, flags := aml.EvaluateRiskRules(decimal.Zero, signals, rules)
 		// Without the fix, categorySum would be 28+19=47 >= 40 and blocked would wrongly become true.
 		require.False(t, blocked, "GAMBLING is excluded from the sum because its rule is accept_and_flag, not reject: 28 < 40")
-		require.Equal(t, []models.AmlRiskFlag{models.AmlRiskFlagHighRiskExchange}, flags, "the accept_and_flag rule still fires independently on its own category weight (19 >= 15)")
+		require.Equal(t, []string{"GAMBLING"}, flags, "the accept_and_flag rule still fires independently on its own category weight (19 >= 15)")
 	})
 
 	t.Run("reject and accept_and_flag rules act independently", func(t *testing.T) {
 		rules := []*models.UserAmlRiskRule{
-			flagRule("SANCTIONS", 30, models.AmlRiskFlagSanctions, true),
+			flagRule("SANCTIONS", 30, true),
 			rule("GAMBLING", 20, constants.AmlRiskRuleActionReject, true),
 		}
 		signals := []externalaml.SignalContribution{
@@ -165,20 +164,33 @@ func TestEvaluateRiskRules(t *testing.T) {
 		}
 		blocked, flags := aml.EvaluateRiskRules(decimal.Zero, signals, rules)
 		require.True(t, blocked, "GAMBLING reject rule fires")
-		require.Equal(t, []models.AmlRiskFlag{models.AmlRiskFlagSanctions}, flags, "SANCTIONS accept_and_flag rule fires independently, address is not blocked by it")
+		require.Equal(t, []string{"SANCTIONS"}, flags, "SANCTIONS accept_and_flag rule fires independently, address is not blocked by it")
 	})
 
-	t.Run("multiple raw-category rules mapping to the same canonical flag are deduplicated", func(t *testing.T) {
+	t.Run("multiple accept_and_flag rules produce multiple distinct flags", func(t *testing.T) {
 		rules := []*models.UserAmlRiskRule{
-			flagRule("exchange_sanctioned_eu", 10, models.AmlRiskFlagSanctions, true),
-			flagRule("SANCTIONED_JURISDICTION", 10, models.AmlRiskFlagSanctions, true),
+			flagRule("exchange_sanctioned_eu", 10, true),
+			flagRule("DARKNET_MARKETPLACE", 10, true),
 		}
 		signals := []externalaml.SignalContribution{
 			signal("exchange_sanctioned_eu", 15),
-			signal("SANCTIONED_JURISDICTION", 15),
+			signal("DARKNET_MARKETPLACE", 15),
 		}
 		blocked, flags := aml.EvaluateRiskRules(decimal.Zero, signals, rules)
 		require.False(t, blocked)
-		require.Equal(t, []models.AmlRiskFlag{models.AmlRiskFlagSanctions}, flags)
+		require.ElementsMatch(t, []string{"exchange_sanctioned_eu", "DARKNET_MARKETPLACE"}, flags)
+	})
+
+	t.Run("a risk_type appearing more than once is only reported once", func(t *testing.T) {
+		// Not reachable through the API today (user_id+provider_slug+risk_type is unique
+		// at the DB level), but EvaluateRiskRules itself should stay safe either way.
+		rules := []*models.UserAmlRiskRule{
+			flagRule("SANCTIONS", 10, true),
+			flagRule("SANCTIONS", 10, true),
+		}
+		signals := []externalaml.SignalContribution{signal("SANCTIONS", 15)}
+		blocked, flags := aml.EvaluateRiskRules(decimal.Zero, signals, rules)
+		require.False(t, blocked)
+		require.Equal(t, []string{"SANCTIONS"}, flags)
 	})
 }
