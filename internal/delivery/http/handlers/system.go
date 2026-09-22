@@ -121,7 +121,7 @@ func (h *Handler) initPublicSystemRoutes(v3 fiber.Router) {
 
 	public.Get("/versions",
 		middleware.AuthMiddleware(h.services.AuthService),
-		middleware.CasbinMiddleware(h.services.PermissionService, []models.UserRole{models.UserRoleDefault, models.UserRoleRoot, models.UserRoleSupport}),
+		middleware.CasbinMiddleware(h.services.PermissionService, []models.UserRole{models.UserRoleRoot}),
 		h.loadNewVersions,
 	)
 }
