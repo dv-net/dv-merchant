@@ -147,6 +147,14 @@ func (s *Service) LoadPrivateAddresses(ctx context.Context, dto LoadPrivateKeyDT
 // It runs outside any DB transaction on purpose: creating an address means calling
 // out to processing, and the check-then-create is made safe by the per-key mutex
 // plus the duplicate-aware retry loop below.
+//
+// The mutex key is scoped by (wallet, blockchain), not (wallet, currency): currencies
+// on the same blockchain (e.g. ETH and ARB both on "Ethereum") share one hot wallet
+// address for a given owner+customer_id, so concurrent callers — see the errgroup
+// fan-out in wallet_reader.go that creates addresses for several missing currencies of
+// the same wallet at once — must be serialized per blockchain, not per currency, or
+// they race processing.CreateOwnerHotWallet for the same address and one of them fails
+// with a duplicate-key error from processing's own hot_wallets table.
 func (s *Service) getOrCreateWalletAddress(
 	ctx context.Context,
 	storeOwner *models.User,
@@ -161,7 +169,7 @@ func (s *Service) getOrCreateWalletAddress(
 		return nil, fmt.Errorf("blockchain is not set for currency %s", c.ID)
 	}
 
-	key := wallet.ID.String() + ":" + c.ID
+	key := wallet.ID.String() + ":" + string(*c.Blockchain)
 	muIface, _ := s.muMap.LoadOrStore(key, &sync.Mutex{})
 	mu, ok := muIface.(*sync.Mutex)
 	if !ok {
