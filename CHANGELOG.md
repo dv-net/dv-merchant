@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - feat: extend public refund cabinet items with amount, currency code and addresses [DNS-164]
 - fix: exclude root users from admin users list [DNS-168]
 - fix: sort admin users by created_at and return correct pagination total [DNS-167]
+- fix: restrict `/system/versions` endpoint to root role only [DNS-182]
 
 ## [0.9.25]
 - fix: split hot-path index migration into one `CREATE INDEX CONCURRENTLY` statement per file so it no longer fails with "cannot run inside a transaction block"
