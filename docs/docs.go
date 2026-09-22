@@ -9366,7 +9366,7 @@ const docTemplate = `{
                         "XApiKey": []
                     }
                 ],
-                "description": "Get exchange rates for all currencies enabled on the store (uses store rate source and scale)",
+                "description": "Get exchange rates for all currencies enabled on the store (rate is scale-adjusted; original_rate is without store rate_scale)",
                 "consumes": [
                     "application/json"
                 ],
@@ -11656,6 +11656,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
+                    "type": "string"
+                },
+                "original_rate": {
                     "type": "string"
                 },
                 "rate": {

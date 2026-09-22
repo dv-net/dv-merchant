@@ -28,9 +28,10 @@ type UpdateStore struct {
 }
 
 type CurrencyRate struct {
-	Code       string `json:"code"`
-	RateSource string `json:"rate_source"`
-	Rate       string `json:"rate"`
+	Code         string `json:"code"`
+	RateSource   string `json:"rate_source"`
+	Rate         string `json:"rate"`
+	OriginalRate string `json:"original_rate"`
 } //	@name	CurrencyRate
 
 type ArchiveStoreDTO struct {

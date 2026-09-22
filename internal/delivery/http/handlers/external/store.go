@@ -67,7 +67,7 @@ func (h *Handler) storeCurrencies(c fiber.Ctx) error {
 // storeCurrenciesRates returns rates for all currencies enabled on the authenticated store.
 //
 //	@Summary		Get rates for all store currencies
-//	@Description	Get exchange rates for all currencies enabled on the store (uses store rate source and scale)
+//	@Description	Get exchange rates for all currencies enabled on the store (rate is scale-adjusted; original_rate is without store rate_scale)
 //	@Tags			Store
 //	@Accept			json
 //	@Produce		json
