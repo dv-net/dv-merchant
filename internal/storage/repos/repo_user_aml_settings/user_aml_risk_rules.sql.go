@@ -14,7 +14,7 @@ import (
 )
 
 const listRiskRulesByUserID = `-- name: ListRiskRulesByUserID :many
-SELECT id, user_id, provider_slug, risk_type, enabled, threshold, action, created_at, updated_at, flag_slug
+SELECT id, user_id, provider_slug, risk_type, enabled, threshold, action, created_at, updated_at
 FROM user_aml_risk_rules
 WHERE user_id = $1
   AND provider_slug = $2
@@ -45,7 +45,6 @@ func (q *Queries) ListRiskRulesByUserID(ctx context.Context, arg ListRiskRulesBy
 			&i.Action,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.FlagSlug,
 		); err != nil {
 			return nil, err
 		}
@@ -66,7 +65,7 @@ UPDATE
     threshold = EXCLUDED.threshold,
     action = EXCLUDED.action,
     updated_at = now()
-    RETURNING id, user_id, provider_slug, risk_type, enabled, threshold, action, created_at, updated_at, flag_slug
+    RETURNING id, user_id, provider_slug, risk_type, enabled, threshold, action, created_at, updated_at
 `
 
 type UpsertAmlRiskRuleParams struct {
@@ -98,7 +97,6 @@ func (q *Queries) UpsertAmlRiskRule(ctx context.Context, arg UpsertAmlRiskRulePa
 		&i.Action,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.FlagSlug,
 	)
 	return &i, err
 }

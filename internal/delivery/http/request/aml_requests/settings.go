@@ -1,6 +1,8 @@
 package aml_requests
 
-import "github.com/shopspring/decimal"
+import (
+	"github.com/shopspring/decimal"
+)
 
 type UpdateAmlSettingsRequest struct {
 	Enabled      bool   `json:"enabled"`

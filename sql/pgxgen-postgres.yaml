@@ -38,7 +38,6 @@ schemas:
         - AmlRiskLevel
         - NotificationArgs
         - AddressBookType
-        - AmlRiskFlag
       emit_json_tags: true
       emit_db_tags: true
     sqlc:
@@ -156,9 +155,6 @@ schemas:
           - column: multi_withdrawal_rules.mode
             go_type:
               type: MultiWithdrawalMode
-          - column: user_aml_risk_rules.flag_slug
-            go_type:
-              type: '*AmlRiskFlag'
           - column: receipts.status
             go_type:
               type: ReceiptStatus

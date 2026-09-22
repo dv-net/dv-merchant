@@ -72,20 +72,15 @@ func (s *Service) MarkAddressDirty(ctx context.Context, usr *models.User, addres
 	return nil
 }
 
-func (s *Service) MarkAddressFlags(ctx context.Context, usr *models.User, address string, flags []models.AmlRiskFlag, amlCheckID uuid.UUID) error {
+func (s *Service) MarkAddressFlags(ctx context.Context, usr *models.User, address string, flags []string, amlCheckID uuid.UUID) error {
 	if len(flags) == 0 {
 		return nil
-	}
-
-	slugs := make([]string, len(flags))
-	for i, f := range flags {
-		slugs[i] = string(f)
 	}
 
 	_, err := s.storage.WalletAddresses().MarkAddressFlags(ctx, repo_wallet_addresses.MarkAddressFlagsParams{
 		Address:    address,
 		UserID:     usr.ID,
-		Flags:      slugs,
+		Flags:      flags,
 		AmlCheckID: amlCheckID,
 	})
 	if err != nil {
