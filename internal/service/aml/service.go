@@ -89,21 +89,7 @@ func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) bool {
 	blocked, matchedFlags := EvaluateRiskRules(dto.Check.Score, dto.Signals, dto.Rules)
 
 	if blocked || len(matchedFlags) > 0 {
-		usr, err := s.st.Users().GetByID(ctx, dto.UserID)
-		if err != nil {
-			s.log.Errorw("failed to get user for aml verdict", "error", err)
-		} else {
-			if blocked {
-				if markErr := s.wallets.MarkAddressDirty(ctx, usr, dto.ToAddress); markErr != nil {
-					s.log.Errorw("failed to mark address as dirty", "error", markErr)
-				}
-			}
-			if len(matchedFlags) > 0 {
-				if markErr := s.wallets.MarkAddressFlags(ctx, usr, dto.ToAddress, matchedFlags, dto.Check.ID); markErr != nil {
-					s.log.Errorw("failed to mark address flags", "error", markErr)
-				}
-			}
-		}
+		s.applyAddressEffects(ctx, dto, blocked, matchedFlags)
 	}
 
 	if blocked {
@@ -131,6 +117,29 @@ func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) bool {
 	}
 
 	return blocked
+}
+
+// applyAddressEffects marks dto.ToAddress dirty (for a "reject" verdict) and/or tags it
+// with the matched canonical risk flags (for "accept_and_flag" rules) — the two effects
+// are independent of each other.
+func (s *Service) applyAddressEffects(ctx context.Context, dto ApplyVerdictDTO, blocked bool, matchedFlags []models.AmlRiskFlag) {
+	usr, err := s.st.Users().GetByID(ctx, dto.UserID)
+	if err != nil {
+		s.log.Errorw("failed to get user for aml verdict", "error", err)
+		return
+	}
+
+	if blocked {
+		if markErr := s.wallets.MarkAddressDirty(ctx, usr, dto.ToAddress); markErr != nil {
+			s.log.Errorw("failed to mark address as dirty", "error", markErr)
+		}
+	}
+
+	if len(matchedFlags) > 0 {
+		if markErr := s.wallets.MarkAddressFlags(ctx, usr, dto.ToAddress, matchedFlags, dto.Check.ID); markErr != nil {
+			s.log.Errorw("failed to mark address flags", "error", markErr)
+		}
+	}
 }
 
 func (s *Service) ScoreTransaction(ctx context.Context, usr *models.User, dto CheckDTO) (*models.AmlCheck, error) {
