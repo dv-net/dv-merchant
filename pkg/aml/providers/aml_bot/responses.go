@@ -56,39 +56,8 @@ type CheckData struct {
 	Cost                  decimal.Decimal `json:"cost"`
 }
 
-// Signals AMLBot signals data
-type Signals struct {
-	Exchange                      decimal.Decimal `json:"exchange"`
-	RiskyExchange                 decimal.Decimal `json:"risky_exchange"`
-	P2PExchange                   decimal.Decimal `json:"p2p_exchange"`
-	EnforcementAction             decimal.Decimal `json:"enforcement_action"`
-	ATM                           decimal.Decimal `json:"atm"`
-	ChildExploitation             decimal.Decimal `json:"child_exploitation"`
-	DarkMarket                    decimal.Decimal `json:"dark_market"`
-	DarkService                   decimal.Decimal `json:"dark_service"`
-	ExchangeFraudulent            decimal.Decimal `json:"exchange_fraudulent"`
-	Gambling                      decimal.Decimal `json:"gambling"`
-	IllegalService                decimal.Decimal `json:"illegal_service"`
-	LiquidityPools                decimal.Decimal `json:"liquidity_pools"`
-	Marketplace                   decimal.Decimal `json:"marketplace"`
-	Miner                         decimal.Decimal `json:"miner"`
-	Mixer                         decimal.Decimal `json:"mixer"`
-	Other                         decimal.Decimal `json:"other"`
-	P2PExchangeMLRiskHigh         decimal.Decimal `json:"p2p_exchange_mlrisk_high"`
-	Payment                       decimal.Decimal `json:"payment"`
-	Ransom                        decimal.Decimal `json:"ransom"`
-	Sanctions                     decimal.Decimal `json:"sanctions"`
-	Scam                          decimal.Decimal `json:"scam"`
-	SeizedAssets                  decimal.Decimal `json:"seized_assets"`
-	StolenCoins                   decimal.Decimal `json:"stolen_coins"`
-	TerrorismFinancing            decimal.Decimal `json:"terrorism_financing"`
-	Wallet                        decimal.Decimal `json:"wallet"`
-	InfrastructureAsAService      decimal.Decimal `json:"infrastructure_as_a_service"`
-	DecentralizedExchangeContract decimal.Decimal `json:"decentralized_exchange_contract"`
-	MerchantServices              decimal.Decimal `json:"merchant_services"`
-	UnnamedService                decimal.Decimal `json:"unnamed_service"`
-	Malware                       decimal.Decimal `json:"malware"`
-}
+// Signals AMLBot signals data: category -> share of funds (0..1)
+type Signals map[string]decimal.Decimal
 
 // Counterparty AMLBot counterparty data
 type Counterparty struct {

@@ -205,7 +205,21 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 		HTTPStatus: resp.StatusCode,
 		Request:    []byte(jsonRequest),
 		Response:   respBodyBytes,
+		Signals:    response.Data.Signals.ToContributions(),
 	}, nil
+}
+
+// ToContributions converts AMLBot signal shares (0..1) into percentage contributions,
+// skipping categories with zero exposure.
+func (s Signals) ToContributions() []aml.SignalContribution {
+	signals := make([]aml.SignalContribution, 0, len(s))
+	for category, share := range s {
+		if share.IsZero() {
+			continue
+		}
+		signals = append(signals, aml.SignalContribution{Category: category, Weight: share.Mul(decimal.NewFromInt(100))})
+	}
+	return signals
 }
 
 func QueryToJSON(query string) (string, error) {
