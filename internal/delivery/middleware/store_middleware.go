@@ -1,13 +1,15 @@
 package middleware
 
 import (
+	"errors"
+
 	"github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 
 	"github.com/gofiber/fiber/v3"
 )
 
-func StoreMiddleware(store store.IStore) fiber.Handler {
+func StoreMiddleware(storeSvc store.IStore, whitelistSvc store.IStoreWhitelist) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		type requestBody struct {
 			APIKey string `json:"api_key"`
@@ -30,9 +32,17 @@ func StoreMiddleware(store store.IStore) fiber.Handler {
 			key = rBody.APIKey
 		}
 
-		authStore, err := store.GetStoreByStoreAPIKey(c.Context(), key)
+		authStore, err := storeSvc.GetStoreByStoreAPIKey(c.Context(), key)
 		if err != nil {
 			return apierror.New().AddError(fiber.ErrUnauthorized).SetHttpCode(fiber.StatusUnauthorized)
+		}
+
+		allowed, err := whitelistSvc.IsStoreIPAllowed(c.Context(), authStore.ID, c.IP())
+		if err != nil {
+			return apierror.New().AddError(errors.New("failed to check store whitelist")).SetHttpCode(fiber.StatusInternalServerError)
+		}
+		if !allowed {
+			return apierror.New().AddError(errors.New("ip is not whitelisted")).SetHttpCode(fiber.StatusForbidden)
 		}
 
 		c.Locals("store", authStore)

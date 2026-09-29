@@ -17,7 +17,7 @@ func TurnstileMiddleware(verifier turnstile.Verifier) fiber.Handler {
 		_ = c.Bind().Body(rBody)
 
 		if err := verifier.Verify(c.Context(), c.IP(), rBody.CfTurnstile); err != nil {
-			return apierror.New().AddError(err).SetHttpCode(fiber.StatusUnauthorized)
+			return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 		}
 
 		return c.Next()

@@ -14,6 +14,7 @@ import (
 
 type IStoreWhitelist interface {
 	GetStoreWhitelist(ctx context.Context, storeID uuid.UUID) ([]*models.StoreWhitelist, error)
+	IsStoreIPAllowed(ctx context.Context, storeID uuid.UUID, ip string) (bool, error)
 	PatchStoreWhitelist(ctx context.Context, storeID uuid.UUID, ip string) ([]*models.StoreWhitelist, error)
 	CreateStoreWhitelist(ctx context.Context, storeID uuid.UUID, ip []string) ([]*models.StoreWhitelist, error)
 	DeleteStoreWhitelist(ctx context.Context, storeID uuid.UUID, opts ...repos.Option) error
@@ -26,6 +27,22 @@ func (s *Service) GetStoreWhitelist(ctx context.Context, storeID uuid.UUID) ([]*
 		return nil, err
 	}
 	return storeWhitelist, nil
+}
+
+func (s *Service) IsStoreIPAllowed(ctx context.Context, storeID uuid.UUID, ip string) (bool, error) {
+	whitelist, err := s.storage.StoreWhitelist().Find(ctx, storeID)
+	if err != nil {
+		return false, err
+	}
+	if len(whitelist) == 0 {
+		return true, nil
+	}
+	for _, entry := range whitelist {
+		if entry.Ip == ip {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (s *Service) PatchStoreWhitelist(ctx context.Context, storeID uuid.UUID, ip string) ([]*models.StoreWhitelist, error) {
