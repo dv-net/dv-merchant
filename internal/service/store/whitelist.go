@@ -33,7 +33,7 @@ func (s *Service) GetStoreWhitelist(ctx context.Context, storeID uuid.UUID) ([]*
 func (s *Service) IsStoreIPAllowed(ctx context.Context, storeID uuid.UUID, ip string) (bool, error) {
 	addr, err := netip.ParseAddr(ip)
 	if err != nil {
-		return false, nil
+		return false, fmt.Errorf("invalid ip: %w", err)
 	}
 
 	return s.storage.StoreWhitelist().IsIPAllowed(ctx, repo_store_whitelist.IsIPAllowedParams{
