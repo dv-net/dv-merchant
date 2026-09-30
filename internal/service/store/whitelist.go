@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"net/netip"
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
@@ -30,19 +31,15 @@ func (s *Service) GetStoreWhitelist(ctx context.Context, storeID uuid.UUID) ([]*
 }
 
 func (s *Service) IsStoreIPAllowed(ctx context.Context, storeID uuid.UUID, ip string) (bool, error) {
-	whitelist, err := s.storage.StoreWhitelist().Find(ctx, storeID)
+	addr, err := netip.ParseAddr(ip)
 	if err != nil {
-		return false, err
+		return false, nil
 	}
-	if len(whitelist) == 0 {
-		return true, nil
-	}
-	for _, entry := range whitelist {
-		if entry.Ip == ip {
-			return true, nil
-		}
-	}
-	return false, nil
+
+	return s.storage.StoreWhitelist().IsIPAllowed(ctx, repo_store_whitelist.IsIPAllowedParams{
+		StoreID: storeID,
+		Ip:      addr.Unmap(),
+	})
 }
 
 func (s *Service) PatchStoreWhitelist(ctx context.Context, storeID uuid.UUID, ip string) ([]*models.StoreWhitelist, error) {
