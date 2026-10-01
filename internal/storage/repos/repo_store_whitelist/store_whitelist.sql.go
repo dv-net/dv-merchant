@@ -7,6 +7,7 @@ package repo_store_whitelist
 
 import (
 	"context"
+	"net/netip"
 
 	"github.com/google/uuid"
 )
@@ -52,4 +53,30 @@ type DeleteByIPParams struct {
 func (q *Queries) DeleteByIP(ctx context.Context, arg DeleteByIPParams) error {
 	_, err := q.db.Exec(ctx, deleteByIP, arg.Ip, arg.StoreID)
 	return err
+}
+
+const isIPAllowed = `-- name: IsIPAllowed :one
+SELECT (
+    NOT EXISTS (
+        SELECT 1 FROM store_whitelist sw
+        WHERE sw.store_id = $1
+    )
+    OR EXISTS (
+        SELECT 1 FROM store_whitelist sw
+        WHERE sw.store_id = $1
+          AND sw.ip::inet = $2::inet
+    )
+)::bool
+`
+
+type IsIPAllowedParams struct {
+	StoreID uuid.UUID  `db:"store_id" json:"store_id"`
+	Ip      netip.Addr `db:"ip" json:"ip"`
+}
+
+func (q *Queries) IsIPAllowed(ctx context.Context, arg IsIPAllowedParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isIPAllowed, arg.StoreID, arg.Ip)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
 }

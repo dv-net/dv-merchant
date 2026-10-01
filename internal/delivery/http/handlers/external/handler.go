@@ -28,7 +28,7 @@ func (h *Handler) Init(api *fiber.App) {
 
 	secured := v1.Group(
 		"/external",
-		middleware.StoreMiddleware(h.services.StoreService),
+		middleware.StoreMiddleware(h.services.StoreService, h.services.StoreWhitelistService),
 	)
 
 	h.initWalletRoutes(secured)

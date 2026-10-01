@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"net/netip"
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
@@ -14,6 +15,7 @@ import (
 
 type IStoreWhitelist interface {
 	GetStoreWhitelist(ctx context.Context, storeID uuid.UUID) ([]*models.StoreWhitelist, error)
+	IsStoreIPAllowed(ctx context.Context, storeID uuid.UUID, ip string) (bool, error)
 	PatchStoreWhitelist(ctx context.Context, storeID uuid.UUID, ip string) ([]*models.StoreWhitelist, error)
 	CreateStoreWhitelist(ctx context.Context, storeID uuid.UUID, ip []string) ([]*models.StoreWhitelist, error)
 	DeleteStoreWhitelist(ctx context.Context, storeID uuid.UUID, opts ...repos.Option) error
@@ -26,6 +28,18 @@ func (s *Service) GetStoreWhitelist(ctx context.Context, storeID uuid.UUID) ([]*
 		return nil, err
 	}
 	return storeWhitelist, nil
+}
+
+func (s *Service) IsStoreIPAllowed(ctx context.Context, storeID uuid.UUID, ip string) (bool, error) {
+	addr, err := netip.ParseAddr(ip)
+	if err != nil {
+		return false, fmt.Errorf("invalid ip: %w", err)
+	}
+
+	return s.storage.StoreWhitelist().IsIPAllowed(ctx, repo_store_whitelist.IsIPAllowedParams{
+		StoreID: storeID,
+		Ip:      addr.Unmap(),
+	})
 }
 
 func (s *Service) PatchStoreWhitelist(ctx context.Context, storeID uuid.UUID, ip string) ([]*models.StoreWhitelist, error) {

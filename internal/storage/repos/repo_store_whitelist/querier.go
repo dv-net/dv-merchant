@@ -17,6 +17,7 @@ type Querier interface {
 	Delete(ctx context.Context, storeID uuid.UUID) error
 	DeleteByIP(ctx context.Context, arg DeleteByIPParams) error
 	Find(ctx context.Context, storeID uuid.UUID) ([]*models.StoreWhitelist, error)
+	IsIPAllowed(ctx context.Context, arg IsIPAllowedParams) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)
