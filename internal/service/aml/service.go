@@ -86,7 +86,7 @@ func NewService(st storage.IStorage, factory providers.ProviderFactory, log logg
 }
 
 func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) bool {
-	blocked, matchedFlags := EvaluateRiskRules(dto.Check.Score, dto.Signals, dto.Rules)
+	blocked, matchedFlags := EvaluateRiskRules(dto.Check.Score, dto.Check.RiskLevel, dto.Signals, dto.Rules)
 
 	if blocked || len(matchedFlags) > 0 {
 		s.applyAddressEffects(ctx, dto, blocked, matchedFlags)

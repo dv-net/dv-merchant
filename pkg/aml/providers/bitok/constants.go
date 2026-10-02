@@ -21,6 +21,35 @@ func (s CheckStatus) ToAMLStatus() aml.CheckStatus {
 	}
 }
 
+type RiskLevel string
+
+const (
+	RiskLevelNone      RiskLevel = "none"
+	RiskLevelLow       RiskLevel = "low"
+	RiskLevelMedium    RiskLevel = "medium"
+	RiskLevelHigh      RiskLevel = "high"
+	RiskLevelSevere    RiskLevel = "severe"
+	RiskLevelUndefined RiskLevel = "undefined"
+)
+
+// ToAMLRiskLevel maps a BitOK risk level to the generic one; unknown values are undefined.
+func (l RiskLevel) ToAMLRiskLevel() aml.CheckRiskLevel {
+	switch l {
+	case RiskLevelNone:
+		return aml.CheckRiskLevelNone
+	case RiskLevelLow:
+		return aml.CheckRiskLevelLow
+	case RiskLevelMedium:
+		return aml.CheckRiskLevelMedium
+	case RiskLevelHigh:
+		return aml.CheckRiskLevelHigh
+	case RiskLevelSevere:
+		return aml.CheckRiskLevelSevere
+	default:
+		return aml.CheckRiskLevelUndefined
+	}
+}
+
 type Direction string
 
 const (

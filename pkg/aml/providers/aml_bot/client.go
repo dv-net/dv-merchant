@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/dv-net/dv-merchant/pkg/aml"
@@ -195,7 +196,7 @@ func (c *Client) doRequest(ctx context.Context, method, endpoint string, values 
 		status = defaultStatus
 	}
 
-	riskScore, riskLevel := prepareRiskData(response.Data.RiskScore, status)
+	riskScore, riskLevel := prepareRiskData(response.Data, status)
 
 	return &aml.CheckResponse{
 		ExternalID: response.Data.UID,
@@ -268,24 +269,67 @@ func (c *Client) prepareRequest(ctx context.Context, httpMethod, endpoint string
 	return req, bodyBytes, nil
 }
 
-// prepareRiskData converts risk score to 100-percentage system and determines generic risk level
-func prepareRiskData(score decimal.Decimal, currentStatus aml.CheckStatus) (decimal.Decimal, aml.CheckRiskLevel) {
+// prepareRiskData returns the risk score in the 100-percentage system and the generic risk level.
+// Full flows return riskscore (0..1). Limited flows (advanced_limited) omit it, so the score falls
+// back to the risky share of the checked amount and the level is taken from risk_score_level.
+func prepareRiskData(data *CheckData, currentStatus aml.CheckStatus) (decimal.Decimal, aml.CheckRiskLevel) {
+	var score decimal.Decimal
+	switch {
+	case data.RiskScore != nil:
+		score = *data.RiskScore
+	case data.Amount.IsPositive():
+		score = data.RiskyVolume.DivRound(data.Amount, 4)
+	}
+
 	// Convert score to 100-percentage system
 	percentageScore := score.Mul(decimal.NewFromInt(100))
 
-	// For pending checks with zeroed risk - is undefined
-	if currentStatus == aml.CheckStatusNew && score.IsZero() {
+	// For pending checks with no risk data yet - is undefined
+	if currentStatus == aml.CheckStatusNew && data.RiskScoreLevel == "" && score.IsZero() {
 		return percentageScore, aml.CheckRiskLevelUndefined
 	}
 
-	switch {
-	case score.Equal(decimal.Zero):
-		return percentageScore, aml.CheckRiskLevelNone
-	case score.LessThanOrEqual(decimal.NewFromFloat(0.20)):
-		return percentageScore, aml.CheckRiskLevelLow
-	case score.LessThanOrEqual(decimal.NewFromFloat(0.79)):
-		return percentageScore, aml.CheckRiskLevelMedium
+	level, ok := riskLevelFromName(data.RiskScoreLevel)
+	if !ok {
+		level = riskLevelFromScore(score)
+	}
+
+	// A blacklisted address is severe regardless of the score
+	if data.HasBlackListFlag {
+		level = aml.CheckRiskLevelSevere
+	}
+
+	return percentageScore, level
+}
+
+// riskLevelFromName maps AMLBot risk_score_level to the generic risk level.
+func riskLevelFromName(name string) (aml.CheckRiskLevel, bool) {
+	switch strings.ToLower(name) {
+	case "none":
+		return aml.CheckRiskLevelNone, true
+	case "low":
+		return aml.CheckRiskLevelLow, true
+	case "medium", "moderate":
+		return aml.CheckRiskLevelMedium, true
+	case "high":
+		return aml.CheckRiskLevelHigh, true
+	case "severe", "critical":
+		return aml.CheckRiskLevelSevere, true
 	default:
-		return percentageScore, aml.CheckRiskLevelSevere
+		return "", false
+	}
+}
+
+// riskLevelFromScore determines the generic risk level from a 0..1 score.
+func riskLevelFromScore(score decimal.Decimal) aml.CheckRiskLevel {
+	switch {
+	case score.IsZero():
+		return aml.CheckRiskLevelNone
+	case score.LessThanOrEqual(decimal.NewFromFloat(0.20)):
+		return aml.CheckRiskLevelLow
+	case score.LessThanOrEqual(decimal.NewFromFloat(0.79)):
+		return aml.CheckRiskLevelMedium
+	default:
+		return aml.CheckRiskLevelSevere
 	}
 }

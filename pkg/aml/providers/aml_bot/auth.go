@@ -42,11 +42,10 @@ func NewMD5Authorizer(accessID, accessKey string, opts ...Option) *MD5Authorizer
 }
 
 // Authorize adds the MD5 token and access ID to the request.
+// The token is md5('uid:access_key:accessId') for a recheck with uid,
+// md5('hash:access_key:accessId') for a transaction check (form field "hash"),
+// and md5('access_key:accessId') otherwise.
 func (a *MD5Authorizer) Authorize(_ context.Context, req *http.Request) error {
-	// Generate MD5 token: md5('uid:access_key:accessId') for recheck with uid, md5('access_key:accessId') otherwise
-	hash := a.generateHash()
-	token := hex.EncodeToString(hash[:])
-
 	// Add form data
 	values := req.URL.Query()
 	if req.Method == http.MethodPost {
@@ -64,6 +63,13 @@ func (a *MD5Authorizer) Authorize(_ context.Context, req *http.Request) error {
 		}
 	}
 
+	prefix := values.Get("hash")
+	if a.uid != nil {
+		prefix = *a.uid
+	}
+	hash := a.generateHash(prefix)
+	token := hex.EncodeToString(hash[:])
+
 	// Add accessId and token to form data
 	values.Set("accessId", a.accessID)
 	values.Set("token", token)
@@ -79,17 +85,17 @@ func (a *MD5Authorizer) Authorize(_ context.Context, req *http.Request) error {
 	return nil
 }
 
-func (a *MD5Authorizer) generateHash() [16]byte {
+func (a *MD5Authorizer) generateHash(prefix string) [16]byte {
 	var builder strings.Builder
 
 	size := len(a.accessKey) + len(a.accessID) + 1
-	if a.uid != nil {
-		size += len(*a.uid) + 1
+	if prefix != "" {
+		size += len(prefix) + 1
 	}
 	builder.Grow(size)
 
-	if a.uid != nil {
-		builder.WriteString(*a.uid)
+	if prefix != "" {
+		builder.WriteString(prefix)
 		builder.WriteByte(':')
 	}
 	builder.WriteString(a.accessKey)
