@@ -41,8 +41,8 @@ func MergeRiskRules(categories []aml.SignalCategory, rules []*models.UserAmlRisk
 		byType[r.RiskType] = r
 	}
 
-	riskTypes := make([]string, 0, len(categories)+2)
-	riskTypes = append(riskTypes, constants.AmlRiskTypeTotalScore, constants.AmlRiskTypeSumOfSignals)
+	riskTypes := make([]string, 0, len(categories)+3)
+	riskTypes = append(riskTypes, constants.AmlRiskTypeTotalScore, constants.AmlRiskTypeSumOfSignals, constants.AmlRiskTypeRiskLevel)
 	for _, c := range categories {
 		riskTypes = append(riskTypes, c.Category)
 	}
@@ -53,10 +53,14 @@ func MergeRiskRules(categories []aml.SignalCategory, rules []*models.UserAmlRisk
 			resp = append(resp, NewRiskRuleResponse(rule))
 			continue
 		}
+		threshold := decimal.NewFromInt(constants.AmlRiskRuleDefaultThreshold)
+		if riskType == constants.AmlRiskTypeRiskLevel {
+			threshold = decimal.NewFromInt(constants.AmlRiskRuleDefaultLevelThreshold)
+		}
 		resp = append(resp, RiskRuleResponse{
 			RiskType:  riskType,
 			Enabled:   false,
-			Threshold: decimal.NewFromInt(constants.AmlRiskRuleDefaultThreshold),
+			Threshold: threshold,
 			Action:    constants.AmlRiskRuleDefaultAction,
 		})
 	}

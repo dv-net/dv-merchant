@@ -160,7 +160,7 @@ func (b *Client) Check(ctx context.Context, dto aml.InitCheckDTO, externalID str
 	return &aml.CheckResponse{
 		ExternalID: apiResp.ID,
 		Score:      apiResp.RiskScore.Mul(decimal.NewFromInt(100)), // Calculate percentage
-		RiskLevel:  new(aml.CheckRiskLevel(apiResp.RiskLevel)),
+		RiskLevel:  new(RiskLevel(apiResp.RiskLevel).ToAMLRiskLevel()),
 		Status:     aml.CheckStatusNew,
 		HTTPStatus: resp.StatusCode,
 		Request:    reqBodyBytes,
@@ -228,7 +228,7 @@ func (b *Client) fetchCheckStatus(ctx context.Context, checkID string, auth aml.
 	return &aml.CheckResponse{
 		ExternalID: apiResp.ID,
 		Score:      apiResp.RiskScore.Mul(decimal.NewFromInt(100)), // Calculate percentage,
-		RiskLevel:  new(aml.CheckRiskLevel(apiResp.RiskLevel)),
+		RiskLevel:  new(RiskLevel(apiResp.RiskLevel).ToAMLRiskLevel()),
 		Status:     status,
 		HTTPStatus: resp.StatusCode,
 		Response:   respBodyBytes,

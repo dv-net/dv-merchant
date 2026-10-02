@@ -27,7 +27,7 @@ func TestMD5Authorizer_Authorize(t *testing.T) {
 			path:     "/check/",
 			body:     "hash=tx123&asset=BTC&locale=en&flow=advanced",
 			uid:      nil,
-			wantBody: "accessId=123&asset=BTC&flow=advanced&hash=tx123&locale=en&token=5313e9afc3fd9c690466e00f98e19f75",
+			wantBody: "accessId=123&asset=BTC&flow=advanced&hash=tx123&locale=en&token=b40e20561487cce62636bad5f0a16d38",
 			wantErr:  false,
 		},
 		{

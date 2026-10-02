@@ -44,6 +44,9 @@ func convertAmlStatusToModel(status aml.CheckStatus) models.AMLCheckStatus {
 
 // EvaluateRiskRules checks a deposit against the user's configured risk rules.
 // score is the provider's aggregate score (used by AmlRiskTypeTotalScore rules);
+// riskLevel is the provider's normalized risk level, compared by rank against the
+// threshold of AmlRiskTypeRiskLevel rules (none=0, low=1, medium=2, high=3, critical=4;
+// an undefined or missing level never fires the rule);
 // signals is the per-category breakdown (used by category rules and summed for
 // AmlRiskTypeSumOfSignals, which only counts categories that have their own enabled
 // "reject" rule — "accept_and_flag" rules are deliberately excluded from the sum, since
@@ -62,7 +65,7 @@ func convertAmlStatusToModel(status aml.CheckStatus) models.AMLCheckStatus {
 // not blocked, not marked dirty). There's no separate canonical flag enum: the rule's
 // own risk_type is the tag, deduplicated in case the same risk_type somehow appears
 // more than once in rules.
-func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, rules []*models.UserAmlRiskRule) (blocked bool, matchedFlags []string) {
+func EvaluateRiskRules(score decimal.Decimal, riskLevel *models.AmlRiskLevel, signals []aml.SignalContribution, rules []*models.UserAmlRiskRule) (blocked bool, matchedFlags []string) {
 	signalWeights := make(map[string]decimal.Decimal, len(signals))
 	for _, s := range signals {
 		signalWeights[s.Category] = signalWeights[s.Category].Add(s.Weight)
@@ -73,6 +76,7 @@ func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, 
 		if rule.Enabled &&
 			rule.RiskType != constants.AmlRiskTypeTotalScore &&
 			rule.RiskType != constants.AmlRiskTypeSumOfSignals &&
+			rule.RiskType != constants.AmlRiskTypeRiskLevel &&
 			rule.Action != constants.AmlRiskRuleActionAcceptAndFlag {
 			categorySum = categorySum.Add(signalWeights[rule.RiskType])
 		}
@@ -89,6 +93,15 @@ func EvaluateRiskRules(score decimal.Decimal, signals []aml.SignalContribution, 
 			actual = score
 		case constants.AmlRiskTypeSumOfSignals:
 			actual = categorySum
+		case constants.AmlRiskTypeRiskLevel:
+			if riskLevel == nil {
+				continue
+			}
+			rank, ok := riskLevel.Rank()
+			if !ok {
+				continue
+			}
+			actual = decimal.NewFromInt(rank)
 		default:
 			actual = signalWeights[rule.RiskType]
 		}
