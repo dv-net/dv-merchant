@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [0.9.26]
 - fix: enforce store IP whitelist on external API requests [DNS-194]
 - fix: return 400 instead of 401 when turnstile captcha verification fails [DNS-195]
 - feat: add external endpoint for rates of all store currencies [DNS-179]
