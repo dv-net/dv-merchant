@@ -28,6 +28,11 @@ func NewServer(cfg config.HTTPConfig, services *service.Services, logger logger.
 		WriteTimeout:    cfg.WriteTimeout,
 		StructValidator: tools.DefaultStructValidator(),
 		ErrorHandler:    errorHandler,
+		ProxyHeader:     cfg.ProxyHeader,
+		TrustProxy:      cfg.ProxyHeader != "",
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			Proxies: cfg.TrustedProxies,
+		},
 	})
 
 	router.NewRouter(cfg, services, logger).Init(app)
