@@ -3,16 +3,19 @@ roles_policies_path: configs/rbac_policies.csv
 app:
   profile: prod
 http:
-  host: localhost
+  host: 0.0.0.0
   port: "80"
   fetch_interval: 30s
   connect_timeout: 5s
   read_timeout: 10s
   write_timeout: 10s
+  shutdown_timeout: 25s
   max_header_megabytes: 1
   cors:
     enabled: true
     allowed_origins: []
+  proxy_header: ""
+  trusted_proxies: []
 seed:
   base: seeds
 postgres:

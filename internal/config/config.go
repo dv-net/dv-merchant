@@ -46,7 +46,7 @@ type (
 	}
 
 	HTTPConfig struct {
-		Host               string         `yaml:"host" default:"localhost"`
+		Host               string         `yaml:"host" default:"0.0.0.0"`
 		Port               string         `yaml:"port" default:"80"`
 		FetchInterval      time.Duration  `yaml:"fetch_interval" env:"FETCH_INTERVAL" default:"30s"`
 		ConnectTimeout     time.Duration  `yaml:"connect_timeout" env:"CONNECT_TIMEOUT" default:"5s"`
@@ -55,6 +55,8 @@ type (
 		ShutdownTimeout    time.Duration  `yaml:"shutdown_timeout" env:"SHUTDOWN_TIMEOUT" default:"25s"`
 		MaxHeaderMegabytes int            `yaml:"max_header_megabytes" env:"MAX_HEADER_MEGABYTES" default:"1"`
 		Cors               HTTPCorsConfig `yaml:"cors"`
+		ProxyHeader        string         `yaml:"proxy_header" env:"PROXY_HEADER" usage:"header with real client ip set by reverse proxy, empty to disable" example:"X-Real-IP"`
+		TrustedProxies     []string       `yaml:"trusted_proxies" usage:"ip addresses or cidr ranges of reverse proxies allowed to set proxy_header" example:"127.0.0.1, ::1"`
 	}
 
 	SeedConfig struct {
