@@ -14,27 +14,28 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO transfers (id, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now(), $10, $11, $12, $13, $14, $15)
-	RETURNING id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged
+INSERT INTO transfers (id, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged, refund_request_id)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now(), $10, $11, $12, $13, $14, $15, $16)
+	RETURNING id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged, refund_request_id
 `
 
 type CreateParams struct {
-	ID            uuid.UUID             `db:"id" json:"id"`
-	UserID        uuid.UUID             `db:"user_id" json:"user_id"`
-	Kind          models.TransferKind   `db:"kind" json:"kind"`
-	CurrencyID    string                `db:"currency_id" json:"currency_id"`
-	Status        models.TransferStatus `db:"status" json:"status"`
-	Stage         models.TransferStage  `db:"stage" json:"stage"`
-	Amount        decimal.Decimal       `db:"amount" json:"amount"`
-	AmountUsd     decimal.Decimal       `db:"amount_usd" json:"amount_usd"`
-	Message       *string               `db:"message" json:"message"`
-	Blockchain    models.Blockchain     `db:"blockchain" json:"blockchain"`
-	FromAddresses []string              `db:"from_addresses" json:"from_addresses"`
-	ToAddresses   []string              `db:"to_addresses" json:"to_addresses"`
-	Step          *string               `db:"step" json:"step"`
-	TxHash        *string               `db:"tx_hash" json:"tx_hash"`
-	RoutedFlagged bool                  `db:"routed_flagged" json:"routed_flagged"`
+	ID              uuid.UUID             `db:"id" json:"id"`
+	UserID          uuid.UUID             `db:"user_id" json:"user_id"`
+	Kind            models.TransferKind   `db:"kind" json:"kind"`
+	CurrencyID      string                `db:"currency_id" json:"currency_id"`
+	Status          models.TransferStatus `db:"status" json:"status"`
+	Stage           models.TransferStage  `db:"stage" json:"stage"`
+	Amount          decimal.Decimal       `db:"amount" json:"amount"`
+	AmountUsd       decimal.Decimal       `db:"amount_usd" json:"amount_usd"`
+	Message         *string               `db:"message" json:"message"`
+	Blockchain      models.Blockchain     `db:"blockchain" json:"blockchain"`
+	FromAddresses   []string              `db:"from_addresses" json:"from_addresses"`
+	ToAddresses     []string              `db:"to_addresses" json:"to_addresses"`
+	Step            *string               `db:"step" json:"step"`
+	TxHash          *string               `db:"tx_hash" json:"tx_hash"`
+	RoutedFlagged   bool                  `db:"routed_flagged" json:"routed_flagged"`
+	RefundRequestID uuid.NullUUID         `db:"refund_request_id" json:"refund_request_id"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transfer, error) {
@@ -54,6 +55,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transfe
 		arg.Step,
 		arg.TxHash,
 		arg.RoutedFlagged,
+		arg.RefundRequestID,
 	)
 	var i models.Transfer
 	err := row.Scan(
@@ -75,12 +77,13 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Transfe
 		&i.Step,
 		&i.TxHash,
 		&i.RoutedFlagged,
+		&i.RefundRequestID,
 	)
 	return &i, err
 }
 
 const getAll = `-- name: GetAll :many
-SELECT id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged FROM transfers ORDER BY created_at DESC LIMIT $1 OFFSET $2
+SELECT id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged, refund_request_id FROM transfers ORDER BY created_at DESC LIMIT $1 OFFSET $2
 `
 
 type GetAllParams struct {
@@ -116,6 +119,7 @@ func (q *Queries) GetAll(ctx context.Context, arg GetAllParams) ([]*models.Trans
 			&i.Step,
 			&i.TxHash,
 			&i.RoutedFlagged,
+			&i.RefundRequestID,
 		); err != nil {
 			return nil, err
 		}
@@ -128,7 +132,7 @@ func (q *Queries) GetAll(ctx context.Context, arg GetAllParams) ([]*models.Trans
 }
 
 const getById = `-- name: GetById :one
-SELECT id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged FROM transfers WHERE id=$1 LIMIT 1
+SELECT id, number, user_id, kind, currency_id, status, stage, amount, amount_usd, message, created_at, updated_at, blockchain, from_addresses, to_addresses, step, tx_hash, routed_flagged, refund_request_id FROM transfers WHERE id=$1 LIMIT 1
 `
 
 func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Transfer, error) {
@@ -153,6 +157,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.Transfer, 
 		&i.Step,
 		&i.TxHash,
 		&i.RoutedFlagged,
+		&i.RefundRequestID,
 	)
 	return &i, err
 }

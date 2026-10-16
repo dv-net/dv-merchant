@@ -55,7 +55,7 @@ LIMIT 1;
 SELECT SUM(
                CASE
                    WHEN type = 'deposit' AND to_address = $1 THEN amount
-                   WHEN type = 'transfer' AND from_address = $1 THEN -amount
+                   WHEN type IN ('transfer', 'refund') AND from_address = $1 THEN -amount
                    ELSE 0
                    END)::numeric AS balance
 FROM transactions
@@ -66,12 +66,12 @@ LIMIT 1;
 -- name: GetBalanceNativeToken :one
 SELECT (SUM(CASE
                 WHEN type = 'deposit' AND transactions.to_address = $1 THEN amount
-                WHEN type = 'transfer' AND transactions.from_address = $1 THEN -amount
+                WHEN type IN ('transfer', 'refund') AND transactions.from_address = $1 THEN -amount
                 ELSE 0
     END)
     - COALESCE((SELECT SUM(fee)
                 FROM transactions
-                WHERE type = 'transfer'
+                WHERE type IN ('transfer', 'refund')
                   AND transactions.from_address = $1
                   AND transactions.blockchain = $3), 0))::numeric AS balance
 

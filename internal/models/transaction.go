@@ -25,6 +25,9 @@ const (
 	TransactionsTypeTransfer                 TransactionsType = "transfer"
 	TransactionsTypeDeposit                  TransactionsType = "deposit"
 	TransactionsTypeWithdrawalFromProcessing TransactionsType = "withdrawal_from_processing"
+	// TransactionsTypeRefund is an outgoing transaction of a blocked deposit refund from the hot wallet.
+	// It decreases the address balance like a transfer, but is not counted as a transfer in statistics
+	TransactionsTypeRefund TransactionsType = "refund"
 )
 
 func (t TransactionsType) RequiresWebhookToStore() bool {

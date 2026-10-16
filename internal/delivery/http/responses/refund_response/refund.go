@@ -34,6 +34,10 @@ type RefundRequestResponse struct {
 	ToAddress            string              `json:"to_address"`
 	RiskLevel            string              `json:"risk_level"`
 	Score                decimal.Decimal     `json:"score"`
+	// ExecuteAfter is set for scheduled refunds to the deposit sender
+	ExecuteAfter *time.Time `json:"execute_after,omitempty" format:"date-time"`
+	// LastError is the reason the refund was not sent or failed
+	LastError *string `json:"last_error,omitempty"`
 } //	@name	RefundRequestResponse
 
 func NewRefundRequestResponse(item *refund.RequestWithTxDTO) *RefundRequestResponse {
@@ -66,6 +70,8 @@ func NewRefundRequestResponse(item *refund.RequestWithTxDTO) *RefundRequestRespo
 		ToAddress:            item.ToAddress,
 		RiskLevel:            item.RiskLevel,
 		Score:                item.Score,
+		ExecuteAfter:         pgtypeutils.DecodeTime(item.ExecuteAfter),
+		LastError:            pgtypeutils.DecodeText(item.LastError),
 	}
 }
 

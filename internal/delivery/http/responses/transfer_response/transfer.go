@@ -34,4 +34,8 @@ type GetTransferResponse struct {
 	Message       *string               `json:"message"`
 	CreatedAt     *time.Time            `json:"created_at" format:"date-time"`
 	UpdatedAt     *time.Time            `json:"updated_at" format:"date-time"`
+	// RefundRequestID is set for transfers of kind refund
+	RefundRequestID *string `json:"refund_request_id,omitempty" format:"uuid"`
+	// ExecuteAfter is set for scheduled refunds waiting for the cooldown
+	ExecuteAfter *time.Time `json:"execute_after,omitempty" format:"date-time"`
 } //	@name	GetTransferResponse

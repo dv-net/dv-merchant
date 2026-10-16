@@ -411,9 +411,14 @@ func (s *Service) handleUnconfirmedHotWalletTransfer(ctx context.Context, dto Tr
 		return err
 	}
 
+	txType, err := s.hotWalletTransferTxType(ctx, dto, tx)
+	if err != nil {
+		return err
+	}
+
 	err = s.createUnconfirmedTransferTransaction(
 		ctx, dto, storeData, wallet, amount, usdAmount,
-		models.TransactionsTypeTransfer,
+		txType,
 		repos.WithTx(tx),
 	)
 	return err
@@ -590,6 +595,11 @@ func (s *Service) prepareCreateTxParamsByHotWallet(
 		return nil, fmt.Errorf("parse fee: %w", err)
 	}
 
+	txType, err := s.hotWalletTransferTxType(ctx, dto, tx)
+	if err != nil {
+		return nil, err
+	}
+
 	return &repo_transactions.CreateParams{
 		UserID:             storeData.UserID,
 		StoreID:            uuid.NullUUID{UUID: storeData.ID, Valid: true},
@@ -598,7 +608,7 @@ func (s *Service) prepareCreateTxParamsByHotWallet(
 		Blockchain:         *dto.Currency.Blockchain,
 		TxHash:             dto.Hash,
 		BcUniqKey:          &dto.TxUniqKey,
-		Type:               models.TransactionsTypeTransfer,
+		Type:               txType,
 		FromAddress:        dto.FromAddress,
 		ToAddress:          dto.ToAddress,
 		Amount:             amount,
@@ -621,6 +631,10 @@ func (s *Service) HandleUpdateTransferStatusCallback(ctx context.Context, dto pr
 			Message: dto.ErrorMessage,
 		}); err != nil {
 			return fmt.Errorf("update status callback: %w", err)
+		}
+
+		if err := s.syncRefundRequestStatus(ctx, dto, tx); err != nil {
+			return err
 		}
 
 		if len(dto.SystemTransactions) < 1 {

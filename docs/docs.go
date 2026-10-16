@@ -2716,7 +2716,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Lists refund requests awaiting review across all stores owned by the authenticated user, including blocked deposit details",
+                "description": "Lists refund requests awaiting review or scheduled for sending across all stores owned by the authenticated user, including blocked deposit details",
                 "consumes": [
                     "application/json"
                 ],
@@ -2737,6 +2737,222 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/refund-requests/{refundId}/approve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Approves a pending refund request that belongs to a store owned by the authenticated user and sends the refund, confirmed by TOTP",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store",
+                    "Refund"
+                ],
+                "summary": "Approve a refund request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Refund request ID",
+                        "name": "refundId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "TOTP confirmation",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ApproveRefundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-RefundRequestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/refund-requests/{refundId}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels a scheduled refund to the deposit sender before it is sent, the request goes back to pending review",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store",
+                    "Refund"
+                ],
+                "summary": "Cancel a scheduled refund",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Refund request ID",
+                        "name": "refundId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-RefundRequestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/refund-requests/{refundId}/execute-now": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sends a scheduled refund to the deposit sender immediately without waiting for the cooldown, confirmed by TOTP",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store",
+                    "Refund"
+                ],
+                "summary": "Execute a scheduled refund now",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Refund request ID",
+                        "name": "refundId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "TOTP confirmation",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ApproveRefundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-RefundRequestResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -5335,13 +5551,15 @@ const docTemplate = `{
                         "enum": [
                             "transfer",
                             "deposit",
-                            "withdrawal_from_processing"
+                            "withdrawal_from_processing",
+                            "refund"
                         ],
                         "type": "string",
                         "x-enum-varnames": [
                             "TransactionsTypeTransfer",
                             "TransactionsTypeDeposit",
-                            "TransactionsTypeWithdrawalFromProcessing"
+                            "TransactionsTypeWithdrawalFromProcessing",
+                            "TransactionsTypeRefund"
                         ],
                         "name": "type",
                         "in": "query"
@@ -5504,13 +5722,15 @@ const docTemplate = `{
                         "enum": [
                             "transfer",
                             "deposit",
-                            "withdrawal_from_processing"
+                            "withdrawal_from_processing",
+                            "refund"
                         ],
                         "type": "string",
                         "x-enum-varnames": [
                             "TransactionsTypeTransfer",
                             "TransactionsTypeDeposit",
-                            "TransactionsTypeWithdrawalFromProcessing"
+                            "TransactionsTypeWithdrawalFromProcessing",
+                            "TransactionsTypeRefund"
                         ],
                         "name": "type",
                         "in": "query"
@@ -5628,13 +5848,15 @@ const docTemplate = `{
                         "enum": [
                             "transfer",
                             "deposit",
-                            "withdrawal_from_processing"
+                            "withdrawal_from_processing",
+                            "refund"
                         ],
                         "type": "string",
                         "x-enum-varnames": [
                             "TransactionsTypeTransfer",
                             "TransactionsTypeDeposit",
-                            "TransactionsTypeWithdrawalFromProcessing"
+                            "TransactionsTypeWithdrawalFromProcessing",
+                            "TransactionsTypeRefund"
                         ],
                         "name": "type",
                         "in": "query"
@@ -10978,6 +11200,19 @@ const docTemplate = `{
                 }
             }
         },
+        "ApproveRefundRequest": {
+            "type": "object",
+            "required": [
+                "totp"
+            ],
+            "properties": {
+                "totp": {
+                    "type": "string",
+                    "maxLength": 6,
+                    "minLength": 6
+                }
+            }
+        },
         "Asset": {
             "type": "object",
             "properties": {
@@ -11153,6 +11388,11 @@ const docTemplate = `{
                 },
                 "from_address": {
                     "type": "string"
+                },
+                "refund_execute_after": {
+                    "description": "RefundExecuteAfter is set for scheduled refunds to the deposit sender",
+                    "type": "string",
+                    "format": "date-time"
                 },
                 "refund_status": {
                     "type": "string"
@@ -12487,6 +12727,11 @@ const docTemplate = `{
                 "currency_id": {
                     "type": "string"
                 },
+                "execute_after": {
+                    "description": "ExecuteAfter is set for scheduled refunds waiting for the cooldown",
+                    "type": "string",
+                    "format": "date-time"
+                },
                 "from_addresses": {
                     "type": "array",
                     "items": {
@@ -12505,6 +12750,11 @@ const docTemplate = `{
                 },
                 "number": {
                     "type": "integer"
+                },
+                "refund_request_id": {
+                    "description": "RefundRequestID is set for transfers of kind refund",
+                    "type": "string",
+                    "format": "uuid"
                 },
                 "stage": {
                     "$ref": "#/definitions/TransferStage"
@@ -15014,7 +15264,13 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "execute_after": {
+                    "type": "string"
+                },
                 "id": {
+                    "type": "string"
+                },
+                "last_error": {
                     "type": "string"
                 },
                 "reviewed_at": {
@@ -15069,12 +15325,21 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "execute_after": {
+                    "description": "ExecuteAfter is set for scheduled refunds to the deposit sender",
+                    "type": "string",
+                    "format": "date-time"
+                },
                 "from_address": {
                     "type": "string"
                 },
                 "id": {
                     "type": "string",
                     "format": "uuid"
+                },
+                "last_error": {
+                    "description": "LastError is the reason the refund was not sent or failed",
+                    "type": "string"
                 },
                 "reviewed_at": {
                     "type": "string",
@@ -15999,12 +16264,14 @@ const docTemplate = `{
             "enum": [
                 "transfer",
                 "deposit",
-                "withdrawal_from_processing"
+                "withdrawal_from_processing",
+                "refund"
             ],
             "x-enum-varnames": [
                 "TransactionsTypeTransfer",
                 "TransactionsTypeDeposit",
-                "TransactionsTypeWithdrawalFromProcessing"
+                "TransactionsTypeWithdrawalFromProcessing",
+                "TransactionsTypeRefund"
             ]
         },
         "TransferHistoryRequest": {
@@ -16025,11 +16292,13 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "from_address",
-                "from_processing"
+                "from_processing",
+                "refund"
             ],
             "x-enum-varnames": [
                 "TransferKindFromAddress",
-                "TransferKindFromProcessing"
+                "TransferKindFromProcessing",
+                "TransferKindRefund"
             ]
         },
         "TransferStage": {
@@ -16055,7 +16324,8 @@ const docTemplate = `{
                 "unconfirmed",
                 "completed",
                 "failed",
-                "frozen"
+                "frozen",
+                "canceled"
             ],
             "x-enum-varnames": [
                 "TransferStatusNew",
@@ -16065,7 +16335,8 @@ const docTemplate = `{
                 "TransferStatusUnconfirmed",
                 "TransferStatusCompleted",
                 "TransferStatusFailed",
-                "TransferStatusFrozen"
+                "TransferStatusFrozen",
+                "TransferStatusCanceled"
             ]
         },
         "TransfersToggleRequest": {

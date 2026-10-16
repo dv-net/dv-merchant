@@ -62,6 +62,9 @@ func buildWorkers(services *service.Services, conf *config.Config, _ storage.ISt
 	add("aml_status_checker", services.AMLStatusChecker != nil, func(ctx context.Context) {
 		services.AMLStatusChecker.Run(ctx)
 	})
+	add("refund_reconciler", services.RefundReconciler != nil, func(ctx context.Context) {
+		services.RefundReconciler.RunReconciler(ctx)
+	})
 
 	return workers
 }

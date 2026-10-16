@@ -23,3 +23,13 @@ func ErrorRPCCode(err error) (int, bool) {
 
 	return 0, false
 }
+
+// Processing rpc codes of refunds and withdrawals to external addresses
+const (
+	RPCCodeTwoFactorRequired     = 5000
+	RPCCodeTwoFactorInvalid      = 5001
+	RPCCodeRefundSourceInvalid   = 5002
+	RPCCodeRefundAlreadyExists   = 5003
+	RPCCodeTransferNotCancelable = 5004
+	RPCCodeRefundInsufficientFee = 5005
+)

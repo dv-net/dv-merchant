@@ -161,6 +161,15 @@ definitions:
       provider_slug:
         $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug'
     type: object
+  ApproveRefundRequest:
+    properties:
+      totp:
+        maxLength: 6
+        minLength: 6
+        type: string
+    required:
+    - totp
+    type: object
   Asset:
     properties:
       amount:
@@ -281,6 +290,11 @@ definitions:
       destination_address:
         type: string
       from_address:
+        type: string
+      refund_execute_after:
+        description: RefundExecuteAfter is set for scheduled refunds to the deposit
+          sender
+        format: date-time
         type: string
       refund_status:
         type: string
@@ -1181,6 +1195,10 @@ definitions:
         type: string
       currency_id:
         type: string
+      execute_after:
+        description: ExecuteAfter is set for scheduled refunds waiting for the cooldown
+        format: date-time
+        type: string
       from_addresses:
         items:
           type: string
@@ -1194,6 +1212,10 @@ definitions:
         type: string
       number:
         type: integer
+      refund_request_id:
+        description: RefundRequestID is set for transfers of kind refund
+        format: uuid
+        type: string
       stage:
         $ref: '#/definitions/TransferStage'
       status:
@@ -2850,7 +2872,11 @@ definitions:
         type: string
       email:
         type: string
+      execute_after:
+        type: string
       id:
+        type: string
+      last_error:
         type: string
       reviewed_at:
         type: string
@@ -2887,10 +2913,17 @@ definitions:
         type: string
       email:
         type: string
+      execute_after:
+        description: ExecuteAfter is set for scheduled refunds to the deposit sender
+        format: date-time
+        type: string
       from_address:
         type: string
       id:
         format: uuid
+        type: string
+      last_error:
+        description: LastError is the reason the refund was not sent or failed
         type: string
       reviewed_at:
         format: date-time
@@ -3517,11 +3550,13 @@ definitions:
     - transfer
     - deposit
     - withdrawal_from_processing
+    - refund
     type: string
     x-enum-varnames:
     - TransactionsTypeTransfer
     - TransactionsTypeDeposit
     - TransactionsTypeWithdrawalFromProcessing
+    - TransactionsTypeRefund
   TransferHistoryRequest:
     properties:
       address:
@@ -3535,10 +3570,12 @@ definitions:
     enum:
     - from_address
     - from_processing
+    - refund
     type: string
     x-enum-varnames:
     - TransferKindFromAddress
     - TransferKindFromProcessing
+    - TransferKindRefund
   TransferStage:
     enum:
     - in_progress
@@ -3559,6 +3596,7 @@ definitions:
     - completed
     - failed
     - frozen
+    - canceled
     type: string
     x-enum-varnames:
     - TransferStatusNew
@@ -3569,6 +3607,7 @@ definitions:
     - TransferStatusCompleted
     - TransferStatusFailed
     - TransferStatusFrozen
+    - TransferStatusCanceled
   TransfersToggleRequest:
     properties:
       mode:
@@ -6518,8 +6557,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: Lists refund requests awaiting review across all stores owned by
-        the authenticated user, including blocked deposit details
+      description: Lists refund requests awaiting review or scheduled for sending
+        across all stores owned by the authenticated user, including blocked deposit
+        details
       produces:
       - application/json
       responses:
@@ -6534,6 +6574,149 @@ paths:
       security:
       - BearerAuth: []
       summary: List pending refund requests
+      tags:
+      - Store
+      - Refund
+  /v1/dv-admin/refund-requests/{refundId}/approve:
+    post:
+      consumes:
+      - application/json
+      description: Approves a pending refund request that belongs to a store owned
+        by the authenticated user and sends the refund, confirmed by TOTP
+      parameters:
+      - description: Refund request ID
+        in: path
+        name: refundId
+        required: true
+        type: string
+      - description: TOTP confirmation
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/ApproveRefundRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Approve a refund request
+      tags:
+      - Store
+      - Refund
+  /v1/dv-admin/refund-requests/{refundId}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels a scheduled refund to the deposit sender before it is sent,
+        the request goes back to pending review
+      parameters:
+      - description: Refund request ID
+        in: path
+        name: refundId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Cancel a scheduled refund
+      tags:
+      - Store
+      - Refund
+  /v1/dv-admin/refund-requests/{refundId}/execute-now:
+    post:
+      consumes:
+      - application/json
+      description: Sends a scheduled refund to the deposit sender immediately without
+        waiting for the cooldown, confirmed by TOTP
+      parameters:
+      - description: Refund request ID
+        in: path
+        name: refundId
+        required: true
+        type: string
+      - description: TOTP confirmation
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/ApproveRefundRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Execute a scheduled refund now
       tags:
       - Store
       - Refund
@@ -8190,6 +8373,7 @@ paths:
         - transfer
         - deposit
         - withdrawal_from_processing
+        - refund
         in: query
         name: type
         type: string
@@ -8197,6 +8381,7 @@ paths:
         - TransactionsTypeTransfer
         - TransactionsTypeDeposit
         - TransactionsTypeWithdrawalFromProcessing
+        - TransactionsTypeRefund
       - in: query
         name: wallet_address
         type: string
@@ -8362,6 +8547,7 @@ paths:
         - transfer
         - deposit
         - withdrawal_from_processing
+        - refund
         in: query
         name: type
         type: string
@@ -8369,6 +8555,7 @@ paths:
         - TransactionsTypeTransfer
         - TransactionsTypeDeposit
         - TransactionsTypeWithdrawalFromProcessing
+        - TransactionsTypeRefund
       - in: query
         name: wallet_address
         type: string
@@ -8448,6 +8635,7 @@ paths:
         - transfer
         - deposit
         - withdrawal_from_processing
+        - refund
         in: query
         name: type
         type: string
@@ -8455,6 +8643,7 @@ paths:
         - TransactionsTypeTransfer
         - TransactionsTypeDeposit
         - TransactionsTypeWithdrawalFromProcessing
+        - TransactionsTypeRefund
       produces:
       - application/json
       responses:

@@ -35,6 +35,9 @@ type TransferStatusWebhook struct {
 	Step               string                       `json:"step"`
 	ErrorMessage       *string                      `json:"error_message,omitempty"`
 	RequestID          *uuid.UUID                   `json:"request_id,omitempty" format:"uuid"`
+	// Broadcast is true when the transfer transaction was sent to the network or its result is unknown:
+	// a failed transfer with broadcast may still be mined
+	Broadcast bool `json:"broadcast"`
 } //	@name	TransferStatusWebhook
 
 type TransferSystemTransactions struct {

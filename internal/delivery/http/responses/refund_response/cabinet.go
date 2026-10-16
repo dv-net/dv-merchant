@@ -25,4 +25,6 @@ type CabinetItemResponse struct {
 	CreatedAt            *time.Time          `json:"created_at"`
 	RefundStatus         *string             `json:"refund_status,omitempty"`
 	DestinationAddress   *string             `json:"destination_address,omitempty"`
+	// RefundExecuteAfter is set for scheduled refunds to the deposit sender
+	RefundExecuteAfter *time.Time `json:"refund_execute_after,omitempty" format:"date-time"`
 } //	@name	CabinetItemResponse
