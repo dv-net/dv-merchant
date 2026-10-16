@@ -14,6 +14,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_refund_requests"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transfers"
+	"github.com/dv-net/dv-merchant/pkg/dbutils/pgerror"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 
@@ -46,6 +47,8 @@ var (
 	ErrRefundAlreadyExists     = errors.New("a refund for this deposit is already in progress")
 	ErrRefundNotCancelable     = errors.New("refund cannot be canceled: it is not scheduled or is already being sent")
 	ErrRefundNotScheduled      = errors.New("refund is not scheduled or is already being sent")
+	ErrRefundBlockedTxNotFound = errors.New("blocked transaction not found")
+	ErrRefundInvalidAddress    = errors.New("invalid destination address for the blockchain")
 )
 
 // refundExecutor sends refunds to processing
@@ -73,12 +76,16 @@ func NewService(log logger.Logger, st storage.IStorage, executor refundExecutor,
 
 func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error) {
 	btx, err := s.storage.BlockedTransactions().GetById(ctx, dto.BlockedTransactionID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrRefundBlockedTxNotFound
+	}
 	if err != nil {
 		return nil, fmt.Errorf("fetch blocked transaction: %w", err)
 	}
 
+	// a transaction of another wallet is reported as not found, its existence is not disclosed
 	if btx.WalletID != dto.WalletID {
-		return nil, fmt.Errorf("wallet id mismatch: blocked transaction wallet id")
+		return nil, fmt.Errorf("%w: wallet id mismatch", ErrRefundBlockedTxNotFound)
 	}
 
 	if _, err := s.storage.RefundRequests().GetByBlockedTransactionID(ctx, dto.BlockedTransactionID); err == nil {
@@ -93,7 +100,7 @@ func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*model
 	}
 
 	if !avalidator.ValidateAddressByBlockchain(dto.DestinationAddress, tx.Blockchain.String()) {
-		return nil, fmt.Errorf("invalid destination address for blockchain %s", tx.Blockchain.String())
+		return nil, fmt.Errorf("%w: %s", ErrRefundInvalidAddress, tx.Blockchain.String())
 	}
 
 	// the refund must be sendable before the request is created: processing checks the deposit
@@ -117,6 +124,10 @@ func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*model
 		Status:               constants.RefundStatusPendingReview,
 	})
 	if err != nil {
+		// a concurrent claim of the same blocked transaction (refund_requests_blocked_transaction_id_key)
+		if _, ok := errors.AsType[*pgerror.UniqueConstraintError](pgerror.ParseError(err)); ok {
+			return nil, ErrRefundAlreadyRequested
+		}
 		return nil, fmt.Errorf("create refund request: %w", err)
 	}
 
