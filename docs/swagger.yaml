@@ -2882,13 +2882,6 @@ definitions:
     x-enum-varnames:
     - ReceiptStatusPaid
     - ReceiptStatusCanceled
-  RefreshWalletAddressRequest:
-    properties:
-      address:
-        type: string
-    required:
-    - address
-    type: object
   RefundClaimRequest:
     properties:
       destination_address:
@@ -11889,46 +11882,6 @@ paths:
           schema:
             $ref: '#/definitions/APIErrors'
       summary: Notify wallet email
-      tags:
-      - Wallet
-      - Public
-  /v1/public/wallet/{id}/refresh-address:
-    post:
-      consumes:
-      - application/json
-      description: Marks the current address as dirty so a new one will be generated
-      parameters:
-      - description: Wallet ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: RefreshWalletAddressRequest
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/RefreshWalletAddressRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/JSONResponse-string'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/APIErrors'
-        "422":
-          description: Unprocessable Entity
-          schema:
-            $ref: '#/definitions/APIErrors'
-      summary: Refresh wallet address
       tags:
       - Wallet
       - Public

@@ -21,25 +21,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (s *Service) RefreshWalletAddress(ctx context.Context, walletID uuid.UUID, address string) error {
-	wallet, err := s.storage.Wallets().GetById(ctx, walletID)
-	if err != nil {
-		return fmt.Errorf("wallet not found: %w", err)
-	}
-
-	str, err := s.storage.Stores().GetByID(ctx, wallet.StoreID)
-	if err != nil {
-		return fmt.Errorf("store not found: %w", err)
-	}
-
-	usr, err := s.storage.Users().GetByID(ctx, str.UserID)
-	if err != nil {
-		return fmt.Errorf("user not found: %w", err)
-	}
-
-	return s.MarkAddressDirty(ctx, usr, address)
-}
-
 // MarkAddressDirty TODO refactoring add marking address on processing and change logic get new wallets
 func (s *Service) MarkAddressDirty(ctx context.Context, usr *models.User, address string) error {
 	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
