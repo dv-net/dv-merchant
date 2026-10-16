@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/withdrawal_requests"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/withdrawal_wallets_request"
@@ -9,8 +10,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/withdrawal_wallet"
 	"github.com/dv-net/dv-merchant/internal/tools"
 
-	// Blank import for swagger
-	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/withdrawal_response"
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/withdrawal_response"
 
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 	"github.com/dv-net/dv-merchant/internal/tools/converters"
@@ -347,6 +347,82 @@ func (h *Handler) createWithdrawalFromProcessingWallet(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(converters.FromProcessingWithdrawalToResponse(*res)))
 }
 
+// Withdrawal from a hot wallet address to an external address
+//
+//	@Summary		Withdraw from a hot wallet address to an external address
+//	@Description	Sends the amount from the user's hot wallet address to any external address. The owner's TOTP is verified by processing. Transfers to the owner's cold and processing wallets use the regular withdrawals
+//	@Tags			Withdrawal
+//	@Accept			json
+//	@Produce		json
+//	@Param			register	body		withdrawal_requests.ExternalWithdrawRequest	true	"External withdrawal"
+//	@Success		200			{object}	response.Result[withdrawal_response.ExternalWithdrawalResponse]
+//	@Failure		400			{object}	apierror.Errors	"Bad request"
+//	@Failure		403			{object}	apierror.Errors	"Forbidden"
+//	@Failure		409			{object}	apierror.Errors	"Conflict"
+//	@Failure		422			{object}	apierror.Errors	"Unprocessable Entity"
+//	@Failure		423			{object}	apierror.Errors	"Locked"
+//	@Failure		503			{object}	apierror.Errors	"Service Unavailable"
+//	@Router			/v1/dv-admin/withdrawal/withdraw-external [post]
+//	@Security		BearerAuth
+func (h *Handler) withdrawExternal(c fiber.Ctx) error {
+	user, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	req := &withdrawal_requests.ExternalWithdrawRequest{}
+	if err := c.Bind().Body(req); err != nil {
+		return err
+	}
+
+	transfer, err := h.services.WithdrawService.WithdrawToExternal(c.Context(), user, withdraw.ExternalWithdrawalDTO{
+		WalletAddressID: req.WalletAddressID,
+		AddressTo:       strings.TrimSpace(req.AddressTo),
+		Amount:          req.Amount,
+		TOTP:            strings.TrimSpace(req.TOTP),
+	})
+	if err != nil {
+		return h.prepareExternalWithdrawalHTTPError(err, user.ID, req.WalletAddressID)
+	}
+
+	return c.JSON(response.OkByData(withdrawal_response.NewExternalWithdrawalResponse(transfer)))
+}
+
+// prepareExternalWithdrawalHTTPError logs the withdrawal error and converts it to the http error
+func (h *Handler) prepareExternalWithdrawalHTTPError(err error, userID, walletAddressID uuid.UUID) error {
+	errCode := fiber.StatusBadRequest
+	switch {
+	case errors.Is(err, withdraw.ErrWalletIsNotOwnedByUser):
+		errCode = fiber.StatusForbidden
+	case errors.Is(err, withdraw.ErrProcessingUninitialized):
+		errCode = fiber.StatusLocked
+	case errors.Is(err, withdraw.ErrProcessingUnavailable),
+		errors.Is(err, withdraw.ErrProcessingExplorerUnavailable):
+		errCode = fiber.StatusServiceUnavailable
+	case errors.Is(err, withdraw.ErrWithdrawalAddressIsTaken):
+		errCode = fiber.StatusConflict
+	case errors.Is(err, withdraw.ErrWithdrawalInvalidAddress),
+		errors.Is(err, withdraw.ErrWithdrawalInvalidAmount),
+		errors.Is(err, withdraw.ErrWithdrawalInsufficientBalance),
+		errors.Is(err, withdraw.ErrWithdrawalTwoFactorRequired),
+		errors.Is(err, withdraw.ErrFiatCurrencyIsNotSupported):
+		errCode = fiber.StatusUnprocessableEntity
+	}
+
+	log := h.logger.Warnw
+	if errCode == fiber.StatusBadRequest && !errors.Is(err, withdraw.ErrWithdrawalTwoFactorInvalid) {
+		log = h.logger.Errorw
+	}
+	log("failed to withdraw to external address",
+		"user_id", userID,
+		"wallet_address_id", walletAddressID,
+		"http_code", errCode,
+		"error", err,
+	)
+
+	return apierror.New().AddError(err).SetHttpCode(errCode)
+}
+
 func (h *Handler) initWithdrawalRoutes(v1 fiber.Router) {
 	withdrawal := v1.Group("/withdrawal")
 	withdrawal.Get("/rules", h.getWithdrawalRule)
@@ -357,6 +433,7 @@ func (h *Handler) initWithdrawalRoutes(v1 fiber.Router) {
 	withdrawal.Post("/withdraw-to-processing", h.withdrawToProcessing)
 	withdrawal.Post("/withdraw-multiple-to-processing", h.withdrawToProcessingMultiple)
 	withdrawal.Post("/withdrawal-from-processing", h.createWithdrawalFromProcessingWallet)
+	withdrawal.Post("/withdraw-external", h.withdrawExternal)
 
 	// Address book routes
 	withdrawal.Get("/address-book", h.getUserAddressBook)

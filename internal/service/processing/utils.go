@@ -26,6 +26,7 @@ func ErrorRPCCode(err error) (int, bool) {
 
 // Processing rpc codes of refunds and withdrawals to external addresses
 const (
+	RPCCodeAddressEmptyBalance   = 4001
 	RPCCodeTwoFactorRequired     = 5000
 	RPCCodeTwoFactorInvalid      = 5001
 	RPCCodeRefundSourceInvalid   = 5002

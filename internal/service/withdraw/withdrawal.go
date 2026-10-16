@@ -31,6 +31,7 @@ type IWithdrawalService interface {
 	CreateRefundTransfer(ctx context.Context, ref *models.RefundRequest, opts ...repos.Option) (*models.Transfer, error)
 	SendRefund(ctx context.Context, ref *models.RefundRequest, transferID uuid.UUID, totp *string) (*processing.FundsWithdrawalResult, error)
 	CheckRefund(ctx context.Context, ref *models.RefundRequest) (*processing.CheckRefundResult, error)
+	WithdrawToExternal(ctx context.Context, user *models.User, dto ExternalWithdrawalDTO) (*models.Transfer, error)
 }
 
 func (s *service) WithdrawFromAddress(

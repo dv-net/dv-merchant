@@ -1046,6 +1046,44 @@ definitions:
       total_usd:
         type: number
     type: object
+  ExternalWithdrawRequest:
+    properties:
+      address_to:
+        maxLength: 255
+        minLength: 16
+        type: string
+      amount:
+        type: number
+      totp:
+        type: string
+      wallet_address_id:
+        type: string
+    required:
+    - address_to
+    - amount
+    - totp
+    - wallet_address_id
+    type: object
+  ExternalWithdrawalResponse:
+    properties:
+      address_to:
+        type: string
+      amount:
+        type: number
+      amount_usd:
+        type: number
+      currency_id:
+        type: string
+      from_address:
+        type: string
+      message:
+        type: string
+      status:
+        $ref: '#/definitions/TransferStatus'
+      transfer_id:
+        format: uuid
+        type: string
+    type: object
   FullPagingData:
     properties:
       last_page:
@@ -1600,6 +1638,15 @@ definitions:
         items:
           $ref: '#/definitions/ProcessingWalletWithAssets'
         type: array
+      message:
+        type: string
+    type: object
+  JSONResponse-ExternalWithdrawalResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/ExternalWithdrawalResponse'
       message:
         type: string
     type: object
@@ -10097,6 +10144,56 @@ paths:
       summary: Get withdrawal wallets
       tags:
       - WithdrawalWallet
+  /v1/dv-admin/withdrawal/withdraw-external:
+    post:
+      consumes:
+      - application/json
+      description: Sends the amount from the user's hot wallet address to any external
+        address. The owner's TOTP is verified by processing. Transfers to the owner's
+        cold and processing wallets use the regular withdrawals
+      parameters:
+      - description: External withdrawal
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/ExternalWithdrawRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ExternalWithdrawalResponse'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "423":
+          description: Locked
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Withdraw from a hot wallet address to an external address
+      tags:
+      - Withdrawal
   /v1/dv-admin/withdrawal/withdraw-manual:
     post:
       consumes:
@@ -11446,6 +11543,18 @@ paths:
             $ref: '#/definitions/APIErrors'
         "401":
           description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/APIErrors'
       summary: Create a refund request
