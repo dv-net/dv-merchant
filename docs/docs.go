@@ -8123,6 +8123,81 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/withdrawal/withdraw-external": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sends the amount from the user's hot wallet address to any external address. The owner's TOTP is verified by processing. Transfers to the owner's cold and processing wallets use the regular withdrawals",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Withdrawal"
+                ],
+                "summary": "Withdraw from a hot wallet address to an external address",
+                "parameters": [
+                    {
+                        "description": "External withdrawal",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ExternalWithdrawRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-ExternalWithdrawalResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "423": {
+                        "description": "Locked",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/withdrawal/withdraw-manual": {
             "post": {
                 "security": [
@@ -10351,6 +10426,24 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
                     }
                 }
             }
@@ -12502,6 +12595,61 @@ const docTemplate = `{
                 }
             }
         },
+        "ExternalWithdrawRequest": {
+            "type": "object",
+            "required": [
+                "address_to",
+                "amount",
+                "totp",
+                "wallet_address_id"
+            ],
+            "properties": {
+                "address_to": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 16
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "totp": {
+                    "type": "string"
+                },
+                "wallet_address_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "ExternalWithdrawalResponse": {
+            "type": "object",
+            "properties": {
+                "address_to": {
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "amount_usd": {
+                    "type": "number"
+                },
+                "currency_id": {
+                    "type": "string"
+                },
+                "from_address": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/TransferStatus"
+                },
+                "transfer_id": {
+                    "type": "string",
+                    "format": "uuid"
+                }
+            }
+        },
         "FullPagingData": {
             "type": "object",
             "properties": {
@@ -13330,6 +13478,20 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/ProcessingWalletWithAssets"
                     }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-ExternalWithdrawalResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/ExternalWithdrawalResponse"
                 },
                 "message": {
                     "type": "string"

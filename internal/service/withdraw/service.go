@@ -415,14 +415,7 @@ func (s *service) initializeTransfer(
 		params.WholeAmount = false
 	}
 	// TODO make kind optional for any blockchain
-	if dto.Blockchain.KindWithdrawalRequired() {
-		tronTransferType, err := s.settings.GetModelSetting(ctx, setting.TransferType, setting.IModelSetting(user))
-		if err != nil || tronTransferType == nil {
-			params.Kind = new(string(setting.TransferByBurnTRX))
-		} else {
-			params.Kind = new(tronTransferType.Value)
-		}
-	}
+	s.applyTronTransferKind(ctx, user, &params)
 
 	var errMessage *string
 

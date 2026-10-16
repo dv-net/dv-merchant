@@ -43,6 +43,7 @@ var (
 	ErrRefundTwoFactorRequired = errors.New("two-factor authentication must be enabled and confirmed to approve refunds")
 	ErrRefundTwoFactorInvalid  = errors.New("invalid two-factor authentication code")
 	ErrRefundInsufficientFee   = errors.New("not enough native coin on the deposit address to pay the refund network fee")
+	ErrRefundInsufficientFunds = errors.New("not enough funds on the deposit address to refund the deposit")
 	ErrRefundSourceInvalid     = errors.New("the deposit cannot be refunded: it is not confirmed or does not match the refund")
 	ErrRefundAlreadyExists     = errors.New("a refund for this deposit is already in progress")
 	ErrRefundNotCancelable     = errors.New("refund cannot be canceled: it is not scheduled or is already being sent")
@@ -383,6 +384,8 @@ func convertProcessingError(err error) error {
 		return fmt.Errorf("%w: %w", ErrRefundTwoFactorInvalid, err)
 	case processing.RPCCodeRefundInsufficientFee:
 		return fmt.Errorf("%w: %w", ErrRefundInsufficientFee, err)
+	case processing.RPCCodeAddressEmptyBalance:
+		return fmt.Errorf("%w: %w", ErrRefundInsufficientFunds, err)
 	case processing.RPCCodeRefundSourceInvalid:
 		return fmt.Errorf("%w: %w", ErrRefundSourceInvalid, err)
 	case processing.RPCCodeRefundAlreadyExists:

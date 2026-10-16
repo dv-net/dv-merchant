@@ -132,6 +132,8 @@ func (h *Handler) prepareRefundClaimError(err error, walletID, blockedTransactio
 		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundInvalidAddress
 	case errors.Is(err, refund.ErrRefundInsufficientFee):
 		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundInsufficientFee
+	case errors.Is(err, refund.ErrRefundInsufficientFunds):
+		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundInsufficientFunds
 	case errors.Is(err, refund.ErrRefundSourceInvalid):
 		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundSourceInvalid
 	}

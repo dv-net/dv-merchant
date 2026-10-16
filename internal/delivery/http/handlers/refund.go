@@ -225,6 +225,7 @@ func prepareRefundHTTPError(err error) error {
 		errors.Is(err, refund.ErrRefundNotScheduled):
 		errCode = fiber.StatusConflict
 	case errors.Is(err, refund.ErrRefundInsufficientFee),
+		errors.Is(err, refund.ErrRefundInsufficientFunds),
 		errors.Is(err, refund.ErrRefundSourceInvalid),
 		errors.Is(err, refund.ErrRefundTwoFactorRequired):
 		errCode = fiber.StatusUnprocessableEntity
