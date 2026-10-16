@@ -14,7 +14,7 @@ const (
 
 func ResolveTransferStageByStatus(status TransferStatus) TransferStage {
 	switch status {
-	case TransferStatusFailed:
+	case TransferStatusFailed, TransferStatusCanceled:
 		return TransferStageFailed
 	case TransferStatusCompleted:
 		return TransferStageCompleted

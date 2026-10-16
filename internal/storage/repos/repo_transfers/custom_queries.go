@@ -12,6 +12,7 @@ import (
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type GetTransfersByUserAndStatusParams struct {
@@ -24,6 +25,8 @@ type GetTransfersByUserAndStatusParams struct {
 
 type GetTransfersByUserAndStatusRow struct {
 	models.Transfer
+	// RefundExecuteAfter is the time a scheduled refund is sent, set while the refund request is attached to the transfer
+	RefundExecuteAfter pgtype.Timestamp `db:"refund_execute_after"`
 }
 
 func (s *CustomQuerier) GetTransfersByUserAndStatus(ctx context.Context, params GetTransfersByUserAndStatusParams) (*storecmn.FindResponseWithFullPagination[*GetTransfersByUserAndStatusRow], error) {
@@ -44,15 +47,20 @@ func (s *CustomQuerier) GetTransfersByUserAndStatus(ctx context.Context, params 
 
 	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 
-	sb.Select("*").
+	// refund transfers get execute_after of their scheduled refund request
+	sb.Select(
+		"transfers.*",
+		"CASE WHEN rr.transfer_id = transfers.id THEN rr.execute_after END AS refund_execute_after",
+	).
 		From("transfers").
-		Where(sb.Equal("user_id", params.UserID)).
-		Where(sb.In("stage", stages...)).
-		Where(sb.GreaterThan("created_at", dateFrom)).
-		OrderBy("number DESC")
+		JoinWithOption(sqlbuilder.LeftJoin, "refund_requests rr", "rr.id = transfers.refund_request_id").
+		Where(sb.Equal("transfers.user_id", params.UserID)).
+		Where(sb.In("transfers.stage", stages...)).
+		Where(sb.GreaterThan("transfers.created_at", dateFrom)).
+		OrderBy("transfers.number DESC")
 
 	if len(kinds) > 0 {
-		sb.Where(sb.Any("kind", "=", kinds))
+		sb.Where(sb.Any("transfers.kind", "=", kinds))
 		countSb.Where(countSb.Any("kind", "=", kinds))
 	}
 

@@ -14,6 +14,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transfers"
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
+	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 )
 
 type ITransferService interface {
@@ -46,22 +47,24 @@ func (s *service) GetTransfers(ctx context.Context, userID uuid.UUID, request *w
 	dto := make([]*transfer_response.GetTransferResponse, 0, len(data.Items))
 	for _, transfer := range data.Items {
 		dto = append(dto, &transfer_response.GetTransferResponse{
-			ID:            transfer.ID.String(),
-			Number:        transfer.Number,
-			Stage:         transfer.Stage,
-			UserID:        transfer.UserID.String(),
-			Kind:          transfer.Kind,
-			CurrencyID:    transfer.CurrencyID,
-			Status:        transfer.Status,
-			Step:          transfer.Step,
-			FromAddresses: transfer.FromAddresses,
-			ToAddresses:   transfer.ToAddresses,
-			TxHash:        transfer.TxHash,
-			Amount:        transfer.Amount,
-			AmountUsd:     transfer.AmountUsd,
-			Message:       transfer.Message,
-			CreatedAt:     &transfer.CreatedAt.Time,
-			UpdatedAt:     &transfer.UpdatedAt.Time,
+			ID:              transfer.ID.String(),
+			Number:          transfer.Number,
+			Stage:           transfer.Stage,
+			UserID:          transfer.UserID.String(),
+			Kind:            transfer.Kind,
+			CurrencyID:      transfer.CurrencyID,
+			Status:          transfer.Status,
+			Step:            transfer.Step,
+			FromAddresses:   transfer.FromAddresses,
+			ToAddresses:     transfer.ToAddresses,
+			TxHash:          transfer.TxHash,
+			Amount:          transfer.Amount,
+			AmountUsd:       transfer.AmountUsd,
+			Message:         transfer.Message,
+			CreatedAt:       &transfer.CreatedAt.Time,
+			UpdatedAt:       &transfer.UpdatedAt.Time,
+			RefundRequestID: refundRequestIDString(transfer.RefundRequestID),
+			ExecuteAfter:    pgtypeutils.DecodeTime(transfer.RefundExecuteAfter),
 		})
 	}
 	return &storecmn.FindResponseWithFullPagination[*transfer_response.GetTransferResponse]{
@@ -155,4 +158,11 @@ func (s *service) DeleteTransfers(ctx context.Context, user *models.User, req *t
 		return fmt.Errorf("begin tx: %w", err)
 	}
 	return nil
+}
+
+func refundRequestIDString(id uuid.NullUUID) *string {
+	if !id.Valid {
+		return nil
+	}
+	return new(id.UUID.String())
 }

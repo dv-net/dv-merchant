@@ -49,6 +49,10 @@ type IProcessingOwner interface {
 type IProcessingTransfer interface {
 	FundsWithdrawal(ctx context.Context, params FundsWithdrawalParams) (FundsWithdrawalResult, error)
 	StatusFundsWithdrawal(ctx context.Context, requestID uuid.UUID) (status WithdrawalStatus, txHash string, err error)
+	CancelTransfer(ctx context.Context, ownerID uuid.UUID, requestID uuid.UUID) (FundsWithdrawalResult, error)
+	ExecuteTransferNow(ctx context.Context, ownerID uuid.UUID, requestID uuid.UUID, totp string) (FundsWithdrawalResult, error)
+	CheckRefund(ctx context.Context, params FundsWithdrawalParams) (CheckRefundResult, error)
+	GetTransferByRequestID(ctx context.Context, requestID uuid.UUID) (*TransferInfo, error)
 }
 
 type IProcessingClient interface {
@@ -416,6 +420,9 @@ func (s *Service) FundsWithdrawal(ctx context.Context, params FundsWithdrawalPar
 		WholeAmount:     params.WholeAmount,
 		Amount:          &params.Amount,
 		Kind:            params.Kind,
+		Purpose:         params.Purpose.ToPb(),
+		SourceTxHash:    params.SourceTxHash,
+		Totp:            params.TOTP,
 	}
 
 	resp, err := s.processingService.Transfers().Create(ctx, connect.NewRequest(req))
@@ -423,24 +430,172 @@ func (s *Service) FundsWithdrawal(ctx context.Context, params FundsWithdrawalPar
 		return FundsWithdrawalResult{}, err
 	}
 
+	return fundsWithdrawalResultFromPb(resp.Msg.GetItem()), nil
+}
+
+// CancelTransfer cancels a scheduled transfer (a refund waiting for the cooldown)
+// before processing picks it up for execution
+func (s *Service) CancelTransfer(ctx context.Context, ownerID uuid.UUID, requestID uuid.UUID) (FundsWithdrawalResult, error) {
+	if !s.Initialized() {
+		return FundsWithdrawalResult{}, ErrServiceNotInitialized
+	}
+
+	resp, err := s.processingService.Transfers().Cancel(ctx, connect.NewRequest(&transferv1.CancelRequest{
+		OwnerId:   ownerID.String(),
+		RequestId: requestID.String(),
+	}))
+	if err != nil {
+		return FundsWithdrawalResult{}, err
+	}
+
+	return fundsWithdrawalResultFromPb(resp.Msg.GetItem()), nil
+}
+
+// ExecuteTransferNow executes a scheduled transfer immediately, confirmed by the owner's TOTP
+func (s *Service) ExecuteTransferNow(ctx context.Context, ownerID uuid.UUID, requestID uuid.UUID, totp string) (FundsWithdrawalResult, error) {
+	if !s.Initialized() {
+		return FundsWithdrawalResult{}, ErrServiceNotInitialized
+	}
+
+	resp, err := s.processingService.Transfers().ExecuteNow(ctx, connect.NewRequest(&transferv1.ExecuteNowRequest{
+		OwnerId:   ownerID.String(),
+		RequestId: requestID.String(),
+		Totp:      totp,
+	}))
+	if err != nil {
+		return FundsWithdrawalResult{}, err
+	}
+
+	return fundsWithdrawalResultFromPb(resp.Msg.GetItem()), nil
+}
+
+// CheckRefund checks in processing that a refund can be created: the deposit is valid and the hot
+// wallet pays the network fee by itself. Nothing is created, TOTP is not checked.
+func (s *Service) CheckRefund(ctx context.Context, params FundsWithdrawalParams) (CheckRefundResult, error) {
+	if !s.Initialized() {
+		return CheckRefundResult{}, ErrServiceNotInitialized
+	}
+
+	blockchain, err := params.Blockchain.ToPb()
+	if err != nil {
+		return CheckRefundResult{}, err
+	}
+
+	if len(params.FromAddress) != 1 || len(params.ToAddress) != 1 || params.SourceTxHash == nil {
+		return CheckRefundResult{}, fmt.Errorf("refund requires one from address, one to address and the source tx hash")
+	}
+
+	resp, err := s.processingService.Transfers().CheckRefund(ctx, connect.NewRequest(&transferv1.CheckRefundRequest{
+		OwnerId:         params.OwnerID.String(),
+		Blockchain:      blockchain,
+		FromAddress:     params.FromAddress[0],
+		ToAddress:       params.ToAddress[0],
+		AssetIdentifier: params.ContractAddress,
+		Amount:          params.Amount,
+		SourceTxHash:    *params.SourceTxHash,
+	}))
+	if err != nil {
+		return CheckRefundResult{}, err
+	}
+
+	return CheckRefundResult{
+		EstimatedFee:  resp.Msg.EstimatedFee,
+		FeeFromAmount: resp.Msg.GetFeeFromAmount(),
+		ToSender:      resp.Msg.GetToSender(),
+	}, nil
+}
+
+// GetTransferByRequestID returns the transfer state in processing.
+// ErrTransferNotFound means that processing did not create the transfer.
+func (s *Service) GetTransferByRequestID(ctx context.Context, requestID uuid.UUID) (*TransferInfo, error) {
+	if !s.Initialized() {
+		return nil, ErrServiceNotInitialized
+	}
+
+	resp, err := s.processingService.Transfers().GetByRequestID(ctx, connect.NewRequest(&transferv1.GetByRequestIDRequest{
+		RequestId: requestID.String(),
+	}))
+	if err != nil {
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return nil, fmt.Errorf("%w: %w", ErrTransferNotFound, err)
+		}
+		return nil, err
+	}
+
+	item := resp.Msg.GetItem()
+
+	info := &TransferInfo{
+		Status:       transferStatusFromPb(item.GetStatus()),
+		TxHash:       item.GetTxHash(),
+		ErrorMessage: item.GetErrorMessage(),
+		Broadcast:    item.GetTxHash() != "",
+	}
+
+	for _, tx := range item.GetTransactions() {
+		if tx.GetTxType() == transferv1.TransferTransactionType_TRANSFER_TRANSACTION_TYPE_TRANSFER && tx.GetTxHash() != "" {
+			info.Broadcast = true
+		}
+	}
+
+	if executeAfter := item.GetExecuteAfter(); executeAfter != nil {
+		info.ExecuteAfter = new(executeAfter.AsTime())
+	}
+
+	return info, nil
+}
+
+func transferStatusFromPb(status transferv1.Status) models.TransferStatus {
+	switch status {
+	case transferv1.Status_STATUS_NEW:
+		return models.TransferStatusNew
+	case transferv1.Status_STATUS_PENDING:
+		return models.TransferStatusPending
+	case transferv1.Status_STATUS_PROCESSING:
+		return models.TransferStatusProcessing
+	case transferv1.Status_STATUS_IN_MEMPOOL:
+		return models.TransferStatusInMempool
+	case transferv1.Status_STATUS_UNCONFIRMED:
+		return models.TransferStatusUnconfirmed
+	case transferv1.Status_STATUS_COMPLETED:
+		return models.TransferStatusCompleted
+	case transferv1.Status_STATUS_FAILED:
+		return models.TransferStatusFailed
+	case transferv1.Status_STATUS_FROZEN:
+		return models.TransferStatusFrozen
+	case transferv1.Status_STATUS_CANCELED:
+		return models.TransferStatusCanceled
+	default:
+		return ""
+	}
+}
+
+func fundsWithdrawalResultFromPb(item *transferv1.Transfer) FundsWithdrawalResult {
 	var status WithdrawalStatus
-	switch resp.Msg.GetItem().Status {
+	switch item.GetStatus() {
 	case transferv1.Status_STATUS_NEW:
 		status = AcceptedWithdrawalStatus
 	case transferv1.Status_STATUS_PENDING:
 		status = PendingWithdrawalStatus
 	case transferv1.Status_STATUS_FAILED:
 		status = FailedWithdrawalStatus
+	case transferv1.Status_STATUS_CANCELED:
+		status = CanceledWithdrawalStatus
 	case transferv1.Status_STATUS_UNSPECIFIED:
 	default:
 		status = UnknownWithdrawalStatus
 	}
 
-	return FundsWithdrawalResult{
+	result := FundsWithdrawalResult{
 		WithdrawalStatus: status,
-		TxHash:           resp.Msg.GetItem().TxHash,
-		Message:          resp.Msg.GetItem().ErrorMessage,
-	}, nil
+		TxHash:           item.TxHash,
+		Message:          item.ErrorMessage,
+	}
+
+	if executeAfter := item.GetExecuteAfter(); executeAfter != nil {
+		result.ExecuteAfter = new(executeAfter.AsTime())
+	}
+
+	return result
 }
 
 func (s *Service) StatusFundsWithdrawal(_ context.Context, _ uuid.UUID) (status WithdrawalStatus, txHash string, err error) {

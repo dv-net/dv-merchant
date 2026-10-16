@@ -14,9 +14,9 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO refund_requests (blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
-	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at
+INSERT INTO refund_requests (blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, execute_after, last_error)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9, $10)
+	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
 `
 
 type CreateParams struct {
@@ -28,6 +28,8 @@ type CreateParams struct {
 	Status               string           `db:"status" json:"status"`
 	Email                string           `db:"email" json:"email"`
 	ReviewedAt           pgtype.Timestamp `db:"reviewed_at" json:"reviewed_at"`
+	ExecuteAfter         pgtype.Timestamp `db:"execute_after" json:"execute_after"`
+	LastError            pgtype.Text      `db:"last_error" json:"last_error"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.RefundRequest, error) {
@@ -40,6 +42,8 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.RefundR
 		arg.Status,
 		arg.Email,
 		arg.ReviewedAt,
+		arg.ExecuteAfter,
+		arg.LastError,
 	)
 	var i models.RefundRequest
 	err := row.Scan(
@@ -54,12 +58,14 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.RefundR
 		&i.ReviewedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ExecuteAfter,
+		&i.LastError,
 	)
 	return &i, err
 }
 
 const getAllByWalletID = `-- name: GetAllByWalletID :many
-SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at FROM refund_requests WHERE wallet_id=$1
+SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error FROM refund_requests WHERE wallet_id=$1
 `
 
 func (q *Queries) GetAllByWalletID(ctx context.Context, walletID uuid.UUID) ([]*models.RefundRequest, error) {
@@ -83,6 +89,8 @@ func (q *Queries) GetAllByWalletID(ctx context.Context, walletID uuid.UUID) ([]*
 			&i.ReviewedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ExecuteAfter,
+			&i.LastError,
 		); err != nil {
 			return nil, err
 		}
@@ -95,7 +103,7 @@ func (q *Queries) GetAllByWalletID(ctx context.Context, walletID uuid.UUID) ([]*
 }
 
 const getById = `-- name: GetById :one
-SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at FROM refund_requests WHERE id=$1 LIMIT 1
+SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error FROM refund_requests WHERE id=$1 LIMIT 1
 `
 
 func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.RefundRequest, error) {
@@ -113,22 +121,26 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.RefundRequ
 		&i.ReviewedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ExecuteAfter,
+		&i.LastError,
 	)
 	return &i, err
 }
 
 const update = `-- name: Update :one
 UPDATE refund_requests
-	SET transfer_id=$1, status=$2, reviewed_at=$3, updated_at=now()
-WHERE id=$4
-	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at
+	SET transfer_id=$1, status=$2, reviewed_at=$3, updated_at=now(), execute_after=$4, last_error=$5
+WHERE id=$6
+	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
 `
 
 type UpdateParams struct {
-	TransferID uuid.NullUUID    `db:"transfer_id" json:"transfer_id"`
-	Status     string           `db:"status" json:"status"`
-	ReviewedAt pgtype.Timestamp `db:"reviewed_at" json:"reviewed_at"`
-	ID         uuid.UUID        `db:"id" json:"id"`
+	TransferID   uuid.NullUUID    `db:"transfer_id" json:"transfer_id"`
+	Status       string           `db:"status" json:"status"`
+	ReviewedAt   pgtype.Timestamp `db:"reviewed_at" json:"reviewed_at"`
+	ExecuteAfter pgtype.Timestamp `db:"execute_after" json:"execute_after"`
+	LastError    pgtype.Text      `db:"last_error" json:"last_error"`
+	ID           uuid.UUID        `db:"id" json:"id"`
 }
 
 func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.RefundRequest, error) {
@@ -136,6 +148,8 @@ func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.RefundR
 		arg.TransferID,
 		arg.Status,
 		arg.ReviewedAt,
+		arg.ExecuteAfter,
+		arg.LastError,
 		arg.ID,
 	)
 	var i models.RefundRequest
@@ -151,6 +165,8 @@ func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.RefundR
 		&i.ReviewedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ExecuteAfter,
+		&i.LastError,
 	)
 	return &i, err
 }

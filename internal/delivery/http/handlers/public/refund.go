@@ -106,7 +106,14 @@ func (h *Handler) refundClaim(c fiber.Ctx) error {
 		Email:                w.Email.String,
 	})
 	if err != nil {
-		return apierror.New().AddError(errors.New("failed create refund request")).SetHttpCode(fiber.StatusBadRequest)
+		switch {
+		case errors.Is(err, refund.ErrRefundInsufficientFee):
+			return apierror.New().AddError(refund.ErrRefundInsufficientFee).SetHttpCode(fiber.StatusUnprocessableEntity)
+		case errors.Is(err, refund.ErrRefundAlreadyRequested), errors.Is(err, refund.ErrRefundAlreadyExists):
+			return apierror.New().AddError(refund.ErrRefundAlreadyRequested).SetHttpCode(fiber.StatusConflict)
+		default:
+			return apierror.New().AddError(errors.New("failed create refund request")).SetHttpCode(fiber.StatusBadRequest)
+		}
 	}
 
 	return c.JSON(response.OkByData(ref))
@@ -153,6 +160,7 @@ func (h *Handler) refundCabinet(c fiber.Ctx) error {
 				CreatedAt:            pgtypeutils.DecodeTime(item.CreatedAt),
 				RefundStatus:         item.RefundStatus,
 				DestinationAddress:   item.DestinationAddress,
+				RefundExecuteAfter:   pgtypeutils.DecodeTime(item.RefundExecuteAfter),
 			})
 		}
 		result[bucket] = bucketItems

@@ -11,6 +11,8 @@ const (
 	TransferStatusCompleted   TransferStatus = "completed"
 	TransferStatusFailed      TransferStatus = "failed"
 	TransferStatusFrozen      TransferStatus = "frozen"
+	// TransferStatusCanceled - a scheduled transfer (refund) was canceled before execution
+	TransferStatusCanceled TransferStatus = "canceled"
 )
 
 func (t TransferStatus) String() string { return string(t) }

@@ -8,6 +8,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/models"
 
 	commonv1 "github.com/dv-net/dv-processing/api/processing/common/v1"
+	transferv1 "github.com/dv-net/dv-processing/api/processing/transfer/v1"
 	"github.com/google/uuid"
 )
 
@@ -146,6 +147,31 @@ type FundsWithdrawalParams struct {
 	DryRun             *bool
 	IncomingWalletType WalletType
 	Kind               *string
+	// Purpose of the transfer, default is a regular transfer between owner's wallets
+	Purpose TransferPurpose
+	// SourceTxHash is the refunded deposit, required for refunds
+	SourceTxHash *string
+	// TOTP is the owner's 2FA code: required for withdrawals, optional for refunds (skips the cooldown)
+	TOTP *string
+}
+
+type TransferPurpose int
+
+const (
+	TransferPurposeDefault TransferPurpose = iota
+	TransferPurposeWithdrawal
+	TransferPurposeRefund
+)
+
+func (p TransferPurpose) ToPb() transferv1.TransferPurpose {
+	switch p {
+	case TransferPurposeWithdrawal:
+		return transferv1.TransferPurpose_TRANSFER_PURPOSE_WITHDRAWAL
+	case TransferPurposeRefund:
+		return transferv1.TransferPurpose_TRANSFER_PURPOSE_REFUND
+	default:
+		return transferv1.TransferPurpose_TRANSFER_PURPOSE_UNSPECIFIED
+	}
 }
 
 type WalletType string
@@ -158,12 +184,35 @@ const (
 	AcceptedWithdrawalStatus
 	SuccessWithdrawalStatus
 	FailedWithdrawalStatus
+	CanceledWithdrawalStatus
 )
+
+type CheckRefundResult struct {
+	// EstimatedFee in the native coin, nil for btc like blockchains
+	EstimatedFee *string
+	// FeeFromAmount - the fee is subtracted from the refund amount
+	FeeFromAmount bool
+	// ToSender - the destination is the sender of the deposit, the refund does not require TOTP
+	ToSender bool
+}
+
+// TransferInfo is the state of a transfer in processing
+type TransferInfo struct {
+	Status       models.TransferStatus
+	TxHash       string
+	ErrorMessage string
+	// ExecuteAfter is set for scheduled transfers
+	ExecuteAfter *time.Time
+	// Broadcast is true when the transfer transaction may be in the network
+	Broadcast bool
+}
 
 type FundsWithdrawalResult struct {
 	WithdrawalStatus WithdrawalStatus
 	TxHash           *string
 	Message          *string
+	// ExecuteAfter is set for scheduled transfers (refunds without TOTP)
+	ExecuteAfter *time.Time
 }
 
 type TransactionDto struct {

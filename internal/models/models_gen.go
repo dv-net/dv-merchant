@@ -306,6 +306,8 @@ type RefundRequest struct {
 	ReviewedAt           pgtype.Timestamp `db:"reviewed_at" json:"reviewed_at"`
 	CreatedAt            pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt            pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	ExecuteAfter         pgtype.Timestamp `db:"execute_after" json:"execute_after"`
+	LastError            pgtype.Text      `db:"last_error" json:"last_error"`
 } // @name RefundRequest
 
 type Setting struct {
@@ -405,24 +407,25 @@ type Transaction struct {
 } // @name Transaction
 
 type Transfer struct {
-	ID            uuid.UUID        `db:"id" json:"id"`
-	Number        int64            `db:"number" json:"number"`
-	UserID        uuid.UUID        `db:"user_id" json:"user_id"`
-	Kind          TransferKind     `db:"kind" json:"kind"`
-	CurrencyID    string           `db:"currency_id" json:"currency_id"`
-	Status        TransferStatus   `db:"status" json:"status"`
-	Stage         TransferStage    `db:"stage" json:"stage"`
-	Amount        decimal.Decimal  `db:"amount" json:"amount"`
-	AmountUsd     decimal.Decimal  `db:"amount_usd" json:"amount_usd"`
-	Message       *string          `db:"message" json:"message"`
-	CreatedAt     pgtype.Timestamp `db:"created_at" json:"created_at"`
-	UpdatedAt     pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-	Blockchain    Blockchain       `db:"blockchain" json:"blockchain"`
-	FromAddresses []string         `db:"from_addresses" json:"from_addresses"`
-	ToAddresses   []string         `db:"to_addresses" json:"to_addresses"`
-	Step          *string          `db:"step" json:"step"`
-	TxHash        *string          `db:"tx_hash" json:"tx_hash"`
-	RoutedFlagged bool             `db:"routed_flagged" json:"routed_flagged"`
+	ID              uuid.UUID        `db:"id" json:"id"`
+	Number          int64            `db:"number" json:"number"`
+	UserID          uuid.UUID        `db:"user_id" json:"user_id"`
+	Kind            TransferKind     `db:"kind" json:"kind"`
+	CurrencyID      string           `db:"currency_id" json:"currency_id"`
+	Status          TransferStatus   `db:"status" json:"status"`
+	Stage           TransferStage    `db:"stage" json:"stage"`
+	Amount          decimal.Decimal  `db:"amount" json:"amount"`
+	AmountUsd       decimal.Decimal  `db:"amount_usd" json:"amount_usd"`
+	Message         *string          `db:"message" json:"message"`
+	CreatedAt       pgtype.Timestamp `db:"created_at" json:"created_at"`
+	UpdatedAt       pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	Blockchain      Blockchain       `db:"blockchain" json:"blockchain"`
+	FromAddresses   []string         `db:"from_addresses" json:"from_addresses"`
+	ToAddresses     []string         `db:"to_addresses" json:"to_addresses"`
+	Step            *string          `db:"step" json:"step"`
+	TxHash          *string          `db:"tx_hash" json:"tx_hash"`
+	RoutedFlagged   bool             `db:"routed_flagged" json:"routed_flagged"`
+	RefundRequestID uuid.NullUUID    `db:"refund_request_id" json:"refund_request_id"`
 } // @name Transfer
 
 type TransferTransaction struct {

@@ -51,7 +51,7 @@ RETURNING *;
 WITH balances as (SELECT SUM(
                                  CASE
                                      WHEN type = 'deposit' AND to_address = $1 THEN amount
-                                     WHEN type = 'transfer' AND from_address = $1 THEN -amount
+                                     WHEN type IN ('transfer', 'refund') AND from_address = $1 THEN -amount
                                      ELSE 0
                                      END
                          )::numeric AS balance
@@ -69,12 +69,12 @@ WHERE wa.currency_id = $2
 -- name: UpdateWalletNativeTokenBalance :exec
 WITH native_token_balance as (SELECT (SUM(CASE
                                               WHEN type = 'deposit' AND transactions.to_address = $1 THEN amount
-                                              WHEN type = 'transfer' AND transactions.from_address = $1 THEN -amount
+                                              WHEN type IN ('transfer', 'refund') AND transactions.from_address = $1 THEN -amount
                                               ELSE 0
     END)
     - COALESCE((SELECT SUM(fee)
                 FROM transactions
-                WHERE type = 'transfer'
+                WHERE type IN ('transfer', 'refund')
                   AND transactions.from_address = $1
                   AND transactions.blockchain = $3), 0))::numeric AS balance
                               FROM transactions

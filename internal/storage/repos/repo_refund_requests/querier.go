@@ -12,12 +12,28 @@ import (
 )
 
 type Querier interface {
+	// Claims a pending review request for sending and attaches its refund transfer. It is committed
+	// before the refund is sent to processing, so status webhooks always find the request.
+	ClaimForSending(ctx context.Context, arg ClaimForSendingParams) (*models.RefundRequest, error)
 	Create(ctx context.Context, arg CreateParams) (*models.RefundRequest, error)
 	GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserIDAndStatusParams) ([]*GetAllByUserIDAndStatusRow, error)
 	GetAllByWalletID(ctx context.Context, walletID uuid.UUID) ([]*models.RefundRequest, error)
 	GetByBlockedTransactionID(ctx context.Context, blockedTransactionID uuid.UUID) (*models.RefundRequest, error)
 	GetById(ctx context.Context, id uuid.UUID) (*models.RefundRequest, error)
+	// Requests sent to processing which were not updated for a while: a lost webhook or an unknown
+	// result of the processing call.
+	GetInFlightForReconcile(ctx context.Context, arg GetInFlightForReconcileParams) ([]*models.RefundRequest, error)
+	// Sets the result of the refund in processing. The request may be already moved by a status webhook,
+	// then nothing is updated.
+	MarkSent(ctx context.Context, arg MarkSentParams) (*models.RefundRequest, error)
+	// Returns the request to pending review when processing did not create the refund transfer.
+	RevertUnsent(ctx context.Context, arg RevertUnsentParams) (int64, error)
+	SetLastError(ctx context.Context, arg SetLastErrorParams) error
 	Update(ctx context.Context, arg UpdateParams) (*models.RefundRequest, error)
+	// Moves the refund request of the transfer to the new status when it is in one of the current statuses.
+	// reset_transfer detaches the failed or canceled transfer, so the refund can be approved again.
+	UpdateStatusByTransferID(ctx context.Context, arg UpdateStatusByTransferIDParams) (int64, error)
+	UpdateStatusIfCurrent(ctx context.Context, arg UpdateStatusIfCurrentParams) (*models.RefundRequest, error)
 }
 
 var _ Querier = (*Queries)(nil)

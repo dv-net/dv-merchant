@@ -129,6 +129,7 @@ type Services struct {
 	AMLUserSettings               aml.IUserAmlSettings
 	AMLHistoryService             aml.IHistoryService
 	RefundService                 refund.IRefundService
+	RefundReconciler              *refund.Service
 }
 
 //nolint:funlen
@@ -252,7 +253,7 @@ func NewServices(
 		return nil, err
 	}
 
-	refundService := refund.NewService(logger, storage)
+	refundService := refund.NewService(logger, storage, withdrawService, processingService)
 	return &Services{
 		UserService:                   userService,
 		UserCredentialsService:        userService,
@@ -314,6 +315,7 @@ func NewServices(
 		AMLUserSettings:               amlService,
 		AMLHistoryService:             amlService,
 		RefundService:                 refundService,
+		RefundReconciler:              refundService,
 	}, nil
 }
 

@@ -14,8 +14,56 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const claimForSending = `-- name: ClaimForSending :one
+UPDATE refund_requests
+	SET status=$1,
+	    transfer_id=$2,
+	    reviewed_at=COALESCE($3, reviewed_at),
+	    execute_after=NULL,
+	    updated_at=now()
+WHERE id=$4 AND status=$5
+	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
+`
+
+type ClaimForSendingParams struct {
+	NewStatus     string           `db:"new_status" json:"new_status"`
+	TransferID    uuid.NullUUID    `db:"transfer_id" json:"transfer_id"`
+	ReviewedAt    pgtype.Timestamp `db:"reviewed_at" json:"reviewed_at"`
+	ID            uuid.UUID        `db:"id" json:"id"`
+	CurrentStatus string           `db:"current_status" json:"current_status"`
+}
+
+// Claims a pending review request for sending and attaches its refund transfer. It is committed
+// before the refund is sent to processing, so status webhooks always find the request.
+func (q *Queries) ClaimForSending(ctx context.Context, arg ClaimForSendingParams) (*models.RefundRequest, error) {
+	row := q.db.QueryRow(ctx, claimForSending,
+		arg.NewStatus,
+		arg.TransferID,
+		arg.ReviewedAt,
+		arg.ID,
+		arg.CurrentStatus,
+	)
+	var i models.RefundRequest
+	err := row.Scan(
+		&i.ID,
+		&i.BlockedTransactionID,
+		&i.WalletID,
+		&i.StoreID,
+		&i.TransferID,
+		&i.DestinationAddress,
+		&i.Status,
+		&i.Email,
+		&i.ReviewedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ExecuteAfter,
+		&i.LastError,
+	)
+	return &i, err
+}
+
 const getAllByUserIDAndStatus = `-- name: GetAllByUserIDAndStatus :many
-SELECT rr.id, rr.blocked_transaction_id, rr.wallet_id, rr.store_id, rr.transfer_id, rr.destination_address, rr.status, rr.email, rr.reviewed_at, rr.created_at, rr.updated_at,
+SELECT rr.id, rr.blocked_transaction_id, rr.wallet_id, rr.store_id, rr.transfer_id, rr.destination_address, rr.status, rr.email, rr.reviewed_at, rr.created_at, rr.updated_at, rr.execute_after, rr.last_error,
        t.id AS transaction_id,
        t.tx_hash,
        t.amount,
@@ -53,6 +101,8 @@ type GetAllByUserIDAndStatusRow struct {
 	ReviewedAt           pgtype.Timestamp    `db:"reviewed_at" json:"reviewed_at"`
 	CreatedAt            pgtype.Timestamp    `db:"created_at" json:"created_at"`
 	UpdatedAt            pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
+	ExecuteAfter         pgtype.Timestamp    `db:"execute_after" json:"execute_after"`
+	LastError            pgtype.Text         `db:"last_error" json:"last_error"`
 	TransactionID        uuid.UUID           `db:"transaction_id" json:"transaction_id"`
 	TxHash               string              `db:"tx_hash" json:"tx_hash"`
 	Amount               decimal.Decimal     `db:"amount" json:"amount"`
@@ -87,6 +137,8 @@ func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserI
 			&i.ReviewedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ExecuteAfter,
+			&i.LastError,
 			&i.TransactionID,
 			&i.TxHash,
 			&i.Amount,
@@ -110,7 +162,7 @@ func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserI
 }
 
 const getByBlockedTransactionID = `-- name: GetByBlockedTransactionID :one
-SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at
+SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
 FROM refund_requests
 WHERE blocked_transaction_id = $1
 LIMIT 1
@@ -131,6 +183,225 @@ func (q *Queries) GetByBlockedTransactionID(ctx context.Context, blockedTransact
 		&i.ReviewedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ExecuteAfter,
+		&i.LastError,
+	)
+	return &i, err
+}
+
+const getInFlightForReconcile = `-- name: GetInFlightForReconcile :many
+SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
+FROM refund_requests
+WHERE status = ANY($1::varchar[])
+  AND transfer_id IS NOT NULL
+  AND updated_at < $2::timestamp
+ORDER BY updated_at
+LIMIT $3::int
+`
+
+type GetInFlightForReconcileParams struct {
+	Statuses      []string         `db:"statuses" json:"statuses"`
+	UpdatedBefore pgtype.Timestamp `db:"updated_before" json:"updated_before"`
+	MaxItems      int32            `db:"max_items" json:"max_items"`
+}
+
+// Requests sent to processing which were not updated for a while: a lost webhook or an unknown
+// result of the processing call.
+func (q *Queries) GetInFlightForReconcile(ctx context.Context, arg GetInFlightForReconcileParams) ([]*models.RefundRequest, error) {
+	rows, err := q.db.Query(ctx, getInFlightForReconcile, arg.Statuses, arg.UpdatedBefore, arg.MaxItems)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*models.RefundRequest{}
+	for rows.Next() {
+		var i models.RefundRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.BlockedTransactionID,
+			&i.WalletID,
+			&i.StoreID,
+			&i.TransferID,
+			&i.DestinationAddress,
+			&i.Status,
+			&i.Email,
+			&i.ReviewedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ExecuteAfter,
+			&i.LastError,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const markSent = `-- name: MarkSent :one
+UPDATE refund_requests
+	SET status=$1,
+	    execute_after=$2,
+	    last_error=NULL,
+	    updated_at=now()
+WHERE id=$3 AND transfer_id=$4 AND status=$5
+	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
+`
+
+type MarkSentParams struct {
+	NewStatus     string           `db:"new_status" json:"new_status"`
+	ExecuteAfter  pgtype.Timestamp `db:"execute_after" json:"execute_after"`
+	ID            uuid.UUID        `db:"id" json:"id"`
+	TransferID    uuid.NullUUID    `db:"transfer_id" json:"transfer_id"`
+	CurrentStatus string           `db:"current_status" json:"current_status"`
+}
+
+// Sets the result of the refund in processing. The request may be already moved by a status webhook,
+// then nothing is updated.
+func (q *Queries) MarkSent(ctx context.Context, arg MarkSentParams) (*models.RefundRequest, error) {
+	row := q.db.QueryRow(ctx, markSent,
+		arg.NewStatus,
+		arg.ExecuteAfter,
+		arg.ID,
+		arg.TransferID,
+		arg.CurrentStatus,
+	)
+	var i models.RefundRequest
+	err := row.Scan(
+		&i.ID,
+		&i.BlockedTransactionID,
+		&i.WalletID,
+		&i.StoreID,
+		&i.TransferID,
+		&i.DestinationAddress,
+		&i.Status,
+		&i.Email,
+		&i.ReviewedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ExecuteAfter,
+		&i.LastError,
+	)
+	return &i, err
+}
+
+const revertUnsent = `-- name: RevertUnsent :execrows
+UPDATE refund_requests
+	SET status=$1,
+	    transfer_id=NULL,
+	    execute_after=NULL,
+	    last_error=$2,
+	    updated_at=now()
+WHERE id=$3 AND transfer_id=$4 AND status=$5
+`
+
+type RevertUnsentParams struct {
+	NewStatus     string        `db:"new_status" json:"new_status"`
+	LastError     pgtype.Text   `db:"last_error" json:"last_error"`
+	ID            uuid.UUID     `db:"id" json:"id"`
+	TransferID    uuid.NullUUID `db:"transfer_id" json:"transfer_id"`
+	CurrentStatus string        `db:"current_status" json:"current_status"`
+}
+
+// Returns the request to pending review when processing did not create the refund transfer.
+func (q *Queries) RevertUnsent(ctx context.Context, arg RevertUnsentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, revertUnsent,
+		arg.NewStatus,
+		arg.LastError,
+		arg.ID,
+		arg.TransferID,
+		arg.CurrentStatus,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setLastError = `-- name: SetLastError :exec
+UPDATE refund_requests
+	SET last_error=$1, updated_at=now()
+WHERE id=$2
+`
+
+type SetLastErrorParams struct {
+	LastError pgtype.Text `db:"last_error" json:"last_error"`
+	ID        uuid.UUID   `db:"id" json:"id"`
+}
+
+func (q *Queries) SetLastError(ctx context.Context, arg SetLastErrorParams) error {
+	_, err := q.db.Exec(ctx, setLastError, arg.LastError, arg.ID)
+	return err
+}
+
+const updateStatusByTransferID = `-- name: UpdateStatusByTransferID :execrows
+UPDATE refund_requests
+	SET status=$1,
+	    last_error=$2,
+	    transfer_id=CASE WHEN $3::boolean THEN NULL ELSE transfer_id END,
+	    execute_after=CASE WHEN $3::boolean THEN NULL ELSE execute_after END,
+	    updated_at=now()
+WHERE transfer_id=$4
+  AND status=ANY($5::varchar[])
+`
+
+type UpdateStatusByTransferIDParams struct {
+	NewStatus       string        `db:"new_status" json:"new_status"`
+	LastError       pgtype.Text   `db:"last_error" json:"last_error"`
+	ResetTransfer   bool          `db:"reset_transfer" json:"reset_transfer"`
+	TransferID      uuid.NullUUID `db:"transfer_id" json:"transfer_id"`
+	CurrentStatuses []string      `db:"current_statuses" json:"current_statuses"`
+}
+
+// Moves the refund request of the transfer to the new status when it is in one of the current statuses.
+// reset_transfer detaches the failed or canceled transfer, so the refund can be approved again.
+func (q *Queries) UpdateStatusByTransferID(ctx context.Context, arg UpdateStatusByTransferIDParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateStatusByTransferID,
+		arg.NewStatus,
+		arg.LastError,
+		arg.ResetTransfer,
+		arg.TransferID,
+		arg.CurrentStatuses,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updateStatusIfCurrent = `-- name: UpdateStatusIfCurrent :one
+UPDATE refund_requests
+	SET status=$1, updated_at=now()
+WHERE id=$2 AND status=$3
+	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
+`
+
+type UpdateStatusIfCurrentParams struct {
+	NewStatus     string    `db:"new_status" json:"new_status"`
+	ID            uuid.UUID `db:"id" json:"id"`
+	CurrentStatus string    `db:"current_status" json:"current_status"`
+}
+
+func (q *Queries) UpdateStatusIfCurrent(ctx context.Context, arg UpdateStatusIfCurrentParams) (*models.RefundRequest, error) {
+	row := q.db.QueryRow(ctx, updateStatusIfCurrent, arg.NewStatus, arg.ID, arg.CurrentStatus)
+	var i models.RefundRequest
+	err := row.Scan(
+		&i.ID,
+		&i.BlockedTransactionID,
+		&i.WalletID,
+		&i.StoreID,
+		&i.TransferID,
+		&i.DestinationAddress,
+		&i.Status,
+		&i.Email,
+		&i.ReviewedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ExecuteAfter,
+		&i.LastError,
 	)
 	return &i, err
 }

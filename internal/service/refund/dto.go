@@ -20,6 +20,23 @@ type RejectRefundDTO struct {
 	UserID          uuid.UUID
 }
 
+type ExecuteRefundNowDTO struct {
+	RefundRequestID uuid.UUID
+	UserID          uuid.UUID
+	TOTP            string
+}
+
+type CancelRefundDTO struct {
+	RefundRequestID uuid.UUID
+	UserID          uuid.UUID
+}
+
+type ApproveRefundDTO struct {
+	RefundRequestID uuid.UUID
+	UserID          uuid.UUID
+	TOTP            string
+}
+
 const CabinetBucketAvailable = "available"
 
 type CabinetItem struct {
@@ -38,6 +55,8 @@ type CabinetItem struct {
 	CreatedAt            pgtype.Timestamp
 	RefundStatus         *string
 	DestinationAddress   *string
+	// RefundExecuteAfter is the time a refund to the deposit sender is sent after the cooldown
+	RefundExecuteAfter pgtype.Timestamp
 }
 
 // buildCabinet groups a wallet's blocked transactions by refund status. blocked rows
@@ -74,6 +93,7 @@ func buildCabinet(
 		if r, ok := refundByBlockedTx[b.ID]; ok {
 			item.RefundStatus = &r.Status
 			item.DestinationAddress = &r.DestinationAddress
+			item.RefundExecuteAfter = r.ExecuteAfter
 			bucket = r.Status
 		}
 		grouped[bucket] = append(grouped[bucket], item)
