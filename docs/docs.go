@@ -10942,66 +10942,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/public/wallet/{id}/refresh-address": {
-            "post": {
-                "description": "Marks the current address as dirty so a new one will be generated",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Wallet",
-                    "Public"
-                ],
-                "summary": "Refresh wallet address",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Wallet ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "RefreshWalletAddressRequest",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/RefreshWalletAddressRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/JSONResponse-string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    },
-                    "422": {
-                        "description": "Unprocessable Entity",
-                        "schema": {
-                            "$ref": "#/definitions/APIErrors"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/public/wallet/{id}/tx-find": {
             "get": {
                 "description": "Get recent wallet transactions",
@@ -15369,17 +15309,6 @@ const docTemplate = `{
                 "ReceiptStatusPaid",
                 "ReceiptStatusCanceled"
             ]
-        },
-        "RefreshWalletAddressRequest": {
-            "type": "object",
-            "required": [
-                "address"
-            ],
-            "properties": {
-                "address": {
-                    "type": "string"
-                }
-            }
         },
         "RefundClaimRequest": {
             "type": "object",
