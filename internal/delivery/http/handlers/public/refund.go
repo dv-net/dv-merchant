@@ -82,6 +82,9 @@ func (h *Handler) refundVerify(c fiber.Ctx) error {
 //	@Success		200		{object}	response.Result[models.RefundRequest]
 //	@Failure		400		{object}	apierror.Errors
 //	@Failure		401		{object}	apierror.Errors
+//	@Failure		404		{object}	apierror.Errors
+//	@Failure		409		{object}	apierror.Errors
+//	@Failure		422		{object}	apierror.Errors
 //	@Router			/v1/public/refund/blocked-transactions/{id}/claim [post]
 func (h *Handler) refundClaim(c fiber.Ctx) error {
 	w, err := loadRefundWallet(c)
@@ -106,17 +109,46 @@ func (h *Handler) refundClaim(c fiber.Ctx) error {
 		Email:                w.Email.String,
 	})
 	if err != nil {
-		switch {
-		case errors.Is(err, refund.ErrRefundInsufficientFee):
-			return apierror.New().AddError(refund.ErrRefundInsufficientFee).SetHttpCode(fiber.StatusUnprocessableEntity)
-		case errors.Is(err, refund.ErrRefundAlreadyRequested), errors.Is(err, refund.ErrRefundAlreadyExists):
-			return apierror.New().AddError(refund.ErrRefundAlreadyRequested).SetHttpCode(fiber.StatusConflict)
-		default:
-			return apierror.New().AddError(errors.New("failed create refund request")).SetHttpCode(fiber.StatusBadRequest)
-		}
+		return h.prepareRefundClaimError(err, w.ID, blockedTransactionID)
 	}
 
 	return c.JSON(response.OkByData(ref))
+}
+
+// prepareRefundClaimError logs the claim error and converts it to the http error.
+// Only the sentinel error text is returned to the payer, the wrapped details stay in the log.
+func (h *Handler) prepareRefundClaimError(err error, walletID, blockedTransactionID uuid.UUID) error {
+	var (
+		httpCode = fiber.StatusBadRequest
+		respErr  = errors.New("failed create refund request")
+	)
+
+	switch {
+	case errors.Is(err, refund.ErrRefundBlockedTxNotFound):
+		httpCode, respErr = fiber.StatusNotFound, refund.ErrRefundBlockedTxNotFound
+	case errors.Is(err, refund.ErrRefundAlreadyRequested), errors.Is(err, refund.ErrRefundAlreadyExists):
+		httpCode, respErr = fiber.StatusConflict, refund.ErrRefundAlreadyRequested
+	case errors.Is(err, refund.ErrRefundInvalidAddress):
+		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundInvalidAddress
+	case errors.Is(err, refund.ErrRefundInsufficientFee):
+		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundInsufficientFee
+	case errors.Is(err, refund.ErrRefundSourceInvalid):
+		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundSourceInvalid
+	}
+
+	log := h.logger.Warnw
+	if httpCode == fiber.StatusBadRequest {
+		// an unexpected error: processing, database or a validation without a dedicated code
+		log = h.logger.Errorw
+	}
+	log("failed to create refund request",
+		"wallet_id", walletID,
+		"blocked_transaction_id", blockedTransactionID,
+		"http_code", httpCode,
+		"error", err,
+	)
+
+	return apierror.New().AddError(respErr).SetHttpCode(httpCode)
 }
 
 // refundCabinet lists the authenticated wallet's blocked transactions, each paired

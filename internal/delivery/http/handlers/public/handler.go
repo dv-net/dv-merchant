@@ -2,17 +2,20 @@ package public
 
 import (
 	"github.com/dv-net/dv-merchant/internal/service"
+	"github.com/dv-net/dv-merchant/pkg/logger"
 
 	"github.com/gofiber/fiber/v3"
 )
 
 type Handler struct {
 	services *service.Services
+	logger   logger.Logger
 }
 
-func NewHandler(services *service.Services) *Handler {
+func NewHandler(services *service.Services, logger logger.Logger) *Handler {
 	return &Handler{
 		services: services,
+		logger:   logger,
 	}
 }
 
