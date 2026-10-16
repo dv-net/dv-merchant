@@ -111,12 +111,7 @@ func (b Blockchain) KindWithdrawalRequired() bool {
 }
 
 func (b Blockchain) ShowProcessingWallets() bool {
-	switch b {
-	case BlockchainEthereum, BlockchainTron, BlockchainBinanceSmartChain, BlockchainPolygon, BlockchainArbitrum:
-		return true
-	default:
-		return false
-	}
+	return true
 }
 
 func (b Blockchain) IsBitcoinLike() bool {
