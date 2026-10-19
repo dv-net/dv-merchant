@@ -185,8 +185,8 @@ github.com/docker/go-units v0.5.0 h1:69rxXcBk27SvSaaxTtLh/8llcHD8vYHT7WSdRZ/jvr4
 github.com/docker/go-units v0.5.0/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
 github.com/dromara/carbon/v2 v2.5.4 h1:BkftNHVCkEwzv6ZuFiB/R1rLHaw6ufbCVkyLDCf3GeY=
 github.com/dromara/carbon/v2 v2.5.4/go.mod h1:zyPlND2o27sKKkRmdgLbk/qYxkmmH6Z4eE8OoM0w3DM=
-github.com/dv-net/dv-processing v0.9.13-RC03 h1:kvfscI1Q2Qn68PYG4IRP2TwKLM7SeYhNFka/QGJhY+0=
-github.com/dv-net/dv-processing v0.9.13-RC03/go.mod h1:1gEOoUJgpIYvvh3vlCnt0QVCA8/R+sC0enjVw3TAIBg=
+github.com/dv-net/dv-processing v0.9.13 h1:GZIbsJAUzBuodMakYWFNTy8vwn1IpHI0DUnPG/2cMwU=
+github.com/dv-net/dv-processing v0.9.13/go.mod h1:1gEOoUJgpIYvvh3vlCnt0QVCA8/R+sC0enjVw3TAIBg=
 github.com/dv-net/dv-proto v0.5.6 h1:IdzJXtPDfdrtBcFY/c2d6o9dzQZSdL+kCdNut0t0t60=
 github.com/dv-net/dv-proto v0.5.6/go.mod h1:ailyqFT8xw7byWr1++NoVjOpgqIm+n7Y49rwLRstbT8=
 github.com/dv-net/email-template v0.1.7 h1:TNUGwl7G8PWL+5VSvBgyp+EMGt1hAxvzqV9qUMddsuA=
