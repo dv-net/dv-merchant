@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.9.28]
+- feat: add support refund transaction
+
+## [0.9.27]
+- add proxy header and trusted proxies configuration by
+
 ## [0.9.26]
 - fix: enforce store IP whitelist on external API requests [DNS-194]
 - fix: return 400 instead of 401 when turnstile captcha verification fails [DNS-195]

@@ -13,7 +13,7 @@ require (
 	connectrpc.com/connect v1.18.1
 	github.com/casbin/casbin/v2 v2.120.0
 	github.com/cbroglie/mustache v1.4.0
-	github.com/dv-net/dv-processing v0.9.13-RC03
+	github.com/dv-net/dv-processing v0.9.13
 	github.com/dv-net/dv-proto v0.5.6
 	github.com/dv-net/email-template v0.1.7
 	github.com/dv-net/go-bip39 v1.1.1
