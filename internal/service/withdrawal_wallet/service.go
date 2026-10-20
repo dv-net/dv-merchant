@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
-
-	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 
 	"github.com/dv-net/dv-merchant/internal/service/processing"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
@@ -20,7 +19,6 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_withdrawal_wallets"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 
-	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -34,11 +32,10 @@ type IWithdrawalWalletService interface {
 	UpdateWithdrawalRules(ctx context.Context, dto UpdateRulesDTO) error
 
 	GetAddressByID(ctx context.Context, id uuid.UUID) (*models.WithdrawalWalletAddress, error)
-	CreateWithdrawalWalletAddress(ctx context.Context, params repo_withdrawal_wallet_addresses.CreateParams, user *models.User, totp string) (*models.WithdrawalWalletAddress, error)
 	BatchCreateOrUpdateWallet(ctx context.Context, user *models.User, dto UpdateAddressesListDTO) error
-	UpdateAddress(ctx context.Context, params repo_withdrawal_wallet_addresses.UpdateDeletedAddressParams, opts ...repos.Option) (*models.WithdrawalWalletAddress, error)
 	DeleteAddress(ctx context.Context, walletAddressID uuid.UUID, user *models.User, totp string) error
 	BatchDelete(ctx context.Context, withdrawalWalletID uuid.UUID, addressesIDs []uuid.UUID, user *models.User, totp string) error
+	EnsureNotDepositAddresses(ctx context.Context, addrs []string, opts ...repos.Option) error
 }
 
 type Service struct {
@@ -65,7 +62,7 @@ func New(
 	}
 }
 
-func (s Service) GetWithdrawalWallets(ctx context.Context, usr *models.User) ([]*WithdrawalWithAddress, error) {
+func (s *Service) GetWithdrawalWallets(ctx context.Context, usr *models.User) ([]*WithdrawalWithAddress, error) {
 	wallets, err := s.storage.WithdrawalWallets().GetWithdrawalWallets(ctx, usr.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get withdrawal wallets: %w", err)
@@ -114,7 +111,7 @@ func (s Service) GetWithdrawalWallets(ctx context.Context, usr *models.User) ([]
 	return data, nil
 }
 
-func (s Service) GetWithdrawalWalletsByCurrencyID(ctx context.Context, usr *models.User, currencyID string, opts ...repos.Option) (*WithdrawalWithAddress, error) {
+func (s *Service) GetWithdrawalWalletsByCurrencyID(ctx context.Context, usr *models.User, currencyID string, opts ...repos.Option) (*WithdrawalWithAddress, error) {
 	c, err := s.currencyService.GetCurrencyByID(ctx, currencyID)
 	if err != nil {
 		return nil, fmt.Errorf("currency not found: %s: %w", currencyID, err)
@@ -150,7 +147,7 @@ func (s Service) GetWithdrawalWalletsByCurrencyID(ctx context.Context, usr *mode
 	return s.buildWithdrawalWithAddress(ctx, wallet, usr, &mCurrency, opts...)
 }
 
-func (s Service) UpdateWithdrawalRules(ctx context.Context, dto UpdateRulesDTO) error {
+func (s *Service) UpdateWithdrawalRules(ctx context.Context, dto UpdateRulesDTO) error {
 	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		withdrawalWallet, err := s.storage.WithdrawalWallets(repos.WithTx(tx)).Update(
 			ctx,
@@ -200,53 +197,7 @@ func (s Service) UpdateWithdrawalRules(ctx context.Context, dto UpdateRulesDTO) 
 	})
 }
 
-func (s Service) CreateWithdrawalWalletAddress(ctx context.Context, params repo_withdrawal_wallet_addresses.CreateParams, user *models.User, totp string) (*models.WithdrawalWalletAddress, error) {
-	var updatedAddress *models.WithdrawalWalletAddress
-
-	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
-		address, err := s.storage.WithdrawalWalletAddresses(repos.WithTx(tx)).GetByAddressWithTrashed(ctx, repo_withdrawal_wallet_addresses.GetByAddressWithTrashedParams{
-			WithdrawalWalletID: params.WithdrawalWalletID,
-			Address:            params.Address,
-		})
-		if err != nil { //nolint:nestif
-			if errors.Is(err, pgx.ErrNoRows) {
-				newAddress, err := s.storage.WithdrawalWalletAddresses(repos.WithTx(tx)).Create(ctx, params)
-				if err != nil {
-					return fmt.Errorf("failed to create withdrawal wallet address: %w", err)
-				}
-				updatedAddress = newAddress
-
-				if err := s.updateProcessingWithdrawalWalletWhitelist(ctx, params.WithdrawalWalletID, user, totp, tx); err != nil {
-					return apierror.New().AddError(fmt.Errorf("update withdrawal wallet address %s: %w", newAddress.Address, err)).SetHttpCode(fiber.StatusBadRequest)
-				}
-				return nil
-			}
-			return fmt.Errorf("failed to get withdrawal wallet address: %w", err)
-		}
-		// update address if him deleted
-		updatedAddress, err = s.UpdateAddress(ctx, repo_withdrawal_wallet_addresses.UpdateDeletedAddressParams{
-			Name: params.Name,
-			ID:   address.ID,
-		}, repos.WithTx(tx))
-		if err != nil {
-			return err
-		}
-
-		err = s.updateProcessingWithdrawalWalletWhitelist(ctx, params.WithdrawalWalletID, user, totp, tx)
-		if err != nil {
-			return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return updatedAddress, nil
-}
-
-func (s Service) DeleteAddress(ctx context.Context, walletAddressID uuid.UUID, user *models.User, totp string) error {
+func (s *Service) DeleteAddress(ctx context.Context, walletAddressID uuid.UUID, user *models.User, totp string) error {
 	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		walletAddress, err := s.GetAddressByID(ctx, walletAddressID)
 		if err != nil {
@@ -266,7 +217,7 @@ func (s Service) DeleteAddress(ctx context.Context, walletAddressID uuid.UUID, u
 	})
 }
 
-func (s Service) BatchDelete(ctx context.Context, withdrawalWalletID uuid.UUID, addressesIDs []uuid.UUID, user *models.User, totp string) error {
+func (s *Service) BatchDelete(ctx context.Context, withdrawalWalletID uuid.UUID, addressesIDs []uuid.UUID, user *models.User, totp string) error {
 	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		err := s.storage.WithdrawalWalletAddresses(repos.WithTx(tx)).SoftBatchDelete(ctx, addressesIDs)
 		if err != nil {
@@ -280,15 +231,7 @@ func (s Service) BatchDelete(ctx context.Context, withdrawalWalletID uuid.UUID, 
 	})
 }
 
-func (s Service) UpdateAddress(ctx context.Context, params repo_withdrawal_wallet_addresses.UpdateDeletedAddressParams, opts ...repos.Option) (*models.WithdrawalWalletAddress, error) {
-	updatedAddress, err := s.storage.WithdrawalWalletAddresses(opts...).UpdateDeletedAddress(ctx, params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update withdrawal wallet address: %w", err)
-	}
-	return updatedAddress, nil
-}
-
-func (s Service) GetAddressByID(ctx context.Context, id uuid.UUID) (*models.WithdrawalWalletAddress, error) {
+func (s *Service) GetAddressByID(ctx context.Context, id uuid.UUID) (*models.WithdrawalWalletAddress, error) {
 	address, err := s.storage.WithdrawalWalletAddresses().GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get withdrawal wallet address: %w", err)
@@ -297,7 +240,7 @@ func (s Service) GetAddressByID(ctx context.Context, id uuid.UUID) (*models.With
 	return address, nil
 }
 
-func (s Service) GetWalletByID(ctx context.Context, id uuid.UUID) (*models.WithdrawalWallet, error) {
+func (s *Service) GetWalletByID(ctx context.Context, id uuid.UUID) (*models.WithdrawalWallet, error) {
 	wallet, err := s.storage.WithdrawalWallets().GetById(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get withdrawal wallet address: %w", err)
@@ -306,8 +249,19 @@ func (s Service) GetWalletByID(ctx context.Context, id uuid.UUID) (*models.Withd
 	return wallet, nil
 }
 
-func (s Service) BatchCreateOrUpdateWallet(ctx context.Context, user *models.User, dto UpdateAddressesListDTO) error {
+func (s *Service) BatchCreateOrUpdateWallet(ctx context.Context, user *models.User, dto UpdateAddressesListDTO) error {
 	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+		if len(dto.Addresses) > 0 {
+			addrs := make([]string, 0, len(dto.Addresses))
+			for _, a := range dto.Addresses {
+				addrs = append(addrs, a.Address)
+			}
+
+			if err := s.EnsureNotDepositAddresses(ctx, addrs, repos.WithTx(tx)); err != nil {
+				return err
+			}
+		}
+
 		// create/replace addresses
 		if err := s.processWalletAddresses(ctx, dto.Addresses, dto.WalletID, tx); err != nil {
 			return fmt.Errorf("process wallet addresses :%w", err)
@@ -326,7 +280,7 @@ func (s Service) BatchCreateOrUpdateWallet(ctx context.Context, user *models.Use
 	return nil
 }
 
-func (s Service) processWalletAddresses(ctx context.Context, list []AddressDTO, walletID uuid.UUID, tx pgx.Tx) error {
+func (s *Service) processWalletAddresses(ctx context.Context, list []AddressDTO, walletID uuid.UUID, tx pgx.Tx) error {
 	params := make([]repo_withdrawal_wallet_addresses.UpdateListParams, 0, len(list))
 	actualAddresses := make([]string, 0, len(list))
 	for _, dto := range list {
@@ -372,7 +326,7 @@ func (s Service) processWalletAddresses(ctx context.Context, list []AddressDTO, 
 	return nil
 }
 
-func (s Service) updateProcessingWithdrawalWalletWhitelist(ctx context.Context, withdrawalWalletID uuid.UUID, user *models.User, totp string, tx pgx.Tx) error {
+func (s *Service) updateProcessingWithdrawalWalletWhitelist(ctx context.Context, withdrawalWalletID uuid.UUID, user *models.User, totp string, tx pgx.Tx) error {
 	wallet, err := s.GetWalletByID(ctx, withdrawalWalletID)
 	if err != nil {
 		return err
@@ -398,7 +352,7 @@ func (s Service) updateProcessingWithdrawalWalletWhitelist(ctx context.Context, 
 	return nil
 }
 
-func (s Service) createWithdrawalWallet(ctx context.Context, c *models.Currency, usr *models.User, opts ...repos.Option) (newWallet *models.WithdrawalWallet, err error) {
+func (s *Service) createWithdrawalWallet(ctx context.Context, c *models.Currency, usr *models.User, opts ...repos.Option) (newWallet *models.WithdrawalWallet, err error) {
 	var withdrawalMinBalance decimal.Decimal
 	if c.IsStablecoin {
 		withdrawalMinBalance = decimal.NewFromInt(1)
@@ -436,7 +390,7 @@ func (s Service) createWithdrawalWallet(ctx context.Context, c *models.Currency,
 	return newWallet, nil
 }
 
-func (s Service) buildWithdrawalWithAddress(ctx context.Context, wallet *models.WithdrawalWallet, usr *models.User, currency *models.CurrencyShort, opts ...repos.Option) (*WithdrawalWithAddress, error) {
+func (s *Service) buildWithdrawalWithAddress(ctx context.Context, wallet *models.WithdrawalWallet, usr *models.User, currency *models.CurrencyShort, opts ...repos.Option) (*WithdrawalWithAddress, error) {
 	addresses, err := s.storage.WithdrawalWalletAddresses(opts...).GetAddresses(ctx, wallet.ID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("failed to get withdrawal addresses: %w", err)
@@ -481,4 +435,20 @@ func (s Service) buildWithdrawalWithAddress(ctx context.Context, wallet *models.
 		Addressees:       addresses,
 		MultiWithdrawal:  multiRuleDTO,
 	}, nil
+}
+
+func (s *Service) EnsureNotDepositAddresses(ctx context.Context, addrs []string, opts ...repos.Option) error {
+	lowered := make([]string, 0, len(addrs))
+	for _, a := range addrs {
+		lowered = append(lowered, strings.ToLower(a))
+	}
+
+	found, err := s.storage.WalletAddresses(opts...).FindExistingAddresses(ctx, lowered)
+	if err != nil {
+		return fmt.Errorf("check deposit addresses: %w", err)
+	}
+	if len(found) > 0 {
+		return fmt.Errorf("%w: %s", ErrDepositAddressNotAllowed, found[0])
+	}
+	return nil
 }

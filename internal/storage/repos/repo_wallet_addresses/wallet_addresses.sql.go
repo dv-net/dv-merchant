@@ -48,6 +48,33 @@ func (q *Queries) FilterOwnerWalletAddresses(ctx context.Context, userID uuid.UU
 	return items, nil
 }
 
+const findExistingAddresses = `-- name: FindExistingAddresses :many
+SELECT DISTINCT address
+FROM wallet_addresses
+WHERE deleted_at IS NULL
+  AND lower(address) = ANY($1::varchar[])
+`
+
+func (q *Queries) FindExistingAddresses(ctx context.Context, addresses []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, findExistingAddresses, addresses)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var address string
+		if err := rows.Scan(&address); err != nil {
+			return nil, err
+		}
+		items = append(items, address)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getAddressForMultiWithdrawal = `-- name: GetAddressForMultiWithdrawal :one
 SELECT wa.currency_id,
        array_agg(distinct wa.address)::varchar[]        AS addresses,

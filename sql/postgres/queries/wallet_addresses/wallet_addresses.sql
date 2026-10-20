@@ -304,3 +304,9 @@ HAVING (sqlc.narg(min_amount) IS NULL OR SUM(wa.amount) >= sqlc.narg(min_amount)
    AND (sqlc.narg(min_usd) IS NULL OR (SUM(wa.amount) * MAX(r.exchange_rate))::numeric > sqlc.narg(min_usd))
 ORDER BY (SUM(wa.amount) * MAX(r.exchange_rate))::decimal DESC
 LIMIT 1;
+
+-- name: FindExistingAddresses :many
+SELECT DISTINCT address
+FROM wallet_addresses
+WHERE deleted_at IS NULL
+  AND lower(address) = ANY(sqlc.arg(addresses)::varchar[]);

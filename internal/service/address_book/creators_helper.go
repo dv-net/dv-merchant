@@ -325,6 +325,10 @@ func (s *Service) createWithdrawalRule(ctx context.Context, addressEntry *models
 		return fmt.Errorf("withdrawal wallet is nil for user %s and currency %s", addressEntry.UserID, addressEntry.CurrencyID)
 	}
 
+	if err := s.withdrawalWalletService.EnsureNotDepositAddresses(ctx, []string{addressEntry.Address}, opts...); err != nil {
+		return err
+	}
+
 	createParams := repo_withdrawal_wallet_addresses.CreateParams{
 		WithdrawalWalletID: withdrawalWallet.ID,
 		Address:            addressEntry.Address,
@@ -375,35 +379,39 @@ func (s *Service) restoreWithdrawalRule(ctx context.Context, addressEntry *model
 		return s.createWithdrawalRule(ctx, addressEntry, user, totp, opts...)
 	}
 
-	if withdrawalAddress.DeletedAt.Valid {
-		var name *string
-		if addressEntry.Name.Valid {
-			name = &addressEntry.Name.String
-		}
-
-		_, err = s.storage.WithdrawalWalletAddresses(opts...).UpdateDeletedAddress(ctx, repo_withdrawal_wallet_addresses.UpdateDeletedAddressParams{
-			ID:   withdrawalAddress.ID,
-			Name: name,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to restore withdrawal wallet address: %w", err)
-		}
-
-		// Update processing whitelist after restoration
-		if err := s.updateProcessingWhitelist(ctx, withdrawalWallet.ID, withdrawalWallet.Currency.Blockchain, user, totp, opts...); err != nil {
-			return fmt.Errorf("failed to update processing whitelist: %w", err)
-		}
-
-		s.logger.Infow("Restored soft-deleted withdrawal rule for address book entry",
-			"address", addressEntry.Address,
-			"currency", addressEntry.CurrencyID,
-			"user_id", addressEntry.UserID)
-	} else {
+	if !withdrawalAddress.DeletedAt.Valid {
 		s.logger.Infow("Withdrawal rule already exists and is active",
 			"address", addressEntry.Address,
 			"currency", addressEntry.CurrencyID,
 			"user_id", addressEntry.UserID)
+		return nil
 	}
+	if err := s.withdrawalWalletService.EnsureNotDepositAddresses(ctx, []string{addressEntry.Address}, opts...); err != nil {
+		return err
+	}
+
+	var name *string
+	if addressEntry.Name.Valid {
+		name = &addressEntry.Name.String
+	}
+
+	_, err = s.storage.WithdrawalWalletAddresses(opts...).UpdateDeletedAddress(ctx, repo_withdrawal_wallet_addresses.UpdateDeletedAddressParams{
+		ID:   withdrawalAddress.ID,
+		Name: name,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to restore withdrawal wallet address: %w", err)
+	}
+
+	// Update processing whitelist after restoration
+	if err := s.updateProcessingWhitelist(ctx, withdrawalWallet.ID, withdrawalWallet.Currency.Blockchain, user, totp, opts...); err != nil {
+		return fmt.Errorf("failed to update processing whitelist: %w", err)
+	}
+
+	s.logger.Infow("Restored soft-deleted withdrawal rule for address book entry",
+		"address", addressEntry.Address,
+		"currency", addressEntry.CurrencyID,
+		"user_id", addressEntry.UserID)
 
 	return nil
 }
