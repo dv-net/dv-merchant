@@ -14,6 +14,7 @@ import (
 type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (*models.WalletAddress, error)
 	FilterOwnerWalletAddresses(ctx context.Context, userID uuid.UUID, column2 []string) ([]*FilterOwnerWalletAddressesRow, error)
+	FindExistingAddresses(ctx context.Context, addresses []string) ([]string, error)
 	GetAddressForMultiWithdrawal(ctx context.Context, arg GetAddressForMultiWithdrawalParams) (*GetAddressForMultiWithdrawalRow, error)
 	GetAddressForWithdrawal(ctx context.Context, arg GetAddressForWithdrawalParams) (*GetAddressForWithdrawalRow, error)
 	GetAllClearByWalletID(ctx context.Context, walletID uuid.UUID, currencyIds []string) ([]*models.WalletAddress, error)

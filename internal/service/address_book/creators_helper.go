@@ -325,6 +325,10 @@ func (s *Service) createWithdrawalRule(ctx context.Context, addressEntry *models
 		return fmt.Errorf("withdrawal wallet is nil for user %s and currency %s", addressEntry.UserID, addressEntry.CurrencyID)
 	}
 
+	if err := s.withdrawalWalletService.EnsureNotDepositAddresses(ctx, []string{addressEntry.Address}, opts...); err != nil {
+		return err
+	}
+
 	createParams := repo_withdrawal_wallet_addresses.CreateParams{
 		WithdrawalWalletID: withdrawalWallet.ID,
 		Address:            addressEntry.Address,
@@ -376,6 +380,10 @@ func (s *Service) restoreWithdrawalRule(ctx context.Context, addressEntry *model
 	}
 
 	if withdrawalAddress.DeletedAt.Valid {
+		if err := s.withdrawalWalletService.EnsureNotDepositAddresses(ctx, []string{addressEntry.Address}, opts...); err != nil {
+			return err
+		}
+
 		var name *string
 		if addressEntry.Name.Valid {
 			name = &addressEntry.Name.String
