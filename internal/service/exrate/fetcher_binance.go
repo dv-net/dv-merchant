@@ -60,22 +60,22 @@ func (f *binanceFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilte
 	for _, proxyURL := range shuffledProxies {
 		client, err := f.createProxyClient(proxyURL)
 		if err != nil {
-			f.log.Warnw("[EXRATE-BINANCE] failed to create proxy client", "proxy", proxyURL, "error", err)
+			f.log.Debugw("[EXRATE-BINANCE] failed to create proxy client", "proxy", proxyURL, "error", err)
 			lastErr = err
 			continue
 		}
 
 		err = f.fetchWithClient(ctx, client, proxyURL, currencyFilter, out)
 		if err == nil {
-			f.log.Infow("[EXRATE-BINANCE] request succeeded with proxy", "proxy", proxyURL)
+			f.log.Debugw("[EXRATE-BINANCE] request succeeded with proxy", "proxy", proxyURL)
 			return nil // Success
 		}
 
-		f.log.Warnw("[EXRATE-BINANCE] request failed with proxy, trying next", "proxy", proxyURL, "error", err)
+		f.log.Debugw("[EXRATE-BINANCE] request failed with proxy, trying next", "proxy", proxyURL, "error", err)
 		lastErr = err
 	}
 
-	f.log.Errorw("[EXRATE-BINANCE] all proxies exhausted",
+	f.log.Warnw("[EXRATE-BINANCE] all proxies exhausted",
 		"proxy_count", len(shuffledProxies),
 		"last_error", lastErr)
 	return fmt.Errorf("all proxies exhausted, last error: %w", lastErr)
@@ -100,7 +100,7 @@ func (f *binanceFetcher) createProxyClient(proxyURL string) (*http.Client, error
 func (f *binanceFetcher) fetchWithClient(ctx context.Context, client *http.Client, connectionType string, currencyFilter CurrencyFilter, out chan<- ExRate) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, f.url, http.NoBody)
 	if err != nil {
-		f.log.Errorw("[EXRATE-BINANCE] failed to create request",
+		f.log.Warnw("[EXRATE-BINANCE] failed to create request",
 			"error", err,
 			"url", f.url,
 			"connection", connectionType)
@@ -109,7 +109,7 @@ func (f *binanceFetcher) fetchWithClient(ctx context.Context, client *http.Clien
 
 	resp, err := client.Do(req)
 	if err != nil {
-		f.log.Errorw("[EXRATE-BINANCE] http client error",
+		f.log.Warnw("[EXRATE-BINANCE] http client error",
 			"error", err,
 			"url", f.url,
 			"connection", connectionType)
@@ -119,7 +119,7 @@ func (f *binanceFetcher) fetchWithClient(ctx context.Context, client *http.Clien
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		f.log.Errorw("[EXRATE-BINANCE] failed to read response body",
+		f.log.Warnw("[EXRATE-BINANCE] failed to read response body",
 			"error", err,
 			"status_code", resp.StatusCode,
 			"connection", connectionType)
@@ -127,7 +127,7 @@ func (f *binanceFetcher) fetchWithClient(ctx context.Context, client *http.Clien
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		f.log.Errorw("[EXRATE-BINANCE] non-OK HTTP status",
+		f.log.Warnw("[EXRATE-BINANCE] non-OK HTTP status",
 			"status_code", resp.StatusCode,
 			"status", resp.Status,
 			"raw_response", string(bodyBytes),
@@ -137,7 +137,7 @@ func (f *binanceFetcher) fetchWithClient(ctx context.Context, client *http.Clien
 
 	body, err := parseBinanceResponseBytes(bodyBytes)
 	if err != nil {
-		f.log.Errorw("[EXRATE-BINANCE] response parsing error",
+		f.log.Warnw("[EXRATE-BINANCE] response parsing error",
 			"error", err,
 			"raw_response", string(bodyBytes),
 			"status_code", resp.StatusCode,
@@ -146,7 +146,7 @@ func (f *binanceFetcher) fetchWithClient(ctx context.Context, client *http.Clien
 	}
 
 	if err := filterBinanceResponse(body, currencyFilter, out); err != nil {
-		f.log.Errorw("[EXRATE-BINANCE] failed to filter response",
+		f.log.Warnw("[EXRATE-BINANCE] failed to filter response",
 			"error", err,
 			"symbol_count", len(*body),
 			"connection", connectionType)

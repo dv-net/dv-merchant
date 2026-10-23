@@ -57,7 +57,7 @@ func (o *okxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 		return nil
 	}
 
-	o.log.Warnw("[EXRATE-OKX] direct request failed, trying proxies", "error", err)
+	o.log.Debugw("[EXRATE-OKX] direct request failed, trying proxies", "error", err)
 
 	if len(o.proxies) == 0 {
 		return err
@@ -74,22 +74,22 @@ func (o *okxFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, o
 	for _, proxyURL := range shuffledProxies {
 		client, err := o.createProxyClient(proxyURL)
 		if err != nil {
-			o.log.Warnw("[EXRATE-OKX] failed to create proxy client", "proxy", proxyURL, "error", err)
+			o.log.Debugw("[EXRATE-OKX] failed to create proxy client", "proxy", proxyURL, "error", err)
 			lastErr = err
 			continue
 		}
 
 		err = o.fetchAllCurrencies(ctx, client, proxyURL, currencyFilter, out)
 		if err == nil {
-			o.log.Infow("[EXRATE-OKX] request succeeded with proxy", "proxy", proxyURL)
+			o.log.Debugw("[EXRATE-OKX] request succeeded with proxy", "proxy", proxyURL)
 			return nil
 		}
 
-		o.log.Warnw("[EXRATE-OKX] request failed with proxy, trying next", "proxy", proxyURL, "error", err)
+		o.log.Debugw("[EXRATE-OKX] request failed with proxy, trying next", "proxy", proxyURL, "error", err)
 		lastErr = err
 	}
 
-	o.log.Errorw("[EXRATE-OKX] all proxies exhausted",
+	o.log.Warnw("[EXRATE-OKX] all proxies exhausted",
 		"proxy_count", len(shuffledProxies),
 		"last_error", lastErr)
 	return fmt.Errorf("all proxies exhausted, last error: %w", lastErr)
@@ -123,7 +123,7 @@ func (o *okxFetcher) fetchAllCurrencies(ctx context.Context, client *http.Client
 		go func(currency string) {
 			defer wg.Done()
 			if err := o.fetchForCurrency(ctx, client, connectionType, currency, currencyFilter, mergeCh); err != nil {
-				o.log.Errorw("[EXRATE-OKX] failed to fetch for currency",
+				o.log.Warnw("[EXRATE-OKX] failed to fetch for currency",
 					"error", err,
 					"currency", currency,
 					"connection", connectionType)
@@ -148,7 +148,7 @@ func (o *okxFetcher) fetchAllCurrencies(ctx context.Context, client *http.Client
 	}
 
 	if len(errs) == len(ccys) {
-		o.log.Errorw("[EXRATE-OKX] all currency fetches failed",
+		o.log.Warnw("[EXRATE-OKX] all currency fetches failed",
 			"error_count", len(errs),
 			"errors", errs,
 			"connection", connectionType)
@@ -156,7 +156,7 @@ func (o *okxFetcher) fetchAllCurrencies(ctx context.Context, client *http.Client
 	}
 
 	if len(errs) > 0 {
-		o.log.Warnw("[EXRATE-OKX] partial fetch failures",
+		o.log.Debugw("[EXRATE-OKX] partial fetch failures",
 			"failed_count", len(errs),
 			"success_count", len(ccys)-len(errs),
 			"errors", errs,

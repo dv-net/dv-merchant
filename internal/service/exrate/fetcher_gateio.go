@@ -47,7 +47,7 @@ func (o *gateioFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 		return nil
 	}
 
-	o.log.Warnw("[EXRATE-GATE] direct request failed, trying proxies", "error", err)
+	o.log.Debugw("[EXRATE-GATE] direct request failed, trying proxies", "error", err)
 
 	if len(o.proxies) == 0 {
 		return err
@@ -64,22 +64,22 @@ func (o *gateioFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 	for _, proxyURL := range shuffledProxies {
 		client, err := o.createProxyClient(proxyURL)
 		if err != nil {
-			o.log.Warnw("[EXRATE-GATE] failed to create proxy client", "proxy", proxyURL, "error", err)
+			o.log.Debugw("[EXRATE-GATE] failed to create proxy client", "proxy", proxyURL, "error", err)
 			lastErr = err
 			continue
 		}
 
 		err = o.fetchWithClient(ctx, client, proxyURL, currencyFilter, out)
 		if err == nil {
-			o.log.Infow("[EXRATE-GATE] request succeeded with proxy", "proxy", proxyURL)
+			o.log.Debugw("[EXRATE-GATE] request succeeded with proxy", "proxy", proxyURL)
 			return nil
 		}
 
-		o.log.Warnw("[EXRATE-GATE] request failed with proxy, trying next", "proxy", proxyURL, "error", err)
+		o.log.Debugw("[EXRATE-GATE] request failed with proxy, trying next", "proxy", proxyURL, "error", err)
 		lastErr = err
 	}
 
-	o.log.Errorw("[EXRATE-GATE] all proxies exhausted",
+	o.log.Warnw("[EXRATE-GATE] all proxies exhausted",
 		"proxy_count", len(shuffledProxies),
 		"last_error", lastErr)
 	return fmt.Errorf("all proxies exhausted, last error: %w", lastErr)
@@ -104,7 +104,7 @@ func (o *gateioFetcher) createProxyClient(proxyURL string) (*http.Client, error)
 func (o *gateioFetcher) fetchWithClient(ctx context.Context, client *http.Client, connectionType string, currencyFilter CurrencyFilter, out chan<- ExRate) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, o.url, nil)
 	if err != nil {
-		o.log.Errorw("[EXRATE-GATE] failed to create request",
+		o.log.Warnw("[EXRATE-GATE] failed to create request",
 			"error", err,
 			"url", o.url,
 			"connection", connectionType)
@@ -113,7 +113,7 @@ func (o *gateioFetcher) fetchWithClient(ctx context.Context, client *http.Client
 
 	resp, err := client.Do(req)
 	if err != nil {
-		o.log.Errorw("[EXRATE-GATE] http client error",
+		o.log.Warnw("[EXRATE-GATE] http client error",
 			"error", err,
 			"url", o.url,
 			"connection", connectionType)
@@ -123,7 +123,7 @@ func (o *gateioFetcher) fetchWithClient(ctx context.Context, client *http.Client
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		o.log.Errorw("[EXRATE-GATE] failed to read response body",
+		o.log.Warnw("[EXRATE-GATE] failed to read response body",
 			"error", err,
 			"status_code", resp.StatusCode,
 			"connection", connectionType)
@@ -131,7 +131,7 @@ func (o *gateioFetcher) fetchWithClient(ctx context.Context, client *http.Client
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		o.log.Errorw("[EXRATE-GATE] non-OK HTTP status",
+		o.log.Warnw("[EXRATE-GATE] non-OK HTTP status",
 			"status_code", resp.StatusCode,
 			"status", resp.Status,
 			"raw_response", string(bodyBytes),
@@ -141,7 +141,7 @@ func (o *gateioFetcher) fetchWithClient(ctx context.Context, client *http.Client
 
 	body, err := parseGateioResponseBytes(bodyBytes)
 	if err != nil {
-		o.log.Errorw("[EXRATE-GATE] response parsing error",
+		o.log.Warnw("[EXRATE-GATE] response parsing error",
 			"error", err,
 			"raw_response", string(bodyBytes),
 			"status_code", resp.StatusCode,
@@ -150,7 +150,7 @@ func (o *gateioFetcher) fetchWithClient(ctx context.Context, client *http.Client
 	}
 
 	if err := filterGateioResponse(body, currencyFilter, out); err != nil {
-		o.log.Errorw("[EXRATE-GATE] failed to filter response",
+		o.log.Warnw("[EXRATE-GATE] failed to filter response",
 			"error", err,
 			"symbol_count", len(body.Data),
 			"connection", connectionType)

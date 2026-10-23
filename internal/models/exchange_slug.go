@@ -12,6 +12,7 @@ const (
 	ExchangeSlugGateio  ExchangeSlug = "gate"
 	ExchangeSlugBingx   ExchangeSlug = "bingx"
 	ExchangeSlugMexc    ExchangeSlug = "mexc"
+	ExchangeSlugKraken  ExchangeSlug = "kraken"
 )
 
 func (o ExchangeSlug) Valid() bool {
@@ -33,6 +34,8 @@ func (o ExchangeSlug) Valid() bool {
 	case ExchangeSlugBingx:
 		return true
 	case ExchangeSlugMexc:
+		return true
+	case ExchangeSlugKraken:
 		return true
 	default:
 		return false

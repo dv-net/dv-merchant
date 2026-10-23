@@ -771,6 +771,8 @@ func (s *Service) handleWithdrawal(ctx context.Context, slug models.ExchangeSlug
 		return s.handleBingxWithdrawal(ctx, transferRecord, order, tx)
 	case models.ExchangeSlugMexc:
 		return s.handleMexcWithdrawal(ctx, transferRecord, order, tx)
+	case models.ExchangeSlugKraken:
+		return s.handleKrakenWithdrawal(ctx, transferRecord, order, tx)
 	default:
 		return fmt.Errorf("exchange %s not supported", slug.String())
 	}
@@ -826,6 +828,34 @@ func (s *Service) handleMexcWithdrawal(ctx context.Context, record *models.Withd
 		updateParams.FailReason = pgtype.Text{Valid: true, String: "manual verification required"}
 	default:
 		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusFailed.String()}
+	}
+
+	return s.updateExchangeWithdrawal(ctx, order.UserID, updateParams, tx)
+}
+
+// handleKrakenWithdrawal expects record.Status already mapped by the kraken service
+// to models.WithdrawalHistoryStatus values.
+func (s *Service) handleKrakenWithdrawal(ctx context.Context, record *models.WithdrawalStatusDTO, order *models.ExchangeWithdrawalHistory, tx pgx.Tx) error {
+	updateParams := repo_exchange_withdrawal_history.UpdateParams{
+		ID: order.ID,
+	}
+
+	switch record.Status {
+	case models.WithdrawalHistoryStatusInProgress.String():
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusInProgress.String()}
+	case models.WithdrawalHistoryStatusCompleted.String():
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusCompleted.String()}
+		updateParams.Txid = pgtype.Text{Valid: true, String: record.TxHash}
+		updateParams.NativeAmount = decimal.NullDecimal{Valid: true, Decimal: record.NativeAmount}
+	case models.WithdrawalHistoryStatusFailed.String():
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusFailed.String()}
+	case models.WithdrawalHistoryStatusRecovery.String():
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusRecovery.String()}
+		if record.ErrorMessage != "" {
+			updateParams.FailReason = pgtype.Text{Valid: true, String: record.ErrorMessage}
+		}
+	default:
+		updateParams.Status = pgtype.Text{Valid: true, String: models.WithdrawalHistoryStatusRecovery.String()}
 	}
 
 	return s.updateExchangeWithdrawal(ctx, order.UserID, updateParams, tx)
