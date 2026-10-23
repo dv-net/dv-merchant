@@ -44,7 +44,7 @@ func (f *mexcFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, 
 		return nil
 	}
 
-	f.log.Warnw("[EXRATE-MEXC] direct request failed, trying proxies", "error", err)
+	f.log.Debugw("[EXRATE-MEXC] direct request failed, trying proxies", "error", err)
 
 	if len(f.proxies) == 0 {
 		return err
@@ -61,7 +61,7 @@ func (f *mexcFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter, 
 	for _, proxyURL := range shuffledProxies {
 		client, err := f.createProxyClient(proxyURL)
 		if err != nil {
-			f.log.Warnw("[EXRATE-MEXC] failed to create proxy client", "proxy", proxyURL, "error", err)
+			f.log.Debugw("[EXRATE-MEXC] failed to create proxy client", "proxy", proxyURL, "error", err)
 			lastErr = err
 			continue
 		}
@@ -92,25 +92,25 @@ func (f *mexcFetcher) createProxyClient(proxyURL string) (*http.Client, error) {
 func (f *mexcFetcher) fetchWithClient(ctx context.Context, client *http.Client, connectionType string, currencyFilter CurrencyFilter, out chan<- ExRate) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, f.url, http.NoBody)
 	if err != nil {
-		f.log.Errorw("[EXRATE-MEXC] failed to create request", "error", err, "url", f.url, "connection", connectionType)
+		f.log.Warnw("[EXRATE-MEXC] failed to create request", "error", err, "url", f.url, "connection", connectionType)
 		return err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		f.log.Errorw("[EXRATE-MEXC] http client error", "error", err, "url", f.url, "connection", connectionType)
+		f.log.Warnw("[EXRATE-MEXC] http client error", "error", err, "url", f.url, "connection", connectionType)
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		f.log.Errorw("[EXRATE-MEXC] failed to read response body", "error", err, "status_code", resp.StatusCode, "connection", connectionType)
+		f.log.Warnw("[EXRATE-MEXC] failed to read response body", "error", err, "status_code", resp.StatusCode, "connection", connectionType)
 		return err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		f.log.Errorw("[EXRATE-MEXC] non-OK HTTP status",
+		f.log.Warnw("[EXRATE-MEXC] non-OK HTTP status",
 			"status_code", resp.StatusCode,
 			"status", resp.Status,
 			"raw_response", string(bodyBytes),
@@ -120,12 +120,12 @@ func (f *mexcFetcher) fetchWithClient(ctx context.Context, client *http.Client, 
 
 	body, err := parseMexcResponseBytes(bodyBytes)
 	if err != nil {
-		f.log.Errorw("[EXRATE-MEXC] response parsing error", "error", err, "status_code", resp.StatusCode, "connection", connectionType)
+		f.log.Warnw("[EXRATE-MEXC] response parsing error", "error", err, "status_code", resp.StatusCode, "connection", connectionType)
 		return err
 	}
 
 	if err := filterMexcResponse(body, currencyFilter, out); err != nil {
-		f.log.Errorw("[EXRATE-MEXC] failed to filter response", "error", err, "symbol_count", len(*body), "connection", connectionType)
+		f.log.Warnw("[EXRATE-MEXC] failed to filter response", "error", err, "symbol_count", len(*body), "connection", connectionType)
 		return err
 	}
 

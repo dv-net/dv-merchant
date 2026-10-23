@@ -260,5 +260,18 @@ values
     ('mexc', 'SHIB.BNBSmartChain', 'SHIB', 'BSC'),
     ('mexc', 'ETH.Arbitrum', 'ETH', 'ARB'),
     ('mexc', 'USDT.Arbitrum', 'USDT', 'ARB'),
-    ('mexc', 'USDC.Arbitrum', 'USDC', 'ARB')
+    ('mexc', 'USDC.Arbitrum', 'USDC', 'ARB'),
+    ('kraken', 'BTC.Bitcoin', 'BTC', 'Bitcoin'),
+    ('kraken', 'ETH.Ethereum', 'ETH', 'Ether'),
+    ('kraken', 'TRX.Tron', 'TRX', 'Tron'),
+    ('kraken', 'LTC.Litecoin', 'LTC', 'Litecoin'),
+    ('kraken', 'BCH.Bitcoincash', 'BCH', 'Bitcoin Cash'),
+    ('kraken', 'DOGE.Dogecoin', 'DOGE', 'Dogecoin'),
+    ('kraken', 'USDT.Tron', 'USDT', 'Tether USD (TRC20)'),
+    ('kraken', 'USDT.Ethereum', 'USDT', 'Tether USD (ERC20)'),
+    ('kraken', 'USDT.Polygon', 'USDT', 'Tether USD (Polygon)'),
+    ('kraken', 'USDT.Arbitrum', 'USDT', 'Arbitrum One Network'),
+    ('kraken', 'USDC.Ethereum', 'USDC', 'USDC'),
+    ('kraken', 'USDC.Polygon', 'USDC', 'Polygon - Native'),
+    ('kraken', 'USDC.Arbitrum', 'USDC', 'Arbitrum One Network - Native')
 ON CONFLICT DO NOTHING;

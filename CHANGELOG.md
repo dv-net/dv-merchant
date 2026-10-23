@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 - fix: disable input wallet address to withdrawal address
+- feat: add support kraken exchange
 
 ## [0.9.29]
 - bump frontend

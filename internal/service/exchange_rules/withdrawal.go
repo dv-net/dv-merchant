@@ -49,6 +49,8 @@ func (o *Service) fetchWithdrawalRule(ctx context.Context, exchange models.Excha
 		return o.handleBingxWithdrawal(ctx, userID, currency)
 	case models.ExchangeSlugMexc:
 		return o.handleMexcWithdrawal(ctx, userID, currency)
+	case models.ExchangeSlugKraken:
+		return o.handleKrakenWithdrawal(ctx, userID, currency)
 	default:
 		return nil, fmt.Errorf("exchange %s not supported", exchange.String())
 	}
@@ -505,4 +507,40 @@ func (o *Service) fetchBingxWithdrawalRules(ctx context.Context, userID uuid.UUI
 		return nil, err
 	}
 	return rules, nil
+}
+
+func (o *Service) handleKrakenWithdrawal(ctx context.Context, userID, currency string) (*models.WithdrawalRulesDTO, error) {
+	rule := &models.WithdrawalRulesDTO{}
+	data, err := o.storage.KeyValue().Get(ctx, formatKey(models.ExchangeSlugKraken, WithdrawalRuleType, currency, userID))
+	if err != nil {
+		if errors.Is(err, redis.Nil) || errors.Is(err, key_value.ErrEntryNotFound) {
+			return o.fetchAndCacheKrakenWithdrawalRules(ctx, userID, currency)
+		}
+		return nil, err
+	}
+	return rule, json.Unmarshal(data, rule)
+}
+
+func (o *Service) fetchAndCacheKrakenWithdrawalRules(ctx context.Context, userID, currency string) (*models.WithdrawalRulesDTO, error) {
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, fmt.Errorf("parse user id: %w", err)
+	}
+	rules, err := o.fetchKrakenWithdrawalRules(ctx, userUUID, currency)
+	if err != nil {
+		return nil, err
+	}
+	if len(rules) == 0 {
+		return &models.WithdrawalRulesDTO{}, nil
+	}
+	err = o.storage.KeyValue().Set(ctx, formatKey(models.ExchangeSlugKraken, WithdrawalRuleType, currency, userID), structs.Map(rules[0]), 30*time.Minute)
+	return rules[0], err
+}
+
+func (o *Service) fetchKrakenWithdrawalRules(ctx context.Context, userID uuid.UUID, currencies ...string) ([]*models.WithdrawalRulesDTO, error) {
+	krakenClient, err := o.manager.GetDriver(ctx, models.ExchangeSlugKraken, userID)
+	if err != nil {
+		return nil, err
+	}
+	return krakenClient.GetWithdrawalRules(ctx, currencies...)
 }

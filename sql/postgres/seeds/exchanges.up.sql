@@ -8,5 +8,6 @@ values
     ('b868db0c-4d51-4842-ab6b-677f62c454fb', 'bybit', 'BYBIT', 'https://api.bybit.com', now(), now(), true),
     ('2495d8a2-435d-4031-8930-10e82aad9c64', 'gate', 'GATE', 'https://api.gateio.ws', now(), now(), true),
     ('1f9e0dc6-aa31-4b26-ad65-ad40c2264b23', 'bingx', 'BINGX', 'https://open-api.bingx.com', now(), now(), true),
-    ('2d22f266-c927-4833-bd6c-c38a965dde0f', 'mexc', 'MEXC', 'https://api.mexc.com', now(), now(), true)
+    ('2d22f266-c927-4833-bd6c-c38a965dde0f', 'mexc', 'MEXC', 'https://api.mexc.com', now(), now(), true),
+    ('1dc86bd1-b948-4498-8db4-99fbdcbc9a9e', 'kraken', 'KRAKEN', 'https://api.kraken.com', now(), now(), true)
 ON CONFLICT DO NOTHING;

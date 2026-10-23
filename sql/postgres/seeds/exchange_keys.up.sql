@@ -20,5 +20,7 @@ values
     ('1f9e0dc6-aa31-4b26-ad65-ad40c2264b23', 'api_key', 'Api key', now(), now()),
     ('1f9e0dc6-aa31-4b26-ad65-ad40c2264b23', 'secret_key', 'Secret key', now(), now()),
     ('2d22f266-c927-4833-bd6c-c38a965dde0f', 'api_key', 'Api key', now(), now()),
-    ('2d22f266-c927-4833-bd6c-c38a965dde0f', 'secret_key', 'Secret key', now(), now())
+    ('2d22f266-c927-4833-bd6c-c38a965dde0f', 'secret_key', 'Secret key', now(), now()),
+    ('1dc86bd1-b948-4498-8db4-99fbdcbc9a9e', 'api_key', 'Api key', now(), now()),
+    ('1dc86bd1-b948-4498-8db4-99fbdcbc9a9e', 'secret_key', 'Private key', now(), now())
 ON CONFLICT DO NOTHING;

@@ -41,7 +41,7 @@ func New(
 		storage:         storage,
 		currencyService: currencyService,
 		fetchInterval:   cfg.Exrate.FetchInterval,
-		fetchers:        make(map[string]fetcherData, 9),
+		fetchers:        make(map[string]fetcherData, 10),
 		logger:          logger,
 	}
 
@@ -101,6 +101,12 @@ func New(
 	}
 
 	f = NewMexcFetcher("https://api.mexc.com/api/v3/ticker/price", proxies, httpClient, logger)
+	srv.fetchers[f.Source()] = fetcherData{
+		fetcher: f,
+		cfChan:  make(chan CurrencyFilter),
+	}
+
+	f = NewKrakenFetcher("https://api.kraken.com", proxies, httpClient, logger)
 	srv.fetchers[f.Source()] = fetcherData{
 		fetcher: f,
 		cfChan:  make(chan CurrencyFilter),

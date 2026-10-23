@@ -66,7 +66,7 @@ func (o *bitgetFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 		return nil // Success with direct connection
 	}
 
-	o.log.Warnw("[EXRATE-BITGET] direct request failed, trying proxies", "error", err)
+	o.log.Debugw("[EXRATE-BITGET] direct request failed, trying proxies", "error", err)
 
 	if len(o.proxies) == 0 {
 		return err
@@ -83,22 +83,22 @@ func (o *bitgetFetcher) Fetch(ctx context.Context, currencyFilter CurrencyFilter
 	for _, proxyURL := range shuffledProxies {
 		client, err := o.createProxyClient(proxyURL)
 		if err != nil {
-			o.log.Warnw("[EXRATE-BITGET] failed to create proxy client", "proxy", proxyURL, "error", err)
+			o.log.Debugw("[EXRATE-BITGET] failed to create proxy client", "proxy", proxyURL, "error", err)
 			lastErr = err
 			continue
 		}
 
 		err = o.fetchWithClient(ctx, client, proxyURL, currencyFilter, out)
 		if err == nil {
-			o.log.Infow("[EXRATE-BITGET] request succeeded with proxy", "proxy", proxyURL)
+			o.log.Debugw("[EXRATE-BITGET] request succeeded with proxy", "proxy", proxyURL)
 			return nil // Success
 		}
 
-		o.log.Warnw("[EXRATE-BITGET] request failed with proxy, trying next", "proxy", proxyURL, "error", err)
+		o.log.Debugw("[EXRATE-BITGET] request failed with proxy, trying next", "proxy", proxyURL, "error", err)
 		lastErr = err
 	}
 
-	o.log.Errorw("[EXRATE-BITGET] all proxies exhausted",
+	o.log.Warnw("[EXRATE-BITGET] all proxies exhausted",
 		"proxy_count", len(shuffledProxies),
 		"last_error", lastErr)
 	return fmt.Errorf("all proxies exhausted, last error: %w", lastErr)
@@ -123,7 +123,7 @@ func (o *bitgetFetcher) createProxyClient(proxyURL string) (*http.Client, error)
 func (o *bitgetFetcher) fetchWithClient(ctx context.Context, client *http.Client, connectionType string, currencyFilter CurrencyFilter, out chan<- ExRate) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, o.url, nil)
 	if err != nil {
-		o.log.Errorw("[EXRATE-BITGET] failed to create request",
+		o.log.Warnw("[EXRATE-BITGET] failed to create request",
 			"error", err,
 			"url", o.url,
 			"connection", connectionType)
@@ -132,7 +132,7 @@ func (o *bitgetFetcher) fetchWithClient(ctx context.Context, client *http.Client
 
 	resp, err := client.Do(req)
 	if err != nil {
-		o.log.Errorw("[EXRATE-BITGET] http client error",
+		o.log.Warnw("[EXRATE-BITGET] http client error",
 			"error", err,
 			"url", o.url,
 			"connection", connectionType)
@@ -143,7 +143,7 @@ func (o *bitgetFetcher) fetchWithClient(ctx context.Context, client *http.Client
 	// Read body once for both parsing and error logging
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		o.log.Errorw("[EXRATE-BITGET] failed to read response body",
+		o.log.Warnw("[EXRATE-BITGET] failed to read response body",
 			"error", err,
 			"status_code", resp.StatusCode,
 			"connection", connectionType)
@@ -152,7 +152,7 @@ func (o *bitgetFetcher) fetchWithClient(ctx context.Context, client *http.Client
 
 	// Check HTTP status code
 	if resp.StatusCode != http.StatusOK {
-		o.log.Errorw("[EXRATE-BITGET] non-OK HTTP status",
+		o.log.Warnw("[EXRATE-BITGET] non-OK HTTP status",
 			"status_code", resp.StatusCode,
 			"status", resp.Status,
 			"raw_response", string(bodyBytes),
@@ -162,7 +162,7 @@ func (o *bitgetFetcher) fetchWithClient(ctx context.Context, client *http.Client
 
 	body, err := parseBitgetResponseBytes(bodyBytes)
 	if err != nil {
-		o.log.Errorw("[EXRATE-BITGET] response parsing error",
+		o.log.Warnw("[EXRATE-BITGET] response parsing error",
 			"error", err,
 			"raw_response", string(bodyBytes),
 			"status_code", resp.StatusCode,
@@ -171,7 +171,7 @@ func (o *bitgetFetcher) fetchWithClient(ctx context.Context, client *http.Client
 	}
 
 	if body.Code != "00000" {
-		o.log.Errorw(
+		o.log.Warnw(
 			"[EXRATE-BITGET] currency exchange service response not OK",
 			"code", body.Code,
 			"message", body.Msg,
@@ -181,7 +181,7 @@ func (o *bitgetFetcher) fetchWithClient(ctx context.Context, client *http.Client
 	}
 
 	if err := filterBitgetResponse(body, currencyFilter, out); err != nil {
-		o.log.Errorw("[EXRATE-BITGET] failed to filter response",
+		o.log.Warnw("[EXRATE-BITGET] failed to filter response",
 			"error", err,
 			"symbol_count", len(body.Data),
 			"connection", connectionType)
