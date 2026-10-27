@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.9.31]
+- feat: enhance ApplyVerdict and add SyncDirtyAddresses for improv… by @webster-swift in https://github.com/dv-net/dv-merchant/pull/170
+
 ## [0.9.30]
 - fix: disable input wallet address to withdrawal address
 - feat: add support kraken exchange
