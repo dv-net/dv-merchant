@@ -63,4 +63,10 @@ type ApplyVerdictDTO struct {
 	ToAddress     string
 	Signals       []aml.SignalContribution
 	Rules         []*models.UserAmlRiskRule
+	DBTx          pgx.Tx // outer DB transaction; nil runs the verdict in its own transaction
+}
+
+type VerdictResult struct {
+	Blocked        bool
+	DirtyAddresses []*models.WalletAddress
 }

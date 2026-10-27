@@ -11,6 +11,7 @@ const CheckCompletedEventType = "aml_check_completed"
 type CheckCompletedEvent struct {
 	Check   models.AmlCheck
 	Signals []amlproviders.SignalContribution
+	Blocked bool
 }
 
 func (e CheckCompletedEvent) Type() event.Type {
