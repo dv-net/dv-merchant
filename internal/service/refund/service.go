@@ -14,6 +14,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_refund_requests"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transfers"
+	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	"github.com/dv-net/dv-merchant/pkg/dbutils/pgerror"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
@@ -30,6 +31,7 @@ type IRefundService interface {
 	GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error)
 	GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error)
 	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestWithTxDTO, error)
+	FindByUser(ctx context.Context, dto FindDTO) (*storecmn.FindResponseWithFullPagination[*repo_refund_requests.FindRow], error)
 	RejectRefund(ctx context.Context, dto RejectRefundDTO) (*RequestWithTxDTO, error)
 	ApproveRefund(ctx context.Context, dto ApproveRefundDTO) (*RequestWithTxDTO, error)
 	CancelRefund(ctx context.Context, dto CancelRefundDTO) (*RequestWithTxDTO, error)

@@ -6,6 +6,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/refund_request"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/refund_response"
 	"github.com/dv-net/dv-merchant/internal/service/refund"
+	_ "github.com/dv-net/dv-merchant/internal/storage/storecmn" // Blank import for swaggen
 	"github.com/dv-net/dv-merchant/internal/tools"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 	"github.com/dv-net/dv-merchant/internal/tools/response"
@@ -37,6 +38,51 @@ func (h *Handler) loadUserPendingRefunds(c fiber.Ctx) error {
 	}
 
 	return c.JSON(response.OkByData(refund_response.NewRefundRequestResponses(list)))
+}
+
+// findUserRefunds lists refund requests of all stores owned by the authenticated user with filters and pagination.
+//
+//	@Summary		Find refund requests
+//	@Description	Lists refund requests with filters and pagination. Each item includes the blocked deposit, the AML check that blocked it (risk score) and the refund transfer
+//	@Tags			Store,Refund
+//	@Accept			json
+//	@Produce		json
+//	@Param			string	query		refund_request.FindRequest	true	"Filters"
+//	@Success		200		{object}	response.Result[storecmn.FindResponseWithFullPagination[refund_response.RefundRequestDetailedResponse]]
+//	@Failure		400		{object}	apierror.Errors
+//	@Failure		401		{object}	apierror.Errors
+//	@Router			/v1/dv-admin/refund-requests/list [get]
+//	@Security		BearerAuth
+func (h *Handler) findUserRefunds(c fiber.Ctx) error {
+	usr, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+
+	req := &refund_request.FindRequest{}
+	if err := c.Bind().Query(req); err != nil {
+		return err
+	}
+
+	res, err := h.services.RefundService.FindByUser(c.Context(), refund.FindDTO{
+		UserID:             usr.ID,
+		Statuses:           req.Statuses,
+		Blockchain:         req.Blockchain,
+		TxHash:             req.TxHash,
+		FromAddress:        req.FromAddress,
+		DestinationAddress: req.DestinationAddress,
+		DateFrom:           req.DateFrom,
+		DateTo:             req.DateTo,
+		Page:               req.Page,
+		PageSize:           req.PageSize,
+		SortBy:             req.SortBy,
+		SortDirection:      req.SortDirection,
+	})
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(refund_response.NewRefundRequestsDetailedResponse(res)))
 }
 
 // rejectRefund declines a pending refund request that belongs to one of the caller's
@@ -237,6 +283,7 @@ func prepareRefundHTTPError(err error) error {
 func (h *Handler) initRefundAdminRoutes(v1 fiber.Router) {
 	storeHandlers := v1.Group("/refund-requests")
 	storeHandlers.Get("/", h.loadUserPendingRefunds)
+	storeHandlers.Get("/list", h.findUserRefunds)
 	storeHandlers.Post("/:refundId/reject", h.rejectRefund)
 	storeHandlers.Post("/:refundId/approve", h.approveRefund)
 	storeHandlers.Post("/:refundId/cancel", h.cancelRefund)

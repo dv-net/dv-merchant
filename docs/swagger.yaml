@@ -891,6 +891,7 @@ definitions:
     - gate
     - bingx
     - mexc
+    - kraken
     type: string
     x-enum-varnames:
     - ExchangeSlugHtx
@@ -902,6 +903,7 @@ definitions:
     - ExchangeSlugGateio
     - ExchangeSlugBingx
     - ExchangeSlugMexc
+    - ExchangeSlugKraken
   ExchangeTestConnectionRequest:
     properties:
       credentials:
@@ -1881,6 +1883,15 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/ResponseWithFullPagination-NotificationHistoryResponse'
+      message:
+        type: string
+    type: object
+  JSONResponse-ResponseWithFullPagination-RefundRequestDetailedResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/ResponseWithFullPagination-RefundRequestDetailedResponse'
       message:
         type: string
     type: object
@@ -2882,6 +2893,64 @@ definitions:
     x-enum-varnames:
     - ReceiptStatusPaid
     - ReceiptStatusCanceled
+  RefundAmlCheckResponse:
+    properties:
+      created_at:
+        format: date-time
+        type: string
+      external_id:
+        type: string
+      id:
+        format: uuid
+        type: string
+      risk_level:
+        type: string
+      score:
+        type: number
+      service:
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug'
+      status:
+        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus'
+      updated_at:
+        format: date-time
+        type: string
+    type: object
+  RefundBlockedTransactionResponse:
+    properties:
+      amount:
+        type: number
+      amount_usd:
+        type: number
+      blockchain:
+        type: string
+      blocked_at:
+        format: date-time
+        type: string
+      currency_code:
+        type: string
+      currency_id:
+        type: string
+      from_address:
+        type: string
+      id:
+        format: uuid
+        type: string
+      risk_level:
+        description: RiskLevel and Score are the values the deposit was blocked with
+        type: string
+      score:
+        type: number
+      to_address:
+        type: string
+      transaction_id:
+        format: uuid
+        type: string
+      tx_created_at:
+        format: date-time
+        type: string
+      tx_hash:
+        type: string
+    type: object
   RefundClaimRequest:
     properties:
       destination_address:
@@ -2929,6 +2998,46 @@ definitions:
       updated_at:
         type: string
       wallet_id:
+        type: string
+    type: object
+  RefundRequestDetailedResponse:
+    properties:
+      aml_check:
+        $ref: '#/definitions/RefundAmlCheckResponse'
+      blocked_transaction:
+        $ref: '#/definitions/RefundBlockedTransactionResponse'
+      created_at:
+        format: date-time
+        type: string
+      destination_address:
+        type: string
+      email:
+        type: string
+      execute_after:
+        format: date-time
+        type: string
+      id:
+        format: uuid
+        type: string
+      last_error:
+        type: string
+      reviewed_at:
+        format: date-time
+        type: string
+      status:
+        type: string
+      store_id:
+        format: uuid
+        type: string
+      transfer:
+        allOf:
+        - $ref: '#/definitions/RefundTransferResponse'
+        description: Transfer is null until the refund is approved and sent to processing
+      updated_at:
+        format: date-time
+        type: string
+      wallet_id:
+        format: uuid
         type: string
     type: object
   RefundRequestResponse:
@@ -2992,6 +3101,34 @@ definitions:
         type: string
       wallet_id:
         format: uuid
+        type: string
+    type: object
+  RefundTransferResponse:
+    properties:
+      amount:
+        type: number
+      amount_usd:
+        type: number
+      created_at:
+        format: date-time
+        type: string
+      id:
+        format: uuid
+        type: string
+      message:
+        type: string
+      number:
+        type: integer
+      stage:
+        $ref: '#/definitions/TransferStage'
+      status:
+        $ref: '#/definitions/TransferStatus'
+      step:
+        type: string
+      tx_hash:
+        type: string
+      updated_at:
+        format: date-time
         type: string
     type: object
   RefundVerifyRequest:
@@ -3122,6 +3259,15 @@ definitions:
       items:
         items:
           $ref: '#/definitions/NotificationHistoryResponse'
+        type: array
+      pagination:
+        $ref: '#/definitions/FullPagingData'
+    type: object
+  ResponseWithFullPagination-RefundRequestDetailedResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/RefundRequestDetailedResponse'
         type: array
       pagination:
         $ref: '#/definitions/FullPagingData'
@@ -4656,6 +4802,7 @@ definitions:
     - gate
     - bingx
     - mexc
+    - kraken
     type: string
     x-enum-varnames:
     - RateSourceOKX
@@ -4667,6 +4814,7 @@ definitions:
     - RateSourceGateio
     - RateSourceBingx
     - RateSourceMexc
+    - RateSourceKraken
   github_com_dv-net_dv-merchant_internal_models.WalletType:
     enum:
     - cold
@@ -6790,6 +6938,105 @@ paths:
       security:
       - BearerAuth: []
       summary: Reject a refund request
+      tags:
+      - Store
+      - Refund
+  /v1/dv-admin/refund-requests/list:
+    get:
+      consumes:
+      - application/json
+      description: Lists refund requests with filters and pagination. Each item includes
+        the blocked deposit, the AML check that blocked it (risk score) and the refund
+        transfer
+      parameters:
+      - enum:
+        - arbitrum
+        - bitcoin
+        - bitcoincash
+        - bsc
+        - dogecoin
+        - ethereum
+        - litecoin
+        - polygon
+        - tron
+        in: query
+        name: blockchain
+        type: string
+        x-enum-varnames:
+        - BlockchainArbitrum
+        - BlockchainBitcoin
+        - BlockchainBitcoinCash
+        - BlockchainBinanceSmartChain
+        - BlockchainDogecoin
+        - BlockchainEthereum
+        - BlockchainLitecoin
+        - BlockchainPolygon
+        - BlockchainTron
+      - format: date-time
+        in: query
+        name: date_from
+        type: string
+      - format: date-time
+        in: query
+        name: date_to
+        type: string
+      - in: query
+        name: destination_address
+        type: string
+      - in: query
+        name: from_address
+        type: string
+      - in: query
+        minimum: 1
+        name: page
+        type: integer
+      - in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      - enum:
+        - created_at
+        - updated_at
+        - score
+        - amount_usd
+        in: query
+        name: sort_by
+        type: string
+      - enum:
+        - asc
+        - desc
+        in: query
+        name: sort_direction
+        type: string
+      - collectionFormat: csv
+        in: query
+        items:
+          type: string
+        name: statuses
+        type: array
+      - description: deposit or refund transfer hash
+        in: query
+        name: tx_hash
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ResponseWithFullPagination-RefundRequestDetailedResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Find refund requests
       tags:
       - Store
       - Refund

@@ -2744,6 +2744,146 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/refund-requests/list": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists refund requests with filters and pagination. Each item includes the blocked deposit, the AML check that blocked it (risk score) and the refund transfer",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Store",
+                    "Refund"
+                ],
+                "summary": "Find refund requests",
+                "parameters": [
+                    {
+                        "enum": [
+                            "arbitrum",
+                            "bitcoin",
+                            "bitcoincash",
+                            "bsc",
+                            "dogecoin",
+                            "ethereum",
+                            "litecoin",
+                            "polygon",
+                            "tron"
+                        ],
+                        "type": "string",
+                        "x-enum-varnames": [
+                            "BlockchainArbitrum",
+                            "BlockchainBitcoin",
+                            "BlockchainBitcoinCash",
+                            "BlockchainBinanceSmartChain",
+                            "BlockchainDogecoin",
+                            "BlockchainEthereum",
+                            "BlockchainLitecoin",
+                            "BlockchainPolygon",
+                            "BlockchainTron"
+                        ],
+                        "name": "blockchain",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "format": "date-time",
+                        "name": "date_to",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "destination_address",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "name": "from_address",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "created_at",
+                            "updated_at",
+                            "score",
+                            "amount_usd"
+                        ],
+                        "type": "string",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "name": "sort_direction",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "name": "statuses",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "deposit or refund transfer hash",
+                        "name": "tx_hash",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-ResponseWithFullPagination-RefundRequestDetailedResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/refund-requests/{refundId}/approve": {
             "post": {
                 "security": [
@@ -12304,7 +12444,8 @@ const docTemplate = `{
                 "bybit",
                 "gate",
                 "bingx",
-                "mexc"
+                "mexc",
+                "kraken"
             ],
             "x-enum-varnames": [
                 "ExchangeSlugHtx",
@@ -12315,7 +12456,8 @@ const docTemplate = `{
                 "ExchangeSlugBybit",
                 "ExchangeSlugGateio",
                 "ExchangeSlugBingx",
-                "ExchangeSlugMexc"
+                "ExchangeSlugMexc",
+                "ExchangeSlugKraken"
             ]
         },
         "ExchangeTestConnectionRequest": {
@@ -13796,6 +13938,20 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/ResponseWithFullPagination-NotificationHistoryResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-ResponseWithFullPagination-RefundRequestDetailedResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/ResponseWithFullPagination-RefundRequestDetailedResponse"
                 },
                 "message": {
                     "type": "string"
@@ -15310,6 +15466,90 @@ const docTemplate = `{
                 "ReceiptStatusCanceled"
             ]
         },
+        "RefundAmlCheckResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "risk_level": {
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "service": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
+                },
+                "status": {
+                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
+        "RefundBlockedTransactionResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "amount_usd": {
+                    "type": "number"
+                },
+                "blockchain": {
+                    "type": "string"
+                },
+                "blocked_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "currency_code": {
+                    "type": "string"
+                },
+                "currency_id": {
+                    "type": "string"
+                },
+                "from_address": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "risk_level": {
+                    "description": "RiskLevel and Score are the values the deposit was blocked with",
+                    "type": "string"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "to_address": {
+                    "type": "string"
+                },
+                "transaction_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "tx_created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "tx_hash": {
+                    "type": "string"
+                }
+            }
+        },
         "RefundClaimRequest": {
             "type": "object",
             "required": [
@@ -15381,6 +15621,65 @@ const docTemplate = `{
                 },
                 "wallet_id": {
                     "type": "string"
+                }
+            }
+        },
+        "RefundRequestDetailedResponse": {
+            "type": "object",
+            "properties": {
+                "aml_check": {
+                    "$ref": "#/definitions/RefundAmlCheckResponse"
+                },
+                "blocked_transaction": {
+                    "$ref": "#/definitions/RefundBlockedTransactionResponse"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "destination_address": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "execute_after": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "last_error": {
+                    "type": "string"
+                },
+                "reviewed_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "store_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "transfer": {
+                    "description": "Transfer is null until the refund is approved and sent to processing",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/RefundTransferResponse"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "wallet_id": {
+                    "type": "string",
+                    "format": "uuid"
                 }
             }
         },
@@ -15470,6 +15769,47 @@ const docTemplate = `{
                 "wallet_id": {
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "RefundTransferResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "amount_usd": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "number": {
+                    "type": "integer"
+                },
+                "stage": {
+                    "$ref": "#/definitions/TransferStage"
+                },
+                "status": {
+                    "$ref": "#/definitions/TransferStatus"
+                },
+                "step": {
+                    "type": "string"
+                },
+                "tx_hash": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
                 }
             }
         },
@@ -15666,6 +16006,20 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/NotificationHistoryResponse"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/FullPagingData"
+                }
+            }
+        },
+        "ResponseWithFullPagination-RefundRequestDetailedResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/RefundRequestDetailedResponse"
                     }
                 },
                 "pagination": {
@@ -17915,7 +18269,8 @@ const docTemplate = `{
                 "bybit",
                 "gate",
                 "bingx",
-                "mexc"
+                "mexc",
+                "kraken"
             ],
             "x-enum-varnames": [
                 "RateSourceOKX",
@@ -17926,7 +18281,8 @@ const docTemplate = `{
                 "RateSourceBybit",
                 "RateSourceGateio",
                 "RateSourceBingx",
-                "RateSourceMexc"
+                "RateSourceMexc",
+                "RateSourceKraken"
             ]
         },
         "github_com_dv-net_dv-merchant_internal_models.WalletType": {
