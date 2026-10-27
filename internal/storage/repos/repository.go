@@ -80,7 +80,7 @@ type IRepository interface {
 	WalletAddresses(opts ...Option) repo_wallet_addresses.ICustomQuerier
 	WalletAddressesActivityLog(opts ...Option) repo_wallet_addresses_activity_logs.Querier
 	Receipts(opts ...Option) repo_receipts.Querier
-	RefundRequests(opts ...Option) repo_refund_requests.Querier
+	RefundRequests(opts ...Option) repo_refund_requests.ICustomQuerier
 	Settings(opts ...Option) repo_settings.Querier
 	WithdrawalWallets(opts ...Option) repo_withdrawal_wallets.Querier
 	WithdrawalWalletAddresses(opts ...Option) repo_withdrawal_wallet_addresses.Querier
@@ -137,7 +137,7 @@ type repository struct {
 	walletAddresses             *repo_wallet_addresses.CustomQuerier
 	walletAddressesActivityLog  *repo_wallet_addresses_activity_logs.Queries
 	receipts                    *repo_receipts.Queries
-	refundRequests              *repo_refund_requests.Queries
+	refundRequests              *repo_refund_requests.CustomQuerier
 	settings                    *repo_settings.Queries
 	transfers                   *repo_transfers.CustomQuerier
 	withdrawalWallets           *repo_withdrawal_wallets.Queries
@@ -198,7 +198,7 @@ func InitRepository(psql *database.PostgresClient, keyValue key_value.IKeyValue)
 		walletAddresses:             repo_wallet_addresses.NewCustom(psql.DB),
 		walletAddressesActivityLog:  repo_wallet_addresses_activity_logs.New(psql.DB),
 		receipts:                    repo_receipts.New(psql.DB),
-		refundRequests:              repo_refund_requests.New(psql.DB),
+		refundRequests:              repo_refund_requests.NewCustom(psql.DB),
 		settings:                    repo_settings.New(psql.DB),
 		transfers:                   repo_transfers.NewCustom(psql.DB),
 		withdrawalWallets:           repo_withdrawal_wallets.New(psql.DB),
@@ -380,7 +380,7 @@ func (r *repository) Receipts(opts ...Option) repo_receipts.Querier {
 	return r.receipts
 }
 
-func (r *repository) RefundRequests(opts ...Option) repo_refund_requests.Querier {
+func (r *repository) RefundRequests(opts ...Option) repo_refund_requests.ICustomQuerier {
 	options := parseOptions(opts...)
 	if options.Tx != nil {
 		return r.refundRequests.WithTx(options.Tx)
