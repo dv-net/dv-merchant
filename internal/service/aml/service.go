@@ -50,7 +50,8 @@ type IService interface {
 	GetAllActiveProviders() []models.AMLProvider
 	GetSupportedCurrencies(ctx context.Context, slug models.AMLSlug) ([]*models.CurrencyShort, error)
 	GetSignalsCategorise(ctx context.Context, slug models.AMLSlug) ([]aml.SignalCategory, error)
-	ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) bool
+	ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) (VerdictResult, error)
+	SyncDirtyAddresses(ctx context.Context, userID uuid.UUID, addresses []*models.WalletAddress)
 }
 
 var _ IService = (*Service)(nil)
@@ -85,17 +86,40 @@ func NewService(st storage.IStorage, factory providers.ProviderFactory, log logg
 	}
 }
 
-func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) bool {
+// ApplyVerdict evaluates the user's risk rules for a finished check and, in one DB
+// transaction (dto.DBTx when set), marks the deposit address dirty, tags it with risk
+// flags and records the blocked transaction. Processing is not called here: the caller
+// must pass result.DirtyAddresses to SyncDirtyAddresses after the transaction commits.
+func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) (VerdictResult, error) {
 	blocked, matchedFlags := EvaluateRiskRules(dto.Check.Score, dto.Check.RiskLevel, dto.Signals, dto.Rules)
 
-	if blocked || len(matchedFlags) > 0 {
-		s.applyAddressEffects(ctx, dto, blocked, matchedFlags)
+	res := VerdictResult{Blocked: blocked}
+	if !blocked && len(matchedFlags) == 0 {
+		return res, nil
 	}
 
-	if blocked {
+	err := repos.BeginTxFunc(ctx, s.st.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+		res.DirtyAddresses = nil
+
+		if blocked {
+			dirty, err := s.wallets.MarkAddressDirtyLocal(ctx, dto.UserID, dto.ToAddress, repos.WithTx(tx))
+			if err != nil {
+				return err
+			}
+			res.DirtyAddresses = dirty
+		}
+
+		if err := s.wallets.MarkAddressFlags(ctx, dto.UserID, dto.ToAddress, matchedFlags, dto.Check.ID, repos.WithTx(tx)); err != nil {
+			return err
+		}
+
+		if !blocked {
+			return nil
+		}
+
 		if !dto.WalletID.Valid {
 			s.log.Errorw("cannot record blocked transaction: wallet id missing", "tx_id", dto.TransactionID)
-			return blocked
+			return nil
 		}
 
 		riskLevel := models.AmlRiskLevel(models.AmlRiskLevelUndefined)
@@ -111,34 +135,35 @@ func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) bool {
 			WalletID:      dto.WalletID.UUID,
 			RiskLevel:     string(riskLevel),
 			Score:         dto.Check.Score,
-		}); err != nil {
-			s.log.Errorw("failed to record blocked transaction", "error", err, "tx_id", dto.TransactionID)
+		}, repos.WithTx(tx)); err != nil {
+			return fmt.Errorf("record blocked transaction: %w", err)
 		}
+
+		return nil
+	}, repos.WithTx(dto.DBTx))
+	if err != nil {
+		return VerdictResult{}, fmt.Errorf("apply aml verdict for tx %s: %w", dto.TransactionID, err)
 	}
 
-	return blocked
+	return res, nil
 }
 
-// applyAddressEffects marks dto.ToAddress dirty (for a "reject" verdict) and/or tags it
-// with the matched risk flags (the risk_type of any fired "accept_and_flag" rules) — the
-// two effects are independent of each other.
-func (s *Service) applyAddressEffects(ctx context.Context, dto ApplyVerdictDTO, blocked bool, matchedFlags []string) {
-	usr, err := s.st.Users().GetByID(ctx, dto.UserID)
-	if err != nil {
-		s.log.Errorw("failed to get user for aml verdict", "error", err)
+// SyncDirtyAddresses marks addresses already flagged dirty in the DB as dirty in
+// processing. Failures are logged only: the local dirty flag already keeps the
+// address out of transfers.
+func (s *Service) SyncDirtyAddresses(ctx context.Context, userID uuid.UUID, addresses []*models.WalletAddress) {
+	if len(addresses) == 0 {
 		return
 	}
 
-	if blocked {
-		if markErr := s.wallets.MarkAddressDirty(ctx, usr, dto.ToAddress); markErr != nil {
-			s.log.Errorw("failed to mark address as dirty", "error", markErr)
-		}
+	usr, err := s.st.Users().GetByID(ctx, userID)
+	if err != nil {
+		s.log.Errorw("failed to get user for processing dirty sync", "error", err, "user_id", userID)
+		return
 	}
 
-	if len(matchedFlags) > 0 {
-		if markErr := s.wallets.MarkAddressFlags(ctx, usr, dto.ToAddress, matchedFlags, dto.Check.ID); markErr != nil {
-			s.log.Errorw("failed to mark address flags", "error", markErr)
-		}
+	if err := s.wallets.SyncDirtyToProcessing(ctx, usr.ProcessingOwnerID.UUID, addresses); err != nil {
+		s.log.Errorw("failed to mark address dirty in processing", "error", err, "user_id", userID)
 	}
 }
 

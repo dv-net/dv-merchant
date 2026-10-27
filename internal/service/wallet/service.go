@@ -39,7 +39,9 @@ type IWalletWriter interface {
 // IWalletAddressManager — address manager
 type IWalletAddressManager interface {
 	MarkAddressDirty(ctx context.Context, usr *models.User, address string) error
-	MarkAddressFlags(ctx context.Context, usr *models.User, address string, flags []string, amlCheckID uuid.UUID) error
+	MarkAddressDirtyLocal(ctx context.Context, userID uuid.UUID, address string, opts ...repos.Option) ([]*models.WalletAddress, error)
+	SyncDirtyToProcessing(ctx context.Context, ownerID uuid.UUID, addresses []*models.WalletAddress) error
+	MarkAddressFlags(ctx context.Context, userID uuid.UUID, address string, flags []string, amlCheckID uuid.UUID, opts ...repos.Option) error
 	LoadPrivateAddresses(ctx context.Context, dto LoadPrivateKeyDTO) (*bytes.Buffer, error)
 }
 

@@ -53,14 +53,50 @@ func (s *Service) MarkAddressDirty(ctx context.Context, usr *models.User, addres
 	return nil
 }
 
-func (s *Service) MarkAddressFlags(ctx context.Context, usr *models.User, address string, flags []string, amlCheckID uuid.UUID) error {
+// MarkAddressDirtyLocal marks the address dirty in the local DB only, so it can run
+// inside the caller's transaction. Once that transaction commits, pass the returned
+// rows to SyncDirtyToProcessing.
+func (s *Service) MarkAddressDirtyLocal(ctx context.Context, userID uuid.UUID, address string, opts ...repos.Option) ([]*models.WalletAddress, error) {
+	wa, err := s.storage.WalletAddresses(opts...).MarkAddressDirty(ctx, address, userID)
+	if err != nil {
+		return nil, fmt.Errorf("mark address dirty: %w", pgerror.ParseError(err))
+	}
+
+	return wa, nil
+}
+
+// SyncDirtyToProcessing marks already-dirty addresses as dirty in processing too.
+func (s *Service) SyncDirtyToProcessing(ctx context.Context, ownerID uuid.UUID, addresses []*models.WalletAddress) error {
+	type key struct {
+		blockchain models.Blockchain
+		address    string
+	}
+
+	seen := make(map[key]struct{}, len(addresses))
+	var errs []error
+	for _, wa := range addresses {
+		k := key{blockchain: wa.Blockchain, address: wa.Address}
+		if _, ok := seen[k]; ok {
+			continue
+		}
+		seen[k] = struct{}{}
+
+		if err := s.processingService.MarkDirtyHotWallet(ctx, ownerID, wa.Blockchain, wa.Address); err != nil {
+			errs = append(errs, fmt.Errorf("mark dirty in processing %s (%s): %w", wa.Address, wa.Blockchain, err))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *Service) MarkAddressFlags(ctx context.Context, userID uuid.UUID, address string, flags []string, amlCheckID uuid.UUID, opts ...repos.Option) error {
 	if len(flags) == 0 {
 		return nil
 	}
 
-	_, err := s.storage.WalletAddresses().MarkAddressFlags(ctx, repo_wallet_addresses.MarkAddressFlagsParams{
+	_, err := s.storage.WalletAddresses(opts...).MarkAddressFlags(ctx, repo_wallet_addresses.MarkAddressFlagsParams{
 		Address:    address,
-		UserID:     usr.ID,
+		UserID:     userID,
 		Flags:      flags,
 		AmlCheckID: amlCheckID,
 	})

@@ -147,6 +147,13 @@ where wallet_addresses.user_id = $1
                join aml_check_queue on aml_check_queue.aml_check_id = aml_checks.id
       where transactions.user_id = $1
   )
+  and wallet_addresses.address not in (
+      -- addresses with an AML-blocked deposit must never be swept, even if dirty was not set
+      select transactions.to_address
+      from blocked_transactions
+               join transactions on transactions.id = blocked_transactions.transaction_id
+      where blocked_transactions.user_id = $1
+  )
 order by amount_usd desc;
 
 -- name: GetAddressForWithdrawal :one
@@ -183,6 +190,13 @@ where wallet_addresses.user_id = $1
                join aml_check_queue on aml_check_queue.aml_check_id = aml_checks.id
       where transactions.user_id = $1
         and transactions.currency_id = $2
+  )
+  and wallet_addresses.address not in (
+      -- addresses with an AML-blocked deposit must never be swept, even if dirty was not set
+      select transactions.to_address
+      from blocked_transactions
+               join transactions on transactions.id = blocked_transactions.transaction_id
+      where blocked_transactions.user_id = $1
   )
   and (sqlc.arg('min_usd')::numeric is null or (amount * exchange_rate)::decimal >= sqlc.arg('min_usd')::numeric)
 order by amount_usd desc
@@ -288,6 +302,23 @@ WHERE wa.user_id = sqlc.arg(user_id)
                                      AND created_at > (NOW() - INTERVAL '30 minutes')
                                  )
                              ))
+  AND wa.dirty = false
+  AND wa.address NOT IN (
+      -- deposit still under AML check
+      SELECT t.to_address
+      FROM transactions t
+               JOIN aml_checks ac ON ac.transaction_id = t.id
+               JOIN aml_check_queue acq ON acq.aml_check_id = ac.id
+      WHERE t.user_id = sqlc.arg(user_id)
+        AND t.currency_id = sqlc.arg(currency)
+  )
+  AND wa.address NOT IN (
+      -- AML-blocked deposit
+      SELECT t.to_address
+      FROM blocked_transactions bt
+               JOIN transactions t ON t.id = bt.transaction_id
+      WHERE bt.user_id = sqlc.arg(user_id)
+  )
   AND wa.amount > 0
   AND (
     ((sqlc.narg(min_usd)::numeric IS NULL OR sqlc.narg(min_usd)::numeric = 0) AND wa.amount > 0)

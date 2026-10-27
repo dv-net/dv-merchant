@@ -128,7 +128,7 @@ func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent,
 		return amlCheck, true // ждём завершения асинхронной проверки, обычный webhook пока не шлём
 	}
 
-	blocked := s.amlService.ApplyVerdict(ctx, aml.ApplyVerdictDTO{
+	verdict, err := s.amlService.ApplyVerdict(ctx, aml.ApplyVerdictDTO{
 		Check:         amlCheck,
 		UserID:        ev.GetStore().UserID,
 		StoreID:       ev.GetStore().ID,
@@ -137,8 +137,16 @@ func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent,
 		ToAddress:     ev.GetTx().GetToAddress(),
 		Signals:       signals,
 		Rules:         rules,
+		DBTx:          ev.GetDatabaseTx(),
 	})
-	return amlCheck, blocked
+	if err != nil {
+		// Fail closed: the check said something, but we could not record it.
+		s.log.Errorw("failed to apply aml verdict", "error", err, "tx_id", ev.GetTx().GetID())
+		return amlCheck, true
+	}
+	s.amlService.SyncDirtyAddresses(ctx, ev.GetStore().UserID, verdict.DirtyAddresses)
+
+	return amlCheck, verdict.Blocked
 }
 
 func (s *Service) handleWithdrawalReceived(ev event.IEvent) error {
@@ -488,22 +496,6 @@ func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
 		return fmt.Errorf("fetch store: %w", err)
 	}
 
-	amlSettings, err := s.storage.UserAmlSettings().GetByUserID(ctx, str.UserID)
-	if err != nil {
-		return fmt.Errorf("fetch aml settings: %w", err)
-	}
-	if amlSettings.ProviderSlug == nil {
-		return fmt.Errorf("aml provider not configured for user %s", str.UserID)
-	}
-
-	rules, err := s.storage.UserAmlSettings().ListRiskRulesByUserID(ctx, repo_user_aml_settings.ListRiskRulesByUserIDParams{
-		UserID:       str.UserID,
-		ProviderSlug: amlSettings.ProviderSlug.String(),
-	})
-	if err != nil {
-		return fmt.Errorf("fetch aml risk rules: %w", err)
-	}
-
 	curr, err := s.storage.Currencies().GetByID(ctx, tx.CurrencyID)
 	if err != nil {
 		return fmt.Errorf("fetch currency: %w", err)
@@ -516,20 +508,9 @@ func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
 		}
 	}
 
-	// Signals aren't persisted on models.AmlCheck, so CheckCompletedEvent carries them
-	// separately (set in aml.Service.finalizeCheck) — every provider resolves through
-	// this async path, not just BitOK, so category/SUM_OF_SIGNALS rules need this to
-	// fire here at all.
-	blocked := s.amlService.ApplyVerdict(ctx, aml.ApplyVerdictDTO{
-		Check:         &completedEv.Check,
-		UserID:        str.UserID,
-		StoreID:       str.ID,
-		TransactionID: tx.ID,
-		WalletID:      tx.WalletID,
-		ToAddress:     tx.ToAddress,
-		Signals:       completedEv.Signals,
-		Rules:         rules,
-	})
+	// The verdict was already applied (address marked dirty, blocked transaction
+	// recorded) in the transaction that finalized the check, see aml.finalizeCheck.
+	blocked := completedEv.Blocked
 	if blocked {
 		s.log.Warnw("AML check triggered a blocking rule", "store_id", str.ID, "tx_id", tx.ID, "score", completedEv.Check.Score)
 		return s.sendAMLBlockedWebhook(ctx, tx, str.ID, *curr, storeExternalID, &completedEv.Check, nil)
