@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
@@ -39,14 +40,14 @@ const (
 	WithdrawalStep = 10
 )
 
-func NewService(l logger.Logger, accessKey, secretKey, passPhrase string, public bool, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(l logger.Logger, accessKey, secretKey, passPhrase string, public bool, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor, httpClient *http.Client) (*Service, error) {
 	exClient, err := bitgetclients.NewBaseClient(&bitgetclients.ClientOptions{
 		AccessKey:  accessKey,
 		SecretKey:  secretKey,
 		PassPhrase: passPhrase,
 		BaseURL:    baseURL,
 		Public:     public,
-	}, store, bitgetclients.WithBaseLogger(l))
+	}, store, bitgetclients.WithBaseLogger(l), bitgetclients.WithBaseHTTPClient(httpClient))
 	if err != nil {
 		return nil, err
 	}

@@ -1402,6 +1402,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/exchange/network-interfaces": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Server network interfaces available for exchange connections and the default one",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exchange"
+                ],
+                "summary": "List network interfaces",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-ExchangeNetworkInterfacesResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/exchange/test": {
             "post": {
                 "security": [
@@ -1578,6 +1609,114 @@ const docTemplate = `{
                     },
                     "503": {
                         "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/dv-admin/exchange/{exchange_slug}/network": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Proxy (password masked) and network interface used for the exchange",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exchange"
+                ],
+                "summary": "Get exchange network settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Exchange slug",
+                        "name": "exchange_slug",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-ExchangeNetworkSettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "description": "Replace the proxy and network interface for the exchange. Empty values mean a direct connection\nthrough the default route. New settings are saved only if the exchange is reachable with them.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Exchange"
+                ],
+                "summary": "Update exchange network settings",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Exchange slug",
+                        "name": "exchange_slug",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Network settings",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ExchangeUpdateNetworkSettingsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-ExchangeNetworkSettingsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/APIErrors"
                         }
@@ -12341,6 +12480,37 @@ const docTemplate = `{
                 }
             }
         },
+        "ExchangeNetworkInterfacesResponse": {
+            "type": "object",
+            "properties": {
+                "default": {
+                    "description": "Default is the interface of the system default route, \"\" if unknown.",
+                    "type": "string"
+                },
+                "interfaces": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/NetworkInterface"
+                    }
+                }
+            }
+        },
+        "ExchangeNetworkSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "interface_available": {
+                    "type": "boolean"
+                },
+                "network_interface": {
+                    "type": "string",
+                    "example": "eth1"
+                },
+                "proxy_url": {
+                    "type": "string",
+                    "example": "socks5://user:xxxxx@203.0.113.10:1080"
+                }
+            }
+        },
         "ExchangeOrderHistoryResponse": {
             "type": "object",
             "properties": {
@@ -12550,6 +12720,23 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/ExchangeUpdateKeyData"
                     }
+                }
+            }
+        },
+        "ExchangeUpdateNetworkSettingsRequest": {
+            "type": "object",
+            "properties": {
+                "network_interface": {
+                    "description": "Empty or null: the system default route.",
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "eth1"
+                },
+                "proxy_url": {
+                    "description": "Empty or null: direct connection. A masked password from GET is kept as saved.",
+                    "type": "string",
+                    "maxLength": 2048,
+                    "example": "socks5://user:password@203.0.113.10:1080"
                 }
             }
         },
@@ -13473,6 +13660,34 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/ExchangeBalance"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-ExchangeNetworkInterfacesResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/ExchangeNetworkInterfacesResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "JSONResponse-ExchangeNetworkSettingsResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/ExchangeNetworkSettingsResponse"
                 },
                 "message": {
                     "type": "string"
@@ -15012,6 +15227,31 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "NetworkInterface": {
+            "type": "object",
+            "properties": {
+                "addresses": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/NetworkInterfaceAddress"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "NetworkInterfaceAddress": {
+            "type": "object",
+            "properties": {
+                "ip": {
+                    "type": "string"
+                },
+                "private": {
+                    "type": "boolean"
                 }
             }
         },

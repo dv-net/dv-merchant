@@ -46,7 +46,7 @@ type IExchangeService interface { //nolint:interfacebloat
 	SetExchangeKeys(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug, keysData map[models.ExchangeKeyName]*string) error
 	DeleteExchangeKeys(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug) error
 	TestConnection(ctx context.Context, user models.User, slug models.ExchangeSlug) error
-	TestConnectionRaw(ctx context.Context, slug models.ExchangeSlug, apiKey, secretKey, passphrase string) error
+	TestConnectionRaw(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug, apiKey, secretKey, passphrase string) error
 	GetExchangeBalance(ctx context.Context, slug models.ExchangeSlug, user models.User) ([]*models.AccountBalanceDTO, error)
 	GetCurrentExchangeBalance(ctx context.Context, user models.User) ([]*models.AccountBalanceDTO, error)
 	SetCurrentExchange(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug) error
@@ -64,6 +64,8 @@ type IExchangeService interface { //nolint:interfacebloat
 	ToggleExchangeWithdrawals(ctx context.Context, slug models.ExchangeSlug, userID uuid.UUID) (*models.UserExchange, error)
 	ChangeExchangeWithdrawalState(ctx context.Context, slug models.ExchangeSlug, userID uuid.UUID, state models.ExchangeWithdrawalState) (*models.UserExchange, error)
 	ChangeExchangeSwapsState(ctx context.Context, slug models.ExchangeSlug, userID uuid.UUID, state models.ExchangeSwapState) (*models.UserExchange, error)
+	GetNetworkSettings(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug) (*NetworkSettingsDTO, error)
+	SetNetworkSettings(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug, proxyURL, networkInterface *string) (*NetworkSettingsDTO, error)
 }
 
 type TestConnectionResult struct {
@@ -991,8 +993,13 @@ func (s *Service) TestConnection(ctx context.Context, user models.User, slug mod
 	return nil
 }
 
-func (s *Service) TestConnectionRaw(ctx context.Context, slug models.ExchangeSlug, apiKey, secretKey, passphrase string) error {
-	exClient, err := s.exManager.CreateDriver(ctx, slug, apiKey, secretKey, passphrase)
+func (s *Service) TestConnectionRaw(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug, apiKey, secretKey, passphrase string) error {
+	// Test through the user's saved proxy / interface: exchanges check the API key IP whitelist.
+	netCfg, err := s.exManager.GetNetConfig(ctx, userID, slug)
+	if err != nil {
+		return err
+	}
+	exClient, err := s.exManager.CreateDriver(ctx, slug, apiKey, secretKey, passphrase, netCfg)
 	if err != nil {
 		return fmt.Errorf("create exchange client: %w", err)
 	}

@@ -4,10 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	_ "github.com/dv-net/dv-merchant/internal/delivery/http/responses/exchange_response" // Blank import for swaggen
+	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/exchange_response"
 	"github.com/dv-net/dv-merchant/internal/dto"
+	"github.com/dv-net/dv-merchant/internal/service/exchange"
 	_ "github.com/dv-net/dv-merchant/internal/storage/storecmn" // Blank import for swaggen
 	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
+	"github.com/dv-net/dv-merchant/pkg/exchange_client/utils"
+	"github.com/dv-net/dv-merchant/pkg/netiface"
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/exchange_request"
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -174,7 +177,8 @@ func (h *Handler) testConnection(c fiber.Ctx) error {
 // @Router			/v1/dv-admin/exchange/test [post]
 // @Security		Bearer
 func (h *Handler) testConnectionExternal(c fiber.Ctx) error {
-	if _, err := loadAuthUser(c); err != nil {
+	usr, err := loadAuthUser(c)
+	if err != nil {
 		return err
 	}
 
@@ -188,7 +192,7 @@ func (h *Handler) testConnectionExternal(c fiber.Ctx) error {
 		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
 	}
 
-	err := h.services.ExchangeService.TestConnectionRaw(c.Context(), slug, req.Credentials.Key, req.Credentials.Secret, req.Credentials.Passphrase)
+	err = h.services.ExchangeService.TestConnectionRaw(c.Context(), usr.ID, slug, req.Credentials.Key, req.Credentials.Secret, req.Credentials.Passphrase)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
@@ -833,12 +837,121 @@ func (h *Handler) toggleExchangeSwaps(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(state.WithdrawalState))
 }
 
+// @Summary		List network interfaces
+// @Description	Server network interfaces available for exchange connections and the default one
+// @Tags			Exchange
+// @Produce		json
+// @Success		200	{object}	response.Result[exchange_response.NetworkInterfacesResponse]
+// @Failure		400	{object}	apierror.Errors
+// @Router			/v1/dv-admin/exchange/network-interfaces [get]
+// @Security		Bearer
+func (h *Handler) getNetworkInterfaces(c fiber.Ctx) error {
+	if _, err := loadAuthUser(c); err != nil {
+		return err
+	}
+
+	list, err := netiface.List()
+	if err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+	return c.JSON(response.OkByData(exchange_response.NetworkInterfacesResponse{
+		Default:    netiface.DefaultName(c.Context()),
+		Interfaces: list,
+	}))
+}
+
+// @Summary		Get exchange network settings
+// @Description	Proxy (password masked) and network interface used for the exchange
+// @Tags			Exchange
+// @Produce		json
+// @Param			exchange_slug	path		string	true	"Exchange slug"
+// @Success		200				{object}	response.Result[exchange_response.NetworkSettingsResponse]
+// @Failure		400				{object}	apierror.Errors
+// @Failure		404				{object}	apierror.Errors
+// @Router			/v1/dv-admin/exchange/{exchange_slug}/network [get]
+// @Security		Bearer
+func (h *Handler) getNetworkSettings(c fiber.Ctx) error {
+	usr, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+	slug := models.ExchangeSlug(c.Params("exchange_slug"))
+	if !slug.Valid() {
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
+	}
+
+	res, err := h.services.ExchangeService.GetNetworkSettings(c.Context(), usr.ID, slug)
+	if err != nil {
+		return networkSettingsError(err)
+	}
+	return c.JSON(response.OkByData(toNetworkSettingsResponse(res)))
+}
+
+// @Summary		Update exchange network settings
+// @Description	Replace the proxy and network interface for the exchange. Empty values mean a direct connection
+// @Description	through the default route. New settings are saved only if the exchange is reachable with them.
+// @Tags			Exchange
+// @Accept			json
+// @Produce		json
+// @Param			exchange_slug	path		string											true	"Exchange slug"
+// @Param			settings		body		exchange_request.UpdateNetworkSettingsRequest	true	"Network settings"
+// @Success		200				{object}	response.Result[exchange_response.NetworkSettingsResponse]
+// @Failure		400				{object}	apierror.Errors
+// @Failure		404				{object}	apierror.Errors
+// @Failure		422				{object}	apierror.Errors
+// @Router			/v1/dv-admin/exchange/{exchange_slug}/network [put]
+// @Security		Bearer
+func (h *Handler) updateNetworkSettings(c fiber.Ctx) error {
+	usr, err := loadAuthUser(c)
+	if err != nil {
+		return err
+	}
+	slug := models.ExchangeSlug(c.Params("exchange_slug"))
+	if !slug.Valid() {
+		return apierror.New().AddError(errors.New("exchange not found")).SetHttpCode(fiber.StatusNotFound)
+	}
+	req := &exchange_request.UpdateNetworkSettingsRequest{}
+	if err := c.Bind().Body(req); err != nil {
+		return err
+	}
+
+	res, err := h.services.ExchangeService.SetNetworkSettings(c.Context(), usr.ID, slug, req.ProxyURL, req.NetworkInterface)
+	if err != nil {
+		return networkSettingsError(err)
+	}
+	return c.JSON(response.OkByData(toNetworkSettingsResponse(res)))
+}
+
+func networkSettingsError(err error) error {
+	switch {
+	case errors.Is(err, exchange.ErrExchangeNotFound):
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)
+	case errors.Is(err, utils.ErrInvalidProxyURL),
+		errors.Is(err, exchange.ErrNetworkInterfaceNotFound),
+		errors.Is(err, exchange.ErrExchangeKeysNotSet):
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusUnprocessableEntity)
+	default:
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
+	}
+}
+
+func toNetworkSettingsResponse(dto *exchange.NetworkSettingsDTO) exchange_response.NetworkSettingsResponse {
+	return exchange_response.NetworkSettingsResponse{
+		ProxyURL:           dto.ProxyURL,
+		NetworkInterface:   dto.NetworkInterface,
+		InterfaceAvailable: dto.InterfaceAvailable,
+	}
+}
+
 func (h *Handler) initExchangeRoutes(router fiber.Router) {
 	g := router.Group("/exchange")
 	g.Get("/list", h.exchangesList)
 	g.Get("/deposit-addresses", h.getExchangeDepositAddress)
+	g.Get("/network-interfaces", h.getNetworkInterfaces)
 	g.Post("/:exchange_slug/keys", h.updateKeys)
 	g.Delete("/:exchange_slug/keys", h.deleteKeys)
+	g.Get("/:exchange_slug/network", h.getNetworkSettings)
+	g.Put("/:exchange_slug/network", h.updateNetworkSettings)
 	g.Get("/:exchange_slug/test", h.testConnection)
 	g.Post("/test", h.testConnectionExternal)
 	g.Get("/:exchange_slug/balance", h.getBalance)

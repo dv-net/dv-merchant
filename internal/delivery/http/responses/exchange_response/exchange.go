@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/pkg/netiface"
 
 	"github.com/shopspring/decimal"
 )
@@ -120,3 +121,15 @@ type GetDepositAddressesResponse struct {
 	Name      string                  `json:"name"`
 	Addresses []DepositUpdateResponse `json:"addresses"`
 } //	@name	GetDepositAddressesResponse
+
+type NetworkInterfacesResponse struct {
+	// Default is the interface of the system default route, "" if unknown.
+	Default    string               `json:"default"`
+	Interfaces []netiface.Interface `json:"interfaces"`
+} //	@name	ExchangeNetworkInterfacesResponse
+
+type NetworkSettingsResponse struct {
+	ProxyURL           *string `json:"proxy_url" example:"socks5://user:xxxxx@203.0.113.10:1080"`
+	NetworkInterface   *string `json:"network_interface" example:"eth1"`
+	InterfaceAvailable bool    `json:"interface_available"`
+} //	@name	ExchangeNetworkSettingsResponse

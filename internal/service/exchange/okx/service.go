@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
@@ -462,13 +463,13 @@ func (o *Service) getFundingBalance(symbol string, funding []*okxmodels.FundingB
 	return fundingAmount
 }
 
-func NewService(l logger.Logger, apiKey, secretKey, passphrase string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(l logger.Logger, apiKey, secretKey, passphrase string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor, httpClient *http.Client) (*Service, error) {
 	exClient := okx.NewBaseClient(&okx.ClientOptions{
 		APIKey:     apiKey,
 		SecretKey:  secretKey,
 		Passphrase: passphrase,
 		BaseURL:    baseURL,
-	}, store, okx.WithLogger(l))
+	}, store, okx.WithLogger(l), okx.WithHTTPClient(httpClient))
 
 	connHash, err := hash.SHA256ConnectionHash(models.ExchangeSlugOkx.String(), apiKey, secretKey, passphrase)
 	if err != nil {

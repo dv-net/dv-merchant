@@ -69,12 +69,17 @@ func NewClient(opt *ClientOptions) (*Client, error) {
 		return nil, err
 	}
 
+	httpClient := opt.HTTPClient
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+
 	client := &Client{
 		validator:  v,
 		apiKey:     opt.APIKey,
 		secretKey:  opt.SecretKey,
 		baseURL:    opt.BaseURL,
-		httpClient: http.DefaultClient,
+		httpClient: httpClient,
 		signer:     NewSigner(opt.APIKey, opt.SecretKey),
 		log:        opt.Logger,
 	}
@@ -98,6 +103,7 @@ type ClientOptions struct {
 	BaseURL      *url.URL `validate:"required_if=PublicClient false"`
 	PublicClient bool
 	Logger       logger.Logger
+	HTTPClient   *http.Client
 }
 
 func (o *Client) Do(ctx context.Context, req *http.Request, level SecurityLevel, dest interface{}) error {

@@ -32,3 +32,14 @@ AND ue.user_id = exchange_key.user_id;
 
 -- name: DeleteByUserAndExchangeID :exec
 DELETE FROM user_exchanges WHERE user_id = $1 AND exchange_id = $2;
+
+-- name: UpdateNetworkSettings :exec
+UPDATE user_exchanges
+SET proxy_url = $3, network_interface = $4
+WHERE user_id = $1 AND exchange_id = $2;
+
+-- name: GetNetworkSettingsBySlug :one
+SELECT ue.proxy_url, ue.network_interface
+FROM user_exchanges ue
+         JOIN exchanges e ON e.id = ue.exchange_id
+WHERE ue.user_id = $1 AND e.slug = $2;

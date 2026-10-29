@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
@@ -541,12 +542,12 @@ func (o *Service) CreateWithdrawalOrder(ctx context.Context, args *models.Create
 	}
 }
 
-func NewService(l logger.Logger, accessKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(l logger.Logger, accessKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor, httpClient *http.Client) (*Service, error) {
 	exClient, err := htx.NewBaseClient(&htx.ClientOptions{
 		AccessKey: accessKey,
 		SecretKey: secretKey,
 		BaseURL:   baseURL,
-	}, store, htx.WithLogger(l))
+	}, store, htx.WithLogger(l), htx.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, err
 	}

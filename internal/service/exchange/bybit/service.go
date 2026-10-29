@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
@@ -48,12 +49,12 @@ type Service struct {
 	connHash string
 }
 
-func NewService(logger logger.Logger, accessKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(logger logger.Logger, accessKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor, httpClient *http.Client) (*Service, error) {
 	exClient := bybit.NewBaseClient(&bybit.ClientOptions{
 		KeyAPI:    accessKey,
 		KeySecret: secretKey,
 		BaseURL:   baseURL,
-	}, store, bybit.WithLogger(logger))
+	}, store, bybit.WithLogger(logger), bybit.WithHTTPClient(httpClient))
 
 	connHash, err := hash.SHA256ConnectionHash(models.ExchangeSlugBybit.String(), accessKey, secretKey)
 	if err != nil {

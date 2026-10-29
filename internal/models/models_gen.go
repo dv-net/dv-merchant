@@ -542,11 +542,13 @@ type UserAmlSetting struct {
 } //	@name	UserAmlSetting
 
 type UserExchange struct {
-	ID              uuid.UUID               `db:"id" json:"id"`
-	ExchangeID      uuid.UUID               `db:"exchange_id" json:"exchange_id"`
-	UserID          uuid.UUID               `db:"user_id" json:"user_id"`
-	WithdrawalState ExchangeWithdrawalState `db:"withdrawal_state" json:"withdrawal_state"`
-	SwapState       ExchangeSwapState       `db:"swap_state" json:"swap_state"`
+	ID               uuid.UUID               `db:"id" json:"id"`
+	ExchangeID       uuid.UUID               `db:"exchange_id" json:"exchange_id"`
+	UserID           uuid.UUID               `db:"user_id" json:"user_id"`
+	WithdrawalState  ExchangeWithdrawalState `db:"withdrawal_state" json:"withdrawal_state"`
+	SwapState        ExchangeSwapState       `db:"swap_state" json:"swap_state"`
+	ProxyUrl         pgtype.Text             `db:"proxy_url" json:"proxy_url"`
+	NetworkInterface pgtype.Text             `db:"network_interface" json:"network_interface"`
 } //	@name	UserExchange
 
 type UserExchangePair struct {

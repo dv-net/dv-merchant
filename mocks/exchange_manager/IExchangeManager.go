@@ -11,6 +11,8 @@ import (
 
 	models "github.com/dv-net/dv-merchant/internal/models"
 
+	utils "github.com/dv-net/dv-merchant/pkg/exchange_client/utils"
+
 	uuid "github.com/google/uuid"
 )
 
@@ -27,9 +29,9 @@ func (_m *IExchangeManager) EXPECT() *IExchangeManager_Expecter {
 	return &IExchangeManager_Expecter{mock: &_m.Mock}
 }
 
-// CreateDriver provides a mock function with given fields: ctx, slug, apiKey, secretKey, passphrase
-func (_m *IExchangeManager) CreateDriver(ctx context.Context, slug models.ExchangeSlug, apiKey string, secretKey string, passphrase string) (exchange_manager.IExchangeClient, error) {
-	ret := _m.Called(ctx, slug, apiKey, secretKey, passphrase)
+// CreateDriver provides a mock function with given fields: ctx, slug, apiKey, secretKey, passphrase, netCfg
+func (_m *IExchangeManager) CreateDriver(ctx context.Context, slug models.ExchangeSlug, apiKey string, secretKey string, passphrase string, netCfg utils.NetConfig) (exchange_manager.IExchangeClient, error) {
+	ret := _m.Called(ctx, slug, apiKey, secretKey, passphrase, netCfg)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateDriver")
@@ -37,19 +39,19 @@ func (_m *IExchangeManager) CreateDriver(ctx context.Context, slug models.Exchan
 
 	var r0 exchange_manager.IExchangeClient
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, models.ExchangeSlug, string, string, string) (exchange_manager.IExchangeClient, error)); ok {
-		return rf(ctx, slug, apiKey, secretKey, passphrase)
+	if rf, ok := ret.Get(0).(func(context.Context, models.ExchangeSlug, string, string, string, utils.NetConfig) (exchange_manager.IExchangeClient, error)); ok {
+		return rf(ctx, slug, apiKey, secretKey, passphrase, netCfg)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, models.ExchangeSlug, string, string, string) exchange_manager.IExchangeClient); ok {
-		r0 = rf(ctx, slug, apiKey, secretKey, passphrase)
+	if rf, ok := ret.Get(0).(func(context.Context, models.ExchangeSlug, string, string, string, utils.NetConfig) exchange_manager.IExchangeClient); ok {
+		r0 = rf(ctx, slug, apiKey, secretKey, passphrase, netCfg)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(exchange_manager.IExchangeClient)
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, models.ExchangeSlug, string, string, string) error); ok {
-		r1 = rf(ctx, slug, apiKey, secretKey, passphrase)
+	if rf, ok := ret.Get(1).(func(context.Context, models.ExchangeSlug, string, string, string, utils.NetConfig) error); ok {
+		r1 = rf(ctx, slug, apiKey, secretKey, passphrase, netCfg)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -68,13 +70,14 @@ type IExchangeManager_CreateDriver_Call struct {
 //   - apiKey string
 //   - secretKey string
 //   - passphrase string
-func (_e *IExchangeManager_Expecter) CreateDriver(ctx interface{}, slug interface{}, apiKey interface{}, secretKey interface{}, passphrase interface{}) *IExchangeManager_CreateDriver_Call {
-	return &IExchangeManager_CreateDriver_Call{Call: _e.mock.On("CreateDriver", ctx, slug, apiKey, secretKey, passphrase)}
+//   - netCfg utils.NetConfig
+func (_e *IExchangeManager_Expecter) CreateDriver(ctx interface{}, slug interface{}, apiKey interface{}, secretKey interface{}, passphrase interface{}, netCfg interface{}) *IExchangeManager_CreateDriver_Call {
+	return &IExchangeManager_CreateDriver_Call{Call: _e.mock.On("CreateDriver", ctx, slug, apiKey, secretKey, passphrase, netCfg)}
 }
 
-func (_c *IExchangeManager_CreateDriver_Call) Run(run func(ctx context.Context, slug models.ExchangeSlug, apiKey string, secretKey string, passphrase string)) *IExchangeManager_CreateDriver_Call {
+func (_c *IExchangeManager_CreateDriver_Call) Run(run func(ctx context.Context, slug models.ExchangeSlug, apiKey string, secretKey string, passphrase string, netCfg utils.NetConfig)) *IExchangeManager_CreateDriver_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(models.ExchangeSlug), args[2].(string), args[3].(string), args[4].(string))
+		run(args[0].(context.Context), args[1].(models.ExchangeSlug), args[2].(string), args[3].(string), args[4].(string), args[5].(utils.NetConfig))
 	})
 	return _c
 }
@@ -84,7 +87,7 @@ func (_c *IExchangeManager_CreateDriver_Call) Return(_a0 exchange_manager.IExcha
 	return _c
 }
 
-func (_c *IExchangeManager_CreateDriver_Call) RunAndReturn(run func(context.Context, models.ExchangeSlug, string, string, string) (exchange_manager.IExchangeClient, error)) *IExchangeManager_CreateDriver_Call {
+func (_c *IExchangeManager_CreateDriver_Call) RunAndReturn(run func(context.Context, models.ExchangeSlug, string, string, string, utils.NetConfig) (exchange_manager.IExchangeClient, error)) *IExchangeManager_CreateDriver_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -204,6 +207,125 @@ func (_c *IExchangeManager_GetDriver_Call) Return(_a0 exchange_manager.IExchange
 }
 
 func (_c *IExchangeManager_GetDriver_Call) RunAndReturn(run func(context.Context, models.ExchangeSlug, uuid.UUID) (exchange_manager.IExchangeClient, error)) *IExchangeManager_GetDriver_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetDriverWithNetConfig provides a mock function with given fields: ctx, slug, userID, netCfg
+func (_m *IExchangeManager) GetDriverWithNetConfig(ctx context.Context, slug models.ExchangeSlug, userID uuid.UUID, netCfg utils.NetConfig) (exchange_manager.IExchangeClient, error) {
+	ret := _m.Called(ctx, slug, userID, netCfg)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetDriverWithNetConfig")
+	}
+
+	var r0 exchange_manager.IExchangeClient
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, models.ExchangeSlug, uuid.UUID, utils.NetConfig) (exchange_manager.IExchangeClient, error)); ok {
+		return rf(ctx, slug, userID, netCfg)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, models.ExchangeSlug, uuid.UUID, utils.NetConfig) exchange_manager.IExchangeClient); ok {
+		r0 = rf(ctx, slug, userID, netCfg)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(exchange_manager.IExchangeClient)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, models.ExchangeSlug, uuid.UUID, utils.NetConfig) error); ok {
+		r1 = rf(ctx, slug, userID, netCfg)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// IExchangeManager_GetDriverWithNetConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetDriverWithNetConfig'
+type IExchangeManager_GetDriverWithNetConfig_Call struct {
+	*mock.Call
+}
+
+// GetDriverWithNetConfig is a helper method to define mock.On call
+//   - ctx context.Context
+//   - slug models.ExchangeSlug
+//   - userID uuid.UUID
+//   - netCfg utils.NetConfig
+func (_e *IExchangeManager_Expecter) GetDriverWithNetConfig(ctx interface{}, slug interface{}, userID interface{}, netCfg interface{}) *IExchangeManager_GetDriverWithNetConfig_Call {
+	return &IExchangeManager_GetDriverWithNetConfig_Call{Call: _e.mock.On("GetDriverWithNetConfig", ctx, slug, userID, netCfg)}
+}
+
+func (_c *IExchangeManager_GetDriverWithNetConfig_Call) Run(run func(ctx context.Context, slug models.ExchangeSlug, userID uuid.UUID, netCfg utils.NetConfig)) *IExchangeManager_GetDriverWithNetConfig_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(models.ExchangeSlug), args[2].(uuid.UUID), args[3].(utils.NetConfig))
+	})
+	return _c
+}
+
+func (_c *IExchangeManager_GetDriverWithNetConfig_Call) Return(_a0 exchange_manager.IExchangeClient, _a1 error) *IExchangeManager_GetDriverWithNetConfig_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *IExchangeManager_GetDriverWithNetConfig_Call) RunAndReturn(run func(context.Context, models.ExchangeSlug, uuid.UUID, utils.NetConfig) (exchange_manager.IExchangeClient, error)) *IExchangeManager_GetDriverWithNetConfig_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetNetConfig provides a mock function with given fields: ctx, userID, slug
+func (_m *IExchangeManager) GetNetConfig(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug) (utils.NetConfig, error) {
+	ret := _m.Called(ctx, userID, slug)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetNetConfig")
+	}
+
+	var r0 utils.NetConfig
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, models.ExchangeSlug) (utils.NetConfig, error)); ok {
+		return rf(ctx, userID, slug)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, models.ExchangeSlug) utils.NetConfig); ok {
+		r0 = rf(ctx, userID, slug)
+	} else {
+		r0 = ret.Get(0).(utils.NetConfig)
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID, models.ExchangeSlug) error); ok {
+		r1 = rf(ctx, userID, slug)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// IExchangeManager_GetNetConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetNetConfig'
+type IExchangeManager_GetNetConfig_Call struct {
+	*mock.Call
+}
+
+// GetNetConfig is a helper method to define mock.On call
+//   - ctx context.Context
+//   - userID uuid.UUID
+//   - slug models.ExchangeSlug
+func (_e *IExchangeManager_Expecter) GetNetConfig(ctx interface{}, userID interface{}, slug interface{}) *IExchangeManager_GetNetConfig_Call {
+	return &IExchangeManager_GetNetConfig_Call{Call: _e.mock.On("GetNetConfig", ctx, userID, slug)}
+}
+
+func (_c *IExchangeManager_GetNetConfig_Call) Run(run func(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug)) *IExchangeManager_GetNetConfig_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(models.ExchangeSlug))
+	})
+	return _c
+}
+
+func (_c *IExchangeManager_GetNetConfig_Call) Return(_a0 utils.NetConfig, _a1 error) *IExchangeManager_GetNetConfig_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *IExchangeManager_GetNetConfig_Call) RunAndReturn(run func(context.Context, uuid.UUID, models.ExchangeSlug) (utils.NetConfig, error)) *IExchangeManager_GetNetConfig_Call {
 	_c.Call.Return(run)
 	return _c
 }

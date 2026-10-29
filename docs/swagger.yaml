@@ -818,6 +818,27 @@ definitions:
       value:
         type: string
     type: object
+  ExchangeNetworkInterfacesResponse:
+    properties:
+      default:
+        description: Default is the interface of the system default route, "" if unknown.
+        type: string
+      interfaces:
+        items:
+          $ref: '#/definitions/NetworkInterface'
+        type: array
+    type: object
+  ExchangeNetworkSettingsResponse:
+    properties:
+      interface_available:
+        type: boolean
+      network_interface:
+        example: eth1
+        type: string
+      proxy_url:
+        example: socks5://user:xxxxx@203.0.113.10:1080
+        type: string
+    type: object
   ExchangeOrderHistoryResponse:
     properties:
       amount:
@@ -966,6 +987,20 @@ definitions:
         type: array
     required:
     - keys
+    type: object
+  ExchangeUpdateNetworkSettingsRequest:
+    properties:
+      network_interface:
+        description: 'Empty or null: the system default route.'
+        example: eth1
+        maxLength: 64
+        type: string
+      proxy_url:
+        description: 'Empty or null: direct connection. A masked password from GET
+          is kept as saved.'
+        example: socks5://user:password@203.0.113.10:1080
+        maxLength: 2048
+        type: string
     type: object
   ExchangeUpdatePairsRequest:
     properties:
@@ -1584,6 +1619,24 @@ definitions:
         type: integer
       data:
         $ref: '#/definitions/ExchangeBalance'
+      message:
+        type: string
+    type: object
+  JSONResponse-ExchangeNetworkInterfacesResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/ExchangeNetworkInterfacesResponse'
+      message:
+        type: string
+    type: object
+  JSONResponse-ExchangeNetworkSettingsResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/ExchangeNetworkSettingsResponse'
       message:
         type: string
     type: object
@@ -2577,6 +2630,22 @@ definitions:
         type: array
     required:
     - currency_id
+    type: object
+  NetworkInterface:
+    properties:
+      addresses:
+        items:
+          $ref: '#/definitions/NetworkInterfaceAddress'
+        type: array
+      name:
+        type: string
+    type: object
+  NetworkInterfaceAddress:
+    properties:
+      ip:
+        type: string
+      private:
+        type: boolean
     type: object
   NotificationHistoryResponse:
     properties:
@@ -5966,6 +6035,77 @@ paths:
       summary: Update exchange keys
       tags:
       - Exchange
+  /v1/dv-admin/exchange/{exchange_slug}/network:
+    get:
+      description: Proxy (password masked) and network interface used for the exchange
+      parameters:
+      - description: Exchange slug
+        in: path
+        name: exchange_slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ExchangeNetworkSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - Bearer: []
+      summary: Get exchange network settings
+      tags:
+      - Exchange
+    put:
+      consumes:
+      - application/json
+      description: |-
+        Replace the proxy and network interface for the exchange. Empty values mean a direct connection
+        through the default route. New settings are saved only if the exchange is reachable with them.
+      parameters:
+      - description: Exchange slug
+        in: path
+        name: exchange_slug
+        required: true
+        type: string
+      - description: Network settings
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/ExchangeUpdateNetworkSettingsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ExchangeNetworkSettingsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - Bearer: []
+      summary: Update exchange network settings
+      tags:
+      - Exchange
   /v1/dv-admin/exchange/{exchange_slug}/set:
     post:
       consumes:
@@ -6089,6 +6229,26 @@ paths:
       security:
       - Bearer: []
       summary: List exchanges
+      tags:
+      - Exchange
+  /v1/dv-admin/exchange/network-interfaces:
+    get:
+      description: Server network interfaces available for exchange connections and
+        the default one
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ExchangeNetworkInterfacesResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - Bearer: []
+      summary: List network interfaces
       tags:
       - Exchange
   /v1/dv-admin/exchange/test:
