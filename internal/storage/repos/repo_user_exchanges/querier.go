@@ -18,6 +18,8 @@ type Querier interface {
 	DeleteByUserAndExchangeID(ctx context.Context, arg DeleteByUserAndExchangeIDParams) error
 	GetByUserAndExchangeID(ctx context.Context, arg GetByUserAndExchangeIDParams) (*models.UserExchange, error)
 	GetByUserID(ctx context.Context, arg GetByUserIDParams) (*models.UserExchange, error)
+	GetNetworkSettingsBySlug(ctx context.Context, arg GetNetworkSettingsBySlugParams) (*GetNetworkSettingsBySlugRow, error)
+	UpdateNetworkSettings(ctx context.Context, arg UpdateNetworkSettingsParams) error
 }
 
 var _ Querier = (*Queries)(nil)

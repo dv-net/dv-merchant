@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
@@ -41,7 +42,7 @@ var (
 	ErrMaxOrderValueReached        = errors.New("max order value reached")
 )
 
-func NewService(l logger.Logger, accessKey, secretKey, passPhrase string, _ bool, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(l logger.Logger, accessKey, secretKey, passPhrase string, _ bool, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor, httpClient *http.Client) (*Service, error) {
 	// Create cache for public endpoint caching
 	cache := key_value.NewInMemory()
 
@@ -50,7 +51,7 @@ func NewService(l logger.Logger, accessKey, secretKey, passPhrase string, _ bool
 		KeySecret:     secretKey,
 		KeyPassphrase: passPhrase,
 		BaseURL:       baseURL,
-	}, store, cache, kucoinclients.WithLogger(l))
+	}, store, cache, kucoinclients.WithLogger(l), kucoinclients.WithHTTPClient(httpClient))
 
 	connHash, err := hash.SHA256ConnectionHash(models.ExchangeSlugKucoin.String(), accessKey, secretKey, passPhrase)
 	if err != nil {

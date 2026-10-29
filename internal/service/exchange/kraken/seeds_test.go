@@ -61,7 +61,7 @@ func TestSeeds_Live(t *testing.T) {
 	bURL, err := url.Parse("https://api.kraken.com")
 	require.NoError(t, err)
 	l := logger.New("test", mxlogger.Config{Level: "fatal"})
-	svc, err := NewService(l, apiKey, secretKey, bURL, nil, memory.NewStore(), nil)
+	svc, err := NewService(l, apiKey, secretKey, bURL, nil, memory.NewStore(), nil, nil)
 	require.NoError(t, err)
 
 	withdrawMethods, err := svc.exClient.Wallet().GetWithdrawMethods(t.Context(), nil)

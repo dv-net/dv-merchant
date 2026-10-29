@@ -46,6 +46,15 @@ func (o *BaseClient) Spot() IMexcSpot       { return o.spotClient }
 
 type ClientOption func(c *Client)
 
+// WithHTTPClient sets a custom HTTP client (proxy, network interface). nil keeps the default.
+func WithHTTPClient(httpClient *http.Client) ClientOption {
+	return func(c *Client) {
+		if httpClient != nil {
+			c.httpClient = httpClient
+		}
+	}
+}
+
 func WithLogger(log logger.Logger) ClientOption {
 	return func(c *Client) {
 		c.log = log

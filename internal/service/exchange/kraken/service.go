@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/jackc/pgx/v5"
@@ -27,12 +28,12 @@ type Service struct {
 	connHash string
 }
 
-func NewService(logger logger.Logger, apiKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(logger logger.Logger, apiKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor, httpClient *http.Client) (*Service, error) {
 	exClient, err := kraken.NewBaseClient(&kraken.ClientOptions{
 		APIKey:    apiKey,
 		SecretKey: secretKey,
 		BaseURL:   baseURL,
-	}, store, kraken.WithLogger(logger))
+	}, store, kraken.WithLogger(logger), kraken.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, err
 	}

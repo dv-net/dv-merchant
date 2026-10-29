@@ -29,6 +29,7 @@ func NewMarketData(opt *ClientOptions) (IMarketClient, error) {
 		SecretKey:    opt.SecretKey,
 		BaseURL:      bURL,
 		PublicClient: opt.PublicClient,
+		HTTPClient:   opt.HTTPClient,
 	}
 
 	client, err := NewClient(newOpt)

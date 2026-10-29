@@ -10,19 +10,22 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const create = `-- name: Create :one
-INSERT INTO user_exchanges (exchange_id, user_id, withdrawal_state, swap_state)
-	VALUES ($1, $2, $3, $4)
-	RETURNING id, exchange_id, user_id, withdrawal_state, swap_state
+INSERT INTO user_exchanges (exchange_id, user_id, withdrawal_state, swap_state, proxy_url, network_interface)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	RETURNING id, exchange_id, user_id, withdrawal_state, swap_state, proxy_url, network_interface
 `
 
 type CreateParams struct {
-	ExchangeID      uuid.UUID                      `db:"exchange_id" json:"exchange_id"`
-	UserID          uuid.UUID                      `db:"user_id" json:"user_id"`
-	WithdrawalState models.ExchangeWithdrawalState `db:"withdrawal_state" json:"withdrawal_state"`
-	SwapState       models.ExchangeSwapState       `db:"swap_state" json:"swap_state"`
+	ExchangeID       uuid.UUID                      `db:"exchange_id" json:"exchange_id"`
+	UserID           uuid.UUID                      `db:"user_id" json:"user_id"`
+	WithdrawalState  models.ExchangeWithdrawalState `db:"withdrawal_state" json:"withdrawal_state"`
+	SwapState        models.ExchangeSwapState       `db:"swap_state" json:"swap_state"`
+	ProxyUrl         pgtype.Text                    `db:"proxy_url" json:"proxy_url"`
+	NetworkInterface pgtype.Text                    `db:"network_interface" json:"network_interface"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.UserExchange, error) {
@@ -31,6 +34,8 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.UserExc
 		arg.UserID,
 		arg.WithdrawalState,
 		arg.SwapState,
+		arg.ProxyUrl,
+		arg.NetworkInterface,
 	)
 	var i models.UserExchange
 	err := row.Scan(
@@ -39,6 +44,8 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.UserExc
 		&i.UserID,
 		&i.WithdrawalState,
 		&i.SwapState,
+		&i.ProxyUrl,
+		&i.NetworkInterface,
 	)
 	return &i, err
 }

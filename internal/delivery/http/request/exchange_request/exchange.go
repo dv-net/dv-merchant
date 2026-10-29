@@ -81,3 +81,10 @@ type TestConnectionRequest struct {
 		Passphrase string `json:"passphrase"`
 	} `json:"credentials" validate:"required"`
 } //	@name	ExchangeTestConnectionRequest
+
+type UpdateNetworkSettingsRequest struct {
+	// Empty or null: direct connection. A masked password from GET is kept as saved.
+	ProxyURL *string `json:"proxy_url" validate:"omitempty,max=2048" example:"socks5://user:password@203.0.113.10:1080"`
+	// Empty or null: the system default route.
+	NetworkInterface *string `json:"network_interface" validate:"omitempty,max=64" example:"eth1"`
+} //	@name	ExchangeUpdateNetworkSettingsRequest

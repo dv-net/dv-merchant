@@ -1,0 +1,1 @@
+ALTER TABLE user_exchanges DROP COLUMN proxy_url, DROP COLUMN network_interface;

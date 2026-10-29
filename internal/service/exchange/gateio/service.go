@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -44,12 +45,12 @@ type Service struct {
 	connHash string
 }
 
-func NewService(logger logger.Logger, accessKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(logger logger.Logger, accessKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor, httpClient *http.Client) (*Service, error) {
 	exClient, err := gateio.NewBaseClient(&gateio.ClientOptions{
 		AccessKey: accessKey,
 		SecretKey: secretKey,
 		BaseURL:   baseURL,
-	}, store, gateio.WithLogger(logger))
+	}, store, gateio.WithLogger(logger), gateio.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, err
 	}

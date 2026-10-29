@@ -1,6 +1,8 @@
 package clients
 
 import (
+	"net/http"
+
 	"github.com/ulule/limiter/v3"
 
 	"github.com/dv-net/dv-merchant/pkg/exchange_client/bitget"
@@ -28,6 +30,9 @@ func NewBaseClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption
 	if c.log != nil {
 		subClientOpts = append(subClientOpts, WithLogger(c.log))
 	}
+	if c.httpClient != nil {
+		subClientOpts = append(subClientOpts, WithHTTPClient(c.httpClient))
+	}
 
 	c.commonClient = NewCommonClient(opt, store, c.signer, subClientOpts...)
 	c.spotClient = NewSpotClient(opt, store, c.signer, subClientOpts...)
@@ -39,6 +44,7 @@ type BaseClient struct {
 	spotClient   IBitgetSpot
 	commonClient IBitgetCommon
 	log          logger.Logger
+	httpClient   *http.Client
 }
 
 func (o *BaseClient) Spot() IBitgetSpot      { return o.spotClient }

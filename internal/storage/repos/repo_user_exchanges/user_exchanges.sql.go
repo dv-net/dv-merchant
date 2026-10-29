@@ -10,6 +10,7 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createByUserID = `-- name: CreateByUserID :exec
@@ -65,7 +66,7 @@ func (q *Queries) DeleteByUserAndExchangeID(ctx context.Context, arg DeleteByUse
 }
 
 const getByUserAndExchangeID = `-- name: GetByUserAndExchangeID :one
-SELECT id, exchange_id, user_id, withdrawal_state, swap_state FROM user_exchanges WHERE user_id = $1 AND exchange_id = $2
+SELECT id, exchange_id, user_id, withdrawal_state, swap_state, proxy_url, network_interface FROM user_exchanges WHERE user_id = $1 AND exchange_id = $2
 `
 
 type GetByUserAndExchangeIDParams struct {
@@ -82,12 +83,14 @@ func (q *Queries) GetByUserAndExchangeID(ctx context.Context, arg GetByUserAndEx
 		&i.UserID,
 		&i.WithdrawalState,
 		&i.SwapState,
+		&i.ProxyUrl,
+		&i.NetworkInterface,
 	)
 	return &i, err
 }
 
 const getByUserID = `-- name: GetByUserID :one
-SELECT id, exchange_id, user_id, withdrawal_state, swap_state FROM user_exchanges WHERE user_id = $1 AND exchange_id = $2
+SELECT id, exchange_id, user_id, withdrawal_state, swap_state, proxy_url, network_interface FROM user_exchanges WHERE user_id = $1 AND exchange_id = $2
 `
 
 type GetByUserIDParams struct {
@@ -104,6 +107,55 @@ func (q *Queries) GetByUserID(ctx context.Context, arg GetByUserIDParams) (*mode
 		&i.UserID,
 		&i.WithdrawalState,
 		&i.SwapState,
+		&i.ProxyUrl,
+		&i.NetworkInterface,
 	)
 	return &i, err
+}
+
+const getNetworkSettingsBySlug = `-- name: GetNetworkSettingsBySlug :one
+SELECT ue.proxy_url, ue.network_interface
+FROM user_exchanges ue
+         JOIN exchanges e ON e.id = ue.exchange_id
+WHERE ue.user_id = $1 AND e.slug = $2
+`
+
+type GetNetworkSettingsBySlugParams struct {
+	UserID uuid.UUID           `db:"user_id" json:"user_id"`
+	Slug   models.ExchangeSlug `db:"slug" json:"slug"`
+}
+
+type GetNetworkSettingsBySlugRow struct {
+	ProxyUrl         pgtype.Text `db:"proxy_url" json:"proxy_url"`
+	NetworkInterface pgtype.Text `db:"network_interface" json:"network_interface"`
+}
+
+func (q *Queries) GetNetworkSettingsBySlug(ctx context.Context, arg GetNetworkSettingsBySlugParams) (*GetNetworkSettingsBySlugRow, error) {
+	row := q.db.QueryRow(ctx, getNetworkSettingsBySlug, arg.UserID, arg.Slug)
+	var i GetNetworkSettingsBySlugRow
+	err := row.Scan(&i.ProxyUrl, &i.NetworkInterface)
+	return &i, err
+}
+
+const updateNetworkSettings = `-- name: UpdateNetworkSettings :exec
+UPDATE user_exchanges
+SET proxy_url = $3, network_interface = $4
+WHERE user_id = $1 AND exchange_id = $2
+`
+
+type UpdateNetworkSettingsParams struct {
+	UserID           uuid.UUID   `db:"user_id" json:"user_id"`
+	ExchangeID       uuid.UUID   `db:"exchange_id" json:"exchange_id"`
+	ProxyUrl         pgtype.Text `db:"proxy_url" json:"proxy_url"`
+	NetworkInterface pgtype.Text `db:"network_interface" json:"network_interface"`
+}
+
+func (q *Queries) UpdateNetworkSettings(ctx context.Context, arg UpdateNetworkSettingsParams) error {
+	_, err := q.db.Exec(ctx, updateNetworkSettings,
+		arg.UserID,
+		arg.ExchangeID,
+		arg.ProxyUrl,
+		arg.NetworkInterface,
+	)
+	return err
 }

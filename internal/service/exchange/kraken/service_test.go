@@ -124,7 +124,7 @@ func newTestEnv(t *testing.T) *testEnv {
 
 	secret := base64.StdEncoding.EncodeToString([]byte("secret"))
 	l := logger.New("test", mxlogger.Config{Level: "fatal"})
-	svc, err := NewService(l, "key-"+t.Name(), secret, bURL, &fakeStorage{chains: chains}, nil, conv)
+	svc, err := NewService(l, "key-"+t.Name(), secret, bURL, &fakeStorage{chains: chains}, nil, conv, nil)
 	require.NoError(t, err)
 
 	return &testEnv{svc: svc, kraken: fk, chains: chains, conv: conv}

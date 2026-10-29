@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -26,13 +27,14 @@ import (
 	"github.com/dv-net/dv-merchant/pkg/logger"
 )
 
-func NewService(logger logger.Logger, apiKey, secretKey string, public bool, baseURL *url.URL, storage storage.IStorage, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(logger logger.Logger, apiKey, secretKey string, public bool, baseURL *url.URL, storage storage.IStorage, convSvc currconv.ICurrencyConvertor, httpClient *http.Client) (*Service, error) {
 	exClient, err := binance.NewBaseClient(&binance.ClientOptions{
 		APIKey:       apiKey,
 		SecretKey:    secretKey,
 		BaseURL:      baseURL,
 		PublicClient: public,
 		Logger:       logger,
+		HTTPClient:   httpClient,
 	})
 	if err != nil {
 		return nil, err

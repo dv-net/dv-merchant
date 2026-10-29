@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -45,12 +46,12 @@ type Service struct {
 	addresses map[string][]responses.DepositAddress
 }
 
-func NewService(logger logger.Logger, apiKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(logger logger.Logger, apiKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor, httpClient *http.Client) (*Service, error) {
 	exClient, err := bingx.NewBaseClient(&bingx.ClientOptions{
 		APIKey:    apiKey,
 		SecretKey: secretKey,
 		BaseURL:   baseURL,
-	}, store, bingx.WithLogger(logger))
+	}, store, bingx.WithLogger(logger), bingx.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, err
 	}

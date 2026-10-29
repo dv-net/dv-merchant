@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"slices"
 	"strconv"
@@ -91,12 +92,12 @@ func (o *Service) coinsConfig(ctx context.Context) (responses.GetCoinsConfigResp
 	return coins, nil
 }
 
-func NewService(logger logger.Logger, apiKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor) (*Service, error) {
+func NewService(logger logger.Logger, apiKey, secretKey string, baseURL *url.URL, storage storage.IStorage, store limiter.Store, convSvc currconv.ICurrencyConvertor, httpClient *http.Client) (*Service, error) {
 	exClient, err := mexc.NewBaseClient(&mexc.ClientOptions{
 		APIKey:    apiKey,
 		SecretKey: secretKey,
 		BaseURL:   baseURL,
-	}, store, mexc.WithLogger(logger))
+	}, store, mexc.WithLogger(logger), mexc.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, err
 	}

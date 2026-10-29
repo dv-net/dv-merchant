@@ -2,10 +2,14 @@ package exchange_manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
@@ -24,8 +28,12 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/exchange/okx"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_exchange_user_keys"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_exchanges"
+	"github.com/dv-net/dv-merchant/pkg/exchange_client/utils"
 	"github.com/dv-net/dv-merchant/pkg/logger"
 )
+
+const exchangeHTTPTimeout = 30 * time.Second
 
 type IExchangeClient interface { //nolint:interfacebloat
 	TestConnection(ctx context.Context) error
@@ -47,7 +55,9 @@ type IExchangeManager interface {
 	GetPublicDriver(ctx context.Context, slug models.ExchangeSlug) (IExchangeClient, error)
 	GetDefaultDriver(ctx context.Context, userID uuid.UUID) (IExchangeClient, error)
 	GetDriver(ctx context.Context, slug models.ExchangeSlug, userID uuid.UUID) (IExchangeClient, error)
-	CreateDriver(ctx context.Context, slug models.ExchangeSlug, apiKey, secretKey, passphrase string) (IExchangeClient, error)
+	GetDriverWithNetConfig(ctx context.Context, slug models.ExchangeSlug, userID uuid.UUID, netCfg utils.NetConfig) (IExchangeClient, error)
+	CreateDriver(ctx context.Context, slug models.ExchangeSlug, apiKey, secretKey, passphrase string, netCfg utils.NetConfig) (IExchangeClient, error)
+	GetNetConfig(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug) (utils.NetConfig, error)
 }
 
 type Manager struct {
@@ -66,31 +76,35 @@ func NewManager(l logger.Logger, storage storage.IStorage, currConvService currc
 	}
 }
 
-func (o *Manager) CreateDriver(ctx context.Context, slug models.ExchangeSlug, apiKey, secretKey, passphrase string) (IExchangeClient, error) {
+func (o *Manager) CreateDriver(ctx context.Context, slug models.ExchangeSlug, apiKey, secretKey, passphrase string, netCfg utils.NetConfig) (IExchangeClient, error) {
 	if !slug.Valid() {
 		return nil, fmt.Errorf("invalid exchange slug provided")
 	}
+	httpClient, err := newHTTPClient(netCfg)
+	if err != nil {
+		return nil, err
+	}
 	switch slug {
 	case models.ExchangeSlugBinance:
-		return o.createBinanceServiceRaw(ctx, apiKey, secretKey)
+		return o.createBinanceServiceRaw(ctx, apiKey, secretKey, httpClient)
 	case models.ExchangeSlugHtx:
-		return o.createHtxServiceRaw(ctx, apiKey, secretKey)
+		return o.createHtxServiceRaw(ctx, apiKey, secretKey, httpClient)
 	case models.ExchangeSlugOkx:
-		return o.createOkxServiceRaw(ctx, apiKey, secretKey, passphrase)
+		return o.createOkxServiceRaw(ctx, apiKey, secretKey, passphrase, httpClient)
 	case models.ExchangeSlugBitget:
-		return o.createBitgetServiceRaw(ctx, apiKey, secretKey, passphrase)
+		return o.createBitgetServiceRaw(ctx, apiKey, secretKey, passphrase, httpClient)
 	case models.ExchangeSlugKucoin:
-		return o.createKucoinServiceRaw(ctx, apiKey, secretKey, passphrase)
+		return o.createKucoinServiceRaw(ctx, apiKey, secretKey, passphrase, httpClient)
 	case models.ExchangeSlugBybit:
-		return o.createBybitServiceRaw(ctx, apiKey, secretKey)
+		return o.createBybitServiceRaw(ctx, apiKey, secretKey, httpClient)
 	case models.ExchangeSlugGateio:
-		return o.createGateioServiceRaw(ctx, apiKey, secretKey)
+		return o.createGateioServiceRaw(ctx, apiKey, secretKey, httpClient)
 	case models.ExchangeSlugBingx:
-		return o.createBingxServiceRaw(ctx, apiKey, secretKey)
+		return o.createBingxServiceRaw(ctx, apiKey, secretKey, httpClient)
 	case models.ExchangeSlugMexc:
-		return o.createMexcServiceRaw(ctx, apiKey, secretKey)
+		return o.createMexcServiceRaw(ctx, apiKey, secretKey, httpClient)
 	case models.ExchangeSlugKraken:
-		return o.createKrakenServiceRaw(ctx, apiKey, secretKey)
+		return o.createKrakenServiceRaw(ctx, apiKey, secretKey, httpClient)
 	}
 	return nil, fmt.Errorf("slug %s does not exists", slug.String())
 }
@@ -116,7 +130,7 @@ func (o *Manager) GetPublicDriver(ctx context.Context, slug models.ExchangeSlug)
 	case models.ExchangeSlugMexc:
 		return nil, fmt.Errorf("mexc public client is not supported")
 	case models.ExchangeSlugKraken:
-		return o.createKrakenServiceRaw(ctx, "-", "-")
+		return o.createKrakenServiceRaw(ctx, "-", "-", nil)
 	default:
 		return nil, fmt.Errorf("slug %s does not exists", slug.String())
 	}
@@ -131,64 +145,59 @@ func (o *Manager) GetDefaultDriver(ctx context.Context, userID uuid.UUID) (IExch
 	if usr.ExchangeSlug == nil {
 		return nil, fmt.Errorf("user has no exchanges setup")
 	}
-
-	switch *usr.ExchangeSlug {
-	case models.ExchangeSlugHtx:
-		return o.createHtxService(ctx, usr.ID)
-	case models.ExchangeSlugOkx:
-		return o.createOkxService(ctx, userID)
-	case models.ExchangeSlugBinance:
-		return o.createBinanceService(ctx, userID)
-	case models.ExchangeSlugBitget:
-		return o.createBitgetService(ctx, userID)
-	case models.ExchangeSlugKucoin:
-		return o.createKucoinService(ctx, userID)
-	case models.ExchangeSlugGateio:
-		return o.createGateService(ctx, userID)
-	case models.ExchangeSlugBybit:
-		return o.createBybitService(ctx, userID)
-	case models.ExchangeSlugBingx:
-		return o.createBingxService(ctx, userID)
-	case models.ExchangeSlugMexc:
-		return o.createMexcService(ctx, userID)
-	case models.ExchangeSlugKraken:
-		return o.createKrakenService(ctx, userID)
-	default:
+	if !usr.ExchangeSlug.Valid() {
 		return nil, fmt.Errorf("user is missing current driver")
 	}
+
+	return o.GetDriver(ctx, *usr.ExchangeSlug, usr.ID)
 }
 
 func (o *Manager) GetDriver(ctx context.Context, slug models.ExchangeSlug, userID uuid.UUID) (IExchangeClient, error) {
+	netCfg, err := o.GetNetConfig(ctx, userID, slug)
+	if err != nil {
+		return nil, err
+	}
+	return o.GetDriverWithNetConfig(ctx, slug, userID, netCfg)
+}
+
+// GetDriverWithNetConfig creates a driver with the user's saved keys but the given network settings.
+// Used to check new proxy / interface settings before saving them.
+func (o *Manager) GetDriverWithNetConfig(ctx context.Context, slug models.ExchangeSlug, userID uuid.UUID, netCfg utils.NetConfig) (IExchangeClient, error) {
 	if !slug.Valid() {
 		return nil, fmt.Errorf("invalid exchange slug provided")
 	}
+	httpClient, err := newHTTPClient(netCfg)
+	if err != nil {
+		return nil, err
+	}
+
 	switch slug {
 	case models.ExchangeSlugHtx:
-		return o.createHtxService(ctx, userID)
+		return o.createHtxService(ctx, userID, httpClient)
 	case models.ExchangeSlugOkx:
-		return o.createOkxService(ctx, userID)
+		return o.createOkxService(ctx, userID, httpClient)
 	case models.ExchangeSlugBinance:
-		return o.createBinanceService(ctx, userID)
+		return o.createBinanceService(ctx, userID, httpClient)
 	case models.ExchangeSlugBitget:
-		return o.createBitgetService(ctx, userID)
+		return o.createBitgetService(ctx, userID, httpClient)
 	case models.ExchangeSlugKucoin:
-		return o.createKucoinService(ctx, userID)
+		return o.createKucoinService(ctx, userID, httpClient)
 	case models.ExchangeSlugGateio:
-		return o.createGateService(ctx, userID)
+		return o.createGateService(ctx, userID, httpClient)
 	case models.ExchangeSlugBybit:
-		return o.createBybitService(ctx, userID)
+		return o.createBybitService(ctx, userID, httpClient)
 	case models.ExchangeSlugBingx:
-		return o.createBingxService(ctx, userID)
+		return o.createBingxService(ctx, userID, httpClient)
 	case models.ExchangeSlugMexc:
-		return o.createMexcService(ctx, userID)
+		return o.createMexcService(ctx, userID, httpClient)
 	case models.ExchangeSlugKraken:
-		return o.createKrakenService(ctx, userID)
+		return o.createKrakenService(ctx, userID, httpClient)
 	default:
 		return nil, fmt.Errorf("slug %s does not exists", slug.String())
 	}
 }
 
-func (o *Manager) createOkxServiceRaw(ctx context.Context, apiKey, secretKey, passphrase string) (IExchangeClient, error) {
+func (o *Manager) createOkxServiceRaw(ctx context.Context, apiKey, secretKey, passphrase string, httpClient *http.Client) (IExchangeClient, error) {
 	ex, err := o.storage.Exchanges().GetExchangeBySlug(ctx, models.ExchangeSlugOkx)
 	if err != nil {
 		return nil, err
@@ -199,10 +208,10 @@ func (o *Manager) createOkxServiceRaw(ctx context.Context, apiKey, secretKey, pa
 		return nil, err
 	}
 
-	return okx.NewService(o.l, apiKey, secretKey, passphrase, baseURL, o.storage, o.store, o.currConvService)
+	return okx.NewService(o.l, apiKey, secretKey, passphrase, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
-func (o *Manager) createOkxService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) {
+func (o *Manager) createOkxService(ctx context.Context, userID uuid.UUID, httpClient *http.Client) (IExchangeClient, error) {
 	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
 		UserID:       userID,
 		ExchangeSlug: models.ExchangeSlugOkx,
@@ -229,10 +238,10 @@ func (o *Manager) createOkxService(ctx context.Context, userID uuid.UUID) (IExch
 	secretKey := keyMap[models.ExchangeKeyNameSecretKey.String()]
 	passphrase := keyMap[models.ExchangeKeyNamePassPhrase.String()]
 
-	return okx.NewService(o.l, apiKey, secretKey, passphrase, baseURL, o.storage, o.store, o.currConvService)
+	return okx.NewService(o.l, apiKey, secretKey, passphrase, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
-func (o *Manager) createHtxServiceRaw(ctx context.Context, accessKey, secretKey string) (IExchangeClient, error) {
+func (o *Manager) createHtxServiceRaw(ctx context.Context, accessKey, secretKey string, httpClient *http.Client) (IExchangeClient, error) {
 	ex, err := o.storage.Exchanges().GetExchangeBySlug(ctx, models.ExchangeSlugHtx)
 	if err != nil {
 		return nil, err
@@ -243,10 +252,10 @@ func (o *Manager) createHtxServiceRaw(ctx context.Context, accessKey, secretKey 
 		return nil, err
 	}
 
-	return htx.NewService(o.l, accessKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+	return htx.NewService(o.l, accessKey, secretKey, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
-func (o *Manager) createHtxService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) { //nolint:dupl
+func (o *Manager) createHtxService(ctx context.Context, userID uuid.UUID, httpClient *http.Client) (IExchangeClient, error) { //nolint:dupl
 	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
 		UserID:       userID,
 		ExchangeSlug: models.ExchangeSlugHtx,
@@ -272,7 +281,7 @@ func (o *Manager) createHtxService(ctx context.Context, userID uuid.UUID) (IExch
 	accessKey := keyMap[models.ExchangeKeyNameAccessKey.String()]
 	secretKey := keyMap[models.ExchangeKeyNameSecretKey.String()]
 
-	return htx.NewService(o.l, accessKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+	return htx.NewService(o.l, accessKey, secretKey, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
 func (o *Manager) createPublicHtxService(ctx context.Context) (IExchangeClient, error) {
@@ -286,10 +295,10 @@ func (o *Manager) createPublicHtxService(ctx context.Context) (IExchangeClient, 
 		return nil, err
 	}
 
-	return htx.NewService(o.l, "-", "-", baseURL, o.storage, o.store, o.currConvService)
+	return htx.NewService(o.l, "-", "-", baseURL, o.storage, o.store, o.currConvService, nil)
 }
 
-func (o *Manager) createBinanceServiceRaw(ctx context.Context, apiKey, secretKey string) (IExchangeClient, error) {
+func (o *Manager) createBinanceServiceRaw(ctx context.Context, apiKey, secretKey string, httpClient *http.Client) (IExchangeClient, error) {
 	ex, err := o.storage.Exchanges().GetExchangeBySlug(ctx, models.ExchangeSlugBinance)
 	if err != nil {
 		return nil, err
@@ -300,10 +309,10 @@ func (o *Manager) createBinanceServiceRaw(ctx context.Context, apiKey, secretKey
 		return nil, err
 	}
 
-	return binance.NewService(o.l, apiKey, secretKey, false, baseURL, o.storage, o.currConvService)
+	return binance.NewService(o.l, apiKey, secretKey, false, baseURL, o.storage, o.currConvService, httpClient)
 }
 
-func (o *Manager) createBinanceService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) {
+func (o *Manager) createBinanceService(ctx context.Context, userID uuid.UUID, httpClient *http.Client) (IExchangeClient, error) {
 	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
 		UserID:       userID,
 		ExchangeSlug: models.ExchangeSlugBinance,
@@ -329,7 +338,7 @@ func (o *Manager) createBinanceService(ctx context.Context, userID uuid.UUID) (I
 	accessKey := keyMap[models.ExchangeKeyNameAPIKey.String()]
 	secretKey := keyMap[models.ExchangeKeyNameSecretKey.String()]
 
-	return binance.NewService(o.l, accessKey, secretKey, false, baseURL, o.storage, o.currConvService)
+	return binance.NewService(o.l, accessKey, secretKey, false, baseURL, o.storage, o.currConvService, httpClient)
 }
 
 func (o *Manager) createPublicBinanceService(ctx context.Context) (IExchangeClient, error) {
@@ -343,10 +352,10 @@ func (o *Manager) createPublicBinanceService(ctx context.Context) (IExchangeClie
 		return nil, err
 	}
 
-	return binance.NewService(o.l, "-", "-", true, baseURL, o.storage, o.currConvService)
+	return binance.NewService(o.l, "-", "-", true, baseURL, o.storage, o.currConvService, nil)
 }
 
-func (o *Manager) createBitgetServiceRaw(ctx context.Context, accessKey, secretKey, passPhrase string) (IExchangeClient, error) {
+func (o *Manager) createBitgetServiceRaw(ctx context.Context, accessKey, secretKey, passPhrase string, httpClient *http.Client) (IExchangeClient, error) {
 	ex, err := o.storage.Exchanges().GetExchangeBySlug(ctx, models.ExchangeSlugBitget)
 	if err != nil {
 		return nil, err
@@ -357,10 +366,10 @@ func (o *Manager) createBitgetServiceRaw(ctx context.Context, accessKey, secretK
 		return nil, err
 	}
 
-	return bitget.NewService(o.l, accessKey, secretKey, passPhrase, false, baseURL, o.storage, o.store, o.currConvService)
+	return bitget.NewService(o.l, accessKey, secretKey, passPhrase, false, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
-func (o *Manager) createBitgetService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) { //nolint:dupl
+func (o *Manager) createBitgetService(ctx context.Context, userID uuid.UUID, httpClient *http.Client) (IExchangeClient, error) { //nolint:dupl
 	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
 		UserID:       userID,
 		ExchangeSlug: models.ExchangeSlugBitget,
@@ -387,7 +396,7 @@ func (o *Manager) createBitgetService(ctx context.Context, userID uuid.UUID) (IE
 	secretKey := keyMap[models.ExchangeKeyNameSecretKey.String()]
 	passPhrase := keyMap[models.ExchangeKeyNamePassPhrase.String()]
 
-	return bitget.NewService(o.l, accessKey, secretKey, passPhrase, false, baseURL, o.storage, o.store, o.currConvService)
+	return bitget.NewService(o.l, accessKey, secretKey, passPhrase, false, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
 func (o *Manager) createPublicBitgetService(ctx context.Context) (IExchangeClient, error) {
@@ -401,10 +410,10 @@ func (o *Manager) createPublicBitgetService(ctx context.Context) (IExchangeClien
 		return nil, err
 	}
 
-	return bitget.NewService(o.l, "-", "-", "-", true, baseURL, o.storage, o.store, o.currConvService)
+	return bitget.NewService(o.l, "-", "-", "-", true, baseURL, o.storage, o.store, o.currConvService, nil)
 }
 
-func (o *Manager) createKucoinServiceRaw(ctx context.Context, accessKey, secretKey, passPhrase string) (IExchangeClient, error) {
+func (o *Manager) createKucoinServiceRaw(ctx context.Context, accessKey, secretKey, passPhrase string, httpClient *http.Client) (IExchangeClient, error) {
 	ex, err := o.storage.Exchanges().GetExchangeBySlug(ctx, models.ExchangeSlugKucoin)
 	if err != nil {
 		return nil, err
@@ -415,10 +424,10 @@ func (o *Manager) createKucoinServiceRaw(ctx context.Context, accessKey, secretK
 		return nil, err
 	}
 
-	return kucoin.NewService(o.l, accessKey, secretKey, passPhrase, false, baseURL, o.storage, o.store, o.currConvService)
+	return kucoin.NewService(o.l, accessKey, secretKey, passPhrase, false, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
-func (o *Manager) createKucoinService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) { //nolint:dupl
+func (o *Manager) createKucoinService(ctx context.Context, userID uuid.UUID, httpClient *http.Client) (IExchangeClient, error) { //nolint:dupl
 	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
 		UserID:       userID,
 		ExchangeSlug: models.ExchangeSlugKucoin,
@@ -445,7 +454,7 @@ func (o *Manager) createKucoinService(ctx context.Context, userID uuid.UUID) (IE
 	secretKey := keyMap[models.ExchangeKeyNameSecretKey.String()]
 	passPhrase := keyMap[models.ExchangeKeyNamePassPhrase.String()]
 
-	return kucoin.NewService(o.l, accessKey, secretKey, passPhrase, false, baseURL, o.storage, o.store, o.currConvService)
+	return kucoin.NewService(o.l, accessKey, secretKey, passPhrase, false, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
 func (o *Manager) createPublicKucoinService(ctx context.Context) (IExchangeClient, error) {
@@ -459,10 +468,10 @@ func (o *Manager) createPublicKucoinService(ctx context.Context) (IExchangeClien
 		return nil, err
 	}
 
-	return kucoin.NewService(o.l, "-", "-", "-", true, baseURL, o.storage, o.store, o.currConvService)
+	return kucoin.NewService(o.l, "-", "-", "-", true, baseURL, o.storage, o.store, o.currConvService, nil)
 }
 
-func (o *Manager) createBybitServiceRaw(ctx context.Context, apiKey, secretKey string) (IExchangeClient, error) {
+func (o *Manager) createBybitServiceRaw(ctx context.Context, apiKey, secretKey string, httpClient *http.Client) (IExchangeClient, error) {
 	ex, err := o.storage.Exchanges().GetExchangeBySlug(ctx, models.ExchangeSlugBybit)
 	if err != nil {
 		return nil, err
@@ -473,10 +482,10 @@ func (o *Manager) createBybitServiceRaw(ctx context.Context, apiKey, secretKey s
 		return nil, err
 	}
 
-	return bybit.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+	return bybit.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
-func (o *Manager) createBybitService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) { //nolint:dupl
+func (o *Manager) createBybitService(ctx context.Context, userID uuid.UUID, httpClient *http.Client) (IExchangeClient, error) { //nolint:dupl
 	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
 		UserID:       userID,
 		ExchangeSlug: models.ExchangeSlugBybit,
@@ -502,7 +511,7 @@ func (o *Manager) createBybitService(ctx context.Context, userID uuid.UUID) (IEx
 	apiKey := keyMap[models.ExchangeKeyNameAccessKey.String()]
 	secretKey := keyMap[models.ExchangeKeyNameSecretKey.String()]
 
-	return bybit.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+	return bybit.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
 func (o *Manager) createPublicBybitService(ctx context.Context) (IExchangeClient, error) {
@@ -516,10 +525,10 @@ func (o *Manager) createPublicBybitService(ctx context.Context) (IExchangeClient
 		return nil, err
 	}
 
-	return bybit.NewService(o.l, "-", "-", baseURL, o.storage, o.store, o.currConvService)
+	return bybit.NewService(o.l, "-", "-", baseURL, o.storage, o.store, o.currConvService, nil)
 }
 
-func (o *Manager) createGateService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) { //nolint:dupl
+func (o *Manager) createGateService(ctx context.Context, userID uuid.UUID, httpClient *http.Client) (IExchangeClient, error) { //nolint:dupl
 	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
 		UserID:       userID,
 		ExchangeSlug: models.ExchangeSlugGateio,
@@ -545,10 +554,10 @@ func (o *Manager) createGateService(ctx context.Context, userID uuid.UUID) (IExc
 	accessKey := keyMap[models.ExchangeKeyNameAccessKey.String()]
 	secretKey := keyMap[models.ExchangeKeyNameSecretKey.String()]
 
-	return gateio.NewService(o.l, accessKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+	return gateio.NewService(o.l, accessKey, secretKey, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
-func (o *Manager) createGateioServiceRaw(ctx context.Context, accessKey, secretKey string) (IExchangeClient, error) {
+func (o *Manager) createGateioServiceRaw(ctx context.Context, accessKey, secretKey string, httpClient *http.Client) (IExchangeClient, error) {
 	ex, err := o.storage.Exchanges().GetExchangeBySlug(ctx, models.ExchangeSlugGateio)
 	if err != nil {
 		return nil, err
@@ -559,7 +568,7 @@ func (o *Manager) createGateioServiceRaw(ctx context.Context, accessKey, secretK
 		return nil, err
 	}
 
-	return gateio.NewService(o.l, accessKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+	return gateio.NewService(o.l, accessKey, secretKey, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
 func (o *Manager) createPublicGateioService(ctx context.Context) (IExchangeClient, error) {
@@ -573,19 +582,19 @@ func (o *Manager) createPublicGateioService(ctx context.Context) (IExchangeClien
 		return nil, err
 	}
 
-	return gateio.NewService(o.l, "-", "-", baseURL, o.storage, o.store, o.currConvService)
+	return gateio.NewService(o.l, "-", "-", baseURL, o.storage, o.store, o.currConvService, nil)
 }
 
-func (o *Manager) createBingxServiceRaw(ctx context.Context, apiKey, secretKey string) (IExchangeClient, error) {
+func (o *Manager) createBingxServiceRaw(ctx context.Context, apiKey, secretKey string, httpClient *http.Client) (IExchangeClient, error) {
 	baseURL, err := o.exchangeBaseURL(ctx, models.ExchangeSlugBingx)
 	if err != nil {
 		return nil, err
 	}
 
-	return bingx.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+	return bingx.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
-func (o *Manager) createBingxService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) {
+func (o *Manager) createBingxService(ctx context.Context, userID uuid.UUID, httpClient *http.Client) (IExchangeClient, error) {
 	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
 		UserID:       userID,
 		ExchangeSlug: models.ExchangeSlugBingx,
@@ -612,19 +621,20 @@ func (o *Manager) createBingxService(ctx context.Context, userID uuid.UUID) (IEx
 		o.storage,
 		o.store,
 		o.currConvService,
+		httpClient,
 	)
 }
 
-func (o *Manager) createMexcServiceRaw(ctx context.Context, apiKey, secretKey string) (IExchangeClient, error) {
+func (o *Manager) createMexcServiceRaw(ctx context.Context, apiKey, secretKey string, httpClient *http.Client) (IExchangeClient, error) {
 	baseURL, err := o.exchangeBaseURL(ctx, models.ExchangeSlugMexc)
 	if err != nil {
 		return nil, err
 	}
 
-	return mexc.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+	return mexc.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
-func (o *Manager) createMexcService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) {
+func (o *Manager) createMexcService(ctx context.Context, userID uuid.UUID, httpClient *http.Client) (IExchangeClient, error) {
 	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
 		UserID:       userID,
 		ExchangeSlug: models.ExchangeSlugMexc,
@@ -651,19 +661,20 @@ func (o *Manager) createMexcService(ctx context.Context, userID uuid.UUID) (IExc
 		o.storage,
 		o.store,
 		o.currConvService,
+		httpClient,
 	)
 }
 
-func (o *Manager) createKrakenServiceRaw(ctx context.Context, apiKey, secretKey string) (IExchangeClient, error) {
+func (o *Manager) createKrakenServiceRaw(ctx context.Context, apiKey, secretKey string, httpClient *http.Client) (IExchangeClient, error) {
 	baseURL, err := o.exchangeBaseURL(ctx, models.ExchangeSlugKraken)
 	if err != nil {
 		return nil, err
 	}
 
-	return kraken.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService)
+	return kraken.NewService(o.l, apiKey, secretKey, baseURL, o.storage, o.store, o.currConvService, httpClient)
 }
 
-func (o *Manager) createKrakenService(ctx context.Context, userID uuid.UUID) (IExchangeClient, error) {
+func (o *Manager) createKrakenService(ctx context.Context, userID uuid.UUID, httpClient *http.Client) (IExchangeClient, error) {
 	keys, err := o.storage.ExchangeUserKeys().GetKeysByExchangeSlug(ctx, repo_exchange_user_keys.GetKeysByExchangeSlugParams{
 		UserID:       userID,
 		ExchangeSlug: models.ExchangeSlugKraken,
@@ -680,7 +691,36 @@ func (o *Manager) createKrakenService(ctx context.Context, userID uuid.UUID) (IE
 	return o.createKrakenServiceRaw(ctx,
 		keyMap[models.ExchangeKeyNameAPIKey.String()],
 		keyMap[models.ExchangeKeyNameSecretKey.String()],
+		httpClient,
 	)
+}
+
+// GetNetConfig returns the user's proxy and network interface for the exchange.
+// No settings (or no user_exchanges row yet) means a direct connection.
+func (o *Manager) GetNetConfig(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug) (utils.NetConfig, error) {
+	settings, err := o.storage.UserExchanges().GetNetworkSettingsBySlug(ctx, repo_user_exchanges.GetNetworkSettingsBySlugParams{
+		UserID: userID,
+		Slug:   slug,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return utils.NetConfig{}, nil
+	}
+	if err != nil {
+		return utils.NetConfig{}, fmt.Errorf("get exchange network settings: %w", err)
+	}
+
+	return utils.NetConfig{
+		ProxyURL:  settings.ProxyUrl.String,
+		Interface: settings.NetworkInterface.String,
+	}, nil
+}
+
+// newHTTPClient returns nil for an empty config, so exchange clients keep their default HTTP client.
+func newHTTPClient(netCfg utils.NetConfig) (*http.Client, error) {
+	if netCfg == (utils.NetConfig{}) {
+		return nil, nil //nolint:nilnil
+	}
+	return utils.NewHTTPClient(netCfg, exchangeHTTPTimeout)
 }
 
 func (o *Manager) exchangeBaseURL(ctx context.Context, slug models.ExchangeSlug) (*url.URL, error) {
