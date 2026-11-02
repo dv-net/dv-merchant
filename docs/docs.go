@@ -10727,6 +10727,78 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/public/refund/blocked-transactions/{id}/estimate": {
+            "post": {
+                "description": "Returns the estimated network fee and the amount to receive for a refund of a blocked transaction belonging to the authenticated wallet. The fee is an estimate and may change by the time of sending",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Refund",
+                    "Public"
+                ],
+                "summary": "Estimate a refund",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Blocked transaction ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "RefundClaimRequest",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RefundClaimRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-RefundEstimateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/public/refund/cabinet": {
             "get": {
                 "description": "Lists blocked transactions for the authenticated wallet, with refund status if a claim was filed",
@@ -13991,6 +14063,20 @@ const docTemplate = `{
                 }
             }
         },
+        "JSONResponse-RefundEstimateResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {
+                    "$ref": "#/definitions/RefundEstimateResponse"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "JSONResponse-RefundRequest": {
             "type": "object",
             "properties": {
@@ -15798,6 +15884,48 @@ const docTemplate = `{
             "properties": {
                 "destination_address": {
                     "type": "string"
+                }
+            }
+        },
+        "RefundEstimateResponse": {
+            "type": "object",
+            "properties": {
+                "activation_required": {
+                    "type": "boolean"
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "amount_to_receive": {
+                    "type": "string"
+                },
+                "blocked_transaction_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "currency_id": {
+                    "type": "string"
+                },
+                "estimated_fee": {
+                    "type": "string"
+                },
+                "fee_balance": {
+                    "type": "string"
+                },
+                "fee_covered": {
+                    "type": "boolean"
+                },
+                "fee_currency_id": {
+                    "type": "string"
+                },
+                "fee_from_amount": {
+                    "type": "boolean"
+                },
+                "fee_shortage": {
+                    "type": "string"
+                },
+                "requires_review": {
+                    "type": "boolean"
                 }
             }
         },

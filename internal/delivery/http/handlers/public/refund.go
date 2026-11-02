@@ -109,18 +109,64 @@ func (h *Handler) refundClaim(c fiber.Ctx) error {
 		Email:                w.Email.String,
 	})
 	if err != nil {
-		return h.prepareRefundClaimError(err, w.ID, blockedTransactionID)
+		return h.prepareRefundClaimError(err, "failed to create refund request", w.ID, blockedTransactionID)
 	}
 
 	return c.JSON(response.OkByData(ref))
 }
 
-// prepareRefundClaimError logs the claim error and converts it to the http error.
+// refundEstimate returns the network fee and the amount the payer receives for a refund of one
+// of the caller's blocked transactions to the destination address. Nothing is created.
+// It runs the same checks as refundClaim, wallet_id is taken from the authenticated session.
+//
+//	@Summary		Estimate a refund
+//	@Description	Returns the estimated network fee and the amount to receive for a refund of a blocked transaction belonging to the authenticated wallet. The fee is an estimate and may change by the time of sending
+//	@Tags			Refund,Public
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		string								true	"Blocked transaction ID"
+//	@Param			request	body		public_request.RefundClaimRequest	true	"RefundClaimRequest"
+//	@Success		200		{object}	response.Result[refund_response.RefundEstimateResponse]
+//	@Failure		400		{object}	apierror.Errors
+//	@Failure		401		{object}	apierror.Errors
+//	@Failure		404		{object}	apierror.Errors
+//	@Failure		409		{object}	apierror.Errors
+//	@Failure		422		{object}	apierror.Errors
+//	@Router			/v1/public/refund/blocked-transactions/{id}/estimate [post]
+func (h *Handler) refundEstimate(c fiber.Ctx) error {
+	w, err := loadRefundWallet(c)
+	if err != nil {
+		return err
+	}
+
+	blockedTransactionID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return apierror.New().AddError(errors.New("bad blocked transaction id")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	req := &public_request.RefundClaimRequest{}
+	if err := c.Bind().Body(req); err != nil {
+		return err
+	}
+
+	estimate, err := h.services.RefundService.EstimateRefund(c.Context(), refund.EstimateRefundDTO{
+		WalletID:             w.ID,
+		BlockedTransactionID: blockedTransactionID,
+		DestinationAddress:   req.DestinationAddress,
+	})
+	if err != nil {
+		return h.prepareRefundClaimError(err, "failed to estimate refund", w.ID, blockedTransactionID)
+	}
+
+	return c.JSON(response.OkByData(refund_response.NewRefundEstimateResponse(estimate)))
+}
+
+// prepareRefundClaimError logs the claim (or estimate) error and converts it to the http error.
 // Only the sentinel error text is returned to the payer, the wrapped details stay in the log.
-func (h *Handler) prepareRefundClaimError(err error, walletID, blockedTransactionID uuid.UUID) error {
+func (h *Handler) prepareRefundClaimError(err error, msg string, walletID, blockedTransactionID uuid.UUID) error {
 	var (
 		httpCode = fiber.StatusBadRequest
-		respErr  = errors.New("failed create refund request")
+		respErr  = errors.New(msg)
 	)
 
 	switch {
@@ -143,7 +189,7 @@ func (h *Handler) prepareRefundClaimError(err error, walletID, blockedTransactio
 		// an unexpected error: processing, database or a validation without a dedicated code
 		log = h.logger.Errorw
 	}
-	log("failed to create refund request",
+	log(msg,
 		"wallet_id", walletID,
 		"blocked_transaction_id", blockedTransactionID,
 		"http_code", httpCode,
@@ -224,6 +270,11 @@ func (h *Handler) initRefundRoutes(v1 fiber.Router) {
 	r.Post("/blocked-transactions/:id/claim",
 		middleware.RefundWalletAuthMiddleware(h.services.AuthService),
 		h.refundClaim)
+	// each call goes to processing
+	r.Post("/blocked-transactions/:id/estimate",
+		middleware.LimiterMiddleware(10, 60, middleware.WithSlidingWindow),
+		middleware.RefundWalletAuthMiddleware(h.services.AuthService),
+		h.refundEstimate)
 	r.Get("/cabinet",
 		middleware.RefundWalletAuthMiddleware(h.services.AuthService),
 		h.refundCabinet)

@@ -7,6 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/interceptors"
@@ -498,10 +499,23 @@ func (s *Service) CheckRefund(ctx context.Context, params FundsWithdrawalParams)
 		return CheckRefundResult{}, err
 	}
 
+	feeBalance, err := parseOptionalDecimal(resp.Msg.FeeBalance)
+	if err != nil {
+		return CheckRefundResult{}, fmt.Errorf("parse fee balance: %w", err)
+	}
+
+	feeShortage, err := parseOptionalDecimal(resp.Msg.FeeShortage)
+	if err != nil {
+		return CheckRefundResult{}, fmt.Errorf("parse fee shortage: %w", err)
+	}
+
 	return CheckRefundResult{
-		EstimatedFee:  resp.Msg.EstimatedFee,
-		FeeFromAmount: resp.Msg.GetFeeFromAmount(),
-		ToSender:      resp.Msg.GetToSender(),
+		EstimatedFee:       resp.Msg.EstimatedFee,
+		FeeFromAmount:      resp.Msg.GetFeeFromAmount(),
+		ToSender:           resp.Msg.GetToSender(),
+		FeeBalance:         feeBalance,
+		FeeShortage:        feeShortage,
+		ActivationRequired: resp.Msg.GetActivationRequired(),
 	}, nil
 }
 
@@ -936,4 +950,17 @@ func (s *Service) handleSettingChange(ev event.IEvent) error {
 	}
 
 	return nil
+}
+
+func parseOptionalDecimal(v *string) (decimal.NullDecimal, error) {
+	if v == nil {
+		return decimal.NullDecimal{}, nil
+	}
+
+	d, err := decimal.NewFromString(*v)
+	if err != nil {
+		return decimal.NullDecimal{}, fmt.Errorf("parse %q: %w", *v, err)
+	}
+
+	return decimal.NewNullDecimal(d), nil
 }

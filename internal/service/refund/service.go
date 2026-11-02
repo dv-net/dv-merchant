@@ -24,10 +24,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/shopspring/decimal"
 )
 
 type IRefundService interface {
 	CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error)
+	EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*EstimateDTO, error)
 	GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error)
 	GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error)
 	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestWithTxDTO, error)
@@ -77,8 +79,11 @@ func NewService(log logger.Logger, st storage.IStorage, executor refundExecutor,
 	}
 }
 
-func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error) {
-	btx, err := s.storage.BlockedTransactions().GetById(ctx, dto.BlockedTransactionID)
+// checkClaim runs the checks of a refund claim without creating anything: the blocked transaction
+// belongs to the wallet, it is not claimed yet, the destination address is valid and processing
+// can send the refund (the deposit is valid and the network fee is covered)
+func (s *Service) checkClaim(ctx context.Context, walletID, blockedTransactionID uuid.UUID, destinationAddress string) (*claimCheck, error) {
+	btx, err := s.storage.BlockedTransactions().GetById(ctx, blockedTransactionID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrRefundBlockedTxNotFound
 	}
@@ -87,11 +92,11 @@ func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*model
 	}
 
 	// a transaction of another wallet is reported as not found, its existence is not disclosed
-	if btx.WalletID != dto.WalletID {
+	if btx.WalletID != walletID {
 		return nil, fmt.Errorf("%w: wallet id mismatch", ErrRefundBlockedTxNotFound)
 	}
 
-	if _, err := s.storage.RefundRequests().GetByBlockedTransactionID(ctx, dto.BlockedTransactionID); err == nil {
+	if _, err := s.storage.RefundRequests().GetByBlockedTransactionID(ctx, blockedTransactionID); err == nil {
 		return nil, ErrRefundAlreadyRequested
 	} else if !errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("check existing refund request: %w", err)
@@ -102,20 +107,82 @@ func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*model
 		return nil, fmt.Errorf("fetch transaction: %w", err)
 	}
 
-	if !avalidator.ValidateAddressByBlockchain(dto.DestinationAddress, tx.Blockchain.String()) {
+	if !avalidator.ValidateAddressByBlockchain(destinationAddress, tx.Blockchain.String()) {
 		return nil, fmt.Errorf("%w: %s", ErrRefundInvalidAddress, tx.Blockchain.String())
 	}
 
 	// the refund must be sendable before the request is created: processing checks the deposit
 	// and that the deposit address holds enough native coin to pay the network fee
 	check, err := s.executor.CheckRefund(ctx, &models.RefundRequest{
-		BlockedTransactionID: dto.BlockedTransactionID,
-		WalletID:             dto.WalletID,
+		BlockedTransactionID: blockedTransactionID,
+		WalletID:             walletID,
 		StoreID:              btx.StoreID,
-		DestinationAddress:   dto.DestinationAddress,
+		DestinationAddress:   destinationAddress,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("check refund: %w", convertProcessingError(err))
+	}
+
+	return &claimCheck{btx: btx, tx: tx, result: check}, nil
+}
+
+// EstimateRefund returns the network fee and the amount the payer receives for a refund
+// to the destination address. Nothing is created, the fee may change by the time of sending.
+func (s *Service) EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*EstimateDTO, error) {
+	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, dto.DestinationAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	feeCurrencyID, err := checked.tx.Blockchain.NativeCurrency()
+	if err != nil {
+		return nil, fmt.Errorf("resolve native currency: %w", err)
+	}
+
+	res := &EstimateDTO{
+		BlockedTransactionID: dto.BlockedTransactionID,
+		Amount:               checked.tx.Amount,
+		CurrencyID:           checked.tx.CurrencyID,
+		FeeCurrencyID:        feeCurrencyID,
+		FeeFromAmount:        checked.result.FeeFromAmount,
+		FeeCovered:           checked.result.FeeCovered(),
+		FeeBalance:           checked.result.FeeBalance,
+		FeeShortage:          checked.result.FeeShortage,
+		ActivationRequired:   checked.result.ActivationRequired,
+		RequiresReview:       !checked.result.ToSender,
+	}
+
+	if checked.result.EstimatedFee != nil {
+		fee, err := decimal.NewFromString(*checked.result.EstimatedFee)
+		if err != nil {
+			return nil, fmt.Errorf("parse estimated fee %q: %w", *checked.result.EstimatedFee, err)
+		}
+		res.EstimatedFee = decimal.NewNullDecimal(fee)
+	}
+
+	// the received amount is unknown when the fee is taken from the amount but not estimated (btc like)
+	switch {
+	case !res.FeeFromAmount:
+		res.AmountToReceive = decimal.NewNullDecimal(res.Amount)
+	case res.EstimatedFee.Valid:
+		res.AmountToReceive = decimal.NewNullDecimal(decimal.Max(res.Amount.Sub(res.EstimatedFee.Decimal), decimal.Zero))
+	}
+
+	return res, nil
+}
+
+func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error) {
+	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, dto.DestinationAddress)
+	if err != nil {
+		return nil, err
+	}
+	btx, check := checked.btx, checked.result
+
+	// processing reports a not covered fee of a token refund in the check result, not as an error:
+	// such refund cannot be sent until the deposit address is topped up
+	if !check.FeeCovered() {
+		return nil, fmt.Errorf("%w: fee shortage %s, activation required %t",
+			ErrRefundInsufficientFee, check.FeeShortage.Decimal, check.ActivationRequired)
 	}
 
 	ref, err := s.storage.RefundRequests().Create(ctx, repo_refund_requests.CreateParams{
