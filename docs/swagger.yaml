@@ -1831,6 +1831,15 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-RefundEstimateResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/RefundEstimateResponse'
+      message:
+        type: string
+    type: object
   JSONResponse-RefundRequest:
     properties:
       code:
@@ -3026,6 +3035,34 @@ definitions:
         type: string
     required:
     - destination_address
+    type: object
+  RefundEstimateResponse:
+    properties:
+      activation_required:
+        type: boolean
+      amount:
+        type: number
+      amount_to_receive:
+        type: string
+      blocked_transaction_id:
+        format: uuid
+        type: string
+      currency_id:
+        type: string
+      estimated_fee:
+        type: string
+      fee_balance:
+        type: string
+      fee_covered:
+        type: boolean
+      fee_currency_id:
+        type: string
+      fee_from_amount:
+        type: boolean
+      fee_shortage:
+        type: string
+      requires_review:
+        type: boolean
     type: object
   RefundLookupRequest:
     properties:
@@ -11958,6 +11995,56 @@ paths:
           schema:
             $ref: '#/definitions/APIErrors'
       summary: Create a refund request
+      tags:
+      - Refund
+      - Public
+  /v1/public/refund/blocked-transactions/{id}/estimate:
+    post:
+      consumes:
+      - application/json
+      description: Returns the estimated network fee and the amount to receive for
+        a refund of a blocked transaction belonging to the authenticated wallet. The
+        fee is an estimate and may change by the time of sending
+      parameters:
+      - description: Blocked transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: RefundClaimRequest
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/RefundClaimRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundEstimateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Estimate a refund
       tags:
       - Refund
       - Public

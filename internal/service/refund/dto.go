@@ -2,6 +2,7 @@ package refund
 
 import (
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/service/processing"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_blocked_transactions"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -14,6 +15,33 @@ type CreateRefundDTO struct {
 	DestinationAddress   string    `json:"destination_address"`
 	Email                string    `json:"email"`
 } //	@name	CreateRefundDTO
+
+type EstimateRefundDTO struct {
+	WalletID             uuid.UUID
+	BlockedTransactionID uuid.UUID
+	DestinationAddress   string
+}
+
+type RefundEstimateDTO struct {
+	BlockedTransactionID uuid.UUID
+	Amount               decimal.Decimal
+	CurrencyID           string
+	EstimatedFee         decimal.NullDecimal
+	FeeCurrencyID        string
+	FeeFromAmount        bool
+	AmountToReceive      decimal.NullDecimal
+	FeeCovered           bool
+	FeeBalance           decimal.NullDecimal
+	FeeShortage          decimal.NullDecimal
+	ActivationRequired   bool
+	RequiresReview       bool
+}
+
+type claimCheck struct {
+	btx    *models.BlockedTransaction
+	tx     *models.Transaction
+	result *processing.CheckRefundResult
+}
 
 type RejectRefundDTO struct {
 	RefundRequestID uuid.UUID

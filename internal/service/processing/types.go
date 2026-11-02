@@ -10,6 +10,7 @@ import (
 	commonv1 "github.com/dv-net/dv-processing/api/processing/common/v1"
 	transferv1 "github.com/dv-net/dv-processing/api/processing/transfer/v1"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type OwnerHotWalletParams struct {
@@ -194,6 +195,17 @@ type CheckRefundResult struct {
 	FeeFromAmount bool
 	// ToSender - the destination is the sender of the deposit, the refund does not require TOTP
 	ToSender bool
+	// FeeBalance is the native coin balance of the deposit address paying the fee, set for tokens
+	FeeBalance decimal.NullDecimal
+	// FeeShortage is the native coin to add to the deposit address to pay the fee, set for tokens
+	FeeShortage decimal.NullDecimal
+	// ActivationRequired - the tron deposit address is not activated, the fee is not estimated
+	ActivationRequired bool
+}
+
+// FeeCovered is true when the deposit address pays the refund fee by itself
+func (r CheckRefundResult) FeeCovered() bool {
+	return !r.ActivationRequired && (!r.FeeShortage.Valid || !r.FeeShortage.Decimal.IsPositive())
 }
 
 // TransferInfo is the state of a transfer in processing
