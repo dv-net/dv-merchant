@@ -29,7 +29,7 @@ import (
 
 type IRefundService interface {
 	CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error)
-	EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*RefundEstimateDTO, error)
+	EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*EstimateDTO, error)
 	GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error)
 	GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error)
 	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestWithTxDTO, error)
@@ -128,7 +128,7 @@ func (s *Service) checkClaim(ctx context.Context, walletID, blockedTransactionID
 
 // EstimateRefund returns the network fee and the amount the payer receives for a refund
 // to the destination address. Nothing is created, the fee may change by the time of sending.
-func (s *Service) EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*RefundEstimateDTO, error) {
+func (s *Service) EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*EstimateDTO, error) {
 	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, dto.DestinationAddress)
 	if err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func (s *Service) EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*R
 		return nil, fmt.Errorf("resolve native currency: %w", err)
 	}
 
-	res := &RefundEstimateDTO{
+	res := &EstimateDTO{
 		BlockedTransactionID: dto.BlockedTransactionID,
 		Amount:               checked.tx.Amount,
 		CurrencyID:           checked.tx.CurrencyID,

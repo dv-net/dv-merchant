@@ -23,7 +23,7 @@ type RefundEstimateResponse struct {
 	RequiresReview       bool                `json:"requires_review"`
 } //	@name	RefundEstimateResponse
 
-func NewRefundEstimateResponse(e *refund.RefundEstimateDTO) *RefundEstimateResponse {
+func NewRefundEstimateResponse(e *refund.EstimateDTO) *RefundEstimateResponse {
 	return &RefundEstimateResponse{
 		BlockedTransactionID: e.BlockedTransactionID,
 		Amount:               e.Amount,

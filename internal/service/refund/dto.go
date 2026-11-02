@@ -22,7 +22,7 @@ type EstimateRefundDTO struct {
 	DestinationAddress   string
 }
 
-type RefundEstimateDTO struct {
+type EstimateDTO struct {
 	BlockedTransactionID uuid.UUID
 	Amount               decimal.Decimal
 	CurrencyID           string
