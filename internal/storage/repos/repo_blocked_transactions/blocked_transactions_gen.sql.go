@@ -14,19 +14,20 @@ import (
 )
 
 const create = `-- name: Create :one
-INSERT INTO blocked_transactions (user_id, store_id, transaction_id, aml_check_id, wallet_id, risk_level, score, created_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, now())
-	RETURNING id, user_id, store_id, transaction_id, aml_check_id, wallet_id, risk_level, score, created_at, updated_at
+INSERT INTO blocked_transactions (user_id, store_id, transaction_id, aml_check_id, wallet_id, risk_level, score, created_at, block_reasons)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, now(), $8)
+	RETURNING id, user_id, store_id, transaction_id, aml_check_id, wallet_id, risk_level, score, created_at, updated_at, block_reasons
 `
 
 type CreateParams struct {
-	UserID        uuid.UUID       `db:"user_id" json:"user_id"`
-	StoreID       uuid.UUID       `db:"store_id" json:"store_id"`
-	TransactionID uuid.UUID       `db:"transaction_id" json:"transaction_id"`
-	AmlCheckID    uuid.UUID       `db:"aml_check_id" json:"aml_check_id"`
-	WalletID      uuid.UUID       `db:"wallet_id" json:"wallet_id"`
-	RiskLevel     string          `db:"risk_level" json:"risk_level"`
-	Score         decimal.Decimal `db:"score" json:"score"`
+	UserID        uuid.UUID              `db:"user_id" json:"user_id"`
+	StoreID       uuid.UUID              `db:"store_id" json:"store_id"`
+	TransactionID uuid.UUID              `db:"transaction_id" json:"transaction_id"`
+	AmlCheckID    uuid.UUID              `db:"aml_check_id" json:"aml_check_id"`
+	WalletID      uuid.UUID              `db:"wallet_id" json:"wallet_id"`
+	RiskLevel     string                 `db:"risk_level" json:"risk_level"`
+	Score         decimal.Decimal        `db:"score" json:"score"`
+	BlockReasons  models.AmlBlockReasons `db:"block_reasons" json:"block_reasons"`
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.BlockedTransaction, error) {
@@ -38,6 +39,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Blocked
 		arg.WalletID,
 		arg.RiskLevel,
 		arg.Score,
+		arg.BlockReasons,
 	)
 	var i models.BlockedTransaction
 	err := row.Scan(
@@ -51,12 +53,13 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Blocked
 		&i.Score,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BlockReasons,
 	)
 	return &i, err
 }
 
 const getAllByWalletID = `-- name: GetAllByWalletID :many
-SELECT id, user_id, store_id, transaction_id, aml_check_id, wallet_id, risk_level, score, created_at, updated_at FROM blocked_transactions WHERE wallet_id=$1
+SELECT id, user_id, store_id, transaction_id, aml_check_id, wallet_id, risk_level, score, created_at, updated_at, block_reasons FROM blocked_transactions WHERE wallet_id=$1
 `
 
 func (q *Queries) GetAllByWalletID(ctx context.Context, walletID uuid.UUID) ([]*models.BlockedTransaction, error) {
@@ -79,6 +82,7 @@ func (q *Queries) GetAllByWalletID(ctx context.Context, walletID uuid.UUID) ([]*
 			&i.Score,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.BlockReasons,
 		); err != nil {
 			return nil, err
 		}
@@ -91,7 +95,7 @@ func (q *Queries) GetAllByWalletID(ctx context.Context, walletID uuid.UUID) ([]*
 }
 
 const getById = `-- name: GetById :one
-SELECT id, user_id, store_id, transaction_id, aml_check_id, wallet_id, risk_level, score, created_at, updated_at FROM blocked_transactions WHERE id=$1 LIMIT 1
+SELECT id, user_id, store_id, transaction_id, aml_check_id, wallet_id, risk_level, score, created_at, updated_at, block_reasons FROM blocked_transactions WHERE id=$1 LIMIT 1
 `
 
 func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.BlockedTransaction, error) {
@@ -108,6 +112,7 @@ func (q *Queries) GetById(ctx context.Context, id uuid.UUID) (*models.BlockedTra
 		&i.Score,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.BlockReasons,
 	)
 	return &i, err
 }

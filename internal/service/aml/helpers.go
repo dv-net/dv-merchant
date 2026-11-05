@@ -42,7 +42,7 @@ func convertAmlStatusToModel(status aml.CheckStatus) models.AMLCheckStatus {
 	}
 }
 
-// EvaluateRiskRules checks a deposit against the user's configured risk rules.
+// MatchRiskRules checks a deposit against the user's configured risk rules.
 // score is the provider's aggregate score (used by AmlRiskTypeTotalScore rules);
 // riskLevel is the provider's normalized risk level, compared by rank against the
 // threshold of AmlRiskTypeRiskLevel rules (none=0, low=1, medium=2, high=3, critical=4;
@@ -57,15 +57,16 @@ func convertAmlStatusToModel(status aml.CheckStatus) models.AMLCheckStatus {
 //
 // Example: SANCTIONS{30,reject} and GAMBLING{20,reject} both pass individually
 // (28 < 30, 19 < 20), but SUM_OF_SIGNALS{40,reject} still fires on 28+19=47, so
-// EvaluateRiskRules returns (true, nil).
+// MatchRiskRules returns the SUM_OF_SIGNALS rule in blockReasons.
 //
-// Returns blocked (a "reject" rule fired — send the AML-blocked webhook instead of the
-// normal one and mark the address dirty) and matchedFlags (the risk_type of every fired
-// "accept_and_flag" rule — the address is tagged with these but is otherwise untouched:
+// Returns blockReasons (every fired "reject" rule with its threshold and the value that
+// reached it; the deposit is blocked when it is not empty — send the AML-blocked webhook
+// instead of the normal one and mark the address dirty) and matchedFlags (the risk_type
+// of every fired "accept_and_flag" rule — the address is tagged with these but is otherwise untouched:
 // not blocked, not marked dirty). There's no separate canonical flag enum: the rule's
 // own risk_type is the tag, deduplicated in case the same risk_type somehow appears
 // more than once in rules.
-func EvaluateRiskRules(score decimal.Decimal, riskLevel *models.AmlRiskLevel, signals []aml.SignalContribution, rules []*models.UserAmlRiskRule) (blocked bool, matchedFlags []string) {
+func MatchRiskRules(score decimal.Decimal, riskLevel *models.AmlRiskLevel, signals []aml.SignalContribution, rules []*models.UserAmlRiskRule) (blockReasons models.AmlBlockReasons, matchedFlags []string) {
 	signalWeights := make(map[string]decimal.Decimal, len(signals))
 	for _, s := range signals {
 		signalWeights[s.Category] = signalWeights[s.Category].Add(s.Weight)
@@ -108,7 +109,11 @@ func EvaluateRiskRules(score decimal.Decimal, riskLevel *models.AmlRiskLevel, si
 		if actual.GreaterThanOrEqual(rule.Threshold) {
 			switch rule.Action {
 			case constants.AmlRiskRuleActionReject:
-				blocked = true
+				blockReasons = append(blockReasons, models.AmlBlockReason{
+					RiskType:  rule.RiskType,
+					Threshold: rule.Threshold,
+					Value:     actual,
+				})
 			case constants.AmlRiskRuleActionAcceptAndFlag:
 				if !seenFlags[rule.RiskType] {
 					seenFlags[rule.RiskType] = true
@@ -117,5 +122,5 @@ func EvaluateRiskRules(score decimal.Decimal, riskLevel *models.AmlRiskLevel, si
 			}
 		}
 	}
-	return blocked, matchedFlags
+	return blockReasons, matchedFlags
 }

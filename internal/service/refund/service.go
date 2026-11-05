@@ -499,6 +499,7 @@ func (s *Service) GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*Cabi
 			ToAddress:            b.ToAddress,
 			RiskLevel:            b.RiskLevel,
 			Score:                b.Score,
+			BlockReasons:         b.BlockReasons,
 			CreatedAt:            b.CreatedAt,
 		})
 	}
@@ -541,6 +542,7 @@ func (s *Service) GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) 
 			ToAddress:     row.ToAddress,
 			RiskLevel:     row.RiskLevel,
 			Score:         row.Score,
+			BlockReasons:  row.BlockReasons,
 		})
 	}
 	return items, nil
@@ -780,6 +782,7 @@ func (s *Service) enrichRefundRequest(ctx context.Context, ref *models.RefundReq
 		ToAddress:     tx.ToAddress,
 		RiskLevel:     btx.RiskLevel,
 		Score:         btx.Score,
+		BlockReasons:  btx.BlockReasons,
 	}, nil
 }
 

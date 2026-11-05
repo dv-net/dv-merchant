@@ -38,6 +38,7 @@ schemas:
         - AmlRiskLevel
         - NotificationArgs
         - AddressBookType
+        - AmlBlockReasons
       emit_json_tags: true
       emit_db_tags: true
     sqlc:
@@ -236,6 +237,9 @@ schemas:
           - column: notification_send_queue.args
             go_type:
               type: '*NotificationArgs'
+          - column: blocked_transactions.block_reasons
+            go_type:
+              type: AmlBlockReasons
           - column: notifications.type
             go_type:
               type: NotificationType

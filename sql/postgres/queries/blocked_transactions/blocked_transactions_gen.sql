@@ -1,6 +1,6 @@
 -- name: Create :one
-INSERT INTO blocked_transactions (user_id, store_id, transaction_id, aml_check_id, wallet_id, risk_level, score, created_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+INSERT INTO blocked_transactions (user_id, store_id, transaction_id, aml_check_id, wallet_id, risk_level, score, created_at, block_reasons)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, now(), $8)
 	RETURNING *;
 
 -- name: GetAllByWalletID :many

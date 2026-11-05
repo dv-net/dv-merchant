@@ -3,6 +3,8 @@ package refund_response
 import (
 	"time"
 
+	"github.com/dv-net/dv-merchant/internal/models"
+
 	"github.com/dv-net/dv-merchant/internal/service/refund"
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 
@@ -12,32 +14,31 @@ import (
 
 // RefundRequestResponse is the admin API shape for a refund request with deposit details.
 type RefundRequestResponse struct {
-	ID                   uuid.UUID           `json:"id" format:"uuid"`
-	BlockedTransactionID uuid.UUID           `json:"blocked_transaction_id" format:"uuid"`
-	WalletID             uuid.UUID           `json:"wallet_id" format:"uuid"`
-	StoreID              uuid.UUID           `json:"store_id" format:"uuid"`
-	TransferID           *uuid.UUID          `json:"transfer_id" format:"uuid"`
-	DestinationAddress   string              `json:"destination_address"`
-	Status               string              `json:"status"`
-	Email                string              `json:"email"`
-	ReviewedAt           *time.Time          `json:"reviewed_at" format:"date-time"`
-	CreatedAt            time.Time           `json:"created_at" format:"date-time"`
-	UpdatedAt            *time.Time          `json:"updated_at" format:"date-time"`
-	TransactionID        uuid.UUID           `json:"transaction_id" format:"uuid"`
-	TxHash               string              `json:"tx_hash"`
-	Amount               decimal.Decimal     `json:"amount"`
-	AmountUsd            decimal.NullDecimal `json:"amount_usd"`
-	CurrencyID           string              `json:"currency_id"`
-	CurrencyCode         string              `json:"currency_code"`
-	Blockchain           string              `json:"blockchain"`
-	FromAddress          string              `json:"from_address"`
-	ToAddress            string              `json:"to_address"`
-	RiskLevel            string              `json:"risk_level"`
-	Score                decimal.Decimal     `json:"score"`
-	// ExecuteAfter is set for scheduled refunds to the deposit sender
-	ExecuteAfter *time.Time `json:"execute_after,omitempty" format:"date-time"`
-	// LastError is the reason the refund was not sent or failed
-	LastError *string `json:"last_error,omitempty"`
+	ID                   uuid.UUID              `json:"id" format:"uuid"`
+	BlockedTransactionID uuid.UUID              `json:"blocked_transaction_id" format:"uuid"`
+	WalletID             uuid.UUID              `json:"wallet_id" format:"uuid"`
+	StoreID              uuid.UUID              `json:"store_id" format:"uuid"`
+	TransferID           *uuid.UUID             `json:"transfer_id" format:"uuid"`
+	DestinationAddress   string                 `json:"destination_address"`
+	Status               string                 `json:"status"`
+	Email                string                 `json:"email"`
+	ReviewedAt           *time.Time             `json:"reviewed_at" format:"date-time"`
+	CreatedAt            time.Time              `json:"created_at" format:"date-time"`
+	UpdatedAt            *time.Time             `json:"updated_at" format:"date-time"`
+	TransactionID        uuid.UUID              `json:"transaction_id" format:"uuid"`
+	TxHash               string                 `json:"tx_hash"`
+	Amount               decimal.Decimal        `json:"amount"`
+	AmountUsd            decimal.NullDecimal    `json:"amount_usd"`
+	CurrencyID           string                 `json:"currency_id"`
+	CurrencyCode         string                 `json:"currency_code"`
+	Blockchain           string                 `json:"blockchain"`
+	FromAddress          string                 `json:"from_address"`
+	ToAddress            string                 `json:"to_address"`
+	RiskLevel            string                 `json:"risk_level"`
+	Score                decimal.Decimal        `json:"score"`
+	BlockReasons         models.AmlBlockReasons `json:"block_reasons"`
+	ExecuteAfter         *time.Time             `json:"execute_after,omitempty" format:"date-time"`
+	LastError            *string                `json:"last_error,omitempty"`
 } //	@name	RefundRequestResponse
 
 func NewRefundRequestResponse(item *refund.RequestWithTxDTO) *RefundRequestResponse {
@@ -70,6 +71,7 @@ func NewRefundRequestResponse(item *refund.RequestWithTxDTO) *RefundRequestRespo
 		ToAddress:            item.ToAddress,
 		RiskLevel:            item.RiskLevel,
 		Score:                item.Score,
+		BlockReasons:         item.BlockReasons,
 		ExecuteAfter:         pgtypeutils.DecodeTime(item.ExecuteAfter),
 		LastError:            pgtypeutils.DecodeText(item.LastError),
 	}

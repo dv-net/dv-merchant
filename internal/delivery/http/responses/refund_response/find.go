@@ -45,10 +45,12 @@ type RefundBlockedTransactionResponse struct {
 	FromAddress   string              `json:"from_address"`
 	ToAddress     string              `json:"to_address"`
 	// RiskLevel and Score are the values the deposit was blocked with
-	RiskLevel   string          `json:"risk_level"`
-	Score       decimal.Decimal `json:"score"`
-	TxCreatedAt *time.Time      `json:"tx_created_at" format:"date-time"`
-	BlockedAt   *time.Time      `json:"blocked_at" format:"date-time"`
+	RiskLevel string          `json:"risk_level"`
+	Score     decimal.Decimal `json:"score"`
+	// BlockReasons are the AML rules which blocked the deposit
+	BlockReasons models.AmlBlockReasons `json:"block_reasons"`
+	TxCreatedAt  *time.Time             `json:"tx_created_at" format:"date-time"`
+	BlockedAt    *time.Time             `json:"blocked_at" format:"date-time"`
 } //	@name	RefundBlockedTransactionResponse
 
 type RefundAmlCheckResponse struct {
@@ -102,6 +104,7 @@ func NewRefundRequestDetailedResponse(row *repo_refund_requests.FindRow) *Refund
 			ToAddress:     row.TxToAddress,
 			RiskLevel:     row.BlockRiskLevel,
 			Score:         row.BlockScore,
+			BlockReasons:  row.BlockReasons,
 			TxCreatedAt:   pgtypeutils.DecodeTime(row.TxCreatedAt),
 			BlockedAt:     pgtypeutils.DecodeTime(row.BlockCreatedAt),
 		},

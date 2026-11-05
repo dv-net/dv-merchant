@@ -74,7 +74,8 @@ SELECT rr.id, rr.blocked_transaction_id, rr.wallet_id, rr.store_id, rr.transfer_
        t.from_address,
        t.to_address,
        bt.risk_level,
-       bt.score
+       bt.score,
+       bt.block_reasons
 FROM refund_requests rr
          INNER JOIN stores s ON rr.store_id = s.id
          INNER JOIN blocked_transactions bt ON bt.id = rr.blocked_transaction_id
@@ -90,30 +91,31 @@ type GetAllByUserIDAndStatusParams struct {
 }
 
 type GetAllByUserIDAndStatusRow struct {
-	ID                   uuid.UUID           `db:"id" json:"id"`
-	BlockedTransactionID uuid.UUID           `db:"blocked_transaction_id" json:"blocked_transaction_id"`
-	WalletID             uuid.UUID           `db:"wallet_id" json:"wallet_id"`
-	StoreID              uuid.UUID           `db:"store_id" json:"store_id"`
-	TransferID           uuid.NullUUID       `db:"transfer_id" json:"transfer_id"`
-	DestinationAddress   string              `db:"destination_address" json:"destination_address"`
-	Status               string              `db:"status" json:"status"`
-	Email                string              `db:"email" json:"email"`
-	ReviewedAt           pgtype.Timestamp    `db:"reviewed_at" json:"reviewed_at"`
-	CreatedAt            pgtype.Timestamp    `db:"created_at" json:"created_at"`
-	UpdatedAt            pgtype.Timestamp    `db:"updated_at" json:"updated_at"`
-	ExecuteAfter         pgtype.Timestamp    `db:"execute_after" json:"execute_after"`
-	LastError            pgtype.Text         `db:"last_error" json:"last_error"`
-	TransactionID        uuid.UUID           `db:"transaction_id" json:"transaction_id"`
-	TxHash               string              `db:"tx_hash" json:"tx_hash"`
-	Amount               decimal.Decimal     `db:"amount" json:"amount"`
-	AmountUsd            decimal.NullDecimal `db:"amount_usd" json:"amount_usd"`
-	CurrencyID           string              `db:"currency_id" json:"currency_id"`
-	CurrencyCode         string              `db:"currency_code" json:"currency_code"`
-	Blockchain           models.Blockchain   `db:"blockchain" json:"blockchain"`
-	FromAddress          string              `db:"from_address" json:"from_address"`
-	ToAddress            string              `db:"to_address" json:"to_address"`
-	RiskLevel            string              `db:"risk_level" json:"risk_level"`
-	Score                decimal.Decimal     `db:"score" json:"score"`
+	ID                   uuid.UUID              `db:"id" json:"id"`
+	BlockedTransactionID uuid.UUID              `db:"blocked_transaction_id" json:"blocked_transaction_id"`
+	WalletID             uuid.UUID              `db:"wallet_id" json:"wallet_id"`
+	StoreID              uuid.UUID              `db:"store_id" json:"store_id"`
+	TransferID           uuid.NullUUID          `db:"transfer_id" json:"transfer_id"`
+	DestinationAddress   string                 `db:"destination_address" json:"destination_address"`
+	Status               string                 `db:"status" json:"status"`
+	Email                string                 `db:"email" json:"email"`
+	ReviewedAt           pgtype.Timestamp       `db:"reviewed_at" json:"reviewed_at"`
+	CreatedAt            pgtype.Timestamp       `db:"created_at" json:"created_at"`
+	UpdatedAt            pgtype.Timestamp       `db:"updated_at" json:"updated_at"`
+	ExecuteAfter         pgtype.Timestamp       `db:"execute_after" json:"execute_after"`
+	LastError            pgtype.Text            `db:"last_error" json:"last_error"`
+	TransactionID        uuid.UUID              `db:"transaction_id" json:"transaction_id"`
+	TxHash               string                 `db:"tx_hash" json:"tx_hash"`
+	Amount               decimal.Decimal        `db:"amount" json:"amount"`
+	AmountUsd            decimal.NullDecimal    `db:"amount_usd" json:"amount_usd"`
+	CurrencyID           string                 `db:"currency_id" json:"currency_id"`
+	CurrencyCode         string                 `db:"currency_code" json:"currency_code"`
+	Blockchain           models.Blockchain      `db:"blockchain" json:"blockchain"`
+	FromAddress          string                 `db:"from_address" json:"from_address"`
+	ToAddress            string                 `db:"to_address" json:"to_address"`
+	RiskLevel            string                 `db:"risk_level" json:"risk_level"`
+	Score                decimal.Decimal        `db:"score" json:"score"`
+	BlockReasons         models.AmlBlockReasons `db:"block_reasons" json:"block_reasons"`
 }
 
 func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserIDAndStatusParams) ([]*GetAllByUserIDAndStatusRow, error) {
@@ -150,6 +152,7 @@ func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserI
 			&i.ToAddress,
 			&i.RiskLevel,
 			&i.Score,
+			&i.BlockReasons,
 		); err != nil {
 			return nil, err
 		}
