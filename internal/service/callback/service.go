@@ -129,8 +129,14 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			return s.handleUnconfirmedDeposit(ctx, dto, storeData, wallet, amount, usdAmount, isDirty, tx)
 		}
 
-		receiptEvent, err = s.handleConfirmedDeposit(ctx, dto, storeData, wallet, amount, fee, usdAmount, isDirty, tx)
-		return err
+		ev, err := s.handleConfirmedDeposit(ctx, dto, storeData, wallet, amount, fee, usdAmount, isDirty, tx)
+		if err != nil {
+			return err
+		}
+		if !dto.IsSystem && !isDirty {
+			receiptEvent = ev
+		}
+		return nil
 	})
 	if err != nil {
 		return err
@@ -243,20 +249,18 @@ func (s *Service) handleConfirmedDeposit(
 		return nil, fmt.Errorf("can't enqueue update balance: %w", err)
 	}
 
-	if dto.IsSystem || isDirty {
-		return nil, nil
-	}
-
-	if err = s.eventListener.Fire(transactions.DepositReceivedEvent{
-		Tx:              *transaction,
-		Store:           *storeData,
-		Currency:        *dto.Currency,
-		StoreExternalID: wallet.StoreExternalID,
-		WebhookEvent:    models.WebhookEventPaymentReceived,
-		DBTx:            tx,
-	}); err != nil {
-		s.log.Errorw("eventListener fire error", "error", err)
-		return nil, fmt.Errorf("eventListener fire error: %w", err)
+	if !dto.IsSystem && !isDirty {
+		if err = s.eventListener.Fire(transactions.DepositReceivedEvent{
+			Tx:              *transaction,
+			Store:           *storeData,
+			Currency:        *dto.Currency,
+			StoreExternalID: wallet.StoreExternalID,
+			WebhookEvent:    models.WebhookEventPaymentReceived,
+			DBTx:            tx,
+		}); err != nil {
+			s.log.Errorw("eventListener fire error", "error", err)
+			return nil, fmt.Errorf("eventListener fire error: %w", err)
+		}
 	}
 
 	return &transactions.DepositReceiptSentEvent{
