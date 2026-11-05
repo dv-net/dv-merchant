@@ -237,6 +237,7 @@ func (h *Handler) refundCabinet(c fiber.Ctx) error {
 				ToAddress:            item.ToAddress,
 				RiskLevel:            item.RiskLevel,
 				Score:                item.Score,
+				BlockReasons:         refund_response.NewCabinetBlockReasonsResponse(item.BlockReasons),
 				CreatedAt:            pgtypeutils.DecodeTime(item.CreatedAt),
 				RefundStatus:         item.RefundStatus,
 				DestinationAddress:   item.DestinationAddress,

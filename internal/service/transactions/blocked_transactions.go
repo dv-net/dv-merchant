@@ -14,6 +14,12 @@ type IBlockedTransaction interface {
 }
 
 func (s *Service) CreateBlockedTransaction(ctx context.Context, dto CreateBlockedTransactionDTO, opts ...repos.Option) (*models.BlockedTransaction, error) {
+	blockReasons := dto.BlockReasons
+	if blockReasons == nil {
+		// the column is not null, a nil slice is encoded as null
+		blockReasons = models.AmlBlockReasons{}
+	}
+
 	bTransaction, err := s.storage.BlockedTransactions(opts...).Create(ctx, repo_blocked_transactions.CreateParams{
 		UserID:        dto.UserID,
 		StoreID:       dto.StoreID,
@@ -22,6 +28,7 @@ func (s *Service) CreateBlockedTransaction(ctx context.Context, dto CreateBlocke
 		WalletID:      dto.WalletID,
 		RiskLevel:     dto.RiskLevel,
 		Score:         dto.Score,
+		BlockReasons:  blockReasons,
 	})
 	if err != nil {
 		parsedErr := pgerror.ParseError(err)

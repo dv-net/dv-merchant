@@ -80,6 +80,7 @@ type CabinetItem struct {
 	ToAddress            string
 	RiskLevel            string
 	Score                decimal.Decimal
+	BlockReasons         models.AmlBlockReasons
 	CreatedAt            pgtype.Timestamp
 	RefundStatus         *string
 	DestinationAddress   *string
@@ -114,6 +115,7 @@ func buildCabinet(
 			ToAddress:            b.ToAddress,
 			RiskLevel:            b.RiskLevel,
 			Score:                b.Score,
+			BlockReasons:         b.BlockReasons,
 			CreatedAt:            b.CreatedAt,
 		}
 
@@ -142,4 +144,6 @@ type RequestWithTxDTO struct {
 	ToAddress     string              `json:"to_address"`
 	RiskLevel     string              `json:"risk_level"`
 	Score         decimal.Decimal     `json:"score"`
+	// BlockReasons are the "reject" rules which blocked the deposit
+	BlockReasons models.AmlBlockReasons `json:"block_reasons"`
 } //	@name	RefundRequestWithTx

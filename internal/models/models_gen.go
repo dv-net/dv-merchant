@@ -87,6 +87,7 @@ type BlockedTransaction struct {
 	Score         decimal.Decimal  `db:"score" json:"score"`
 	CreatedAt     pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt     pgtype.Timestamp `db:"updated_at" json:"updated_at"`
+	BlockReasons  AmlBlockReasons  `db:"block_reasons" json:"block_reasons"`
 } //	@name	BlockedTransaction
 
 type Currency struct {

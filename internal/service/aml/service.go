@@ -91,7 +91,8 @@ func NewService(st storage.IStorage, factory providers.ProviderFactory, log logg
 // flags and records the blocked transaction. Processing is not called here: the caller
 // must pass result.DirtyAddresses to SyncDirtyAddresses after the transaction commits.
 func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) (VerdictResult, error) {
-	blocked, matchedFlags := EvaluateRiskRules(dto.Check.Score, dto.Check.RiskLevel, dto.Signals, dto.Rules)
+	blockReasons, matchedFlags := MatchRiskRules(dto.Check.Score, dto.Check.RiskLevel, dto.Signals, dto.Rules)
+	blocked := len(blockReasons) > 0
 
 	res := VerdictResult{Blocked: blocked}
 	if !blocked && len(matchedFlags) == 0 {
@@ -135,6 +136,7 @@ func (s *Service) ApplyVerdict(ctx context.Context, dto ApplyVerdictDTO) (Verdic
 			WalletID:      dto.WalletID.UUID,
 			RiskLevel:     string(riskLevel),
 			Score:         dto.Check.Score,
+			BlockReasons:  blockReasons,
 		}, repos.WithTx(tx)); err != nil {
 			return fmt.Errorf("record blocked transaction: %w", err)
 		}

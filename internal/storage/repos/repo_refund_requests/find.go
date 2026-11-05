@@ -34,19 +34,20 @@ type FindRow struct {
 	models.RefundRequest
 
 	// blocked deposit
-	TransactionID  uuid.UUID           `db:"tx_id"`
-	TxHash         string              `db:"tx_hash"`
-	TxAmount       decimal.Decimal     `db:"tx_amount"`
-	TxAmountUsd    decimal.NullDecimal `db:"tx_amount_usd"`
-	TxCurrencyID   string              `db:"tx_currency_id"`
-	TxCurrencyCode string              `db:"tx_currency_code"`
-	TxBlockchain   models.Blockchain   `db:"tx_blockchain"`
-	TxFromAddress  string              `db:"tx_from_address"`
-	TxToAddress    string              `db:"tx_to_address"`
-	TxCreatedAt    pgtype.Timestamp    `db:"tx_created_at"`
-	BlockRiskLevel string              `db:"bt_risk_level"`
-	BlockScore     decimal.Decimal     `db:"bt_score"`
-	BlockCreatedAt pgtype.Timestamp    `db:"bt_created_at"`
+	TransactionID  uuid.UUID              `db:"tx_id"`
+	TxHash         string                 `db:"tx_hash"`
+	TxAmount       decimal.Decimal        `db:"tx_amount"`
+	TxAmountUsd    decimal.NullDecimal    `db:"tx_amount_usd"`
+	TxCurrencyID   string                 `db:"tx_currency_id"`
+	TxCurrencyCode string                 `db:"tx_currency_code"`
+	TxBlockchain   models.Blockchain      `db:"tx_blockchain"`
+	TxFromAddress  string                 `db:"tx_from_address"`
+	TxToAddress    string                 `db:"tx_to_address"`
+	TxCreatedAt    pgtype.Timestamp       `db:"tx_created_at"`
+	BlockRiskLevel string                 `db:"bt_risk_level"`
+	BlockScore     decimal.Decimal        `db:"bt_score"`
+	BlockReasons   models.AmlBlockReasons `db:"bt_block_reasons"`
+	BlockCreatedAt pgtype.Timestamp       `db:"bt_created_at"`
 
 	// AML check that blocked the deposit
 	AmlCheckID         uuid.UUID             `db:"aml_check_id"`
@@ -145,6 +146,7 @@ func (s *CustomQuerier) Find(ctx context.Context, params FindParams) (*storecmn.
 		"t.created_at AS tx_created_at",
 		"bt.risk_level AS bt_risk_level",
 		"bt.score AS bt_score",
+		"bt.block_reasons AS bt_block_reasons",
 		"bt.created_at AS bt_created_at",
 		"ac.id AS aml_check_id",
 		"asv.slug AS aml_service_slug",

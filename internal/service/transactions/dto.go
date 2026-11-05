@@ -66,4 +66,6 @@ type CreateBlockedTransactionDTO struct {
 	WalletID      uuid.UUID
 	RiskLevel     string
 	Score         decimal.Decimal
+	// BlockReasons are the "reject" rules which blocked the transaction
+	BlockReasons models.AmlBlockReasons
 }

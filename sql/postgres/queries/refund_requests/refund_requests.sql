@@ -10,7 +10,8 @@ SELECT rr.*,
        t.from_address,
        t.to_address,
        bt.risk_level,
-       bt.score
+       bt.score,
+       bt.block_reasons
 FROM refund_requests rr
          INNER JOIN stores s ON rr.store_id = s.id
          INNER JOIN blocked_transactions bt ON bt.id = rr.blocked_transaction_id

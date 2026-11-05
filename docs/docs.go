@@ -11500,6 +11500,23 @@ const docTemplate = `{
                 }
             }
         },
+        "AmlBlockReason": {
+            "type": "object",
+            "properties": {
+                "risk_type": {
+                    "description": "RiskType is the rule's risk_type: a signal category, TOTAL_RISK_SCORE, SUM_OF_SIGNALS or RISK_LEVEL",
+                    "type": "string"
+                },
+                "threshold": {
+                    "description": "Threshold is the rule's threshold, for RISK_LEVEL it is the level rank (none=0 ... critical=4)",
+                    "type": "number"
+                },
+                "value": {
+                    "description": "Value is the checked value which reached the threshold, for RISK_LEVEL it is the level rank",
+                    "type": "number"
+                }
+            }
+        },
         "AmlCheckStatusResponse": {
             "type": "object",
             "properties": {
@@ -11743,6 +11760,17 @@ const docTemplate = `{
                 }
             }
         },
+        "CabinetBlockReasonResponse": {
+            "type": "object",
+            "properties": {
+                "risk_type": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
         "CabinetItemResponse": {
             "type": "object",
             "properties": {
@@ -11751,6 +11779,13 @@ const docTemplate = `{
                 },
                 "amount_usd": {
                     "type": "number"
+                },
+                "block_reasons": {
+                    "description": "BlockReasons are the AML rules which blocked the transaction, empty for transactions blocked before it was recorded",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CabinetBlockReasonResponse"
+                    }
                 },
                 "blockchain": {
                     "$ref": "#/definitions/Blockchain"
@@ -15833,6 +15868,13 @@ const docTemplate = `{
                 "amount_usd": {
                     "type": "number"
                 },
+                "block_reasons": {
+                    "description": "BlockReasons are the AML rules which blocked the deposit",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AmlBlockReason"
+                    }
+                },
                 "blockchain": {
                     "type": "string"
                 },
@@ -16060,6 +16102,12 @@ const docTemplate = `{
                 "amount_usd": {
                     "type": "number"
                 },
+                "block_reasons": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AmlBlockReason"
+                    }
+                },
                 "blockchain": {
                     "type": "string"
                 },
@@ -16084,7 +16132,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "execute_after": {
-                    "description": "ExecuteAfter is set for scheduled refunds to the deposit sender",
                     "type": "string",
                     "format": "date-time"
                 },
@@ -16096,7 +16143,6 @@ const docTemplate = `{
                     "format": "uuid"
                 },
                 "last_error": {
-                    "description": "LastError is the reason the refund was not sent or failed",
                     "type": "string"
                 },
                 "reviewed_at": {

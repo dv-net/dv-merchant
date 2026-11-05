@@ -31,10 +31,10 @@ func signal(category string, weight int64) externalaml.SignalContribution {
 	return externalaml.SignalContribution{Category: category, Weight: decimal.NewFromInt(weight)}
 }
 
-func TestEvaluateRiskRules(t *testing.T) {
+func TestMatchRiskRules(t *testing.T) {
 	t.Run("no rules means nothing is blocked or flagged", func(t *testing.T) {
-		blocked, flags := aml.EvaluateRiskRules(decimal.NewFromInt(90), nil, nil, nil)
-		require.False(t, blocked)
+		reasons, flags := aml.MatchRiskRules(decimal.NewFromInt(90), nil, nil, nil)
+		require.Empty(t, reasons)
 		require.Empty(t, flags)
 	})
 
@@ -42,8 +42,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 		rules := []*models.UserAmlRiskRule{
 			rule(constants.AmlRiskTypeTotalScore, 50, constants.AmlRiskRuleActionReject, false),
 		}
-		blocked, flags := aml.EvaluateRiskRules(decimal.NewFromInt(90), nil, nil, rules)
-		require.False(t, blocked)
+		reasons, flags := aml.MatchRiskRules(decimal.NewFromInt(90), nil, nil, rules)
+		require.Empty(t, reasons)
 		require.Empty(t, flags)
 	})
 
@@ -51,8 +51,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 		rules := []*models.UserAmlRiskRule{
 			rule(constants.AmlRiskTypeTotalScore, 50, constants.AmlRiskRuleActionReject, true),
 		}
-		blocked, flags := aml.EvaluateRiskRules(decimal.NewFromInt(50), nil, nil, rules)
-		require.True(t, blocked)
+		reasons, flags := aml.MatchRiskRules(decimal.NewFromInt(50), nil, nil, rules)
+		require.NotEmpty(t, reasons)
 		require.Empty(t, flags)
 	})
 
@@ -60,8 +60,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 		rules := []*models.UserAmlRiskRule{
 			rule(constants.AmlRiskTypeTotalScore, 50, constants.AmlRiskRuleActionReject, true),
 		}
-		blocked, flags := aml.EvaluateRiskRules(decimal.NewFromInt(49), nil, nil, rules)
-		require.False(t, blocked)
+		reasons, flags := aml.MatchRiskRules(decimal.NewFromInt(49), nil, nil, rules)
+		require.Empty(t, reasons)
 		require.Empty(t, flags)
 	})
 
@@ -69,8 +69,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 		rules := []*models.UserAmlRiskRule{
 			flagRule(constants.AmlRiskTypeTotalScore, 50, true),
 		}
-		blocked, flags := aml.EvaluateRiskRules(decimal.NewFromInt(60), nil, nil, rules)
-		require.False(t, blocked)
+		reasons, flags := aml.MatchRiskRules(decimal.NewFromInt(60), nil, nil, rules)
+		require.Empty(t, reasons)
 		require.Equal(t, []string{constants.AmlRiskTypeTotalScore}, flags)
 	})
 
@@ -79,8 +79,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 			flagRule("SANCTIONS", 30, true),
 		}
 		signals := []externalaml.SignalContribution{signal("SANCTIONS", 20)}
-		blocked, flags := aml.EvaluateRiskRules(decimal.Zero, nil, signals, rules)
-		require.False(t, blocked)
+		reasons, flags := aml.MatchRiskRules(decimal.Zero, nil, signals, rules)
+		require.Empty(t, reasons)
 		require.Empty(t, flags)
 	})
 
@@ -92,8 +92,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 			signal("SANCTIONS", 30),
 			signal("GAMBLING", 100),
 		}
-		blocked, _ := aml.EvaluateRiskRules(decimal.Zero, nil, signals, rules)
-		require.True(t, blocked)
+		reasons, _ := aml.MatchRiskRules(decimal.Zero, nil, signals, rules)
+		require.NotEmpty(t, reasons)
 	})
 
 	t.Run("multiple contributions to the same category are summed", func(t *testing.T) {
@@ -104,8 +104,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 			signal("SANCTIONS", 15),
 			signal("SANCTIONS", 15),
 		}
-		blocked, _ := aml.EvaluateRiskRules(decimal.Zero, nil, signals, rules)
-		require.True(t, blocked)
+		reasons, _ := aml.MatchRiskRules(decimal.Zero, nil, signals, rules)
+		require.NotEmpty(t, reasons)
 	})
 
 	t.Run("sum of signals only counts categories with their own enabled rule", func(t *testing.T) {
@@ -119,8 +119,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 			signal("GAMBLING", 19),
 			signal("DARKNET", 100), // no rule for this category, must not count toward the sum
 		}
-		blocked, _ := aml.EvaluateRiskRules(decimal.Zero, nil, signals, rules)
-		require.True(t, blocked, "SANCTIONS(28)+GAMBLING(19)=47 should trigger SUM_OF_SIGNALS>=40")
+		reasons, _ := aml.MatchRiskRules(decimal.Zero, nil, signals, rules)
+		require.NotEmpty(t, reasons, "SANCTIONS(28)+GAMBLING(19)=47 should trigger SUM_OF_SIGNALS>=40")
 	})
 
 	t.Run("sum of signals excludes disabled category rules", func(t *testing.T) {
@@ -133,8 +133,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 			signal("SANCTIONS", 28),
 			signal("GAMBLING", 19),
 		}
-		blocked, _ := aml.EvaluateRiskRules(decimal.Zero, nil, signals, rules)
-		require.False(t, blocked, "GAMBLING is excluded from the sum because its rule is disabled: 28 < 40")
+		reasons, _ := aml.MatchRiskRules(decimal.Zero, nil, signals, rules)
+		require.Empty(t, reasons, "GAMBLING is excluded from the sum because its rule is disabled: 28 < 40")
 	})
 
 	t.Run("sum of signals excludes accept_and_flag category rules", func(t *testing.T) {
@@ -147,9 +147,9 @@ func TestEvaluateRiskRules(t *testing.T) {
 			signal("SANCTIONS", 28),
 			signal("GAMBLING", 19),
 		}
-		blocked, flags := aml.EvaluateRiskRules(decimal.Zero, nil, signals, rules)
+		reasons, flags := aml.MatchRiskRules(decimal.Zero, nil, signals, rules)
 		// Without the fix, categorySum would be 28+19=47 >= 40 and blocked would wrongly become true.
-		require.False(t, blocked, "GAMBLING is excluded from the sum because its rule is accept_and_flag, not reject: 28 < 40")
+		require.Empty(t, reasons, "GAMBLING is excluded from the sum because its rule is accept_and_flag, not reject: 28 < 40")
 		require.Equal(t, []string{"GAMBLING"}, flags, "the accept_and_flag rule still fires independently on its own category weight (19 >= 15)")
 	})
 
@@ -162,8 +162,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 			signal("SANCTIONS", 30),
 			signal("GAMBLING", 20),
 		}
-		blocked, flags := aml.EvaluateRiskRules(decimal.Zero, nil, signals, rules)
-		require.True(t, blocked, "GAMBLING reject rule fires")
+		reasons, flags := aml.MatchRiskRules(decimal.Zero, nil, signals, rules)
+		require.NotEmpty(t, reasons, "GAMBLING reject rule fires")
 		require.Equal(t, []string{"SANCTIONS"}, flags, "SANCTIONS accept_and_flag rule fires independently, address is not blocked by it")
 	})
 
@@ -176,21 +176,21 @@ func TestEvaluateRiskRules(t *testing.T) {
 			signal("exchange_sanctioned_eu", 15),
 			signal("DARKNET_MARKETPLACE", 15),
 		}
-		blocked, flags := aml.EvaluateRiskRules(decimal.Zero, nil, signals, rules)
-		require.False(t, blocked)
+		reasons, flags := aml.MatchRiskRules(decimal.Zero, nil, signals, rules)
+		require.Empty(t, reasons)
 		require.ElementsMatch(t, []string{"exchange_sanctioned_eu", "DARKNET_MARKETPLACE"}, flags)
 	})
 
 	t.Run("a risk_type appearing more than once is only reported once", func(t *testing.T) {
 		// Not reachable through the API today (user_id+provider_slug+risk_type is unique
-		// at the DB level), but EvaluateRiskRules itself should stay safe either way.
+		// at the DB level), but MatchRiskRules itself should stay safe either way.
 		rules := []*models.UserAmlRiskRule{
 			flagRule("SANCTIONS", 10, true),
 			flagRule("SANCTIONS", 10, true),
 		}
 		signals := []externalaml.SignalContribution{signal("SANCTIONS", 15)}
-		blocked, flags := aml.EvaluateRiskRules(decimal.Zero, nil, signals, rules)
-		require.False(t, blocked)
+		reasons, flags := aml.MatchRiskRules(decimal.Zero, nil, signals, rules)
+		require.Empty(t, reasons)
 		require.Equal(t, []string{"SANCTIONS"}, flags)
 	})
 
@@ -205,8 +205,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 			models.AmlRiskLevelHigh:     true,
 			models.AmlRiskLevelCritical: true,
 		} {
-			blocked, flags := aml.EvaluateRiskRules(decimal.Zero, &level, nil, rules)
-			require.Equal(t, wantBlocked, blocked, "level %s", level)
+			reasons, flags := aml.MatchRiskRules(decimal.Zero, &level, nil, rules)
+			require.Equal(t, wantBlocked, len(reasons) > 0, "level %s", level)
 			require.Empty(t, flags)
 		}
 	})
@@ -216,10 +216,10 @@ func TestEvaluateRiskRules(t *testing.T) {
 			rule(constants.AmlRiskTypeRiskLevel, 0, constants.AmlRiskRuleActionReject, true),
 		}
 		undefined := models.AmlRiskLevel(models.AmlRiskLevelUndefined)
-		blocked, _ := aml.EvaluateRiskRules(decimal.Zero, &undefined, nil, rules)
-		require.False(t, blocked)
-		blocked, _ = aml.EvaluateRiskRules(decimal.Zero, nil, nil, rules)
-		require.False(t, blocked)
+		reasons, _ := aml.MatchRiskRules(decimal.Zero, &undefined, nil, rules)
+		require.Empty(t, reasons)
+		reasons, _ = aml.MatchRiskRules(decimal.Zero, nil, nil, rules)
+		require.Empty(t, reasons)
 	})
 
 	t.Run("risk level rule does not contribute to the sum of signals", func(t *testing.T) {
@@ -228,8 +228,8 @@ func TestEvaluateRiskRules(t *testing.T) {
 			rule(constants.AmlRiskTypeSumOfSignals, 1, constants.AmlRiskRuleActionReject, true),
 		}
 		low := models.AmlRiskLevel(models.AmlRiskLevelLow)
-		blocked, _ := aml.EvaluateRiskRules(decimal.Zero, &low, nil, rules)
-		require.False(t, blocked)
+		reasons, _ := aml.MatchRiskRules(decimal.Zero, &low, nil, rules)
+		require.Empty(t, reasons)
 	})
 
 	t.Run("accept low risk only while sanctions stay below 10 percent", func(t *testing.T) {
@@ -239,10 +239,39 @@ func TestEvaluateRiskRules(t *testing.T) {
 		}
 		low := models.AmlRiskLevel(models.AmlRiskLevelLow)
 
-		blocked, _ := aml.EvaluateRiskRules(decimal.Zero, &low, []externalaml.SignalContribution{signal("sanctions", 9)}, rules)
-		require.False(t, blocked)
+		reasons, _ := aml.MatchRiskRules(decimal.Zero, &low, []externalaml.SignalContribution{signal("sanctions", 9)}, rules)
+		require.Empty(t, reasons)
 
-		blocked, _ = aml.EvaluateRiskRules(decimal.Zero, &low, []externalaml.SignalContribution{signal("sanctions", 10)}, rules)
-		require.True(t, blocked)
+		reasons, _ = aml.MatchRiskRules(decimal.Zero, &low, []externalaml.SignalContribution{signal("sanctions", 10)}, rules)
+		require.NotEmpty(t, reasons)
+	})
+}
+
+func TestMatchRiskRulesReasons(t *testing.T) {
+	t.Run("returns every fired reject rule with its threshold and value", func(t *testing.T) {
+		rules := []*models.UserAmlRiskRule{
+			rule("sanctions", 30, constants.AmlRiskRuleActionReject, true),
+			rule("gambling", 20, constants.AmlRiskRuleActionReject, true),
+			rule(constants.AmlRiskTypeSumOfSignals, 40, constants.AmlRiskRuleActionReject, true),
+			rule(constants.AmlRiskTypeTotalScore, 90, constants.AmlRiskRuleActionReject, true),
+			flagRule("mixer", 5, true),
+		}
+		signals := []externalaml.SignalContribution{signal("sanctions", 35), signal("gambling", 19), signal("mixer", 10)}
+
+		reasons, flags := aml.MatchRiskRules(decimal.NewFromInt(50), nil, signals, rules)
+		require.Equal(t, []string{"mixer"}, flags)
+		require.Len(t, reasons, 2)
+		require.Equal(t, "sanctions", reasons[0].RiskType)
+		require.True(t, reasons[0].Threshold.Equal(decimal.NewFromInt(30)))
+		require.True(t, reasons[0].Value.Equal(decimal.NewFromInt(35)))
+		require.Equal(t, constants.AmlRiskTypeSumOfSignals, reasons[1].RiskType)
+		require.True(t, reasons[1].Value.Equal(decimal.NewFromInt(54)))
+	})
+
+	t.Run("no reasons when only flag rules fire", func(t *testing.T) {
+		rules := []*models.UserAmlRiskRule{flagRule("mixer", 5, true)}
+		reasons, flags := aml.MatchRiskRules(decimal.Zero, nil, []externalaml.SignalContribution{signal("mixer", 10)}, rules)
+		require.Empty(t, reasons)
+		require.Equal(t, []string{"mixer"}, flags)
 	})
 }
