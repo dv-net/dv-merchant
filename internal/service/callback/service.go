@@ -69,7 +69,13 @@ func New(
 }
 
 func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookDto) error {
-	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{IsoLevel: pgx.Serializable}, func(tx pgx.Tx) error {
+	// The receipt email must go out only after commit: the transaction can roll
+	// back or be retried on a serialization failure.
+	var receiptEvent *transactions.DepositReceiptSentEvent
+
+	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{IsoLevel: pgx.Serializable}, func(tx pgx.Tx) error {
+		receiptEvent = nil
+
 		amount, err := decimal.NewFromString(dto.Amount)
 		if err != nil {
 			return fmt.Errorf("parse amount: %w", err)
@@ -123,8 +129,21 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 			return s.handleUnconfirmedDeposit(ctx, dto, storeData, wallet, amount, usdAmount, isDirty, tx)
 		}
 
-		return s.handleConfirmedDeposit(ctx, dto, storeData, wallet, amount, fee, usdAmount, isDirty, tx)
+		receiptEvent, err = s.handleConfirmedDeposit(ctx, dto, storeData, wallet, amount, fee, usdAmount, isDirty, tx)
+		return err
 	})
+	if err != nil {
+		return err
+	}
+
+	if receiptEvent != nil {
+		// Deposit is already committed, so a failed email must not fail the callback.
+		if fireErr := s.eventListener.Fire(*receiptEvent); fireErr != nil {
+			s.log.Errorw("eventListener fire error", "error", fireErr, "tx_hash", dto.Hash)
+		}
+	}
+
+	return nil
 }
 
 func (s *Service) handleUnconfirmedDeposit(
@@ -168,10 +187,10 @@ func (s *Service) handleConfirmedDeposit(
 	amount, fee, usdAmount decimal.Decimal,
 	isDirty bool,
 	tx pgx.Tx,
-) error {
+) (*transactions.DepositReceiptSentEvent, error) {
 	usdFee, exchangeRate, err := s.convertFeeAndExchangeRate(ctx, dto, storeData, amount, fee, usdAmount)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var receiptID uuid.NullUUID
@@ -184,7 +203,7 @@ func (s *Service) handleConfirmedDeposit(
 			WalletID:   uuid.NullUUID{UUID: wallet.ID, Valid: true},
 		}, repos.WithTx(tx))
 		if err != nil {
-			return fmt.Errorf("receipt creation: %w", err)
+			return nil, fmt.Errorf("receipt creation: %w", err)
 		}
 		receiptID = uuid.NullUUID{UUID: receipt.ID, Valid: true}
 	}
@@ -211,21 +230,21 @@ func (s *Service) handleConfirmedDeposit(
 
 	transaction, err := s.transactionsService.CreateTransaction(ctx, createParams, repos.WithTx(tx))
 	if err != nil {
-		return fmt.Errorf("transaction creation: %w", err)
+		return nil, fmt.Errorf("transaction creation: %w", err)
 	}
 
 	nativeCurrency, err := dto.Currency.Blockchain.NativeCurrency()
 	if err != nil {
-		return fmt.Errorf("get native currency: %w", err)
+		return nil, fmt.Errorf("get native currency: %w", err)
 	}
 
 	nativeTokenUpdateRequired := nativeCurrency == dto.Currency.ID && dto.Blockchain.RecalculateNativeBalance()
 	if err = s.enqueueAddressBalanceUpdate(ctx, dto, nativeTokenUpdateRequired, repos.WithTx(tx)); err != nil {
-		return fmt.Errorf("can't enqueue update balance: %w", err)
+		return nil, fmt.Errorf("can't enqueue update balance: %w", err)
 	}
 
 	if dto.IsSystem || isDirty {
-		return nil
+		return nil, nil
 	}
 
 	if err = s.eventListener.Fire(transactions.DepositReceivedEvent{
@@ -237,25 +256,19 @@ func (s *Service) handleConfirmedDeposit(
 		DBTx:            tx,
 	}); err != nil {
 		s.log.Errorw("eventListener fire error", "error", err)
-		return fmt.Errorf("eventListener fire error: %w", err)
+		return nil, fmt.Errorf("eventListener fire error: %w", err)
 	}
 
-	if err = s.eventListener.Fire(transactions.DepositReceiptSentEvent{
+	return &transactions.DepositReceiptSentEvent{
 		Tx:              *transaction,
 		Store:           *storeData,
 		Currency:        *dto.Currency,
 		StoreExternalID: wallet.StoreExternalID,
-		DBTx:            tx,
 		WalletEmail:     resolveUserEmail(wallet),
 		WalletLocale:    wallet.Locale,
 		ExchangeRate:    exchangeRate,
 		UsdFee:          usdFee,
-	}); err != nil {
-		s.log.Errorw("eventListener fire error", "error", err)
-		return fmt.Errorf("eventListener fire error: %w", err)
-	}
-
-	return nil
+	}, nil
 }
 
 func (s *Service) convertFeeAndExchangeRate(
