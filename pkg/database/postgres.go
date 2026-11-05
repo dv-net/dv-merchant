@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/dv-net/dv-merchant/internal/config"
 
@@ -21,6 +22,13 @@ func NewPostgresClient(ctx context.Context, dbConf config.PostgresDB) (*Postgres
 
 	cfg.MinConns = dbConf.MinOpenConns
 	cfg.MaxConns = dbConf.MaxOpenConns
+	if dbConf.ConnMaxLifetime > 0 {
+		cfg.MaxConnLifetime = time.Duration(dbConf.ConnMaxLifetime) * time.Second
+		cfg.MaxConnLifetimeJitter = cfg.MaxConnLifetime / 10
+	}
+	if dbConf.ConnMaxIdleTime > 0 {
+		cfg.MaxConnIdleTime = time.Duration(dbConf.ConnMaxIdleTime) * time.Second
+	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {

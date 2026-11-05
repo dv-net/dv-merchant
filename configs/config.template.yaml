@@ -23,9 +23,10 @@ postgres:
   db_name: ""
   user: ""
   password: ""
-  conn_max_lifetime: 180
-  max_open_conns: 100
-  max_idle_conns: 100
+  conn_max_lifetime: 1800
+  conn_max_idle_time: 120
+  max_open_conns: 30
+  max_idle_conns: 30
   min_open_conns: 6
 redis:
   addr: ""
