@@ -11236,6 +11236,140 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/public/wallet/{id}/blocked-transactions/{blocked_transaction_id}/refund-to-sender": {
+            "post": {
+                "description": "Creates a refund request of a blocked transaction back to the address it was sent from, without the email verification. Available when the store owner allows it, see refund_to_sender_without_auth of the wallet data",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Refund",
+                    "Public"
+                ],
+                "summary": "Create a refund to the deposit sender",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Wallet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Blocked transaction ID",
+                        "name": "blocked_transaction_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-RefundRequest"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/public/wallet/{id}/blocked-transactions/{blocked_transaction_id}/refund-to-sender/estimate": {
+            "post": {
+                "description": "Returns the estimated network fee and the amount to receive for a refund of a blocked transaction back to the address it was sent from. Available when the store owner allows refunds without the email verification",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Refund",
+                    "Public"
+                ],
+                "summary": "Estimate a refund to the deposit sender",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Wallet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Blocked transaction ID",
+                        "name": "blocked_transaction_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-RefundEstimateResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/public/wallet/{id}/confirm": {
             "get": {
                 "description": "Notify wallet email",
@@ -15696,6 +15830,10 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "refund_to_sender_without_auth": {
+                    "description": "RefundToSenderWithoutAuth - a blocked deposit can be refunded back to its sender without the email verification",
+                    "type": "boolean"
+                },
                 "store": {
                     "$ref": "#/definitions/PublicStore"
                 },
@@ -15948,6 +16086,9 @@ const docTemplate = `{
                 "currency_id": {
                     "type": "string"
                 },
+                "destination_address": {
+                    "type": "string"
+                },
                 "estimated_fee": {
                     "type": "string"
                 },
@@ -15993,6 +16134,9 @@ const docTemplate = `{
         "RefundRequest": {
             "type": "object",
             "properties": {
+                "auth_method": {
+                    "type": "string"
+                },
                 "blocked_transaction_id": {
                     "type": "string"
                 },
@@ -16039,6 +16183,13 @@ const docTemplate = `{
             "properties": {
                 "aml_check": {
                     "$ref": "#/definitions/RefundAmlCheckResponse"
+                },
+                "auth_method": {
+                    "type": "string",
+                    "enum": [
+                        "email",
+                        "none"
+                    ]
                 },
                 "blocked_transaction": {
                     "$ref": "#/definitions/RefundBlockedTransactionResponse"
@@ -16101,6 +16252,13 @@ const docTemplate = `{
                 },
                 "amount_usd": {
                     "type": "number"
+                },
+                "auth_method": {
+                    "type": "string",
+                    "enum": [
+                        "email",
+                        "none"
+                    ]
                 },
                 "block_reasons": {
                     "type": "array",

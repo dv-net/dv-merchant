@@ -11,6 +11,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/public_request"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/aml_responses"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/refund_response"
+	"github.com/dv-net/dv-merchant/internal/delivery/middleware"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
@@ -129,6 +130,13 @@ func (h *Handler) getWalletData(c fiber.Ctx) error {
 		return 0
 	})
 
+	// the form offers a refund to the deposit sender without the email verification when the owner allows it
+	refundToSenderWithoutAuth, err := h.services.RefundService.RefundToSenderWithoutAuth(c.Context(), data.Store.UserID)
+	if err != nil {
+		h.logger.Errorw("failed to get refund auth mode", "wallet_id", walletID, "error", err)
+		refundToSenderWithoutAuth = false
+	}
+
 	result := public_request.GetWalletDto{
 		Store: public_request.StoreDto{
 			ID:             data.Store.ID,
@@ -143,6 +151,8 @@ func (h *Handler) getWalletData(c fiber.Ctx) error {
 		Addresses: addresses,
 		Rates:     data.Rates,
 		WalletID:  walletID,
+
+		RefundToSenderWithoutAuth: refundToSenderWithoutAuth,
 	}
 
 	return c.JSON(response.OkByData(result))
@@ -311,6 +321,14 @@ func (h *Handler) initWalletRoutes(v1 fiber.Router) {
 	w.Get("/:id", h.getWalletData)
 	w.Get("/:id/tx-find", h.findTransactionsByWallet)
 	w.Get("/:id/blocked-transactions", h.getBlockedTransactions)
+	// without the email verification: the refund goes only back to the deposit sender
+	w.Post("/:id/blocked-transactions/:blocked_transaction_id/refund-to-sender",
+		middleware.LimiterMiddleware(5, 60, middleware.WithSlidingWindow),
+		h.refundToSender)
+	// each call goes to processing
+	w.Post("/:id/blocked-transactions/:blocked_transaction_id/refund-to-sender/estimate",
+		middleware.LimiterMiddleware(10, 60, middleware.WithSlidingWindow),
+		h.refundToSenderEstimate)
 	w.Get("/:id/aml-checks", h.getAmlChecks)
 	w.Get("/:id/confirm", h.notifyWalletEmail)
 }

@@ -44,6 +44,7 @@ func newTransport(cfg NetConfig) (*http.Transport, error) {
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
+		HTTP2:                 HTTP2HealthCheck(),
 	}
 	if cfg.ProxyURL != "" {
 		u, err := ParseProxyURL(cfg.ProxyURL)
@@ -53,4 +54,18 @@ func newTransport(cfg NetConfig) (*http.Transport, error) {
 		t.Proxy = http.ProxyURL(u)
 	}
 	return t, nil
+}
+
+func HTTP2HealthCheck() *http.HTTP2Config {
+	return &http.HTTP2Config{
+		SendPingTimeout:  10 * time.Second,
+		PingTimeout:      5 * time.Second,
+		WriteByteTimeout: 10 * time.Second,
+	}
+}
+
+func NewDefaultTransport() *http.Transport {
+	t := http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert
+	t.HTTP2 = HTTP2HealthCheck()
+	return t
 }

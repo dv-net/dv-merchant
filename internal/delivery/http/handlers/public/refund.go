@@ -161,6 +161,81 @@ func (h *Handler) refundEstimate(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(refund_response.NewRefundEstimateResponse(estimate)))
 }
 
+// refundToSender creates a refund request back to the deposit sender without the email verification.
+// It is allowed only when the store owner enabled it (user setting refund_auth_mode = custom_address_only).
+// The destination is not taken from the request: it is the sender of the deposit confirmed by processing.
+//
+//	@Summary		Create a refund to the deposit sender
+//	@Description	Creates a refund request of a blocked transaction back to the address it was sent from, without the email verification. Available when the store owner allows it, see refund_to_sender_without_auth of the wallet data
+//	@Tags			Refund,Public
+//	@Produce		json
+//	@Param			id						path		string	true	"Wallet ID"
+//	@Param			blocked_transaction_id	path		string	true	"Blocked transaction ID"
+//	@Success		200						{object}	response.Result[models.RefundRequest]
+//	@Failure		400						{object}	apierror.Errors
+//	@Failure		403						{object}	apierror.Errors
+//	@Failure		404						{object}	apierror.Errors
+//	@Failure		409						{object}	apierror.Errors
+//	@Failure		422						{object}	apierror.Errors
+//	@Router			/v1/public/wallet/{id}/blocked-transactions/{blocked_transaction_id}/refund-to-sender [post]
+func (h *Handler) refundToSender(c fiber.Ctx) error {
+	dto, err := parseRefundToSenderParams(c)
+	if err != nil {
+		return err
+	}
+
+	ref, err := h.services.RefundService.CreateRefundToSender(c.Context(), dto)
+	if err != nil {
+		return h.prepareRefundClaimError(err, "failed to create refund request", dto.WalletID, dto.BlockedTransactionID)
+	}
+
+	return c.JSON(response.OkByData(ref))
+}
+
+// refundToSenderEstimate returns the network fee and the amount the payer receives for a refund
+// back to the deposit sender without the email verification. Nothing is created.
+//
+//	@Summary		Estimate a refund to the deposit sender
+//	@Description	Returns the estimated network fee and the amount to receive for a refund of a blocked transaction back to the address it was sent from. Available when the store owner allows refunds without the email verification
+//	@Tags			Refund,Public
+//	@Produce		json
+//	@Param			id						path		string	true	"Wallet ID"
+//	@Param			blocked_transaction_id	path		string	true	"Blocked transaction ID"
+//	@Success		200						{object}	response.Result[refund_response.RefundEstimateResponse]
+//	@Failure		400						{object}	apierror.Errors
+//	@Failure		403						{object}	apierror.Errors
+//	@Failure		404						{object}	apierror.Errors
+//	@Failure		409						{object}	apierror.Errors
+//	@Failure		422						{object}	apierror.Errors
+//	@Router			/v1/public/wallet/{id}/blocked-transactions/{blocked_transaction_id}/refund-to-sender/estimate [post]
+func (h *Handler) refundToSenderEstimate(c fiber.Ctx) error {
+	dto, err := parseRefundToSenderParams(c)
+	if err != nil {
+		return err
+	}
+
+	estimate, err := h.services.RefundService.EstimateRefundToSender(c.Context(), dto)
+	if err != nil {
+		return h.prepareRefundClaimError(err, "failed to estimate refund", dto.WalletID, dto.BlockedTransactionID)
+	}
+
+	return c.JSON(response.OkByData(refund_response.NewRefundEstimateResponse(estimate)))
+}
+
+func parseRefundToSenderParams(c fiber.Ctx) (refund.ToSenderDTO, error) {
+	walletID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return refund.ToSenderDTO{}, apierror.New().AddError(errors.New("bad wallet id")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	blockedTransactionID, err := uuid.Parse(c.Params("blocked_transaction_id"))
+	if err != nil {
+		return refund.ToSenderDTO{}, apierror.New().AddError(errors.New("bad blocked transaction id")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return refund.ToSenderDTO{WalletID: walletID, BlockedTransactionID: blockedTransactionID}, nil
+}
+
 // prepareRefundClaimError logs the claim (or estimate) error and converts it to the http error.
 // Only the sentinel error text is returned to the payer, the wrapped details stay in the log.
 func (h *Handler) prepareRefundClaimError(err error, msg string, walletID, blockedTransactionID uuid.UUID) error {
@@ -182,6 +257,10 @@ func (h *Handler) prepareRefundClaimError(err error, msg string, walletID, block
 		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundInsufficientFunds
 	case errors.Is(err, refund.ErrRefundSourceInvalid):
 		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundSourceInvalid
+	case errors.Is(err, refund.ErrRefundSenderUnknown):
+		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundSenderUnknown
+	case errors.Is(err, refund.ErrRefundAuthRequired):
+		httpCode, respErr = fiber.StatusForbidden, refund.ErrRefundAuthRequired
 	}
 
 	log := h.logger.Warnw

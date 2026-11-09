@@ -304,12 +304,13 @@ type RefundRequest struct {
 	TransferID           uuid.NullUUID    `db:"transfer_id" json:"transfer_id"`
 	DestinationAddress   string           `db:"destination_address" json:"destination_address"`
 	Status               string           `db:"status" json:"status"`
-	Email                string           `db:"email" json:"email"`
+	Email                pgtype.Text      `db:"email" json:"email"`
 	ReviewedAt           pgtype.Timestamp `db:"reviewed_at" json:"reviewed_at"`
 	CreatedAt            pgtype.Timestamp `db:"created_at" json:"created_at"`
 	UpdatedAt            pgtype.Timestamp `db:"updated_at" json:"updated_at"`
 	ExecuteAfter         pgtype.Timestamp `db:"execute_after" json:"execute_after"`
 	LastError            pgtype.Text      `db:"last_error" json:"last_error"`
+	AuthMethod           string           `db:"auth_method" json:"auth_method"`
 } //	@name	RefundRequest
 
 type Setting struct {

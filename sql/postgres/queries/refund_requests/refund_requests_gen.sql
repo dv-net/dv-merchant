@@ -1,6 +1,6 @@
 -- name: Create :one
-INSERT INTO refund_requests (blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, execute_after, last_error)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9, $10)
+INSERT INTO refund_requests (blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, execute_after, last_error, auth_method)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), $9, $10, $11)
 	RETURNING *;
 
 -- name: GetAllByWalletID :many

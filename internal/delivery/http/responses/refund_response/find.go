@@ -19,7 +19,8 @@ type RefundRequestDetailedResponse struct {
 	StoreID            uuid.UUID  `json:"store_id" format:"uuid"`
 	DestinationAddress string     `json:"destination_address"`
 	Status             string     `json:"status"`
-	Email              string     `json:"email"`
+	Email              *string    `json:"email"`
+	AuthMethod         string     `json:"auth_method" enums:"email,none"`
 	ReviewedAt         *time.Time `json:"reviewed_at" format:"date-time"`
 	ExecuteAfter       *time.Time `json:"execute_after" format:"date-time"`
 	LastError          *string    `json:"last_error"`
@@ -85,7 +86,8 @@ func NewRefundRequestDetailedResponse(row *repo_refund_requests.FindRow) *Refund
 		StoreID:            row.StoreID,
 		DestinationAddress: row.DestinationAddress,
 		Status:             row.Status,
-		Email:              row.Email,
+		Email:              pgtypeutils.DecodeText(row.Email),
+		AuthMethod:         row.AuthMethod,
 		ReviewedAt:         pgtypeutils.DecodeTime(row.ReviewedAt),
 		ExecuteAfter:       pgtypeutils.DecodeTime(row.ExecuteAfter),
 		LastError:          pgtypeutils.DecodeText(row.LastError),

@@ -22,7 +22,7 @@ UPDATE refund_requests
 	    execute_after=NULL,
 	    updated_at=now()
 WHERE id=$4 AND status=$5
-	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
+	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error, auth_method
 `
 
 type ClaimForSendingParams struct {
@@ -58,12 +58,13 @@ func (q *Queries) ClaimForSending(ctx context.Context, arg ClaimForSendingParams
 		&i.UpdatedAt,
 		&i.ExecuteAfter,
 		&i.LastError,
+		&i.AuthMethod,
 	)
 	return &i, err
 }
 
 const getAllByUserIDAndStatus = `-- name: GetAllByUserIDAndStatus :many
-SELECT rr.id, rr.blocked_transaction_id, rr.wallet_id, rr.store_id, rr.transfer_id, rr.destination_address, rr.status, rr.email, rr.reviewed_at, rr.created_at, rr.updated_at, rr.execute_after, rr.last_error,
+SELECT rr.id, rr.blocked_transaction_id, rr.wallet_id, rr.store_id, rr.transfer_id, rr.destination_address, rr.status, rr.email, rr.reviewed_at, rr.created_at, rr.updated_at, rr.execute_after, rr.last_error, rr.auth_method,
        t.id AS transaction_id,
        t.tx_hash,
        t.amount,
@@ -98,12 +99,13 @@ type GetAllByUserIDAndStatusRow struct {
 	TransferID           uuid.NullUUID          `db:"transfer_id" json:"transfer_id"`
 	DestinationAddress   string                 `db:"destination_address" json:"destination_address"`
 	Status               string                 `db:"status" json:"status"`
-	Email                string                 `db:"email" json:"email"`
+	Email                pgtype.Text            `db:"email" json:"email"`
 	ReviewedAt           pgtype.Timestamp       `db:"reviewed_at" json:"reviewed_at"`
 	CreatedAt            pgtype.Timestamp       `db:"created_at" json:"created_at"`
 	UpdatedAt            pgtype.Timestamp       `db:"updated_at" json:"updated_at"`
 	ExecuteAfter         pgtype.Timestamp       `db:"execute_after" json:"execute_after"`
 	LastError            pgtype.Text            `db:"last_error" json:"last_error"`
+	AuthMethod           string                 `db:"auth_method" json:"auth_method"`
 	TransactionID        uuid.UUID              `db:"transaction_id" json:"transaction_id"`
 	TxHash               string                 `db:"tx_hash" json:"tx_hash"`
 	Amount               decimal.Decimal        `db:"amount" json:"amount"`
@@ -141,6 +143,7 @@ func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserI
 			&i.UpdatedAt,
 			&i.ExecuteAfter,
 			&i.LastError,
+			&i.AuthMethod,
 			&i.TransactionID,
 			&i.TxHash,
 			&i.Amount,
@@ -165,7 +168,7 @@ func (q *Queries) GetAllByUserIDAndStatus(ctx context.Context, arg GetAllByUserI
 }
 
 const getByBlockedTransactionID = `-- name: GetByBlockedTransactionID :one
-SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
+SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error, auth_method
 FROM refund_requests
 WHERE blocked_transaction_id = $1
 LIMIT 1
@@ -188,12 +191,13 @@ func (q *Queries) GetByBlockedTransactionID(ctx context.Context, blockedTransact
 		&i.UpdatedAt,
 		&i.ExecuteAfter,
 		&i.LastError,
+		&i.AuthMethod,
 	)
 	return &i, err
 }
 
 const getInFlightForReconcile = `-- name: GetInFlightForReconcile :many
-SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
+SELECT id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error, auth_method
 FROM refund_requests
 WHERE status = ANY($1::varchar[])
   AND transfer_id IS NOT NULL
@@ -233,6 +237,7 @@ func (q *Queries) GetInFlightForReconcile(ctx context.Context, arg GetInFlightFo
 			&i.UpdatedAt,
 			&i.ExecuteAfter,
 			&i.LastError,
+			&i.AuthMethod,
 		); err != nil {
 			return nil, err
 		}
@@ -251,7 +256,7 @@ UPDATE refund_requests
 	    last_error=NULL,
 	    updated_at=now()
 WHERE id=$3 AND transfer_id=$4 AND status=$5
-	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
+	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error, auth_method
 `
 
 type MarkSentParams struct {
@@ -287,6 +292,7 @@ func (q *Queries) MarkSent(ctx context.Context, arg MarkSentParams) (*models.Ref
 		&i.UpdatedAt,
 		&i.ExecuteAfter,
 		&i.LastError,
+		&i.AuthMethod,
 	)
 	return &i, err
 }
@@ -379,7 +385,7 @@ const updateStatusIfCurrent = `-- name: UpdateStatusIfCurrent :one
 UPDATE refund_requests
 	SET status=$1, updated_at=now()
 WHERE id=$2 AND status=$3
-	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error
+	RETURNING id, blocked_transaction_id, wallet_id, store_id, transfer_id, destination_address, status, email, reviewed_at, created_at, updated_at, execute_after, last_error, auth_method
 `
 
 type UpdateStatusIfCurrentParams struct {
@@ -405,6 +411,7 @@ func (q *Queries) UpdateStatusIfCurrent(ctx context.Context, arg UpdateStatusIfC
 		&i.UpdatedAt,
 		&i.ExecuteAfter,
 		&i.LastError,
+		&i.AuthMethod,
 	)
 	return &i, err
 }

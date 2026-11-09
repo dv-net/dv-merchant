@@ -2908,6 +2908,10 @@ definitions:
         additionalProperties:
           type: string
         type: object
+      refund_to_sender_without_auth:
+        description: RefundToSenderWithoutAuth - a blocked deposit can be refunded
+          back to its sender without the email verification
+        type: boolean
       store:
         $ref: '#/definitions/PublicStore'
       wallet_id:
@@ -3082,6 +3086,8 @@ definitions:
         type: string
       currency_id:
         type: string
+      destination_address:
+        type: string
       estimated_fee:
         type: string
       fee_balance:
@@ -3112,6 +3118,8 @@ definitions:
     type: object
   RefundRequest:
     properties:
+      auth_method:
+        type: string
       blocked_transaction_id:
         type: string
       created_at:
@@ -3143,6 +3151,11 @@ definitions:
     properties:
       aml_check:
         $ref: '#/definitions/RefundAmlCheckResponse'
+      auth_method:
+        enum:
+        - email
+        - none
+        type: string
       blocked_transaction:
         $ref: '#/definitions/RefundBlockedTransactionResponse'
       created_at:
@@ -3185,6 +3198,11 @@ definitions:
         type: number
       amount_usd:
         type: number
+      auth_method:
+        enum:
+        - email
+        - none
+        type: string
       block_reasons:
         items:
           $ref: '#/definitions/AmlBlockReason'
@@ -12375,6 +12393,100 @@ paths:
       summary: Get wallet blocked transactions
       tags:
       - Wallet
+      - Public
+  /v1/public/wallet/{id}/blocked-transactions/{blocked_transaction_id}/refund-to-sender:
+    post:
+      description: Creates a refund request of a blocked transaction back to the address
+        it was sent from, without the email verification. Available when the store
+        owner allows it, see refund_to_sender_without_auth of the wallet data
+      parameters:
+      - description: Wallet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Blocked transaction ID
+        in: path
+        name: blocked_transaction_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundRequest'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Create a refund to the deposit sender
+      tags:
+      - Refund
+      - Public
+  /v1/public/wallet/{id}/blocked-transactions/{blocked_transaction_id}/refund-to-sender/estimate:
+    post:
+      description: Returns the estimated network fee and the amount to receive for
+        a refund of a blocked transaction back to the address it was sent from. Available
+        when the store owner allows refunds without the email verification
+      parameters:
+      - description: Wallet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Blocked transaction ID
+        in: path
+        name: blocked_transaction_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundEstimateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      summary: Estimate a refund to the deposit sender
+      tags:
+      - Refund
       - Public
   /v1/public/wallet/{id}/confirm:
     get:

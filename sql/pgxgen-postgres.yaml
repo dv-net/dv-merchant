@@ -777,6 +777,7 @@ schemas:
                 - store_id
                 - destination_address
                 - email
+                - auth_method
               column_values:
                 updated_at: now()
       transfer_transactions:

@@ -10,6 +10,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/constants"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/processing"
+	"github.com/dv-net/dv-merchant/internal/service/setting"
 	"github.com/dv-net/dv-merchant/internal/storage"
 	"github.com/dv-net/dv-merchant/internal/storage/repos"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_refund_requests"
@@ -27,9 +28,12 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type IRefundService interface {
+type IRefundService interface { //nolint:interfacebloat
 	CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error)
 	EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*EstimateDTO, error)
+	CreateRefundToSender(ctx context.Context, dto ToSenderDTO) (*models.RefundRequest, error)
+	EstimateRefundToSender(ctx context.Context, dto ToSenderDTO) (*EstimateDTO, error)
+	RefundToSenderWithoutAuth(ctx context.Context, userID uuid.UUID) (bool, error)
 	GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error)
 	GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error)
 	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestWithTxDTO, error)
@@ -54,6 +58,8 @@ var (
 	ErrRefundNotScheduled      = errors.New("refund is not scheduled or is already being sent")
 	ErrRefundBlockedTxNotFound = errors.New("blocked transaction not found")
 	ErrRefundInvalidAddress    = errors.New("invalid destination address for the blockchain")
+	ErrRefundAuthRequired      = errors.New("email verification is required to request a refund")
+	ErrRefundSenderUnknown     = errors.New("the deposit sender cannot be determined, request a refund to your address with the email verification")
 )
 
 // refundExecutor sends refunds to processing
@@ -63,26 +69,58 @@ type refundExecutor interface {
 	SendRefund(ctx context.Context, ref *models.RefundRequest, transferID uuid.UUID, totp *string) (*processing.FundsWithdrawalResult, error)
 }
 
+// userSettings reads the store owner settings
+type userSettings interface {
+	GetModelSetting(ctx context.Context, name string, model setting.IModelSetting) (*models.Setting, error)
+}
+
 type Service struct {
 	logger     logger.Logger
 	storage    storage.IStorage
 	executor   refundExecutor
 	processing processing.IProcessingTransfer
+	settings   userSettings
 }
 
-func NewService(log logger.Logger, st storage.IStorage, executor refundExecutor, processingTransfer processing.IProcessingTransfer) *Service {
+func NewService(
+	log logger.Logger,
+	st storage.IStorage,
+	executor refundExecutor,
+	processingTransfer processing.IProcessingTransfer,
+	settings userSettings,
+) *Service {
 	return &Service{
 		logger:     log,
 		storage:    st,
 		executor:   executor,
 		processing: processingTransfer,
+		settings:   settings,
 	}
+}
+
+// RefundToSenderWithoutAuth reports whether the user (the store owner) allows the payer to request
+// a refund back to the deposit sender without the email verification (setting refund_auth_mode).
+// The verification is required when the setting is not set.
+func (s *Service) RefundToSenderWithoutAuth(ctx context.Context, userID uuid.UUID) (bool, error) {
+	res, err := s.settings.GetModelSetting(ctx, setting.RefundAuthMode, &models.User{ID: userID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("get refund auth mode setting: %w", err)
+	}
+
+	return res.Value == setting.RefundAuthModeCustomAddressOnly, nil
 }
 
 // checkClaim runs the checks of a refund claim without creating anything: the blocked transaction
 // belongs to the wallet, it is not claimed yet, the destination address is valid and processing
-// can send the refund (the deposit is valid and the network fee is covered)
-func (s *Service) checkClaim(ctx context.Context, walletID, blockedTransactionID uuid.UUID, destinationAddress string) (*claimCheck, error) {
+// can send the refund (the deposit is valid and the network fee is covered).
+//
+// A claim without the email verification (toSender) is allowed only by the owner setting. Its
+// destination is never taken from the payer: it is the deposit sender, and processing must confirm
+// it (ToSender), so such claim can never send the funds to another address.
+func (s *Service) checkClaim(ctx context.Context, walletID, blockedTransactionID uuid.UUID, destinationAddress string, toSender bool) (*claimCheck, error) {
 	btx, err := s.storage.BlockedTransactions().GetById(ctx, blockedTransactionID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrRefundBlockedTxNotFound
@@ -96,6 +134,17 @@ func (s *Service) checkClaim(ctx context.Context, walletID, blockedTransactionID
 		return nil, fmt.Errorf("%w: wallet id mismatch", ErrRefundBlockedTxNotFound)
 	}
 
+	// the user of the blocked transaction is the store owner
+	if toSender {
+		allowed, err := s.RefundToSenderWithoutAuth(ctx, btx.UserID)
+		if err != nil {
+			return nil, err
+		}
+		if !allowed {
+			return nil, ErrRefundAuthRequired
+		}
+	}
+
 	if _, err := s.storage.RefundRequests().GetByBlockedTransactionID(ctx, blockedTransactionID); err == nil {
 		return nil, ErrRefundAlreadyRequested
 	} else if !errors.Is(err, pgx.ErrNoRows) {
@@ -105,6 +154,13 @@ func (s *Service) checkClaim(ctx context.Context, walletID, blockedTransactionID
 	tx, err := s.storage.Transactions().GetById(ctx, btx.TransactionID)
 	if err != nil {
 		return nil, fmt.Errorf("fetch transaction: %w", err)
+	}
+
+	if toSender {
+		destinationAddress = tx.FromAddress
+		if destinationAddress == "" {
+			return nil, fmt.Errorf("%w: transaction has no sender address", ErrRefundSenderUnknown)
+		}
 	}
 
 	if !avalidator.ValidateAddressByBlockchain(destinationAddress, tx.Blockchain.String()) {
@@ -123,24 +179,44 @@ func (s *Service) checkClaim(ctx context.Context, walletID, blockedTransactionID
 		return nil, fmt.Errorf("check refund: %w", convertProcessingError(err))
 	}
 
-	return &claimCheck{btx: btx, tx: tx, result: check}, nil
+	// processing determines the deposit senders from the blockchain, the stored address may be not one of them
+	if toSender && !check.ToSender {
+		return nil, fmt.Errorf("%w: processing did not confirm the sender %s", ErrRefundSenderUnknown, destinationAddress)
+	}
+
+	return &claimCheck{btx: btx, tx: tx, result: check, destinationAddress: destinationAddress}, nil
 }
 
 // EstimateRefund returns the network fee and the amount the payer receives for a refund
 // to the destination address. Nothing is created, the fee may change by the time of sending.
 func (s *Service) EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*EstimateDTO, error) {
-	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, dto.DestinationAddress)
+	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, dto.DestinationAddress, false)
 	if err != nil {
 		return nil, err
 	}
 
+	return s.buildEstimate(checked)
+}
+
+// EstimateRefundToSender estimates a refund back to the deposit sender requested without the email verification
+func (s *Service) EstimateRefundToSender(ctx context.Context, dto ToSenderDTO) (*EstimateDTO, error) {
+	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, "", true)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.buildEstimate(checked)
+}
+
+func (s *Service) buildEstimate(checked *claimCheck) (*EstimateDTO, error) {
 	feeCurrencyID, err := checked.tx.Blockchain.NativeCurrency()
 	if err != nil {
 		return nil, fmt.Errorf("resolve native currency: %w", err)
 	}
 
 	res := &EstimateDTO{
-		BlockedTransactionID: dto.BlockedTransactionID,
+		BlockedTransactionID: checked.btx.ID,
+		DestinationAddress:   checked.destinationAddress,
 		Amount:               checked.tx.Amount,
 		CurrencyID:           checked.tx.CurrencyID,
 		FeeCurrencyID:        feeCurrencyID,
@@ -171,11 +247,28 @@ func (s *Service) EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*E
 	return res, nil
 }
 
+// CreateRefund creates a refund request of the payer verified by the wallet email
 func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*models.RefundRequest, error) {
-	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, dto.DestinationAddress)
+	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, dto.DestinationAddress, false)
 	if err != nil {
 		return nil, err
 	}
+
+	return s.createRefund(ctx, checked, pgtype.Text{String: dto.Email, Valid: dto.Email != ""}, constants.RefundAuthMethodEmail)
+}
+
+// CreateRefundToSender creates a refund request back to the deposit sender without the email
+// verification, when the store owner allows it (setting refund_auth_mode)
+func (s *Service) CreateRefundToSender(ctx context.Context, dto ToSenderDTO) (*models.RefundRequest, error) {
+	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, "", true)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.createRefund(ctx, checked, pgtype.Text{}, constants.RefundAuthMethodNone)
+}
+
+func (s *Service) createRefund(ctx context.Context, checked *claimCheck, email pgtype.Text, authMethod string) (*models.RefundRequest, error) {
 	btx, check := checked.btx, checked.result
 
 	// processing reports a not covered fee of a token refund in the check result, not as an error:
@@ -186,12 +279,13 @@ func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*model
 	}
 
 	ref, err := s.storage.RefundRequests().Create(ctx, repo_refund_requests.CreateParams{
-		BlockedTransactionID: dto.BlockedTransactionID,
-		WalletID:             dto.WalletID,
+		BlockedTransactionID: btx.ID,
+		WalletID:             btx.WalletID,
 		StoreID:              btx.StoreID,
-		DestinationAddress:   dto.DestinationAddress,
-		Email:                dto.Email,
+		DestinationAddress:   checked.destinationAddress,
+		Email:                email,
 		Status:               constants.RefundStatusPendingReview,
+		AuthMethod:           authMethod,
 	})
 	if err != nil {
 		// a concurrent claim of the same blocked transaction (refund_requests_blocked_transaction_id_key)

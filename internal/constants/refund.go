@@ -9,3 +9,8 @@ const (
 	RefundStatusCompleted     = "completed"
 	RefundStatusFailed        = "failed"
 )
+
+const (
+	RefundAuthMethodEmail = "email"
+	RefundAuthMethodNone = "none"
+)

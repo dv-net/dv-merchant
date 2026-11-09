@@ -302,6 +302,11 @@ func (s *Service) setDefaultUserSettings(ctx context.Context, user *models.User,
 			Value: setting.FlagValueEnabled,
 			Model: setting.IModelSetting(user),
 		},
+		{
+			Name:  setting.RefundAuthMode,
+			Value: setting.RefundAuthModeAlways,
+			Model: setting.IModelSetting(user),
+		},
 	}
 
 	for _, sDTO := range settings {
