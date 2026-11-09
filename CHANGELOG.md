@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 - feat: add network interfaces endpoint for exchange connections
+- fix: bump frontend
 
 ## [0.9.32]
 - bump frontend
