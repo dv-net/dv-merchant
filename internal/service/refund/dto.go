@@ -16,10 +16,12 @@ type CreateRefundDTO struct {
 	Email                string    `json:"email"`
 } //	@name	CreateRefundDTO
 
-// ToSenderDTO is a refund back to the deposit sender requested without the email verification
+// ToSenderDTO is a refund requested without the email verification,
+// the destination address must be one of the deposit senders
 type ToSenderDTO struct {
 	WalletID             uuid.UUID
 	BlockedTransactionID uuid.UUID
+	DestinationAddress   string
 }
 
 type EstimateRefundDTO struct {

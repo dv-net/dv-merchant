@@ -59,7 +59,7 @@ var (
 	ErrRefundBlockedTxNotFound = errors.New("blocked transaction not found")
 	ErrRefundInvalidAddress    = errors.New("invalid destination address for the blockchain")
 	ErrRefundAuthRequired      = errors.New("email verification is required to request a refund")
-	ErrRefundSenderUnknown     = errors.New("the deposit sender cannot be determined, request a refund to your address with the email verification")
+	ErrRefundNotSender         = errors.New("the address is not a sender of the deposit, request a refund to it with the email verification")
 )
 
 // refundExecutor sends refunds to processing
@@ -117,9 +117,10 @@ func (s *Service) RefundToSenderWithoutAuth(ctx context.Context, userID uuid.UUI
 // belongs to the wallet, it is not claimed yet, the destination address is valid and processing
 // can send the refund (the deposit is valid and the network fee is covered).
 //
-// A claim without the email verification (toSender) is allowed only by the owner setting. Its
-// destination is never taken from the payer: it is the deposit sender, and processing must confirm
-// it (ToSender), so such claim can never send the funds to another address.
+// A claim without the email verification (toSender) is allowed only by the owner setting, and the
+// payer's address must be one of the deposit senders. Processing determines the senders from the
+// blockchain (every input of a btc like deposit) and confirms the address (ToSender), so such claim
+// can never send the funds to an address which did not send the deposit.
 func (s *Service) checkClaim(ctx context.Context, walletID, blockedTransactionID uuid.UUID, destinationAddress string, toSender bool) (*claimCheck, error) {
 	btx, err := s.storage.BlockedTransactions().GetById(ctx, blockedTransactionID)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -156,13 +157,6 @@ func (s *Service) checkClaim(ctx context.Context, walletID, blockedTransactionID
 		return nil, fmt.Errorf("fetch transaction: %w", err)
 	}
 
-	if toSender {
-		destinationAddress = tx.FromAddress
-		if destinationAddress == "" {
-			return nil, fmt.Errorf("%w: transaction has no sender address", ErrRefundSenderUnknown)
-		}
-	}
-
 	if !avalidator.ValidateAddressByBlockchain(destinationAddress, tx.Blockchain.String()) {
 		return nil, fmt.Errorf("%w: %s", ErrRefundInvalidAddress, tx.Blockchain.String())
 	}
@@ -179,9 +173,8 @@ func (s *Service) checkClaim(ctx context.Context, walletID, blockedTransactionID
 		return nil, fmt.Errorf("check refund: %w", convertProcessingError(err))
 	}
 
-	// processing determines the deposit senders from the blockchain, the stored address may be not one of them
 	if toSender && !check.ToSender {
-		return nil, fmt.Errorf("%w: processing did not confirm the sender %s", ErrRefundSenderUnknown, destinationAddress)
+		return nil, fmt.Errorf("%w: %s", ErrRefundNotSender, destinationAddress)
 	}
 
 	return &claimCheck{btx: btx, tx: tx, result: check, destinationAddress: destinationAddress}, nil
@@ -198,9 +191,9 @@ func (s *Service) EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*E
 	return s.buildEstimate(checked)
 }
 
-// EstimateRefundToSender estimates a refund back to the deposit sender requested without the email verification
+// EstimateRefundToSender estimates a refund to a deposit sender requested without the email verification
 func (s *Service) EstimateRefundToSender(ctx context.Context, dto ToSenderDTO) (*EstimateDTO, error) {
-	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, "", true)
+	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, dto.DestinationAddress, true)
 	if err != nil {
 		return nil, err
 	}
@@ -257,10 +250,10 @@ func (s *Service) CreateRefund(ctx context.Context, dto CreateRefundDTO) (*model
 	return s.createRefund(ctx, checked, pgtype.Text{String: dto.Email, Valid: dto.Email != ""}, constants.RefundAuthMethodEmail)
 }
 
-// CreateRefundToSender creates a refund request back to the deposit sender without the email
+// CreateRefundToSender creates a refund request to a deposit sender without the email
 // verification, when the store owner allows it (setting refund_auth_mode)
 func (s *Service) CreateRefundToSender(ctx context.Context, dto ToSenderDTO) (*models.RefundRequest, error) {
-	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, "", true)
+	checked, err := s.checkClaim(ctx, dto.WalletID, dto.BlockedTransactionID, dto.DestinationAddress, true)
 	if err != nil {
 		return nil, err
 	}
@@ -899,6 +892,7 @@ func refundRequestFromPendingRow(row *repo_refund_requests.GetAllByUserIDAndStat
 		DestinationAddress:   row.DestinationAddress,
 		Status:               row.Status,
 		Email:                row.Email,
+		AuthMethod:           row.AuthMethod,
 		ReviewedAt:           row.ReviewedAt,
 		CreatedAt:            row.CreatedAt,
 		UpdatedAt:            row.UpdatedAt,

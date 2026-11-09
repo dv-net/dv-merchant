@@ -12,5 +12,5 @@ const (
 
 const (
 	RefundAuthMethodEmail = "email"
-	RefundAuthMethodNone = "none"
+	RefundAuthMethodNone  = "none"
 )

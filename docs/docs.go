@@ -11238,7 +11238,10 @@ const docTemplate = `{
         },
         "/v1/public/wallet/{id}/blocked-transactions/{blocked_transaction_id}/refund-to-sender": {
             "post": {
-                "description": "Creates a refund request of a blocked transaction back to the address it was sent from, without the email verification. Available when the store owner allows it, see refund_to_sender_without_auth of the wallet data",
+                "description": "Creates a refund request of a blocked transaction to the address it was sent from, without the email verification. The address must be one of the deposit senders (any input address for btc like blockchains), otherwise the email verification is required. Available when the store owner allows it, see refund_to_sender_without_auth of the wallet data",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -11261,6 +11264,15 @@ const docTemplate = `{
                         "name": "blocked_transaction_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "RefundClaimRequest",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RefundClaimRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -11305,7 +11317,10 @@ const docTemplate = `{
         },
         "/v1/public/wallet/{id}/blocked-transactions/{blocked_transaction_id}/refund-to-sender/estimate": {
             "post": {
-                "description": "Returns the estimated network fee and the amount to receive for a refund of a blocked transaction back to the address it was sent from. Available when the store owner allows refunds without the email verification",
+                "description": "Returns the estimated network fee and the amount to receive for a refund of a blocked transaction to the address it was sent from. The address must be one of the deposit senders. Available when the store owner allows refunds without the email verification",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -11328,6 +11343,15 @@ const docTemplate = `{
                         "name": "blocked_transaction_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "RefundClaimRequest",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RefundClaimRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -15831,7 +15855,7 @@ const docTemplate = `{
                     }
                 },
                 "refund_to_sender_without_auth": {
-                    "description": "RefundToSenderWithoutAuth - a blocked deposit can be refunded back to its sender without the email verification",
+                    "description": "RefundToSenderWithoutAuth - a blocked deposit can be refunded to its sender without the email\nverification, the payer's address must be one of the deposit senders",
                     "type": "boolean"
                 },
                 "store": {

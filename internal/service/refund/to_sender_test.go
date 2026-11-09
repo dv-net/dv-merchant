@@ -162,7 +162,7 @@ func newToSenderFixture(mode *string, processingToSender bool) *toSenderFixture 
 }
 
 func (f *toSenderFixture) dto() ToSenderDTO {
-	return ToSenderDTO{WalletID: f.btx.WalletID, BlockedTransactionID: f.btx.ID}
+	return ToSenderDTO{WalletID: f.btx.WalletID, BlockedTransactionID: f.btx.ID, DestinationAddress: testSenderAddress}
 }
 
 func strPtr(s string) *string { return &s }
@@ -227,7 +227,7 @@ func TestEstimateRefundToSender(t *testing.T) {
 		assert.Equal(t, []uuid.UUID{f.btx.UserID}, f.settings.users)
 	})
 
-	t.Run("destination is the deposit sender", func(t *testing.T) {
+	t.Run("destination is the payer address confirmed by processing", func(t *testing.T) {
 		f := newToSenderFixture(strPtr(setting.RefundAuthModeCustomAddressOnly), true)
 
 		res, err := f.svc.EstimateRefundToSender(ctx, f.dto())
@@ -237,19 +237,33 @@ func TestEstimateRefundToSender(t *testing.T) {
 		assert.False(t, res.RequiresReview)
 	})
 
-	t.Run("processing does not confirm the sender", func(t *testing.T) {
+	t.Run("stored sender address is not used", func(t *testing.T) {
+		// btc like deposits have no stored sender, another input of the deposit may be refunded
+		f := newToSenderFixture(strPtr(setting.RefundAuthModeCustomAddressOnly), true)
+		f.tx.FromAddress = ""
+		dto := f.dto()
+		dto.DestinationAddress = testOtherAddress
+
+		res, err := f.svc.EstimateRefundToSender(ctx, dto)
+		require.NoError(t, err)
+		assert.Equal(t, testOtherAddress, res.DestinationAddress)
+		assert.Equal(t, []string{testOtherAddress}, f.executor.checkedDests)
+	})
+
+	t.Run("address is not a sender of the deposit", func(t *testing.T) {
 		f := newToSenderFixture(strPtr(setting.RefundAuthModeCustomAddressOnly), false)
 
 		_, err := f.svc.EstimateRefundToSender(ctx, f.dto())
-		require.ErrorIs(t, err, ErrRefundSenderUnknown)
+		require.ErrorIs(t, err, ErrRefundNotSender)
 	})
 
-	t.Run("deposit without the sender address", func(t *testing.T) {
+	t.Run("invalid address is rejected before processing", func(t *testing.T) {
 		f := newToSenderFixture(strPtr(setting.RefundAuthModeCustomAddressOnly), true)
-		f.tx.FromAddress = ""
+		dto := f.dto()
+		dto.DestinationAddress = "not-an-address"
 
-		_, err := f.svc.EstimateRefundToSender(ctx, f.dto())
-		require.ErrorIs(t, err, ErrRefundSenderUnknown)
+		_, err := f.svc.EstimateRefundToSender(ctx, dto)
+		require.ErrorIs(t, err, ErrRefundInvalidAddress)
 		assert.Empty(t, f.executor.checkedDests)
 	})
 
@@ -279,6 +293,16 @@ func TestCreateRefundToSender(t *testing.T) {
 		assert.Equal(t, f.btx.ID, created.BlockedTransactionID)
 		assert.Equal(t, f.btx.WalletID, created.WalletID)
 		assert.Equal(t, f.btx.StoreID, created.StoreID)
+	})
+
+	t.Run("not created to an address which is not a sender", func(t *testing.T) {
+		f := newToSenderFixture(strPtr(setting.RefundAuthModeCustomAddressOnly), false)
+		dto := f.dto()
+		dto.DestinationAddress = testOtherAddress
+
+		_, err := f.svc.CreateRefundToSender(ctx, dto)
+		require.ErrorIs(t, err, ErrRefundNotSender)
+		assert.Nil(t, f.refunds.created)
 	})
 
 	t.Run("not created when auth is required", func(t *testing.T) {

@@ -161,16 +161,18 @@ func (h *Handler) refundEstimate(c fiber.Ctx) error {
 	return c.JSON(response.OkByData(refund_response.NewRefundEstimateResponse(estimate)))
 }
 
-// refundToSender creates a refund request back to the deposit sender without the email verification.
+// refundToSender creates a refund request to a deposit sender without the email verification.
 // It is allowed only when the store owner enabled it (user setting refund_auth_mode = custom_address_only).
-// The destination is not taken from the request: it is the sender of the deposit confirmed by processing.
+// The payer sends the address, processing checks it against the deposit senders in the blockchain.
 //
 //	@Summary		Create a refund to the deposit sender
-//	@Description	Creates a refund request of a blocked transaction back to the address it was sent from, without the email verification. Available when the store owner allows it, see refund_to_sender_without_auth of the wallet data
+//	@Description	Creates a refund request of a blocked transaction to the address it was sent from, without the email verification. The address must be one of the deposit senders (any input address for btc like blockchains), otherwise the email verification is required. Available when the store owner allows it, see refund_to_sender_without_auth of the wallet data
 //	@Tags			Refund,Public
+//	@Accept			json
 //	@Produce		json
-//	@Param			id						path		string	true	"Wallet ID"
-//	@Param			blocked_transaction_id	path		string	true	"Blocked transaction ID"
+//	@Param			id						path		string								true	"Wallet ID"
+//	@Param			blocked_transaction_id	path		string								true	"Blocked transaction ID"
+//	@Param			request					body		public_request.RefundClaimRequest	true	"RefundClaimRequest"
 //	@Success		200						{object}	response.Result[models.RefundRequest]
 //	@Failure		400						{object}	apierror.Errors
 //	@Failure		403						{object}	apierror.Errors
@@ -193,14 +195,16 @@ func (h *Handler) refundToSender(c fiber.Ctx) error {
 }
 
 // refundToSenderEstimate returns the network fee and the amount the payer receives for a refund
-// back to the deposit sender without the email verification. Nothing is created.
+// to a deposit sender without the email verification. Nothing is created.
 //
 //	@Summary		Estimate a refund to the deposit sender
-//	@Description	Returns the estimated network fee and the amount to receive for a refund of a blocked transaction back to the address it was sent from. Available when the store owner allows refunds without the email verification
+//	@Description	Returns the estimated network fee and the amount to receive for a refund of a blocked transaction to the address it was sent from. The address must be one of the deposit senders. Available when the store owner allows refunds without the email verification
 //	@Tags			Refund,Public
+//	@Accept			json
 //	@Produce		json
-//	@Param			id						path		string	true	"Wallet ID"
-//	@Param			blocked_transaction_id	path		string	true	"Blocked transaction ID"
+//	@Param			id						path		string								true	"Wallet ID"
+//	@Param			blocked_transaction_id	path		string								true	"Blocked transaction ID"
+//	@Param			request					body		public_request.RefundClaimRequest	true	"RefundClaimRequest"
 //	@Success		200						{object}	response.Result[refund_response.RefundEstimateResponse]
 //	@Failure		400						{object}	apierror.Errors
 //	@Failure		403						{object}	apierror.Errors
@@ -233,7 +237,16 @@ func parseRefundToSenderParams(c fiber.Ctx) (refund.ToSenderDTO, error) {
 		return refund.ToSenderDTO{}, apierror.New().AddError(errors.New("bad blocked transaction id")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	return refund.ToSenderDTO{WalletID: walletID, BlockedTransactionID: blockedTransactionID}, nil
+	req := &public_request.RefundClaimRequest{}
+	if err := c.Bind().Body(req); err != nil {
+		return refund.ToSenderDTO{}, err
+	}
+
+	return refund.ToSenderDTO{
+		WalletID:             walletID,
+		BlockedTransactionID: blockedTransactionID,
+		DestinationAddress:   req.DestinationAddress,
+	}, nil
 }
 
 // prepareRefundClaimError logs the claim (or estimate) error and converts it to the http error.
@@ -257,8 +270,8 @@ func (h *Handler) prepareRefundClaimError(err error, msg string, walletID, block
 		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundInsufficientFunds
 	case errors.Is(err, refund.ErrRefundSourceInvalid):
 		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundSourceInvalid
-	case errors.Is(err, refund.ErrRefundSenderUnknown):
-		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundSenderUnknown
+	case errors.Is(err, refund.ErrRefundNotSender):
+		httpCode, respErr = fiber.StatusUnprocessableEntity, refund.ErrRefundNotSender
 	case errors.Is(err, refund.ErrRefundAuthRequired):
 		httpCode, respErr = fiber.StatusForbidden, refund.ErrRefundAuthRequired
 	}

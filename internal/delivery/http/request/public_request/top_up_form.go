@@ -50,5 +50,7 @@ type GetWalletDto struct {
 	WalletID  uuid.UUID          `json:"wallet_id"`
 	Addresses []WalletAddressDto `json:"addresses"`
 	Rates     map[string]string  `json:"rates"`
+	// RefundToSenderWithoutAuth - a blocked deposit can be refunded to its sender without the email
+	// verification, the payer's address must be one of the deposit senders
 	RefundToSenderWithoutAuth bool `json:"refund_to_sender_without_auth"`
 } //	@name	PublicGetWalletResponse
