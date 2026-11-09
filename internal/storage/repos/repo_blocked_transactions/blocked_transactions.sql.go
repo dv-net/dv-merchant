@@ -93,6 +93,19 @@ func (q *Queries) GetAllWithTxByWalletID(ctx context.Context, walletID uuid.UUID
 	return items, nil
 }
 
+const getBlockReasonsByTransactionID = `-- name: GetBlockReasonsByTransactionID :one
+SELECT block_reasons
+FROM blocked_transactions
+WHERE transaction_id = $1
+`
+
+func (q *Queries) GetBlockReasonsByTransactionID(ctx context.Context, transactionID uuid.UUID) (models.AmlBlockReasons, error) {
+	row := q.db.QueryRow(ctx, getBlockReasonsByTransactionID, transactionID)
+	var block_reasons models.AmlBlockReasons
+	err := row.Scan(&block_reasons)
+	return block_reasons, err
+}
+
 const getUnclaimedByWalletID = `-- name: GetUnclaimedByWalletID :many
 SELECT bt.id, bt.user_id, bt.store_id, bt.transaction_id, bt.aml_check_id, bt.wallet_id, bt.risk_level, bt.score, bt.created_at, bt.updated_at, bt.block_reasons,
        t.tx_hash,

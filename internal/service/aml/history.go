@@ -2,6 +2,8 @@ package aml
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dv-net/dv-merchant/internal/models"
@@ -10,6 +12,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/util"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type ChecksWithHistoryDTO struct {
@@ -22,6 +25,7 @@ type ChecksWithHistoryDTO struct {
 type IHistoryService interface {
 	GetCheckHistory(ctx context.Context, usr *models.User, dto ChecksWithHistoryDTO) (*storecmn.FindResponseWithFullPagination[*repo_aml_checks.FindRow], error)
 	GetCheckByTransactionID(ctx context.Context, txID uuid.UUID) (*models.AmlCheck, error)
+	GetBlockReasonsByTransactionID(ctx context.Context, txID uuid.UUID) (reasons models.AmlBlockReasons, blocked bool, err error)
 }
 
 var _ IHistoryService = (*Service)(nil)
@@ -61,4 +65,19 @@ func (s *Service) GetCheckHistory(ctx context.Context, usr *models.User, dto Che
 
 func (s *Service) GetCheckByTransactionID(ctx context.Context, txID uuid.UUID) (*models.AmlCheck, error) {
 	return s.st.AmlChecks().GetByTransactionID(ctx, uuid.NullUUID{UUID: txID, Valid: true})
+}
+
+// GetBlockReasonsByTransactionID returns the AML rules which blocked the transaction.
+// blocked is false when the transaction is not blocked. The reasons of a blocked transaction
+// are empty when it was blocked before they were recorded.
+func (s *Service) GetBlockReasonsByTransactionID(ctx context.Context, txID uuid.UUID) (models.AmlBlockReasons, bool, error) {
+	reasons, err := s.st.BlockedTransactions().GetBlockReasonsByTransactionID(ctx, txID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("get block reasons: %w", err)
+	}
+
+	return reasons, true, nil
 }

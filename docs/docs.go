@@ -11678,6 +11678,13 @@ const docTemplate = `{
         "AmlCheckStatusResponse": {
             "type": "object",
             "properties": {
+                "block_reasons": {
+                    "description": "BlockReasons are the AML rules which blocked the transaction: null when it is not blocked,\nempty when it was blocked before the reasons were recorded",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CabinetBlockReasonResponse"
+                    }
+                },
                 "blockchain": {
                     "$ref": "#/definitions/Blockchain"
                 },
@@ -11975,7 +11982,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "refund_to_sender_without_auth": {
-                    "description": "RefundToSenderWithoutAuth - the deposit can be refunded to its sender without the email verification\n(refund-to-sender). Returned only in the blocked transactions of the wallet",
                     "type": "boolean"
                 },
                 "risk_level": {

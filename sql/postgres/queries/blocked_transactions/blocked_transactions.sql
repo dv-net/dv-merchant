@@ -34,3 +34,8 @@ WHERE bt.wallet_id = $1
     WHERE rr.blocked_transaction_id = bt.id
   )
 ORDER BY bt.created_at DESC;
+
+-- name: GetBlockReasonsByTransactionID :one
+SELECT block_reasons
+FROM blocked_transactions
+WHERE transaction_id = $1;
