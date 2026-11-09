@@ -35,3 +35,11 @@ const (
 const (
 	TransferStatusSystemSuspended string = "system_suspended"
 )
+
+const (
+	// RefundAuthModeAlways - the email verification is required for any refund (default)
+	RefundAuthModeAlways = "always"
+	// RefundAuthModeCustomAddressOnly - a refund back to the deposit sender is requested without
+	// the email verification, a refund to another address still requires it
+	RefundAuthModeCustomAddressOnly = "custom_address_only"
+)

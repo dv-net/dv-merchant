@@ -253,7 +253,7 @@ func NewServices(
 		return nil, err
 	}
 
-	refundService := refund.NewService(logger, storage, withdrawService, processingService)
+	refundService := refund.NewService(logger, storage, withdrawService, processingService, settingService)
 	return &Services{
 		UserService:                   userService,
 		UserCredentialsService:        userService,

@@ -31,11 +31,17 @@ const (
 	WithdrawFromProcessing = "withdraw_from_processing"
 )
 
+// RefundAuthMode sets when the payer must verify the wallet email to request a refund of a blocked deposit
+const (
+	RefundAuthMode = "refund_auth_mode"
+)
+
 var validModelSettings = map[string][]string{
 	TransfersStatus:        {FlagValueDisabled, FlagValueEnabled, TransferStatusSystemSuspended},
 	TransferType:           {string(TransferByBurnTRX), string(TransferByResource), string(TransferByCloudDelegate)},
 	QuickStartGuideStatus:  {FlagValueIncompleted, FlagValueCompleted},
 	WithdrawFromProcessing: {FlagValueDisabled, FlagValueEnabled},
+	RefundAuthMode:         {RefundAuthModeAlways, RefundAuthModeCustomAddressOnly},
 }
 
 type IUserSettings interface {

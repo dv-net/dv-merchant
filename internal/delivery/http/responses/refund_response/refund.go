@@ -21,7 +21,8 @@ type RefundRequestResponse struct {
 	TransferID           *uuid.UUID             `json:"transfer_id" format:"uuid"`
 	DestinationAddress   string                 `json:"destination_address"`
 	Status               string                 `json:"status"`
-	Email                string                 `json:"email"`
+	Email                *string                `json:"email"`
+	AuthMethod           string                 `json:"auth_method" enums:"email,none"`
 	ReviewedAt           *time.Time             `json:"reviewed_at" format:"date-time"`
 	CreatedAt            time.Time              `json:"created_at" format:"date-time"`
 	UpdatedAt            *time.Time             `json:"updated_at" format:"date-time"`
@@ -56,7 +57,8 @@ func NewRefundRequestResponse(item *refund.RequestWithTxDTO) *RefundRequestRespo
 		TransferID:           transferID,
 		DestinationAddress:   item.DestinationAddress,
 		Status:               item.Status,
-		Email:                item.Email,
+		Email:                pgtypeutils.DecodeText(item.Email),
+		AuthMethod:           item.AuthMethod,
 		ReviewedAt:           pgtypeutils.DecodeTime(item.ReviewedAt),
 		CreatedAt:            item.CreatedAt.Time,
 		UpdatedAt:            pgtypeutils.DecodeTime(item.UpdatedAt),

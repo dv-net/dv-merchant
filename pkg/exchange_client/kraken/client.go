@@ -34,6 +34,9 @@ var (
 	publicLimitKey = utils.HashLimiterKey(exchangeName, "public")
 )
 
+// Shared by all default clients, so connections are reused between drivers.
+var defaultTransport = utils.NewDefaultTransport()
+
 type IKrakenClient interface {
 	Account() IKrakenAccount
 	Market() IKrakenMarket
@@ -120,7 +123,7 @@ func NewClient(opt *ClientOptions, store limiter.Store, opts ...ClientOption) (*
 	c := &Client{
 		apiKey:        opt.APIKey,
 		baseURL:       opt.BaseURL,
-		httpClient:    &http.Client{Timeout: defaultHTTPTimeout},
+		httpClient:    &http.Client{Transport: defaultTransport, Timeout: defaultHTTPTimeout},
 		signer:        signer,
 		nonce:         nonceFor(opt.APIKey),
 		privateLimKey: utils.HashLimiterKey(exchangeName, "private", opt.APIKey),

@@ -10,6 +10,7 @@ import (
 // RefundEstimateResponse is the expected result of a refund, the fee may change by the time of sending
 type RefundEstimateResponse struct {
 	BlockedTransactionID uuid.UUID           `json:"blocked_transaction_id" format:"uuid"`
+	DestinationAddress   string              `json:"destination_address"`
 	Amount               decimal.Decimal     `json:"amount"`
 	CurrencyID           string              `json:"currency_id"`
 	EstimatedFee         decimal.NullDecimal `json:"estimated_fee" swaggertype:"string"`
@@ -26,6 +27,7 @@ type RefundEstimateResponse struct {
 func NewRefundEstimateResponse(e *refund.EstimateDTO) *RefundEstimateResponse {
 	return &RefundEstimateResponse{
 		BlockedTransactionID: e.BlockedTransactionID,
+		DestinationAddress:   e.DestinationAddress,
 		Amount:               e.Amount,
 		CurrencyID:           e.CurrencyID,
 		EstimatedFee:         e.EstimatedFee,
