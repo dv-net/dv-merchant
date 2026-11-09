@@ -33,7 +33,6 @@ type IRefundService interface { //nolint:interfacebloat
 	EstimateRefund(ctx context.Context, dto EstimateRefundDTO) (*EstimateDTO, error)
 	CreateRefundToSender(ctx context.Context, dto ToSenderDTO) (*models.RefundRequest, error)
 	EstimateRefundToSender(ctx context.Context, dto ToSenderDTO) (*EstimateDTO, error)
-	RefundToSenderWithoutAuth(ctx context.Context, userID uuid.UUID) (bool, error)
 	GetCabinet(ctx context.Context, walletID uuid.UUID) (map[string][]*CabinetItem, error)
 	GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*CabinetItem, error)
 	GetPendingReviewByUser(ctx context.Context, userID uuid.UUID) ([]*RequestWithTxDTO, error)
@@ -571,8 +570,20 @@ func (s *Service) GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*Cabi
 		return nil, fmt.Errorf("fetch unclaimed blocked transactions: %w", err)
 	}
 
+	// the transactions of one wallet belong to one store owner, the setting is read once per owner
+	withoutAuth := make(map[uuid.UUID]bool, 1)
+
 	items := make([]*CabinetItem, 0, len(blocked))
 	for _, b := range blocked {
+		allowed, ok := withoutAuth[b.UserID]
+		if !ok {
+			// the list is still returned when the setting cannot be read, the email verification stays available
+			if allowed, err = s.RefundToSenderWithoutAuth(ctx, b.UserID); err != nil {
+				s.logger.Errorw("failed to get refund auth mode", "wallet_id", walletID, "error", err)
+			}
+			withoutAuth[b.UserID] = allowed
+		}
+
 		items = append(items, &CabinetItem{
 			BlockedTransactionID: b.ID,
 			TransactionID:        b.TransactionID,
@@ -588,6 +599,8 @@ func (s *Service) GetUnclaimed(ctx context.Context, walletID uuid.UUID) ([]*Cabi
 			Score:                b.Score,
 			BlockReasons:         b.BlockReasons,
 			CreatedAt:            b.CreatedAt,
+
+			RefundToSenderWithoutAuth: allowed,
 		})
 	}
 	return items, nil

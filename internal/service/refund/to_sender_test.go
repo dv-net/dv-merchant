@@ -62,6 +62,22 @@ func (f *fakeBlockedTransactions) GetById(_ context.Context, id uuid.UUID) (*mod
 	return f.btx, nil
 }
 
+func (f *fakeBlockedTransactions) GetUnclaimedByWalletID(_ context.Context, walletID uuid.UUID) ([]*repo_blocked_transactions.GetUnclaimedByWalletIDRow, error) {
+	if f.btx == nil || f.btx.WalletID != walletID {
+		return nil, nil
+	}
+	// two deposits of the wallet: the owner setting is read once
+	rows := make([]*repo_blocked_transactions.GetUnclaimedByWalletIDRow, 0, 2)
+	for range 2 {
+		rows = append(rows, &repo_blocked_transactions.GetUnclaimedByWalletIDRow{
+			ID:       uuid.New(),
+			UserID:   f.btx.UserID,
+			WalletID: f.btx.WalletID,
+		})
+	}
+	return rows, nil
+}
+
 type fakeTransactions struct {
 	repo_transactions.ICustomQuerier
 	tx *models.Transaction
@@ -333,4 +349,30 @@ func TestCreateRefundWithEmail(t *testing.T) {
 	assert.True(t, created.Email.Valid)
 	assert.Equal(t, constants.RefundAuthMethodEmail, created.AuthMethod)
 	assert.Empty(t, f.settings.users, "the setting is not read for a verified payer")
+}
+
+func TestGetUnclaimedRefundToSenderWithoutAuth(t *testing.T) {
+	tests := []struct {
+		name string
+		mode *string
+		want bool
+	}{
+		{"not set", nil, false},
+		{"always", strPtr(setting.RefundAuthModeAlways), false},
+		{"custom address only", strPtr(setting.RefundAuthModeCustomAddressOnly), true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := newToSenderFixture(tt.mode, true)
+
+			items, err := f.svc.GetUnclaimed(context.Background(), f.btx.WalletID)
+			require.NoError(t, err)
+			require.Len(t, items, 2)
+			for _, item := range items {
+				assert.Equal(t, tt.want, item.RefundToSenderWithoutAuth)
+			}
+			assert.Equal(t, []uuid.UUID{f.btx.UserID}, f.settings.users, "the setting is read once per owner")
+		})
+	}
 }

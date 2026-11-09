@@ -11238,7 +11238,7 @@ const docTemplate = `{
         },
         "/v1/public/wallet/{id}/blocked-transactions/{blocked_transaction_id}/refund-to-sender": {
             "post": {
-                "description": "Creates a refund request of a blocked transaction to the address it was sent from, without the email verification. The address must be one of the deposit senders (any input address for btc like blockchains), otherwise the email verification is required. Available when the store owner allows it, see refund_to_sender_without_auth of the wallet data",
+                "description": "Creates a refund request of a blocked transaction to the address it was sent from, without the email verification. The address must be one of the deposit senders (any input address for btc like blockchains), otherwise the email verification is required. Available when the store owner allows it, see refund_to_sender_without_auth of the blocked transactions",
                 "consumes": [
                     "application/json"
                 ],
@@ -11973,6 +11973,10 @@ const docTemplate = `{
                 },
                 "refund_status": {
                     "type": "string"
+                },
+                "refund_to_sender_without_auth": {
+                    "description": "RefundToSenderWithoutAuth - the deposit can be refunded to its sender without the email verification\n(refund-to-sender). Returned only in the blocked transactions of the wallet",
+                    "type": "boolean"
                 },
                 "risk_level": {
                     "type": "string"
@@ -15853,10 +15857,6 @@ const docTemplate = `{
                     "additionalProperties": {
                         "type": "string"
                     }
-                },
-                "refund_to_sender_without_auth": {
-                    "description": "RefundToSenderWithoutAuth - a blocked deposit can be refunded to its sender without the email\nverification, the payer's address must be one of the deposit senders",
-                    "type": "boolean"
                 },
                 "store": {
                     "$ref": "#/definitions/PublicStore"

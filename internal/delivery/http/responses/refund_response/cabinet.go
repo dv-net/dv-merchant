@@ -28,7 +28,8 @@ type CabinetItemResponse struct {
 	RefundStatus       *string                      `json:"refund_status,omitempty"`
 	DestinationAddress *string                      `json:"destination_address,omitempty"`
 	// RefundExecuteAfter is set for scheduled refunds to the deposit sender
-	RefundExecuteAfter *time.Time `json:"refund_execute_after,omitempty" format:"date-time"`
+	RefundExecuteAfter        *time.Time `json:"refund_execute_after,omitempty" format:"date-time"`
+	RefundToSenderWithoutAuth bool       `json:"refund_to_sender_without_auth,omitempty"`
 } //	@name	CabinetItemResponse
 
 // CabinetBlockReasonResponse is an AML rule which blocked the transaction. The rule's threshold

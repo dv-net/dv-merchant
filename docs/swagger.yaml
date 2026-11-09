@@ -326,6 +326,11 @@ definitions:
         type: string
       refund_status:
         type: string
+      refund_to_sender_without_auth:
+        description: |-
+          RefundToSenderWithoutAuth - the deposit can be refunded to its sender without the email verification
+          (refund-to-sender). Returned only in the blocked transactions of the wallet
+        type: boolean
       risk_level:
         type: string
       score:
@@ -2908,11 +2913,6 @@ definitions:
         additionalProperties:
           type: string
         type: object
-      refund_to_sender_without_auth:
-        description: |-
-          RefundToSenderWithoutAuth - a blocked deposit can be refunded to its sender without the email
-          verification, the payer's address must be one of the deposit senders
-        type: boolean
       store:
         $ref: '#/definitions/PublicStore'
       wallet_id:
@@ -12403,7 +12403,7 @@ paths:
         it was sent from, without the email verification. The address must be one
         of the deposit senders (any input address for btc like blockchains), otherwise
         the email verification is required. Available when the store owner allows
-        it, see refund_to_sender_without_auth of the wallet data
+        it, see refund_to_sender_without_auth of the blocked transactions
       parameters:
       - description: Wallet ID
         in: path

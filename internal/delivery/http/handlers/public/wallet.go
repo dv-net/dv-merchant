@@ -130,13 +130,6 @@ func (h *Handler) getWalletData(c fiber.Ctx) error {
 		return 0
 	})
 
-	// the form offers a refund to the deposit sender without the email verification when the owner allows it
-	refundToSenderWithoutAuth, err := h.services.RefundService.RefundToSenderWithoutAuth(c.Context(), data.Store.UserID)
-	if err != nil {
-		h.logger.Errorw("failed to get refund auth mode", "wallet_id", walletID, "error", err)
-		refundToSenderWithoutAuth = false
-	}
-
 	result := public_request.GetWalletDto{
 		Store: public_request.StoreDto{
 			ID:             data.Store.ID,
@@ -151,8 +144,6 @@ func (h *Handler) getWalletData(c fiber.Ctx) error {
 		Addresses: addresses,
 		Rates:     data.Rates,
 		WalletID:  walletID,
-
-		RefundToSenderWithoutAuth: refundToSenderWithoutAuth,
 	}
 
 	return c.JSON(response.OkByData(result))
@@ -268,6 +259,8 @@ func (h *Handler) getBlockedTransactions(c fiber.Ctx) error {
 			CreatedAt:            pgtypeutils.DecodeTime(item.CreatedAt),
 			RefundStatus:         item.RefundStatus,
 			DestinationAddress:   item.DestinationAddress,
+
+			RefundToSenderWithoutAuth: item.RefundToSenderWithoutAuth,
 		})
 	}
 

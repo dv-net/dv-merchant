@@ -166,7 +166,7 @@ func (h *Handler) refundEstimate(c fiber.Ctx) error {
 // The payer sends the address, processing checks it against the deposit senders in the blockchain.
 //
 //	@Summary		Create a refund to the deposit sender
-//	@Description	Creates a refund request of a blocked transaction to the address it was sent from, without the email verification. The address must be one of the deposit senders (any input address for btc like blockchains), otherwise the email verification is required. Available when the store owner allows it, see refund_to_sender_without_auth of the wallet data
+//	@Description	Creates a refund request of a blocked transaction to the address it was sent from, without the email verification. The address must be one of the deposit senders (any input address for btc like blockchains), otherwise the email verification is required. Available when the store owner allows it, see refund_to_sender_without_auth of the blocked transactions
 //	@Tags			Refund,Public
 //	@Accept			json
 //	@Produce		json
