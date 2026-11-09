@@ -95,7 +95,8 @@ type CabinetItem struct {
 	RefundStatus         *string
 	DestinationAddress   *string
 	// RefundExecuteAfter is the time a refund to the deposit sender is sent after the cooldown
-	RefundExecuteAfter pgtype.Timestamp
+	RefundExecuteAfter        pgtype.Timestamp
+	RefundToSenderWithoutAuth bool
 }
 
 // buildCabinet groups a wallet's blocked transactions by refund status. blocked rows
