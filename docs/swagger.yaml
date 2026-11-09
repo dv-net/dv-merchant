@@ -123,6 +123,13 @@ definitions:
     type: object
   AmlCheckStatusResponse:
     properties:
+      block_reasons:
+        description: |-
+          BlockReasons are the AML rules which blocked the transaction: null when it is not blocked,
+          empty when it was blocked before the reasons were recorded
+        items:
+          $ref: '#/definitions/CabinetBlockReasonResponse'
+        type: array
       blockchain:
         $ref: '#/definitions/Blockchain'
       created_at:
@@ -327,9 +334,6 @@ definitions:
       refund_status:
         type: string
       refund_to_sender_without_auth:
-        description: |-
-          RefundToSenderWithoutAuth - the deposit can be refunded to its sender without the email verification
-          (refund-to-sender). Returned only in the blocked transactions of the wallet
         type: boolean
       risk_level:
         type: string

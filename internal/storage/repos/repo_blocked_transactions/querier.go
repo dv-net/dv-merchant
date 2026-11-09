@@ -15,6 +15,7 @@ type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (*models.BlockedTransaction, error)
 	GetAllByWalletID(ctx context.Context, walletID uuid.UUID) ([]*models.BlockedTransaction, error)
 	GetAllWithTxByWalletID(ctx context.Context, walletID uuid.UUID) ([]*GetAllWithTxByWalletIDRow, error)
+	GetBlockReasonsByTransactionID(ctx context.Context, transactionID uuid.UUID) (models.AmlBlockReasons, error)
 	GetById(ctx context.Context, id uuid.UUID) (*models.BlockedTransaction, error)
 	GetUnclaimedByWalletID(ctx context.Context, walletID uuid.UUID) ([]*GetUnclaimedByWalletIDRow, error)
 }

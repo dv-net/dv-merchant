@@ -256,6 +256,7 @@ func (h *Handler) getBlockedTransactions(c fiber.Ctx) error {
 			ToAddress:            item.ToAddress,
 			RiskLevel:            item.RiskLevel,
 			Score:                item.Score,
+			BlockReasons:         refund_response.NewCabinetBlockReasonsResponse(item.BlockReasons),
 			CreatedAt:            pgtypeutils.DecodeTime(item.CreatedAt),
 			RefundStatus:         item.RefundStatus,
 			DestinationAddress:   item.DestinationAddress,
@@ -306,7 +307,12 @@ func (h *Handler) getAmlChecks(c fiber.Ctx) error {
 		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
 	}
 
-	return c.JSON(response.OkByData(aml_responses.NewAmlCheckStatusResponse(tx, check)))
+	reasons, blocked, err := h.services.AMLHistoryService.GetBlockReasonsByTransactionID(c.Context(), tx.ID)
+	if err != nil {
+		return apierror.New().AddError(fmt.Errorf("something went wrong")).SetHttpCode(fiber.StatusBadRequest)
+	}
+
+	return c.JSON(response.OkByData(aml_responses.NewAmlCheckStatusResponse(tx, check, reasons, blocked)))
 }
 
 func (h *Handler) initWalletRoutes(v1 fiber.Router) {
