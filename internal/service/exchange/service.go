@@ -974,6 +974,9 @@ func NewService(
 		log:        log,
 		exRulesSvc: exRulesSvc,
 		settingSvc: settingSvc,
+
+		pairsInFlight:  sync.Map{},
+		ordersInFlight: sync.Map{},
 	}
 }
 
