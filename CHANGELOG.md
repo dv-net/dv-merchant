@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: `POST /v1/external/withdrawal-from-processing` returned `amount_usd: "0"`; USD amount is now calculated on creation
 - fix: service hang after a few hours with exchange swaps enabled: swap and order-sync jobs no longer start a new pass while the previous one is running, and exchange calls no longer run inside DB transactions (a slow exchange such as Kraken exhausted the DB connection pool)
 - fix: disabled exchange swap state was ignored and swaps kept running
+- feat: add `DELETE /v1/dv-admin/withdrawal-wallet/{walletID}/addresses` to remove several withdrawal addresses at once
+- fix: deleting withdrawal addresses by ID did not check that they belong to the wallet
+- fix: a manual multi-withdrawal rule is now disabled when its address is removed from the withdrawal wallet
+- fix: withdrawal rule `min_balance` / `min_balance_usd` must be greater than 0 at the service level too; a new withdrawal wallet no longer stores a zero native min balance
 
 ## [0.9.32]
 - bump frontend

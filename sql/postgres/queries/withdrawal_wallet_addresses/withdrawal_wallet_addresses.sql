@@ -42,13 +42,16 @@ update withdrawal_wallet_addresses
 set deleted_at = now(),
     updated_at = now()
 where withdrawal_wallet_id = sqlc.arg(wallet_id)
-  and (address != ANY (sqlc.arg('address')::varchar[]) or cardinality(sqlc.arg('address')::varchar[]) = 0);
+  and deleted_at is null
+  and address <> ALL (sqlc.arg('address')::varchar[]);
 
--- name: SoftBatchDelete :exec
+-- name: SoftBatchDelete :execrows
 update withdrawal_wallet_addresses
 set deleted_at = now(),
     updated_at = now()
-where id = ANY (sqlc.arg('id')::uuid[]);
+where withdrawal_wallet_id = sqlc.arg('wallet_id')::uuid
+  and id = ANY (sqlc.arg('ids')::uuid[])
+  and deleted_at is null;
 
 -- name: GetWithdrawalWalletsByBlockchain :many
 select distinct (wa.address)

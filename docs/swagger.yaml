@@ -255,6 +255,21 @@ definitions:
         format: uuid
         type: string
     type: object
+  BatchDeleteWithdrawalAddressRequest:
+    properties:
+      address_ids:
+        items:
+          type: string
+        maxItems: 100
+        minItems: 1
+        type: array
+        uniqueItems: true
+      totp:
+        type: string
+    required:
+    - address_ids
+    - totp
+    type: object
   Blockchain:
     enum:
     - arbitrum
@@ -10308,6 +10323,51 @@ paths:
       tags:
       - StoreWebhook
   /v1/dv-admin/withdrawal-wallet/{walletID}/addresses:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint removes several addresses from withdrawal wallet
+        rules
+      parameters:
+      - description: Addresses to delete
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/BatchDeleteWithdrawalAddressRequest'
+      - description: walletID
+        in: path
+        name: walletID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Address not found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Batch delete withdrawal wallet addresses
+      tags:
+      - WithdrawalWallet
     patch:
       consumes:
       - application/json

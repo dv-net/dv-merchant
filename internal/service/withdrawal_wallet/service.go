@@ -148,24 +148,26 @@ func (s *Service) GetWithdrawalWalletsByCurrencyID(ctx context.Context, usr *mod
 }
 
 func (s *Service) UpdateWithdrawalRules(ctx context.Context, dto UpdateRulesDTO) error {
+	updateParams := repo_withdrawal_wallets.UpdateParams{
+		WithdrawalEnabled:       dto.WithdrawalEnabled,
+		WithdrawalMinBalance:    dto.WithdrawalMinBalance,
+		WithdrawalMinBalanceUsd: dto.WithdrawalMinBalanceUsd,
+		WithdrawalInterval:      dto.WithdrawalInterval,
+		CurrencyID:              dto.Currency.ID,
+		UserID:                  dto.UserID,
+	}
+	if err := updateParams.Validate(); err != nil {
+		return err
+	}
+
 	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
-		withdrawalWallet, err := s.storage.WithdrawalWallets(repos.WithTx(tx)).Update(
-			ctx,
-			repo_withdrawal_wallets.UpdateParams{
-				WithdrawalEnabled:       dto.WithdrawalEnabled,
-				WithdrawalMinBalance:    dto.WithdrawalMinBalance,
-				WithdrawalMinBalanceUsd: dto.WithdrawalMinBalanceUsd,
-				WithdrawalInterval:      dto.WithdrawalInterval,
-				CurrencyID:              dto.Currency.ID,
-				UserID:                  dto.UserID,
-			},
-		)
+		withdrawalWallet, err := s.storage.WithdrawalWallets(repos.WithTx(tx)).Update(ctx, updateParams)
 		if err != nil {
 			return err
 		}
 
 		if dto.MultiWithdrawal == nil {
-			return s.storage.MultiWithdrawalRules().RemoveByWalletID(ctx, withdrawalWallet.ID)
+			return s.storage.MultiWithdrawalRules(repos.WithTx(tx)).RemoveByWalletID(ctx, withdrawalWallet.ID)
 		}
 
 		if !dto.Currency.Blockchain.IsBitcoinLike() {
@@ -198,34 +200,39 @@ func (s *Service) UpdateWithdrawalRules(ctx context.Context, dto UpdateRulesDTO)
 }
 
 func (s *Service) DeleteAddress(ctx context.Context, walletAddressID uuid.UUID, user *models.User, totp string) error {
-	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
-		walletAddress, err := s.GetAddressByID(ctx, walletAddressID)
-		if err != nil {
-			return err
-		}
+	walletAddress, err := s.GetAddressByID(ctx, walletAddressID)
+	if err != nil {
+		return err
+	}
 
-		err = s.storage.WithdrawalWalletAddresses(repos.WithTx(tx)).SoftDelete(ctx, walletAddressID)
-		if err != nil {
-			return fmt.Errorf("soft delete withdrawal wallet address %s: %w", walletAddressID, err)
-		}
-
-		err = s.updateProcessingWithdrawalWalletWhitelist(ctx, walletAddress.WithdrawalWalletID, user, totp, tx)
-		if err != nil {
-			return fmt.Errorf("update withdrawal wallet address %s: %w", walletAddressID, err)
-		}
-		return nil
-	})
+	return s.BatchDelete(ctx, walletAddress.WithdrawalWalletID, []uuid.UUID{walletAddressID}, user, totp)
 }
 
+// BatchDelete soft-deletes addresses of the given withdrawal wallet and syncs the processing whitelist.
+// Fails if any of the addresses does not belong to the wallet or is already deleted.
 func (s *Service) BatchDelete(ctx context.Context, withdrawalWalletID uuid.UUID, addressesIDs []uuid.UUID, user *models.User, totp string) error {
 	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
-		err := s.storage.WithdrawalWalletAddresses(repos.WithTx(tx)).SoftBatchDelete(ctx, addressesIDs)
+		deleted, err := s.storage.WithdrawalWalletAddresses(repos.WithTx(tx)).SoftBatchDelete(
+			ctx,
+			repo_withdrawal_wallet_addresses.SoftBatchDeleteParams{
+				WalletID: withdrawalWalletID,
+				Ids:      addressesIDs,
+			},
+		)
 		if err != nil {
 			return fmt.Errorf("soft batch delete withdrawal wallet addresses: %w", err)
 		}
-		err = s.updateProcessingWithdrawalWalletWhitelist(ctx, withdrawalWalletID, user, totp, tx)
-		if err != nil {
-			return fmt.Errorf("update withdrawal wallet address %s: %w", withdrawalWalletID, err)
+		if deleted != int64(len(addressesIDs)) {
+			return ErrAddressesNotFound
+		}
+
+		// A manual multi-withdrawal rule must not point to a removed address.
+		if err = s.storage.MultiWithdrawalRules(repos.WithTx(tx)).DisableIfManualAddressMissing(ctx, withdrawalWalletID); err != nil {
+			return fmt.Errorf("disable multi withdrawal rule: %w", err)
+		}
+
+		if err = s.updateProcessingWithdrawalWalletWhitelist(ctx, withdrawalWalletID, user, totp, tx); err != nil {
+			return fmt.Errorf("update withdrawal wallet %s whitelist: %w", withdrawalWalletID, err)
 		}
 		return nil
 	})
@@ -265,6 +272,10 @@ func (s *Service) BatchCreateOrUpdateWallet(ctx context.Context, user *models.Us
 		// create/replace addresses
 		if err := s.processWalletAddresses(ctx, dto.Addresses, dto.WalletID, tx); err != nil {
 			return fmt.Errorf("process wallet addresses :%w", err)
+		}
+
+		if err := s.storage.MultiWithdrawalRules(repos.WithTx(tx)).DisableIfManualAddressMissing(ctx, dto.WalletID); err != nil {
+			return fmt.Errorf("disable multi withdrawal rule: %w", err)
 		}
 
 		// Update processing whitelist
@@ -327,9 +338,9 @@ func (s *Service) processWalletAddresses(ctx context.Context, list []AddressDTO,
 }
 
 func (s *Service) updateProcessingWithdrawalWalletWhitelist(ctx context.Context, withdrawalWalletID uuid.UUID, user *models.User, totp string, tx pgx.Tx) error {
-	wallet, err := s.GetWalletByID(ctx, withdrawalWalletID)
+	wallet, err := s.storage.WithdrawalWallets(repos.WithTx(tx)).GetById(ctx, withdrawalWalletID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get withdrawal wallet: %w", err)
 	}
 	address, err := s.storage.WithdrawalWalletAddresses(repos.WithTx(tx)).GetWithdrawalWalletsByBlockchain(ctx, repo_withdrawal_wallet_addresses.GetWithdrawalWalletsByBlockchainParams{
 		Blockchain: wallet.Blockchain,
@@ -374,7 +385,7 @@ func (s *Service) createWithdrawalWallet(ctx context.Context, c *models.Currency
 		CurrencyID:              c.ID,
 		Blockchain:              *c.Blockchain,
 		WithdrawalEnabled:       models.WithdrawalStatusEnabled.String(),
-		WithdrawalMinBalance:    decimal.NullDecimal{Decimal: withdrawalMinBalance, Valid: true},
+		WithdrawalMinBalance:    decimal.NullDecimal{Decimal: withdrawalMinBalance, Valid: withdrawalMinBalance.IsPositive()},
 		WithdrawalMinBalanceUsd: decimal.NullDecimal{Decimal: decimal.NewFromInt(1), Valid: true},
 		WithdrawalInterval:      models.WithdrawalIntervalNever.String(),
 	}

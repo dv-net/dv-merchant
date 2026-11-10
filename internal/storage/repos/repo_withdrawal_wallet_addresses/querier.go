@@ -22,7 +22,7 @@ type Querier interface {
 	GetById(ctx context.Context, id uuid.UUID) (*models.WithdrawalWalletAddress, error)
 	GetWithdrawalAddressByCurrencyID(ctx context.Context, arg GetWithdrawalAddressByCurrencyIDParams) ([]string, error)
 	GetWithdrawalWalletsByBlockchain(ctx context.Context, arg GetWithdrawalWalletsByBlockchainParams) ([]string, error)
-	SoftBatchDelete(ctx context.Context, id []uuid.UUID) error
+	SoftBatchDelete(ctx context.Context, arg SoftBatchDeleteParams) (int64, error)
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 	SoftDeleteUnmatchedByAddress(ctx context.Context, arg SoftDeleteUnmatchedByAddressParams) error
 	UpdateDeletedAddress(ctx context.Context, arg UpdateDeletedAddressParams) (*models.WithdrawalWalletAddress, error)

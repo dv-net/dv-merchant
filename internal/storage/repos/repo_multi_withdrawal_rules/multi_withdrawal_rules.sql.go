@@ -32,6 +32,25 @@ func (q *Queries) CreateOrUpdate(ctx context.Context, arg CreateOrUpdateParams) 
 	return err
 }
 
+const disableIfManualAddressMissing = `-- name: DisableIfManualAddressMissing :exec
+UPDATE multi_withdrawal_rules mwr
+SET mode           = 'disabled',
+    manual_address = null,
+    updated_at     = now()
+WHERE mwr.withdrawal_wallet_id = $1::uuid
+  AND mwr.manual_address IS NOT NULL
+  AND NOT EXISTS (SELECT 1
+                  FROM withdrawal_wallet_addresses wwa
+                  WHERE wwa.withdrawal_wallet_id = mwr.withdrawal_wallet_id
+                    AND wwa.address = mwr.manual_address
+                    AND wwa.deleted_at IS NULL)
+`
+
+func (q *Queries) DisableIfManualAddressMissing(ctx context.Context, withdrawalWalletID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, disableIfManualAddressMissing, withdrawalWalletID)
+	return err
+}
+
 const getByWalletID = `-- name: GetByWalletID :one
 SELECT id, withdrawal_wallet_id, mode, manual_address, created_at, updated_at
 FROM multi_withdrawal_rules
