@@ -6,8 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-- feat: add network interfaces endpoint for exchange connections
-- fix: bump frontend
+- feat: add proxy and network interface settings for exchange connections, network interfaces endpoint
+- feat: add endpoint to estimate refund for blocked transactions
+- feat: improve handling of confirmed deposits and event firing logic
+- feat: record AML block reasons on blocked transactions; expose them in admin refund responses and (without thresholds) in the payer cabinet
+- feat: add refund to deposit sender without email verification (`refund-to-sender` and estimate endpoints, user setting `refund_auth_mode`); destination address must be confirmed by processing as a deposit sender
+- feat: add AML block reasons retrieval for blocked transactions
+- feat: always create a wallet address for the native coin of a network (TRX on Tron, ETH on Ethereum, etc.) even when the store has only tokens of that network enabled; the native address is not shown on the pay form
+- feat: add Kraken chains: POL, BNB, CAKE, ETH and ARB on Arbitrum, DAI (Ethereum, Polygon, Arbitrum), USDD, USDE, PYUSD, ENA, PEPE, SAND, SHIB, WLFI, XAUT
+- fix: `POST /v1/external/withdrawal-from-processing` returned `amount_usd: "0"`; USD amount is now calculated on creation
+- fix: service hang after a few hours with exchange swaps enabled: swap and order-sync jobs no longer start a new pass while the previous one is running, and exchange calls no longer run inside DB transactions (a slow exchange such as Kraken exhausted the DB connection pool)
+- fix: disabled exchange swap state was ignored and swaps kept running
 
 ## [0.9.32]
 - bump frontend

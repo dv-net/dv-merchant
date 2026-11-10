@@ -28,6 +28,20 @@ var unifiedDepositMethods = map[string][]string{
 	"USDC|Polygon - Native":              {"USDC - Polygon (Unified)"},
 	"USDC|Arbitrum One Network - Native": {"USDC - Arbitrum One (Unified)", "USDC - Arbitrum (Unified)"},
 	"ETH|Ether":                          {"Ether (Hex)", "ETH - Ethereum (Unified)"},
+	"ETH|Arbitrum One":                   {"ETH - Arbitrum One (Unified)"},
+	"ARB|Arbitrum One Network":           {"ARB - Arbitrum One (Unified)"},
+	"POL|POL - Polygon":                  {"POL - Polygon (Unified)"},
+	"DAI|Dai":                            {"DAI - Ethereum (Unified)"},
+	"DAI|DAI (Polygon)":                  {"DAI - Polygon (Unified)"},
+	"DAI|Arbitrum One Network":           {"DAI - Arbitrum One (Unified)"},
+	"USDE|USDE - Ethereum":               {"USDE - Ethereum (Unified)"},
+	"PYUSD|Ethereum":                     {"PYUSD - Ethereum (Unified)"},
+	"ENA|ENA - Ethereum":                 {"ENA - Ethereum (Unified)"},
+	"PEPE|PEPE":                          {"PEPE - Ethereum (Unified)"},
+	"SAND|The Sandbox (SAND)":            {"SAND - Ethereum (Unified)"},
+	"SHIB|Shiba Inu (SHIB)":              {"SHIB - Ethereum (Unified)"},
+	"WLFI|WLFI - Ethereum":               {"WLFI - Ethereum (Unified)"},
+	"XAUT|XAUT - Ethereum":               {"XAUT - Ethereum (Unified)"},
 }
 
 var ErrDepositMethodNotFound = errors.New("kraken deposit method not found")

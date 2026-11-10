@@ -98,6 +98,10 @@ func (s *Service) GetFullDataByID(ctx context.Context, id uuid.UUID) (*GetAllByS
 		}
 
 		addresses = append(addresses, created...)
+
+		if err := s.ensureNativeAddresses(ctx, storeOwner, &data.Wallet, missing); err != nil {
+			s.logger.Errorw("failed to ensure native wallet addresses", "wallet_id", data.Wallet.ID, "error", err)
+		}
 	}
 
 	return &GetAllByStoreIDResponse{

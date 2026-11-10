@@ -204,6 +204,12 @@ func (s *Service) generateWalletAddresses(ctx context.Context, owner *models.Use
 		return nil, err
 	}
 
+	// Runs after the loop above, so token addresses already exist and processing
+	// returns the same per-blockchain address for the native coin.
+	if err := s.ensureNativeAddresses(ctx, owner, wallet, nonFiat); err != nil {
+		s.logger.Errorw("failed to ensure native wallet addresses", "wallet_id", wallet.ID, "error", err)
+	}
+
 	return result, nil
 }
 
