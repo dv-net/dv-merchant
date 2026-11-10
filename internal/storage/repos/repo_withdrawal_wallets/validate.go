@@ -9,12 +9,16 @@ import (
 )
 
 func (s UpdateParams) Validate() error {
-	if s.WithdrawalMinBalance.Valid && s.WithdrawalMinBalance.Decimal.IsNegative() {
-		return errors.New("withdrawal_min_balance cannot be negative")
+	if s.WithdrawalMinBalance.Valid && !s.WithdrawalMinBalance.Decimal.IsPositive() {
+		return errors.New("withdrawal_min_balance must be greater than 0")
 	}
 
-	if !s.WithdrawalMinBalance.Decimal.IsZero() && s.WithdrawalMinBalanceUsd.Valid {
-		return errors.New("withdrawal_min_balance cannot be zero or negative")
+	if s.WithdrawalMinBalanceUsd.Valid && !s.WithdrawalMinBalanceUsd.Decimal.IsPositive() {
+		return errors.New("withdrawal_min_balance_usd must be greater than 0")
+	}
+
+	if s.WithdrawalMinBalance.Valid && s.WithdrawalMinBalanceUsd.Valid {
+		return errors.New("withdrawal_min_balance and withdrawal_min_balance_usd cannot be set at the same time")
 	}
 
 	if !models.WithdrawalInterval(s.WithdrawalInterval).IsValid() {

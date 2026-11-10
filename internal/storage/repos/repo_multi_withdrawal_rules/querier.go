@@ -14,6 +14,7 @@ import (
 type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (*models.MultiWithdrawalRule, error)
 	CreateOrUpdate(ctx context.Context, arg CreateOrUpdateParams) error
+	DisableIfManualAddressMissing(ctx context.Context, withdrawalWalletID uuid.UUID) error
 	GetByWalletID(ctx context.Context, withdrawalWalletID uuid.UUID) (*models.MultiWithdrawalRule, error)
 	RemoveByWalletID(ctx context.Context, withdrawalWalletID uuid.UUID) error
 }

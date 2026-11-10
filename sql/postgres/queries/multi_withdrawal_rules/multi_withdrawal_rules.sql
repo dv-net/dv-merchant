@@ -14,3 +14,16 @@ LIMIT 1;
 DELETE
 FROM multi_withdrawal_rules
 WHERE withdrawal_wallet_id = $1;
+
+-- name: DisableIfManualAddressMissing :exec
+UPDATE multi_withdrawal_rules mwr
+SET mode           = 'disabled',
+    manual_address = null,
+    updated_at     = now()
+WHERE mwr.withdrawal_wallet_id = sqlc.arg(withdrawal_wallet_id)::uuid
+  AND mwr.manual_address IS NOT NULL
+  AND NOT EXISTS (SELECT 1
+                  FROM withdrawal_wallet_addresses wwa
+                  WHERE wwa.withdrawal_wallet_id = mwr.withdrawal_wallet_id
+                    AND wwa.address = mwr.manual_address
+                    AND wwa.deleted_at IS NULL);

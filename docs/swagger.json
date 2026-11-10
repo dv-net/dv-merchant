@@ -7991,6 +7991,74 @@
             }
         },
         "/v1/dv-admin/withdrawal-wallet/{walletID}/addresses": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "This endpoint removes several addresses from withdrawal wallet rules",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WithdrawalWallet"
+                ],
+                "summary": "Batch delete withdrawal wallet addresses",
+                "parameters": [
+                    {
+                        "description": "Addresses to delete",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/BatchDeleteWithdrawalAddressRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "walletID",
+                        "name": "walletID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "404": {
+                        "description": "Address not found",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            },
             "patch": {
                 "security": [
                     {
@@ -11865,6 +11933,27 @@
                 "user_id": {
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "BatchDeleteWithdrawalAddressRequest": {
+            "type": "object",
+            "required": [
+                "address_ids",
+                "totp"
+            ],
+            "properties": {
+                "address_ids": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "totp": {
+                    "type": "string"
                 }
             }
         },

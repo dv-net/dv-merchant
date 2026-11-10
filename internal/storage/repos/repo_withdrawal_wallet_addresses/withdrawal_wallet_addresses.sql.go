@@ -271,16 +271,26 @@ func (q *Queries) GetWithdrawalWalletsByBlockchain(ctx context.Context, arg GetW
 	return items, nil
 }
 
-const softBatchDelete = `-- name: SoftBatchDelete :exec
+const softBatchDelete = `-- name: SoftBatchDelete :execrows
 update withdrawal_wallet_addresses
 set deleted_at = now(),
     updated_at = now()
-where id = ANY ($1::uuid[])
+where withdrawal_wallet_id = $1::uuid
+  and id = ANY ($2::uuid[])
+  and deleted_at is null
 `
 
-func (q *Queries) SoftBatchDelete(ctx context.Context, id []uuid.UUID) error {
-	_, err := q.db.Exec(ctx, softBatchDelete, id)
-	return err
+type SoftBatchDeleteParams struct {
+	WalletID uuid.UUID   `db:"wallet_id" json:"wallet_id"`
+	Ids      []uuid.UUID `db:"ids" json:"ids"`
+}
+
+func (q *Queries) SoftBatchDelete(ctx context.Context, arg SoftBatchDeleteParams) (int64, error) {
+	result, err := q.db.Exec(ctx, softBatchDelete, arg.WalletID, arg.Ids)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const softDelete = `-- name: SoftDelete :exec
@@ -300,7 +310,8 @@ update withdrawal_wallet_addresses
 set deleted_at = now(),
     updated_at = now()
 where withdrawal_wallet_id = $1
-  and (address != ANY ($2::varchar[]) or cardinality($2::varchar[]) = 0)
+  and deleted_at is null
+  and address <> ALL ($2::varchar[])
 `
 
 type SoftDeleteUnmatchedByAddressParams struct {
