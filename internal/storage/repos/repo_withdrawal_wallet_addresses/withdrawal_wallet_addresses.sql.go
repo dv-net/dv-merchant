@@ -201,6 +201,7 @@ from withdrawal_wallet_addresses wa
 where w.blockchain = $1
   and w.user_id = $2
   and w.currency_id = $3
+  and wa.for_flagged = $4
   and wa.deleted_at is null
 `
 
@@ -208,10 +209,16 @@ type GetWithdrawalAddressByCurrencyIDParams struct {
 	Blockchain models.Blockchain `db:"blockchain" json:"blockchain"`
 	UserID     uuid.UUID         `db:"user_id" json:"user_id"`
 	CurrencyID string            `db:"currency_id" json:"currency_id"`
+	ForFlagged bool              `db:"for_flagged" json:"for_flagged"`
 }
 
 func (q *Queries) GetWithdrawalAddressByCurrencyID(ctx context.Context, arg GetWithdrawalAddressByCurrencyIDParams) ([]string, error) {
-	rows, err := q.db.Query(ctx, getWithdrawalAddressByCurrencyID, arg.Blockchain, arg.UserID, arg.CurrencyID)
+	rows, err := q.db.Query(ctx, getWithdrawalAddressByCurrencyID,
+		arg.Blockchain,
+		arg.UserID,
+		arg.CurrencyID,
+		arg.ForFlagged,
+	)
 	if err != nil {
 		return nil, err
 	}

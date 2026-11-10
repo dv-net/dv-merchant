@@ -65,6 +65,7 @@ from withdrawal_wallet_addresses wa
 where w.blockchain = $1
   and w.user_id = $2
   and w.currency_id = $3
+  and wa.for_flagged = $4
   and wa.deleted_at is null;
 
 -- name: UpdateList :batchexec

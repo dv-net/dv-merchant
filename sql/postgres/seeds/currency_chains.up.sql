@@ -273,5 +273,22 @@ values
     ('kraken', 'USDT.Arbitrum', 'USDT', 'Arbitrum One Network'),
     ('kraken', 'USDC.Ethereum', 'USDC', 'USDC'),
     ('kraken', 'USDC.Polygon', 'USDC', 'Polygon - Native'),
-    ('kraken', 'USDC.Arbitrum', 'USDC', 'Arbitrum One Network - Native')
+    ('kraken', 'USDC.Arbitrum', 'USDC', 'Arbitrum One Network - Native'),
+    ('kraken', 'POL.Polygon', 'POL', 'POL - Polygon'),
+    ('kraken', 'BNB.BNBSmartChain', 'BNB', 'BNB - BNB Chain'),
+    ('kraken', 'CAKE.BNBSmartChain', 'CAKE', 'CAKE - BNB Chain'),
+    ('kraken', 'ETH.Arbitrum', 'ETH', 'Arbitrum One'),
+    ('kraken', 'ARB.Arbitrum', 'ARB', 'Arbitrum One Network'),
+    ('kraken', 'DAI.Ethereum', 'DAI', 'Dai'),
+    ('kraken', 'DAI.Polygon', 'DAI', 'DAI (Polygon)'),
+    ('kraken', 'DAI.Arbitrum', 'DAI', 'Arbitrum One Network'),
+    ('kraken', 'USDD.Tron', 'USDD', 'USDD - (TRC20)'),
+    ('kraken', 'USDE.Ethereum', 'USDE', 'USDE - Ethereum'),
+    ('kraken', 'PYUSD.Ethereum', 'PYUSD', 'Ethereum'),
+    ('kraken', 'ENA.Ethereum', 'ENA', 'ENA - Ethereum'),
+    ('kraken', 'PEPE.Ethereum', 'PEPE', 'PEPE'),
+    ('kraken', 'SAND.Ethereum', 'SAND', 'The Sandbox (SAND)'),
+    ('kraken', 'SHIB.Ethereum', 'SHIB', 'Shiba Inu (SHIB)'),
+    ('kraken', 'WLFI.Ethereum', 'WLFI', 'WLFI - Ethereum'),
+    ('kraken', 'XAUT.Ethereum', 'XAUT', 'XAUT - Ethereum')
 ON CONFLICT DO NOTHING;

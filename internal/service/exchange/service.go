@@ -79,6 +79,9 @@ type Service struct {
 	log        logger.Logger
 	exRulesSvc exchange_rules.IExchangeRules
 	settingSvc setting.ISettingService
+
+	pairsInFlight  sync.Map // [2]uuid.UUID{userID, exchangeID} -> struct{}
+	ordersInFlight sync.Map // order ID -> struct{}
 }
 
 func (s *Service) DeleteExchangeKeys(ctx context.Context, userID uuid.UUID, slug models.ExchangeSlug) error {
@@ -412,61 +415,65 @@ func (s *Service) processExchangeOrders(ctx context.Context) {
 	})
 	if err != nil {
 		s.log.Errorw("failed to fetch orders", "error", err)
+		return
 	}
 	for _, order := range orders {
+		// A slow exchange must not stack a new check of the same order on every tick.
+		if _, busy := s.ordersInFlight.LoadOrStore(order.ID, struct{}{}); busy {
+			continue
+		}
 		go func(order *models.ExchangeOrder) {
-			err = repos.BeginTxFunc(ctx, s.st.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
-				ex, err := s.st.Exchanges(repos.WithTx(tx)).GetByID(ctx, order.ExchangeID)
-				if err != nil {
-					s.log.Errorw("failed to get exchange", "error", err)
-					return err
-				}
-
-				exClient, err := s.exManager.GetDriver(ctx, ex.Slug, order.UserID)
-				if err != nil {
-					s.log.Errorw("failed to get exchange client", "error", err)
-					return err
-				}
-
-				exOrder, err := exClient.GetOrderDetails(ctx, &models.GetOrderByIDParams{
-					InstrumentID:    new(order.Symbol),
-					ExternalOrderID: new(order.ExchangeOrderID.String),
-					ClientOrderID:   new(order.ClientOrderID.String),
-					InternalOrder:   order,
-				})
-				if err != nil {
-					s.log.Errorw("failed to get order details", "error", err)
-					return err
-				}
-				if exOrder == nil {
-					err := fmt.Errorf("received nil order details")
-					s.log.Errorw("received nil order details from exchange", "error", err, "order_id", order.ID, "connection_hash", exClient.GetConnectionHash())
-					return err
-				}
-				updateParams := repo_exchange_orders.UpdateParams{
-					ID:     order.ID,
-					Status: pgtype.Text{Valid: true, String: exOrder.State.String()},
-				}
-
-				if exOrder.State != models.ExchangeOrderStatusFailed {
-					if exOrder.FailReason != "" {
-						updateParams.FailReason = pgtype.Text{Valid: true, String: exOrder.FailReason}
-					}
-					if !exOrder.Amount.IsZero() {
-						updateParams.Amount = decimal.NullDecimal{Valid: true, Decimal: exOrder.Amount}
-					}
-					if !exOrder.AmountUSD.IsZero() {
-						updateParams.AmountUsd = decimal.NullDecimal{Valid: true, Decimal: exOrder.AmountUSD}
-					}
-				}
-
-				return s.st.ExchangeOrders(repos.WithTx(tx)).Update(ctx, updateParams)
-			})
-			if err != nil {
-				s.log.Errorw("failed to update exchange order", "error", err)
+			defer s.ordersInFlight.Delete(order.ID)
+			if err := s.syncExchangeOrder(ctx, order); err != nil {
+				s.log.Errorw("failed to update exchange order", "error", err, "order_id", order.ID)
 			}
 		}(order)
 	}
+}
+
+// syncExchangeOrder pulls the order state from the exchange. The exchange call runs
+// outside of a DB transaction, so waiting for the exchange does not hold a pool connection.
+func (s *Service) syncExchangeOrder(ctx context.Context, order *models.ExchangeOrder) error {
+	ex, err := s.st.Exchanges().GetByID(ctx, order.ExchangeID)
+	if err != nil {
+		return fmt.Errorf("get exchange: %w", err)
+	}
+
+	exClient, err := s.exManager.GetDriver(ctx, ex.Slug, order.UserID)
+	if err != nil {
+		return fmt.Errorf("get exchange client: %w", err)
+	}
+
+	exOrder, err := exClient.GetOrderDetails(ctx, &models.GetOrderByIDParams{
+		InstrumentID:    new(order.Symbol),
+		ExternalOrderID: new(order.ExchangeOrderID.String),
+		ClientOrderID:   new(order.ClientOrderID.String),
+		InternalOrder:   order,
+	})
+	if err != nil {
+		return fmt.Errorf("get order details: %w", err)
+	}
+	if exOrder == nil {
+		return fmt.Errorf("received nil order details, connection hash %s", exClient.GetConnectionHash())
+	}
+
+	updateParams := repo_exchange_orders.UpdateParams{
+		ID:     order.ID,
+		Status: pgtype.Text{Valid: true, String: exOrder.State.String()},
+	}
+	if exOrder.State != models.ExchangeOrderStatusFailed {
+		if exOrder.FailReason != "" {
+			updateParams.FailReason = pgtype.Text{Valid: true, String: exOrder.FailReason}
+		}
+		if !exOrder.Amount.IsZero() {
+			updateParams.Amount = decimal.NullDecimal{Valid: true, Decimal: exOrder.Amount}
+		}
+		if !exOrder.AmountUSD.IsZero() {
+			updateParams.AmountUsd = decimal.NullDecimal{Valid: true, Decimal: exOrder.AmountUSD}
+		}
+	}
+
+	return s.st.ExchangeOrders().Update(ctx, updateParams)
 }
 
 func (s *Service) processExchangePairs(ctx context.Context) {
@@ -488,7 +495,7 @@ func (s *Service) processExchangePairs(ctx context.Context) {
 				s.log.Errorw("failed to fetch exchange swap state", "error", err, "userID", userID)
 				continue
 			}
-			if swapState == new(models.ExchangeSwapStateDisabled) {
+			if *swapState == models.ExchangeSwapStateDisabled {
 				s.log.Debugw("skipping exchange swap - disabled", "userID", userID, "exchangeID", exchangeID)
 				continue
 			}
@@ -513,7 +520,16 @@ func (s *Service) processExchangePairs(ctx context.Context) {
 				continue
 			}
 
+			// One pass per user and exchange at a time: a slow exchange (rate limits,
+			// timeouts) must not stack a new pass on every tick.
+			key := [2]uuid.UUID{userID, exchangeID}
+			if _, busy := s.pairsInFlight.LoadOrStore(key, struct{}{}); busy {
+				s.log.Debugw("skipping exchange swap - previous pass still running", "userID", userID, "slug", exchange.Slug)
+				continue
+			}
+
 			go func(userID uuid.UUID, exchangeSlug models.ExchangeSlug, userPairs []*models.UserExchangePair) {
+				defer s.pairsInFlight.Delete(key)
 				for _, pair := range userPairs {
 					err := s.SubmitExchangeOrder(ctx, userID, pair)
 					if !shouldErrorSuspendTransfers(err) {
@@ -781,29 +797,35 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 		return fmt.Errorf("unknown order type: %s", pair.Type)
 	}
 
-	err = repos.BeginTxFunc(ctx, s.st.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
+	// The order is placed before the DB transaction is opened: exchange calls can wait
+	// for rate limits and timeouts, and holding a pool connection meanwhile starves the
+	// whole service. The record is written in one transaction afterwards, as before:
+	// it is only kept when the exchange call result is stored too.
+	order, orderErr := exClient.CreateSpotOrder(ctx, "", "", pair.Type.String(), pair.Symbol, nil, rule)
+	if orderErr != nil {
+		if errors.Is(orderErr, exchangeclient.ErrSkipOrder) {
+			s.log.Debugw("skipping order due to custom error being thrown", "userID", userID, "symbol", pair.Symbol)
+			return exchangeclient.ErrSkipOrder
+		}
+		if errors.Is(orderErr, exchangeclient.ErrInsufficientBalance) {
+			return exchangeclient.ErrInsufficientBalance
+		}
+	}
+
+	return repos.BeginTxFunc(ctx, s.st.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
 		orderRecord, err := s.createExchangeOrder(ctx, pair.ExchangeID, pair.UserID, pair.Symbol, pair.Type, balance, exClient.GetConnectionHash(), repos.WithTx(tx))
 		if err != nil {
 			return err
 		}
 
-		order, err := exClient.CreateSpotOrder(ctx, "", "", pair.Type.String(), pair.Symbol, nil, rule)
 		updateParams := repo_exchange_orders.UpdateParams{
 			ID:                     orderRecord.ID,
 			ExchangeConnectionHash: pgtype.Text{Valid: true, String: exClient.GetConnectionHash()},
 		}
 
-		if err != nil {
-			if errors.Is(err, exchangeclient.ErrSkipOrder) {
-				s.log.Debugw("skipping order due to custom error being thrown", "userID", userID, "symbol", pair.Symbol)
-				return exchangeclient.ErrSkipOrder
-			}
-			if errors.Is(err, exchangeclient.ErrInsufficientBalance) {
-				return exchangeclient.ErrInsufficientBalance
-			}
+		if orderErr != nil {
 			updateParams.Status = pgtype.Text{Valid: true, String: models.ExchangeOrderStatusFailed.String()}
-			updateParams.FailReason = pgtype.Text{Valid: true, String: err.Error()}
-
+			updateParams.FailReason = pgtype.Text{Valid: true, String: orderErr.Error()}
 			return s.st.ExchangeOrders(repos.WithTx(tx)).Update(ctx, updateParams)
 		}
 
@@ -817,10 +839,6 @@ func (s *Service) SubmitExchangeOrder(ctx context.Context, userID uuid.UUID, pai
 		}
 		return s.st.ExchangeOrders(repos.WithTx(tx)).Update(ctx, updateParams)
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (s *Service) createExchangeOrder(ctx context.Context, exchangeID uuid.UUID, userID uuid.UUID, symbol string, side models.OrderSide, amount decimal.Decimal, connHash string, opts ...repos.Option) (*models.ExchangeOrder, error) {

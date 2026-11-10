@@ -57,12 +57,20 @@ func (s *service) WithdrawFromAddress(
 		return ErrWalletIsNotOwnedByUser
 	}
 
+	riskFlags, err := models.ParseAddressRiskFlags(targetWalletAddress.RiskFlags)
+	if err != nil {
+		return fmt.Errorf("parse risk flags for address %q: %w", targetWalletAddress.Address, err)
+	}
+	isFlagged := len(riskFlags) > 0
+
+	// Flagged wallets go only to "for flagged" addresses, clean wallets only to regular ones.
 	wallets, err := s.storage.WithdrawalWalletAddresses().GetWithdrawalAddressByCurrencyID(
 		ctx,
 		repo_withdrawal_wallet_addresses.GetWithdrawalAddressByCurrencyIDParams{
 			Blockchain: targetWalletAddress.Blockchain,
 			UserID:     user.ID,
 			CurrencyID: currencyID,
+			ForFlagged: isFlagged,
 		},
 	)
 	if err != nil || len(wallets) < 1 {
@@ -86,6 +94,7 @@ func (s *service) WithdrawFromAddress(
 		AmountUsd:     decRate.Mul(targetWalletAddress.Amount),
 		CurrencyID:    curr.ID,
 		Blockchain:    targetWalletAddress.Blockchain,
+		RoutedFlagged: isFlagged,
 	}
 
 	transfer, err := s.initializeTransfer(ctx, dto, user, nil)
@@ -321,12 +330,18 @@ func (s *service) CreateWithdrawalFromProcessing(ctx context.Context, dto Create
 		return nil, ErrProcessingWalletNotExists
 	}
 
+	decRate, err := s.currencyRate(ctx, usr.RateSource.String(), curr)
+	if err != nil {
+		return nil, err
+	}
+
 	wallet := targetWallets[0]
 	createParams := repo_withdrawal_from_processing_wallets.CreateParams{
 		CurrencyID:  curr.ID,
 		AddressFrom: wallet.Address,
 		AddressTo:   dto.AddressTo,
 		Amount:      dto.Amount,
+		AmountUsd:   decRate.Mul(dto.Amount),
 		RequestID:   dto.RequestID,
 	}
 	if len(stores) > 0 {
