@@ -1,7 +1,9 @@
 package exchange
 
 import (
+	"context"
 	"errors"
+	"net/url"
 	"syscall"
 
 	exchangeclient "github.com/dv-net/dv-merchant/pkg/exchange_client"
@@ -65,6 +67,11 @@ func shouldErrorSuspendTransfers(err error) bool {
 		if errors.Is(err, ignorableErr) {
 			return false
 		}
+	}
+
+	// HTTP transport errors: the exchange never answered (client timeout, lost http2 connection, DNS, TLS)
+	if _, ok := errors.AsType[*url.Error](err); ok || errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+		return false
 	}
 
 	return true

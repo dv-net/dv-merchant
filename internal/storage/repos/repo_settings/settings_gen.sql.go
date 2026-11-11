@@ -10,7 +10,6 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const create = `-- name: Create :one
@@ -51,19 +50,18 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (*models.Setting
 
 const update = `-- name: Update :one
 UPDATE settings
-	SET model_id=$1, model_type=$2, name=$3, value=$4, updated_at=$5, is_mutable=$6
-WHERE id=$7
+	SET model_id=$1, model_type=$2, name=$3, value=$4, updated_at=now(), is_mutable=$5
+WHERE id=$6
 	RETURNING id, model_id, model_type, name, value, created_at, updated_at, is_mutable
 `
 
 type UpdateParams struct {
-	ModelID   uuid.NullUUID    `db:"model_id" json:"model_id"`
-	ModelType *string          `db:"model_type" json:"model_type"`
-	Name      string           `db:"name" json:"name"`
-	Value     string           `db:"value" json:"value"`
-	UpdatedAt pgtype.Timestamp `db:"updated_at" json:"updated_at"`
-	IsMutable bool             `db:"is_mutable" json:"is_mutable"`
-	ID        uuid.UUID        `db:"id" json:"id"`
+	ModelID   uuid.NullUUID `db:"model_id" json:"model_id"`
+	ModelType *string       `db:"model_type" json:"model_type"`
+	Name      string        `db:"name" json:"name"`
+	Value     string        `db:"value" json:"value"`
+	IsMutable bool          `db:"is_mutable" json:"is_mutable"`
+	ID        uuid.UUID     `db:"id" json:"id"`
 }
 
 func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.Setting, error) {
@@ -72,7 +70,6 @@ func (q *Queries) Update(ctx context.Context, arg UpdateParams) (*models.Setting
 		arg.ModelType,
 		arg.Name,
 		arg.Value,
-		arg.UpdatedAt,
 		arg.IsMutable,
 		arg.ID,
 	)
