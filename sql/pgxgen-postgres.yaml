@@ -633,6 +633,8 @@ schemas:
               skip_columns:
                 - id
                 - created_at
+              column_values:
+                updated_at: now()
       store_api_keys:
         primary_column: id
         crud:

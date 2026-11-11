@@ -86,8 +86,12 @@ func TestKrakenFetcher(t *testing.T) {
 	require.Equal(t, "kraken", f.Source())
 
 	cf := exrate.NewCurrencyFilter(exrate.CurrencyList{
-		{Code: "BTC"}, {Code: "ETH"}, {Code: "DOGE"}, {Code: "TRX"},
-		{Code: "USDT", IsStable: true}, {Code: "USD", IsStable: true},
+		{Code: "BTC"},
+		{Code: "ETH"},
+		{Code: "DOGE"},
+		{Code: "TRX"},
+		{Code: "USDT", IsStable: true},
+		{Code: "USD", IsStable: true},
 	})
 
 	rates, err := collectRates(t, f, cf)
@@ -164,8 +168,13 @@ func TestKrakenFetcher_Live(t *testing.T) {
 
 	f := exrate.NewKrakenFetcher("https://api.kraken.com", nil, &http.Client{Timeout: 15 * time.Second}, newTestLogger())
 	cf := exrate.NewCurrencyFilter(exrate.CurrencyList{
-		{Code: "BTC"}, {Code: "ETH"}, {Code: "DOGE"}, {Code: "TRX"}, {Code: "LTC"},
-		{Code: "USDT", IsStable: true}, {Code: "USDC", IsStable: true},
+		{Code: "BTC"},
+		{Code: "ETH"},
+		{Code: "DOGE"},
+		{Code: "TRX"},
+		{Code: "LTC"},
+		{Code: "USDT", IsStable: true},
+		{Code: "USDC", IsStable: true},
 	})
 
 	rates, err := collectRates(t, f, cf)

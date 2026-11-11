@@ -1034,6 +1034,27 @@ func (s *Service) updateExchangeWithdrawal(
 	return s.st.ExchangeWithdrawalHistory(repos.WithTx(tx)).Update(ctx, fields)
 }
 
+// transientFailReasons mark withdrawal failures caused by network or exchange throttling, not by the order itself.
+// FailReason is stored as text, so matching is by substring.
+var transientFailReasons = []string{
+	"connection timed out",
+	"connection reset by peer",
+	"connection refused",
+	"broken pipe",
+	"rate limit",
+	"deadline exceeded", // http.Client timeout and context deadline
+	"i/o timeout",
+	"client connection lost", // http2
+	"TLS handshake timeout",
+	"no such host",
+}
+
+func isTransientFailReason(reason string) bool {
+	return slices.ContainsFunc(transientFailReasons, func(s string) bool {
+		return strings.Contains(reason, s)
+	})
+}
+
 func (s *Service) handleOrderStatusChanged(ctx context.Context, usr *models.User, updateFields repo_exchange_withdrawal_history.UpdateParams) error {
 	transferState, err := s.settingSvc.GetModelSetting(ctx, setting.TransfersStatus, usr)
 	if err != nil {
@@ -1054,11 +1075,7 @@ func (s *Service) handleOrderStatusChanged(ctx context.Context, usr *models.User
 	case models.WithdrawalHistoryStatusFailed.String():
 		if transferState.Value == setting.FlagValueEnabled {
 			if updateFields.FailReason.Valid {
-				if strings.Contains(updateFields.FailReason.String, "connection timed out") ||
-					strings.Contains(updateFields.FailReason.String, "connection reset by peer") ||
-					strings.Contains(updateFields.FailReason.String, "connection refused") ||
-					strings.Contains(updateFields.FailReason.String, "broken pipe") ||
-					strings.Contains(updateFields.FailReason.String, "rate limit") {
+				if isTransientFailReason(updateFields.FailReason.String) {
 					// If the transfer failed due to connection issues, we do not change the transfer status setting
 					return nil
 				}
