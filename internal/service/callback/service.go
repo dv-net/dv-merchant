@@ -9,7 +9,9 @@ import (
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/processing_request"
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/service/aml"
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
+	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/service/receipts"
 	"github.com/dv-net/dv-merchant/internal/service/store"
 	"github.com/dv-net/dv-merchant/internal/service/transactions"
@@ -56,7 +58,7 @@ func New(
 	currConvService currconv.ICurrencyConvertor,
 	receiptsService receipts.IReceiptService,
 ) ICallback {
-	return &Service{
+	srv := &Service{
 		log:                            logger,
 		eventListener:                  eventListener,
 		storage:                        storage,
@@ -66,15 +68,19 @@ func New(
 		currConvService:                currConvService,
 		receiptsService:                receiptsService,
 	}
+
+	eventListener.Register(aml.CheckCompletedEventType, srv.handleAMLCheckCompleted)
+
+	return srv
 }
 
 func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookDto) error {
-	// The receipt email must go out only after commit: the transaction can roll
-	// back or be retried on a serialization failure.
-	var receiptEvent *transactions.DepositReceiptSentEvent
+	// The receipt (or AML blocked) email must go out only after commit: the
+	// transaction can roll back or be retried on a serialization failure.
+	var emailEvent event.IEvent
 
 	err := repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{IsoLevel: pgx.Serializable}, func(tx pgx.Tx) error {
-		receiptEvent = nil
+		emailEvent = nil
 
 		amount, err := decimal.NewFromString(dto.Amount)
 		if err != nil {
@@ -133,18 +139,40 @@ func (s *Service) HandleDepositCallback(ctx context.Context, dto DepositWebhookD
 		if err != nil {
 			return err
 		}
-		if !dto.IsSystem && !isDirty {
-			receiptEvent = ev
+		if dto.IsSystem || isDirty {
+			return nil
 		}
+
+		// With AML enabled the deposit check runs in this transaction. A pending
+		// check holds the email back until it completes, see handleAMLCheckCompleted;
+		// a check finished right away may have blocked the deposit already.
+		amlPending, err := s.isAMLCheckPending(ctx, ev.Tx.ID, tx)
+		if err != nil {
+			return err
+		}
+		if amlPending {
+			return nil
+		}
+
+		blocked, err := s.getBlockedTransaction(ctx, ev.Tx.ID, tx)
+		if err != nil {
+			return err
+		}
+		if blocked != nil {
+			emailEvent = newDepositAMLBlockedEvent(ev.Tx, ev.Store.ID, ev.Currency, ev.WalletEmail, ev.WalletLocale, blocked)
+			return nil
+		}
+
+		emailEvent = *ev
 		return nil
 	})
 	if err != nil {
 		return err
 	}
 
-	if receiptEvent != nil {
+	if emailEvent != nil {
 		// Deposit is already committed, so a failed email must not fail the callback.
-		if fireErr := s.eventListener.Fire(*receiptEvent); fireErr != nil {
+		if fireErr := s.eventListener.Fire(emailEvent); fireErr != nil {
 			s.log.Errorw("eventListener fire error", "error", fireErr, "tx_hash", dto.Hash)
 		}
 	}
@@ -300,6 +328,116 @@ func (s *Service) convertFeeAndExchangeRate(
 	}
 
 	return usdFee, exchangeRate, nil
+}
+
+func (s *Service) isAMLCheckPending(ctx context.Context, txID uuid.UUID, dbTx pgx.Tx) (bool, error) {
+	check, err := s.storage.AmlChecks(repos.WithTx(dbTx)).GetByTransactionID(ctx, uuid.NullUUID{UUID: txID, Valid: true})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		return false, fmt.Errorf("fetch aml check: %w", err)
+	}
+
+	return check.Status == models.AmlCheckStatusPending, nil
+}
+
+// getBlockedTransaction returns the record of a deposit blocked by the AML rules, nil
+// when the deposit is not blocked.
+func (s *Service) getBlockedTransaction(ctx context.Context, txID uuid.UUID, dbTx pgx.Tx) (*models.BlockedTransaction, error) {
+	blocked, err := s.storage.BlockedTransactions(repos.WithTx(dbTx)).GetByTransactionID(ctx, txID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil //nolint:nilnil
+		}
+		return nil, fmt.Errorf("fetch blocked transaction: %w", err)
+	}
+
+	return blocked, nil
+}
+
+func newDepositAMLBlockedEvent(
+	trx models.Transaction,
+	storeID uuid.UUID,
+	curr models.Currency,
+	walletEmail, walletLocale string,
+	blocked *models.BlockedTransaction,
+) transactions.DepositAMLBlockedEvent {
+	return transactions.DepositAMLBlockedEvent{
+		Tx:           trx,
+		StoreID:      storeID,
+		Currency:     curr,
+		WalletEmail:  walletEmail,
+		WalletLocale: walletLocale,
+		Blocked:      *blocked,
+	}
+}
+
+// handleAMLCheckCompleted sends the email that was held back while the AML check was
+// pending: the receipt if the deposit passed, the AML blocked email if it was blocked.
+func (s *Service) handleAMLCheckCompleted(ev event.IEvent) error {
+	completedEv, ok := ev.(aml.CheckCompletedEvent)
+	if !ok || !completedEv.Check.TransactionID.Valid {
+		return nil
+	}
+
+	ctx := context.Background()
+
+	trx, err := s.storage.Transactions().GetById(ctx, completedEv.Check.TransactionID.UUID)
+	if err != nil {
+		return fmt.Errorf("fetch tx: %w", err)
+	}
+	if trx.IsSystem || trx.Type != models.TransactionsTypeDeposit || !trx.StoreID.Valid || !trx.WalletID.Valid {
+		return nil
+	}
+
+	storeData, err := s.storage.Stores().GetByID(ctx, trx.StoreID.UUID)
+	if err != nil {
+		return fmt.Errorf("fetch store: %w", err)
+	}
+
+	curr, err := s.storage.Currencies().GetByID(ctx, trx.CurrencyID)
+	if err != nil {
+		return fmt.Errorf("fetch currency: %w", err)
+	}
+
+	wallet, err := s.storage.Wallets().GetById(ctx, trx.WalletID.UUID)
+	if err != nil {
+		return fmt.Errorf("fetch wallet: %w", err)
+	}
+
+	// Use the rate fixed at deposit time rather than the current one.
+	exchangeRate := decimal.Zero
+	if !trx.Amount.IsZero() {
+		exchangeRate = trx.GetAmountUsd().Div(trx.Amount).Round(int32(curr.Precision))
+	}
+
+	if completedEv.Blocked {
+		blocked, err := s.getBlockedTransaction(ctx, trx.ID, nil)
+		if err != nil {
+			return err
+		}
+		if blocked == nil {
+			// The verdict blocked the deposit but was not recorded: no blocked
+			// transaction to refer to, and a receipt must not go out either.
+			s.log.Errorw("aml blocked deposit has no blocked transaction record", "tx_id", trx.ID)
+			return nil
+		}
+
+		return s.eventListener.Fire(newDepositAMLBlockedEvent(*trx, storeData.ID, *curr, resolveUserEmail(wallet), wallet.Locale, blocked))
+	}
+
+	return s.eventListener.Fire(transactions.DepositReceiptSentEvent{
+		Tx:              *trx,
+		Store:           *storeData,
+		Currency:        *curr,
+		StoreExternalID: wallet.StoreExternalID,
+		WalletEmail:     resolveUserEmail(wallet),
+		WalletLocale:    wallet.Locale,
+		ExchangeRate:    exchangeRate,
+		UsdFee:          trx.Fee.Mul(exchangeRate),
+		PaymentStatus:   notify.PaymentStatusCompleted,
+	})
 }
 
 func resolveUserEmail(wallet *models.Wallet) string {

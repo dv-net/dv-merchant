@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/dv-net/dv-merchant/internal/constants"
 	"github.com/dv-net/dv-merchant/internal/service/notify"
 	"github.com/dv-net/dv-merchant/internal/service/templater"
 )
@@ -398,6 +399,58 @@ func (svc *Service) handleUserCryptoReceipt(_ context.Context, email string, enc
 		NetworkFeeAmount:     pBody.NetworkFeeAmount,
 		NetworkFeeCurrency:   pBody.NetworkFeeCurrency,
 		NetworkFeeUSD:        pBody.NetworkFeeUSD,
+	}
+
+	body, err := svc.templateSvc.AssembleEmail(emailParams)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create email template: %w", err)
+	}
+
+	bodyBytes := body.Bytes()
+	err = svc.mailerClient.Send(svc.mailerSettings.MailerSender, []string{email}, bytes.NewBuffer(bodyBytes))
+	return bodyBytes, err
+}
+
+func (svc *Service) handleDepositAMLBlocked(_ context.Context, email string, encodedVariables []byte) ([]byte, error) {
+	pBody, err := notify.ParseNotificationBody[notify.DepositAMLBlockedNotificationData](encodedVariables)
+	if err != nil {
+		return nil, fmt.Errorf("parse deposit aml blocked payload: %w", err)
+	}
+
+	reasons := make([]templater.DepositAMLBlockReasonView, 0, len(pBody.BlockReasons))
+	for _, r := range pBody.BlockReasons {
+		view := templater.DepositAMLBlockReasonView{Value: r.Value}
+		switch r.RiskType {
+		case constants.AmlRiskTypeTotalScore:
+			view.IsTotalRiskScore = true
+		case constants.AmlRiskTypeSumOfSignals:
+			view.IsSumOfSignals = true
+		case constants.AmlRiskTypeRiskLevel:
+			view.IsRiskLevel = true
+		default:
+			view.IsSignal = true
+			view.SignalLabel = r.SignalLabel
+		}
+		reasons = append(reasons, view)
+	}
+
+	emailParams := &templater.DepositAMLBlockedPayload{
+		BasePayload: templater.BasePayload{
+			UserEmail: email,
+			Language:  pBody.Language,
+		},
+		PaymentDate:          pBody.PaymentDate,
+		TokenAmount:          pBody.TokenAmount,
+		TokenSymbol:          pBody.TokenSymbol,
+		UsdAmount:            pBody.UsdAmount,
+		BlockchainName:       pBody.BlockchainName,
+		BlockchainCurrencyID: pBody.BlockchainCurrencyID,
+		TransactionHash:      pBody.TransactionHash,
+		ToAddress:            pBody.ToAddress,
+		RiskLevel:            pBody.RiskLevel,
+		RiskScore:            pBody.RiskScore,
+		BlockReasons:         reasons,
+		BlockedTransactionID: pBody.BlockedTransactionID,
 	}
 
 	body, err := svc.templateSvc.AssembleEmail(emailParams)

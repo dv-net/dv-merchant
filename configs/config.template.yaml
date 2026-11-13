@@ -47,6 +47,7 @@ notify:
     token: ""
 web_hook:
   max_tries: 30
+  allow_private_networks: false
 e_proxy:
   grpc:
     name: connectrpc-client

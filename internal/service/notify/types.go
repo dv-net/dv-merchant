@@ -356,3 +356,35 @@ func (d *UserCryptoReceiptNotificationData) Encode() ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
+
+type DepositAMLBlockedNotificationData struct {
+	Email                string                  `json:"email"`
+	Language             string                  `json:"language"`
+	PaymentDate          string                  `json:"payment_date"`
+	TokenAmount          string                  `json:"token_amount"`
+	TokenSymbol          string                  `json:"token_symbol"`
+	UsdAmount            string                  `json:"usd_amount"`
+	BlockchainName       string                  `json:"blockchain_name"`
+	BlockchainCurrencyID string                  `json:"blockchain_currency_id"`
+	TransactionHash      string                  `json:"transaction_hash"`
+	ToAddress            string                  `json:"to_address"`
+	RiskLevel            string                  `json:"risk_level"`
+	RiskScore            string                  `json:"risk_score"`
+	BlockReasons         []DepositAMLBlockReason `json:"block_reasons"`
+	BlockedTransactionID string                  `json:"blocked_transaction_id"`
+}
+
+type DepositAMLBlockReason struct {
+	RiskType    string `json:"risk_type"`
+	SignalLabel string `json:"signal_label"`
+	Value       string `json:"value"`
+}
+
+func (d *DepositAMLBlockedNotificationData) Encode() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	if err := json.NewEncoder(buf).Encode(d); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}

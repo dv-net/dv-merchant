@@ -15,11 +15,13 @@ import (
 const (
 	ExternalWalletsListNotification = "external_wallet_email_notification"
 	UserCryptoReceiptNotification   = "user_crypto_receipt_email_notification"
+	DepositAMLBlockedNotification   = "deposit_aml_blocked_email_notification"
 )
 
 var validStoreModelSettings = map[string][]string{
 	ExternalWalletsListNotification: {FlagValueDisabled, FlagValueEnabled},
 	UserCryptoReceiptNotification:   {FlagValueDisabled, FlagValueEnabled},
+	DepositAMLBlockedNotification:   {FlagValueDisabled, FlagValueEnabled},
 }
 
 type IStoreSettings interface {

@@ -43,6 +43,8 @@ func (o NotificationType) Label() string {
 		return "User crypto receipt"
 	case NotificationTypeRefundVerificationCode:
 		return "Refund verification code"
+	case NotificationTypeDepositAMLBlocked:
+		return "Deposit AML blocked"
 	default:
 		return "Unknown Notification Type"
 	}
@@ -65,6 +67,7 @@ const (
 	NotificationTypeUserTestEmail                  NotificationType = "user_test_email"
 	NotificationTypeUserCryptoReceipt              NotificationType = "user_crypto_receipt"
 	NotificationTypeRefundVerificationCode         NotificationType = "refund_verification_code"
+	NotificationTypeDepositAMLBlocked              NotificationType = "deposit_aml_blocked"
 )
 
 var validNotificationTypes = map[NotificationType]struct{}{
@@ -84,4 +87,5 @@ var validNotificationTypes = map[NotificationType]struct{}{
 	NotificationTypeUserTestEmail:                  {},
 	NotificationTypeUserCryptoReceipt:              {},
 	NotificationTypeRefundVerificationCode:         {},
+	NotificationTypeDepositAMLBlocked:              {},
 }

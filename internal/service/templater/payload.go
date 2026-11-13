@@ -25,6 +25,7 @@ var validPartials = map[string]struct{}{
 	TwoFactorAuthenticationPartialName:        {},
 	UserCryptoReceiptPartialName:              {},
 	RefundVerificationCodePartialName:         {},
+	DepositAMLBlockedPartialName:              {},
 }
 
 const (
@@ -44,6 +45,7 @@ const (
 	TwoFactorAuthenticationPartialName        = "two_factor_authentication"
 	UserCryptoReceiptPartialName              = "user_crypto_receipt"
 	RefundVerificationCodePartialName         = "refund_verification_code"
+	DepositAMLBlockedPartialName              = "deposit_aml_blocked"
 )
 
 type IEmailPayload interface {
@@ -66,6 +68,7 @@ var (
 	_ IEmailPayload = (*UserChangeEmail)(nil)
 	_ IEmailPayload = (*UserCryptoReceiptPayload)(nil)
 	_ IEmailPayload = (*RefundVerificationCode)(nil)
+	_ IEmailPayload = (*DepositAMLBlockedPayload)(nil)
 )
 
 type BasePayload struct {
@@ -590,3 +593,113 @@ func (o *UserCryptoReceiptPayload) GetSubject() string   { return o.UserCryptoRe
 func (o *UserCryptoReceiptPayload) GetUserEmail() string { return o.UserEmail }
 func (o *UserCryptoReceiptPayload) GetLanguage() string  { return o.Language }
 func (o *UserCryptoReceiptPayload) GetName() string      { return UserCryptoReceiptPartialName }
+
+// DepositAMLBlockedI18N is the nested i18n structure of the AML blocked deposit email
+type DepositAMLBlockedI18N struct {
+	Email struct {
+		Title   string `json:"title"`
+		Subject string `json:"subject"`
+	} `json:"email"`
+	TitleLabel           string `json:"title_label"`
+	MessageText          string `json:"message_text"`
+	RefundText           string `json:"refund_text"`
+	AmountLabel          string `json:"amount_label"`
+	NetworkLabelPrefix   string `json:"network_label_prefix"`
+	NetworkLabelPostfix  string `json:"network_label_postfix"`
+	TransactionHashLabel string `json:"transaction_hash_label"`
+	ToAddressLabel       string `json:"to_address_label"`
+	PaymentDateLabel     string `json:"payment_date_label"`
+	BlockedIDLabel       string `json:"blocked_id_label"`
+	RiskLevelLabel       string `json:"risk_level_label"`
+	RiskScoreLabel       string `json:"risk_score_label"`
+	ReasonsTitle         string `json:"reasons_title"`
+	Reasons              struct {
+		TotalRiskScore string `json:"total_risk_score"`
+		SumOfSignals   string `json:"sum_of_signals"`
+		RiskLevel      string `json:"risk_level"`
+		Signal         string `json:"signal"`
+		UnknownSignal  string `json:"unknown_signal"`
+	} `json:"reasons"`
+	RiskLevels struct {
+		None      string `json:"none"`
+		Low       string `json:"low"`
+		Medium    string `json:"medium"`
+		High      string `json:"high"`
+		Critical  string `json:"critical"`
+		Undefined string `json:"undefined"`
+	} `json:"risk_levels"`
+}
+
+// DepositAMLBlockReasonView is a block reason prepared for the template: the Is* flags
+// select the localized label, the template never prints the raw risk type.
+type DepositAMLBlockReasonView struct {
+	IsTotalRiskScore bool   `json:"is_total_risk_score"`
+	IsSumOfSignals   bool   `json:"is_sum_of_signals"`
+	IsRiskLevel      bool   `json:"is_risk_level"`
+	IsSignal         bool   `json:"is_signal"`
+	SignalLabel      string `json:"signal_label"`
+	Value            string `json:"value"`
+}
+
+type DepositAMLBlockedPayload struct {
+	BasePayload
+
+	// i18n nested structure (populated from localization files)
+	DepositAMLBlocked DepositAMLBlockedI18N `json:"deposit_aml_blocked"`
+
+	// Runtime data fields
+	PaymentDate          string                      `json:"payment_date"`
+	TokenAmount          string                      `json:"token_amount"`
+	TokenSymbol          string                      `json:"token_symbol"`
+	UsdAmount            string                      `json:"usd_amount"`
+	BlockchainName       string                      `json:"blockchain_name"`
+	BlockchainCurrencyID string                      `json:"blockchain_currency_id"`
+	TransactionHash      string                      `json:"transaction_hash"`
+	ToAddress            string                      `json:"to_address"`
+	RiskLevel            string                      `json:"risk_level"`
+	RiskScore            string                      `json:"risk_score"`
+	BlockReasons         []DepositAMLBlockReasonView `json:"block_reasons"`
+	BlockedTransactionID string                      `json:"blocked_transaction_id"`
+}
+
+// RiskLevelText is the localized risk level of the check
+func (o DepositAMLBlockedPayload) RiskLevelText() string {
+	levels := o.DepositAMLBlocked.RiskLevels
+	switch o.RiskLevel {
+	case "none":
+		return levels.None
+	case "low":
+		return levels.Low
+	case "medium":
+		return levels.Medium
+	case "high":
+		return levels.High
+	case "critical":
+		return levels.Critical
+	default:
+		return levels.Undefined
+	}
+}
+
+// EmailTitle is the <title> of the email, see the head partial
+func (o DepositAMLBlockedPayload) EmailTitle() string {
+	return o.DepositAMLBlocked.Email.Title
+}
+
+// HasBlockReasons reports whether the reasons section is rendered
+func (o DepositAMLBlockedPayload) HasBlockReasons() bool {
+	return len(o.BlockReasons) > 0
+}
+
+func (o *DepositAMLBlockedPayload) GetPayload() []byte {
+	b := new(bytes.Buffer)
+	if err := json.NewEncoder(b).Encode(o); err != nil {
+		return b.Bytes()
+	}
+	return b.Bytes()
+}
+
+func (o *DepositAMLBlockedPayload) GetSubject() string   { return o.DepositAMLBlocked.Email.Subject }
+func (o *DepositAMLBlockedPayload) GetUserEmail() string { return o.UserEmail }
+func (o *DepositAMLBlockedPayload) GetLanguage() string  { return o.Language }
+func (o *DepositAMLBlockedPayload) GetName() string      { return DepositAMLBlockedPartialName }

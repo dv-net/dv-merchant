@@ -39,3 +39,8 @@ ORDER BY bt.created_at DESC;
 SELECT block_reasons
 FROM blocked_transactions
 WHERE transaction_id = $1;
+
+-- name: GetByTransactionID :one
+SELECT *
+FROM blocked_transactions
+WHERE transaction_id = $1;

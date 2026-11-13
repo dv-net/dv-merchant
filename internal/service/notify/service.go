@@ -384,6 +384,8 @@ func (svc *Service) isNotificationDisabledForStore(ctx context.Context, notifica
 		settingName = setting.ExternalWalletsListNotification
 	case models.NotificationTypeUserCryptoReceipt:
 		settingName = setting.UserCryptoReceiptNotification
+	case models.NotificationTypeDepositAMLBlocked:
+		settingName = setting.DepositAMLBlockedNotification
 	default:
 		return false
 	}

@@ -84,7 +84,8 @@ type (
 	}
 
 	WebHook struct {
-		MaxTries int `yaml:"max_tries" default:"30"`
+		MaxTries             int  `yaml:"max_tries" default:"30"`
+		AllowPrivateNetworks bool `yaml:"allow_private_networks" default:"false" usage:"allow webhooks to private/loopback/link-local IPs (no SSRF guard)" example:"true / false"`
 	}
 	Transfers struct {
 		GroupSize int `yaml:"group_size" default:"5"`

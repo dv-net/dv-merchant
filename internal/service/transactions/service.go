@@ -81,6 +81,7 @@ func New(
 	}
 
 	srv.eventListener.Register(DepositReceiptSentEventType, srv.handleDepositReceiptSent)
+	srv.eventListener.Register(DepositAMLBlockedEventType, srv.handleDepositAMLBlocked)
 
 	return srv
 }
