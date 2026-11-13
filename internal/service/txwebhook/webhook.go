@@ -577,7 +577,7 @@ func (s *Service) sendAMLBlockedWebhook(
 	amlCheck *models.AmlCheck,
 	dbTx pgx.Tx,
 ) error {
-	payload, err := s.prepareAMLBlockedHookPayload(tx, curr, storeExternalID, amlCheck)
+	payload, err := s.prepareAMLBlockedHookPayload(tx, curr, storeExternalID, amlCheck, s.getAMLBlockReasons(ctx, tx.GetID(), dbTx))
 	if err != nil {
 		return fmt.Errorf("prepare AML blocked hook payload: %w", err)
 	}
@@ -612,11 +612,28 @@ func (s *Service) sendAMLBlockedWebhook(
 	return nil
 }
 
+// getAMLBlockReasons returns the AML rules which blocked the transaction. They are recorded by
+// aml.ApplyVerdict, in dbTx when it is set. Empty when the reasons were not recorded.
+func (s *Service) getAMLBlockReasons(ctx context.Context, txID uuid.UUID, dbTx pgx.Tx) models.AmlBlockReasons {
+	reasons, err := s.storage.BlockedTransactions(repos.WithTx(dbTx)).GetBlockReasonsByTransactionID(ctx, txID)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			s.log.Errorw("get aml block reasons failed", "error", err, "tx_id", txID)
+		}
+		return models.AmlBlockReasons{}
+	}
+	if reasons == nil {
+		return models.AmlBlockReasons{}
+	}
+	return reasons
+}
+
 func (s *Service) prepareAMLBlockedHookPayload(
 	tx models.ITransaction,
 	curr models.Currency,
 	storeExternalID string,
 	amlCheck *models.AmlCheck,
+	blockReasons models.AmlBlockReasons,
 ) ([]byte, error) {
 	payload := map[string]any{
 		"type":         models.WebhookEventPaymentAMLBlocked,
@@ -640,12 +657,13 @@ func (s *Service) prepareAMLBlockedHookPayload(
 			"store_external_id": storeExternalID,
 		},
 		"aml_check": map[string]any{
-			"id":           amlCheck.ID.String(),
-			"score":        amlCheck.Score,
-			"status":       amlCheck.Status,
-			"risk_level":   amlCheck.RiskLevel,
-			fieldCreatedAt: amlCheck.CreatedAt,
-			"updated_at":   amlCheck.UpdatedAt,
+			"id":            amlCheck.ID.String(),
+			"score":         amlCheck.Score,
+			"status":        amlCheck.Status,
+			"risk_level":    amlCheck.RiskLevel,
+			fieldCreatedAt:  amlCheck.CreatedAt,
+			"updated_at":    amlCheck.UpdatedAt,
+			"block_reasons": blockReasons,
 		},
 	}
 
