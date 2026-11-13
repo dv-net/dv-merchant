@@ -20,6 +20,11 @@ func (s *Service) CreateStoreSettings(ctx context.Context, store *models.Store, 
 			Value: setting.FlagValueEnabled,
 			Model: store,
 		},
+		{
+			Name:  setting.DepositAMLBlockedNotification,
+			Value: setting.FlagValueEnabled,
+			Model: store,
+		},
 	}
 
 	for _, sDTO := range settings {

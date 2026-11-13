@@ -62,6 +62,12 @@ func New(c config.WebHook, s storage.IStorage, l logger.Logger) IWebHook {
 		transport = dt.Clone()
 	}
 	transport.MaxIdleConnsPerHost = 10
+	transport.DialContext = newWebhookDialer(c.AllowPrivateNetworks).DialContext
+	if !c.AllowPrivateNetworks {
+		// An env-configured proxy would make the dial check see only the proxy
+		// address while the proxy itself connects to the (possibly internal) target.
+		transport.Proxy = nil
+	}
 
 	srv := service{
 		storage:  s,

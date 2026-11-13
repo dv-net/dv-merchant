@@ -3,11 +3,13 @@ package transactions
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 
 	"github.com/dv-net/dv-merchant/internal/event"
 	"github.com/dv-net/dv-merchant/internal/models"
+	"github.com/dv-net/dv-merchant/internal/service/notify"
 )
 
 type TransactionEvent interface { //nolint:interfacebloat
@@ -28,6 +30,7 @@ const (
 	DepositReceivedEventType                  = "deposit_received"
 	DepositUnconfirmedEventType               = "deposit_unconfirmed"
 	DepositReceiptSentEventType               = "deposit_receipt_sent"
+	DepositAMLBlockedEventType                = "deposit_aml_blocked"
 	WithdrawalFromProcessingReceivedEventType = "withdrawal_from_processing_received"
 )
 
@@ -69,6 +72,7 @@ type DepositReceiptSentEvent struct {
 	WalletLocale    string
 	WalletEmail     string
 	UsdFee          decimal.Decimal
+	PaymentStatus   notify.PaymentStatus
 	DBTx            pgx.Tx
 }
 
@@ -292,5 +296,27 @@ func (e DepositReceiptSentEvent) String() string {
 	return fmt.Sprintf(
 		"DepositReceiptSent: receipt_id=%s, tx=%v, store=%d, user_email=%s, store_external_id=%s, webhook_event=%v",
 		e.ReceiptID, e.Tx, e.Store.ID, e.WalletEmail, e.StoreExternalID, e.WebhookEvent,
+	)
+}
+
+// DepositAMLBlockedEvent is fired after commit when a deposit is blocked by the AML rules,
+// instead of DepositReceiptSentEvent: the payer gets the AML blocked email, not a receipt.
+type DepositAMLBlockedEvent struct {
+	Tx           models.Transaction
+	StoreID      uuid.UUID
+	Currency     models.Currency
+	WalletEmail  string
+	WalletLocale string
+	Blocked      models.BlockedTransaction
+}
+
+func (e DepositAMLBlockedEvent) Type() event.Type {
+	return DepositAMLBlockedEventType
+}
+
+func (e DepositAMLBlockedEvent) String() string {
+	return fmt.Sprintf(
+		"DepositAMLBlocked: tx_id=%s, store=%s, blocked_transaction_id=%s",
+		e.Tx.ID, e.StoreID, e.Blocked.ID,
 	)
 }
