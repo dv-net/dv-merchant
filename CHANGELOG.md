@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: a manual multi-withdrawal rule is now disabled when its address is removed from the withdrawal wallet
 - fix: withdrawal rule `min_balance` / `min_balance_usd` must be greater than 0 at the service level too; a new withdrawal wallet no longer stores a zero native min balance
 - feat: email the payer when a deposit is blocked by AML rules (`deposit_aml_blocked` notification with risk level, score and block reasons) instead of a payment receipt; controlled by the store setting `deposit_aml_blocked_email_notification` (enabled by default, migration enables it for existing stores)
+- feat: `PaymentAMLBlocked` webhook includes the AML rules which blocked the deposit in `aml_check.block_reasons` (`risk_type`, `threshold`, `value`; empty when the reasons were not recorded)
 - feat: with a pending AML check the deposit receipt / AML blocked email is held back and sent once the check completes
 - fix: webhooks no longer go to private, loopback, link-local and other reserved IPs (SSRF guard, checked on every dial incl. redirects and DNS rebinding; env proxy is ignored); new config `web_hook.allow_private_networks` / `MERCHANT_WEB_HOOK_ALLOW_PRIVATE_NETWORKS` (default `false`) to turn it off
 - fix: store `return_url` / `success_url` and processing initialize `host` must be http(s) URLs
