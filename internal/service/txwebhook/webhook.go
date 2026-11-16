@@ -577,7 +577,7 @@ func (s *Service) sendAMLBlockedWebhook(
 	amlCheck *models.AmlCheck,
 	dbTx pgx.Tx,
 ) error {
-	payload, err := s.prepareAMLBlockedHookPayload(tx, curr, storeExternalID, amlCheck, s.getAMLBlockReasons(ctx, tx.GetID(), dbTx))
+	payload, err := s.prepareAMLBlockedHookPayload(tx, curr, storeExternalID, amlCheck, s.getAMLBlockedTransaction(ctx, tx.GetID(), dbTx))
 	if err != nil {
 		return fmt.Errorf("prepare AML blocked hook payload: %w", err)
 	}
@@ -612,20 +612,17 @@ func (s *Service) sendAMLBlockedWebhook(
 	return nil
 }
 
-// getAMLBlockReasons returns the AML rules which blocked the transaction. They are recorded by
-// aml.ApplyVerdict, in dbTx when it is set. Empty when the reasons were not recorded.
-func (s *Service) getAMLBlockReasons(ctx context.Context, txID uuid.UUID, dbTx pgx.Tx) models.AmlBlockReasons {
-	reasons, err := s.storage.BlockedTransactions(repos.WithTx(dbTx)).GetBlockReasonsByTransactionID(ctx, txID)
+// getAMLBlockedTransaction returns the record of the transaction blocked by the AML rules. It is recorded
+// by aml.ApplyVerdict, in dbTx when it is set. Nil when the record is not found.
+func (s *Service) getAMLBlockedTransaction(ctx context.Context, txID uuid.UUID, dbTx pgx.Tx) *models.BlockedTransaction {
+	blocked, err := s.storage.BlockedTransactions(repos.WithTx(dbTx)).GetByTransactionID(ctx, txID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
-			s.log.Errorw("get aml block reasons failed", "error", err, "tx_id", txID)
+			s.log.Errorw("get aml blocked transaction failed", "error", err, "tx_id", txID)
 		}
-		return models.AmlBlockReasons{}
+		return nil
 	}
-	if reasons == nil {
-		return models.AmlBlockReasons{}
-	}
-	return reasons
+	return blocked
 }
 
 func (s *Service) prepareAMLBlockedHookPayload(
@@ -633,14 +630,25 @@ func (s *Service) prepareAMLBlockedHookPayload(
 	curr models.Currency,
 	storeExternalID string,
 	amlCheck *models.AmlCheck,
-	blockReasons models.AmlBlockReasons,
+	blocked *models.BlockedTransaction,
 ) ([]byte, error) {
+	// blocked_transaction_id identifies the deposit in the refund external api, null when the block is not recorded
+	var blockedTransactionID *string
+	blockReasons := models.AmlBlockReasons{}
+	if blocked != nil {
+		blockedTransactionID = new(blocked.ID.String())
+		if blocked.BlockReasons != nil {
+			blockReasons = blocked.BlockReasons
+		}
+	}
+
 	payload := map[string]any{
-		"type":         models.WebhookEventPaymentAMLBlocked,
-		"status":       models.TransactionStatusCompleted,
-		fieldCreatedAt: tx.GetCreatedAt(),
-		"paid_at":      tx.GetNetworkCreatedAt(),
-		fieldAmount:    tx.GetAmountUsd().String(),
+		"type":                   models.WebhookEventPaymentAMLBlocked,
+		"status":                 models.TransactionStatusCompleted,
+		"blocked_transaction_id": blockedTransactionID,
+		fieldCreatedAt:           tx.GetCreatedAt(),
+		"paid_at":                tx.GetNetworkCreatedAt(),
+		fieldAmount:              tx.GetAmountUsd().String(),
 		"transactions": map[string]any{
 			"tx_id":        tx.GetID().String(),
 			"tx_hash":      tx.GetTxHash(),
