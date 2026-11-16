@@ -229,6 +229,7 @@ func (s *Service) buildEstimate(checked *claimCheck) (*EstimateDTO, error) {
 
 	res := &EstimateDTO{
 		BlockedTransactionID: checked.btx.ID,
+		FromAddress:          checked.tx.ToAddress,
 		DestinationAddress:   checked.destinationAddress,
 		Amount:               checked.tx.Amount,
 		CurrencyID:           checked.tx.CurrencyID,
