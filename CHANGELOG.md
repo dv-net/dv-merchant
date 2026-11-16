@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- feat: add `blocked_transaction_id` to the `PaymentAMLBlocked` webhook payload
+- feat: refunds of blocked transactions through the external api (`/v1/external/blocked-transactions/{id}/refund`, `estimate`, `send-code`, `/v1/external/refunds/{id}`); a refund to a new address is confirmed by a one-time code sent to the wallet email and approved by the store owner, refund auth methods `api` and `api_email`
 - feat: add proxy and network interface settings for exchange connections, network interfaces endpoint
 - feat: add endpoint to estimate refund for blocked transactions
 - feat: improve handling of confirmed deposits and event firing logic

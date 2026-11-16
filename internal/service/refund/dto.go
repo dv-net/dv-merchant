@@ -24,6 +24,15 @@ type ToSenderDTO struct {
 	DestinationAddress   string
 }
 
+// StoreRefundDTO is a refund requested by the store through the external api.
+// Code confirms a refund to an address which is not a deposit sender
+type StoreRefundDTO struct {
+	StoreID              uuid.UUID
+	BlockedTransactionID uuid.UUID
+	DestinationAddress   string
+	Code                 string
+}
+
 type EstimateRefundDTO struct {
 	WalletID             uuid.UUID
 	BlockedTransactionID uuid.UUID

@@ -22,7 +22,7 @@ type RefundRequestResponse struct {
 	DestinationAddress   string                 `json:"destination_address"`
 	Status               string                 `json:"status"`
 	Email                *string                `json:"email"`
-	AuthMethod           string                 `json:"auth_method" enums:"email,none"`
+	AuthMethod           string                 `json:"auth_method" enums:"email,none,api,api_email"`
 	ReviewedAt           *time.Time             `json:"reviewed_at" format:"date-time"`
 	CreatedAt            time.Time              `json:"created_at" format:"date-time"`
 	UpdatedAt            *time.Time             `json:"updated_at" format:"date-time"`

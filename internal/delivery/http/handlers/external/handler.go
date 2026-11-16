@@ -8,6 +8,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service"
 	"github.com/dv-net/dv-merchant/internal/tools/apierror"
 	"github.com/dv-net/dv-merchant/pkg/dbutils/pgerror"
+	"github.com/dv-net/dv-merchant/pkg/logger"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/gofiber/fiber/v3"
@@ -15,11 +16,13 @@ import (
 
 type Handler struct {
 	services *service.Services
+	logger   logger.Logger
 }
 
-func NewHandler(services *service.Services) *Handler {
+func NewHandler(services *service.Services, logger logger.Logger) *Handler {
 	return &Handler{
 		services: services,
+		logger:   logger,
 	}
 }
 
@@ -37,6 +40,7 @@ func (h *Handler) Init(api *fiber.App) {
 	h.initExchangeBalances(secured)
 	h.initProcessingWalletBalances(secured)
 	h.initTransactionsRouter(secured)
+	h.initRefundRoutes(secured)
 }
 
 func loadAuthStore(c fiber.Ctx) (*models.Store, error) {

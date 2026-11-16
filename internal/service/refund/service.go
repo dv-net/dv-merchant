@@ -41,6 +41,10 @@ type IRefundService interface { //nolint:interfacebloat
 	ApproveRefund(ctx context.Context, dto ApproveRefundDTO) (*RequestWithTxDTO, error)
 	CancelRefund(ctx context.Context, dto CancelRefundDTO) (*RequestWithTxDTO, error)
 	ExecuteRefundNow(ctx context.Context, dto ExecuteRefundNowDTO) (*RequestWithTxDTO, error)
+	EstimateRefundByStore(ctx context.Context, dto StoreRefundDTO) (*EstimateDTO, error)
+	SendRefundCodeByStore(ctx context.Context, dto StoreRefundDTO) error
+	CreateRefundByStore(ctx context.Context, dto StoreRefundDTO) (*RequestWithTxDTO, error)
+	GetRefundByStore(ctx context.Context, storeID, refundRequestID uuid.UUID) (*RequestWithTxDTO, error)
 }
 
 var (
@@ -59,6 +63,13 @@ var (
 	ErrRefundInvalidAddress    = errors.New("invalid destination address for the blockchain")
 	ErrRefundAuthRequired      = errors.New("email verification is required to request a refund")
 	ErrRefundNotSender         = errors.New("the address is not a sender of the deposit, request a refund to it with the email verification")
+	ErrRefundNotFound          = errors.New("refund request not found")
+	ErrRefundCodeRequired      = errors.New("the address is not a sender of the deposit, a confirmation code sent to the wallet email is required")
+	ErrRefundCodeNotRequired   = errors.New("the address is a sender of the deposit, a confirmation code is not required")
+	ErrRefundCodeInvalid       = errors.New("invalid or expired confirmation code")
+	ErrRefundCodeCooldown      = errors.New("a confirmation code was sent recently, try again later")
+	ErrRefundCodeAttempts      = errors.New("too many confirmation code attempts, try again later")
+	ErrRefundNoEmail           = errors.New("the wallet has no email to send a confirmation code to")
 )
 
 // refundExecutor sends refunds to processing
@@ -66,6 +77,13 @@ type refundExecutor interface {
 	CheckRefund(ctx context.Context, ref *models.RefundRequest) (*processing.CheckRefundResult, error)
 	CreateRefundTransfer(ctx context.Context, ref *models.RefundRequest, opts ...repos.Option) (*models.Transfer, error)
 	SendRefund(ctx context.Context, ref *models.RefundRequest, transferID uuid.UUID, totp *string) (*processing.FundsWithdrawalResult, error)
+}
+
+// refundCodeConfirmer sends and checks the one-time codes sent to the wallet email which confirm
+// refunds to a new address requested by the store through the external api
+type refundCodeConfirmer interface {
+	SendRefundConfirmationCode(ctx context.Context, walletID, blockedTransactionID uuid.UUID, destinationAddress string) error
+	VerifyRefundConfirmationCode(ctx context.Context, walletID, blockedTransactionID uuid.UUID, destinationAddress, code string) (string, error)
 }
 
 // userSettings reads the store owner settings
@@ -79,6 +97,7 @@ type Service struct {
 	executor   refundExecutor
 	processing processing.IProcessingTransfer
 	settings   userSettings
+	codes      refundCodeConfirmer
 }
 
 func NewService(
@@ -87,6 +106,7 @@ func NewService(
 	executor refundExecutor,
 	processingTransfer processing.IProcessingTransfer,
 	settings userSettings,
+	codes refundCodeConfirmer,
 ) *Service {
 	return &Service{
 		logger:     log,
@@ -94,6 +114,7 @@ func NewService(
 		executor:   executor,
 		processing: processingTransfer,
 		settings:   settings,
+		codes:      codes,
 	}
 }
 

@@ -42,6 +42,8 @@ type IAuth interface {
 	GetWalletByToken(ctx context.Context, hashedToken string) (*models.Wallet, error)
 	SendWalletVerificationCode(ctx context.Context, walletID, storeID uuid.UUID, email string) error
 	VerifyWalletCode(ctx context.Context, walletID, storeID uuid.UUID, email, code string) (*Token, error)
+	SendRefundConfirmationCode(ctx context.Context, walletID, blockedTransactionID uuid.UUID, destinationAddress string) error
+	VerifyRefundConfirmationCode(ctx context.Context, walletID, blockedTransactionID uuid.UUID, destinationAddress, code string) (string, error)
 }
 
 type Service struct {
