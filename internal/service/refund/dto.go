@@ -41,18 +41,20 @@ type EstimateRefundDTO struct {
 
 type EstimateDTO struct {
 	BlockedTransactionID uuid.UUID
-	DestinationAddress   string
-	Amount               decimal.Decimal
-	CurrencyID           string
-	EstimatedFee         decimal.NullDecimal
-	FeeCurrencyID        string
-	FeeFromAmount        bool
-	AmountToReceive      decimal.NullDecimal
-	FeeCovered           bool
-	FeeBalance           decimal.NullDecimal
-	FeeShortage          decimal.NullDecimal
-	ActivationRequired   bool
-	RequiresReview       bool
+	// FromAddress is the deposit address the refund is sent from, it pays the network fee
+	FromAddress        string
+	DestinationAddress string
+	Amount             decimal.Decimal
+	CurrencyID         string
+	EstimatedFee       decimal.NullDecimal
+	FeeCurrencyID      string
+	FeeFromAmount      bool
+	AmountToReceive    decimal.NullDecimal
+	FeeCovered         bool
+	FeeBalance         decimal.NullDecimal
+	FeeShortage        decimal.NullDecimal
+	ActivationRequired bool
+	RequiresReview     bool
 }
 
 type claimCheck struct {
