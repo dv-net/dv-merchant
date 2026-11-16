@@ -67,7 +67,7 @@ func (r *Router) Init(app *fiber.App) {
 
 func (r *Router) initAPI(app *fiber.App) {
 	handlerV1 := handlers.NewHandler(r.services, r.logger)
-	externalV1 := external.NewHandler(r.services)
+	externalV1 := external.NewHandler(r.services, r.logger)
 	publicV1 := public.NewHandler(r.services, r.logger)
 
 	externalV1.Init(app)

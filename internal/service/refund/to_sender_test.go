@@ -172,7 +172,7 @@ func newToSenderFixture(mode *string, processingToSender bool) *toSenderFixture 
 		transactions: &fakeTransactions{tx: tx},
 		refunds:      f.refunds,
 	}
-	f.svc = NewService(logger.New("test", mxlogger.Config{Level: "fatal"}), st, f.executor, nil, f.settings)
+	f.svc = NewService(logger.New("test", mxlogger.Config{Level: "fatal"}), st, f.executor, nil, f.settings, nil)
 
 	return f
 }

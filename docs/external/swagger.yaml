@@ -16,6 +16,21 @@ definitions:
           $ref: '#/definitions/APIError'
         type: array
     type: object
+  AmlBlockReason:
+    properties:
+      risk_type:
+        description: 'RiskType is the rule''s risk_type: a signal category, TOTAL_RISK_SCORE,
+          SUM_OF_SIGNALS or RISK_LEVEL'
+        type: string
+      threshold:
+        description: Threshold is the rule's threshold, for RISK_LEVEL it is the level
+          rank (none=0 ... critical=4)
+        type: number
+      value:
+        description: Value is the checked value which reached the threshold, for RISK_LEVEL
+          it is the level rank
+        type: number
+    type: object
   Asset:
     properties:
       amount:
@@ -259,6 +274,63 @@ definitions:
       total_usd:
         type: number
     type: object
+  ExternalRefundCreateRequest:
+    properties:
+      code:
+        description: Code is the one-time code sent to the wallet email, required
+          when the address is not a deposit sender
+        type: string
+      destination_address:
+        type: string
+    required:
+    - destination_address
+    type: object
+  ExternalRefundEstimateRequest:
+    properties:
+      destination_address:
+        type: string
+    required:
+    - destination_address
+    type: object
+  ExternalRefundEstimateResponse:
+    properties:
+      activation_required:
+        type: boolean
+      amount:
+        type: number
+      amount_to_receive:
+        type: string
+      blocked_transaction_id:
+        format: uuid
+        type: string
+      code_required:
+        type: boolean
+      currency_id:
+        type: string
+      destination_address:
+        type: string
+      estimated_fee:
+        type: string
+      fee_balance:
+        type: string
+      fee_covered:
+        type: boolean
+      fee_currency_id:
+        type: string
+      fee_from_amount:
+        type: boolean
+      fee_shortage:
+        type: string
+      requires_review:
+        type: boolean
+    type: object
+  ExternalRefundSendCodeRequest:
+    properties:
+      destination_address:
+        type: string
+    required:
+    - destination_address
+    type: object
   GetCurrencyResponse:
     properties:
       blockchain:
@@ -328,12 +400,30 @@ definitions:
       message:
         type: string
     type: object
+  JSONResponse-ExternalRefundEstimateResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/ExternalRefundEstimateResponse'
+      message:
+        type: string
+    type: object
   JSONResponse-ProcessingWithdrawalResponse:
     properties:
       code:
         type: integer
       data:
         $ref: '#/definitions/ProcessingWithdrawalResponse'
+      message:
+        type: string
+    type: object
+  JSONResponse-RefundRequestResponse:
+    properties:
+      code:
+        type: integer
+      data:
+        $ref: '#/definitions/RefundRequestResponse'
       message:
         type: string
     type: object
@@ -443,6 +533,78 @@ definitions:
       transfer_id:
         type: string
     type: object
+  RefundRequestResponse:
+    properties:
+      amount:
+        type: number
+      amount_usd:
+        type: number
+      auth_method:
+        enum:
+        - email
+        - none
+        - api
+        - api_email
+        type: string
+      block_reasons:
+        items:
+          $ref: '#/definitions/AmlBlockReason'
+        type: array
+      blockchain:
+        type: string
+      blocked_transaction_id:
+        format: uuid
+        type: string
+      created_at:
+        format: date-time
+        type: string
+      currency_code:
+        type: string
+      currency_id:
+        type: string
+      destination_address:
+        type: string
+      email:
+        type: string
+      execute_after:
+        format: date-time
+        type: string
+      from_address:
+        type: string
+      id:
+        format: uuid
+        type: string
+      last_error:
+        type: string
+      reviewed_at:
+        format: date-time
+        type: string
+      risk_level:
+        type: string
+      score:
+        type: number
+      status:
+        type: string
+      store_id:
+        format: uuid
+        type: string
+      to_address:
+        type: string
+      transaction_id:
+        format: uuid
+        type: string
+      transfer_id:
+        format: uuid
+        type: string
+      tx_hash:
+        type: string
+      updated_at:
+        format: date-time
+        type: string
+      wallet_id:
+        format: uuid
+        type: string
+    type: object
   ShortTransferDto:
     properties:
       kind:
@@ -486,10 +648,12 @@ definitions:
     enum:
     - from_address
     - from_processing
+    - refund
     type: string
     x-enum-varnames:
     - TransferKindFromAddress
     - TransferKindFromProcessing
+    - TransferKindRefund
   TransferStage:
     enum:
     - in_progress
@@ -510,6 +674,7 @@ definitions:
     - completed
     - failed
     - frozen
+    - canceled
     type: string
     x-enum-varnames:
     - TransferStatusNew
@@ -520,6 +685,7 @@ definitions:
     - TransferStatusCompleted
     - TransferStatusFailed
     - TransferStatusFrozen
+    - TransferStatusCanceled
   TronData:
     properties:
       available_bandwidth_for_use:
@@ -663,6 +829,188 @@ info:
   title: DV Merchant
   version: "1.0"
 paths:
+  /v1/external/blocked-transactions/{id}/refund:
+    post:
+      consumes:
+      - application/json
+      description: Creates a refund request of a blocked transaction of the store.
+        A refund to a sender of the deposit is scheduled without a code and sent after
+        the cooldown (status scheduled). A refund to another address requires the
+        code sent to the wallet email (send-code) and is sent after the store owner
+        approves it (status pending_review)
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      - description: Blocked transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Destination address and confirmation code
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ExternalRefundCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Create a refund of a blocked transaction
+      tags:
+      - Refund
+  /v1/external/blocked-transactions/{id}/refund/estimate:
+    post:
+      consumes:
+      - application/json
+      description: 'Returns the estimated network fee and the amount to receive for
+        a refund of a blocked transaction of the store. code_required is true when
+        the address is not a sender of the deposit: send a confirmation code to the
+        wallet email (send-code) and pass it on the refund creation. The fee is an
+        estimate and may change by the time of sending'
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      - description: Blocked transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Destination address
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ExternalRefundEstimateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-ExternalRefundEstimateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Estimate a refund of a blocked transaction
+      tags:
+      - Refund
+  /v1/external/blocked-transactions/{id}/refund/send-code:
+    post:
+      consumes:
+      - application/json
+      description: Sends a one-time code to the wallet email. The code confirms a
+        refund of the blocked transaction to the destination address which is not
+        a sender of the deposit, pass it on the refund creation. The code can be sent
+        again once a minute
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      - description: Blocked transaction ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Destination address
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/ExternalRefundSendCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Send a refund confirmation code
+      tags:
+      - Refund
   /v1/external/exchange-balances:
     get:
       consumes:
@@ -747,6 +1095,43 @@ paths:
       summary: Get external processing wallet balances
       tags:
       - Withdrawal
+  /v1/external/refunds/{id}:
+    get:
+      description: Returns a refund request of the store with its status
+      parameters:
+      - description: Store API key
+        in: query
+        name: api_key
+        type: string
+      - description: Refund request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-RefundRequestResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - XApiKey: []
+      summary: Get a refund request
+      tags:
+      - Refund
   /v1/external/store/currencies:
     get:
       consumes:

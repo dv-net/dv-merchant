@@ -41,3 +41,18 @@ func NewRefundEstimateResponse(e *refund.EstimateDTO) *RefundEstimateResponse {
 		RequiresReview:       e.RequiresReview,
 	}
 }
+
+// ExternalRefundEstimateResponse is the expected result of a refund requested through the external api.
+// CodeRequired reports that the address is not a deposit sender: a confirmation code must be sent
+// to the wallet email (send-code) and passed on the refund creation
+type ExternalRefundEstimateResponse struct {
+	*RefundEstimateResponse
+	CodeRequired bool `json:"code_required"`
+} //	@name	ExternalRefundEstimateResponse
+
+func NewExternalRefundEstimateResponse(e *refund.EstimateDTO) *ExternalRefundEstimateResponse {
+	return &ExternalRefundEstimateResponse{
+		RefundEstimateResponse: NewRefundEstimateResponse(e),
+		CodeRequired:           e.RequiresReview,
+	}
+}
