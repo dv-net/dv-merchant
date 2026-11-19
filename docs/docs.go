@@ -13620,6 +13620,9 @@ const docTemplate = `{
                 "fee_shortage": {
                     "type": "string"
                 },
+                "from_address": {
+                    "type": "string"
+                },
                 "requires_review": {
                     "type": "boolean"
                 }

@@ -211,5 +211,9 @@ func (s *Service) RemoveSetting(ctx context.Context, user *models.User, name str
 	}
 
 	s.cache.Settings().RemoveRootSetting(ctx, setting.Name)
-	return s.storage.Settings().DeleteRootByName(ctx, setting.Name)
+	return s.storage.Settings().DeleteByNameAndModel(ctx, repo_settings.DeleteByNameAndModelParams{
+		Name:      setting.Name,
+		ModelID:   user.ModelID(),
+		ModelType: user.ModelName(),
+	})
 }

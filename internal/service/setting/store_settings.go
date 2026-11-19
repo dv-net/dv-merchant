@@ -142,9 +142,10 @@ func (s *Service) RemoveStoreModelSetting(ctx context.Context, store *models.Sto
 		return errors.New("store setting is immutable")
 	}
 
-	return s.storage.Settings().DeleteByNameAndModelID(ctx, repo_settings.DeleteByNameAndModelIDParams{
-		Name:    setting.Name,
-		ModelID: setting.ModelID,
+	return s.storage.Settings().DeleteByNameAndModel(ctx, repo_settings.DeleteByNameAndModelParams{
+		Name:      setting.Name,
+		ModelID:   store.ModelID(),
+		ModelType: store.ModelName(),
 	})
 }
 
