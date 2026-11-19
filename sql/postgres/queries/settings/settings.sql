@@ -40,7 +40,7 @@ ON CONFLICT (name, model_id, model_type) DO UPDATE
         updated_at = now();
 
 -- name: DeleteRootByName :exec
-DELETE FROM settings WHERE name=$1;
+DELETE FROM settings WHERE name=$1 AND model_id IS NULL AND model_type IS NULL;
 
--- name: DeleteByNameAndModelID :exec
-DELETE FROM settings WHERE name=$1 AND model_id=$2;
+-- name: DeleteByNameAndModel :exec
+DELETE FROM settings WHERE name=$1 AND model_id=$2 AND model_type=$3;

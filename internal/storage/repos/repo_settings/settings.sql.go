@@ -12,22 +12,23 @@ import (
 	"github.com/google/uuid"
 )
 
-const deleteByNameAndModelID = `-- name: DeleteByNameAndModelID :exec
-DELETE FROM settings WHERE name=$1 AND model_id=$2
+const deleteByNameAndModel = `-- name: DeleteByNameAndModel :exec
+DELETE FROM settings WHERE name=$1 AND model_id=$2 AND model_type=$3
 `
 
-type DeleteByNameAndModelIDParams struct {
-	Name    string        `db:"name" json:"name"`
-	ModelID uuid.NullUUID `db:"model_id" json:"model_id"`
+type DeleteByNameAndModelParams struct {
+	Name      string        `db:"name" json:"name"`
+	ModelID   uuid.NullUUID `db:"model_id" json:"model_id"`
+	ModelType *string       `db:"model_type" json:"model_type"`
 }
 
-func (q *Queries) DeleteByNameAndModelID(ctx context.Context, arg DeleteByNameAndModelIDParams) error {
-	_, err := q.db.Exec(ctx, deleteByNameAndModelID, arg.Name, arg.ModelID)
+func (q *Queries) DeleteByNameAndModel(ctx context.Context, arg DeleteByNameAndModelParams) error {
+	_, err := q.db.Exec(ctx, deleteByNameAndModel, arg.Name, arg.ModelID, arg.ModelType)
 	return err
 }
 
 const deleteRootByName = `-- name: DeleteRootByName :exec
-DELETE FROM settings WHERE name=$1
+DELETE FROM settings WHERE name=$1 AND model_id IS NULL AND model_type IS NULL
 `
 
 func (q *Queries) DeleteRootByName(ctx context.Context, name string) error {

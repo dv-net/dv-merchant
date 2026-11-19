@@ -12,7 +12,7 @@ import (
 
 type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (*models.Setting, error)
-	DeleteByNameAndModelID(ctx context.Context, arg DeleteByNameAndModelIDParams) error
+	DeleteByNameAndModel(ctx context.Context, arg DeleteByNameAndModelParams) error
 	DeleteRootByName(ctx context.Context, name string) error
 	GetAllByModel(ctx context.Context, arg GetAllByModelParams) ([]*models.Setting, error)
 	GetAllRootSettings(ctx context.Context) ([]*models.Setting, error)
