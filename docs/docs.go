@@ -12152,6 +12152,9 @@ const docTemplate = `{
                 "enabled": {
                     "type": "boolean"
                 },
+                "min_check_amount_usd": {
+                    "type": "number"
+                },
                 "provider_slug": {
                     "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLSlug"
                 }
@@ -18991,6 +18994,10 @@ const docTemplate = `{
             "properties": {
                 "enabled": {
                     "type": "boolean"
+                },
+                "min_check_amount_usd": {
+                    "description": "MinCheckAmountUsd - deposits below this USD amount are not checked; omit to keep the current value",
+                    "type": "number"
                 },
                 "provider_slug": {
                     "type": "string"

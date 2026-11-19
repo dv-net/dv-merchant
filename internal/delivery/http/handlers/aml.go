@@ -351,8 +351,9 @@ func (h *Handler) updateAmlSettings(c fiber.Ctx) error {
 	}
 
 	settings, err := h.services.AMLUserSettings.UpdateAmlSettings(c.Context(), usr.ID, aml.UpdateAmlSettingsDTO{
-		Enabled:      req.Enabled,
-		ProviderSlug: &slug,
+		Enabled:           req.Enabled,
+		ProviderSlug:      &slug,
+		MinCheckAmountUsd: req.MinCheckAmountUsd,
 	})
 	if err != nil {
 		return h.handleError(err, "aml settings")

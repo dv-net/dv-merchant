@@ -10,10 +10,11 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 const getByUserID = `-- name: GetByUserID :one
-SELECT id, enabled, provider_slug, created_at, updated_at, user_id
+SELECT id, enabled, provider_slug, created_at, updated_at, user_id, min_check_amount_usd
 FROM user_aml_settings
 WHERE user_id = $1 limit 1
 `
@@ -28,28 +29,37 @@ func (q *Queries) GetByUserID(ctx context.Context, userID uuid.UUID) (*models.Us
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.UserID,
+		&i.MinCheckAmountUsd,
 	)
 	return &i, err
 }
 
 const upsertAmlSetting = `-- name: UpsertAmlSetting :one
-INSERT INTO user_aml_settings (user_id, enabled, provider_slug, created_at, updated_at)
-VALUES ($1, $2, $3, now(), now()) ON CONFLICT (user_id) DO
+INSERT INTO user_aml_settings (user_id, enabled, provider_slug, min_check_amount_usd, created_at, updated_at)
+VALUES ($1, $2, $3,
+        COALESCE($4::numeric, 0), now(), now()) ON CONFLICT (user_id) DO
 UPDATE
     SET enabled = EXCLUDED.enabled,
     provider_slug = EXCLUDED.provider_slug,
+    min_check_amount_usd = COALESCE($4::numeric, user_aml_settings.min_check_amount_usd),
     updated_at = now()
-    RETURNING id, enabled, provider_slug, created_at, updated_at, user_id
+    RETURNING id, enabled, provider_slug, created_at, updated_at, user_id, min_check_amount_usd
 `
 
 type UpsertAmlSettingParams struct {
-	UserID       uuid.UUID       `db:"user_id" json:"user_id"`
-	Enabled      bool            `db:"enabled" json:"enabled"`
-	ProviderSlug *models.AMLSlug `db:"provider_slug" json:"provider_slug"`
+	UserID            uuid.UUID           `db:"user_id" json:"user_id"`
+	Enabled           bool                `db:"enabled" json:"enabled"`
+	ProviderSlug      *models.AMLSlug     `db:"provider_slug" json:"provider_slug"`
+	MinCheckAmountUsd decimal.NullDecimal `db:"min_check_amount_usd" json:"min_check_amount_usd"`
 }
 
 func (q *Queries) UpsertAmlSetting(ctx context.Context, arg UpsertAmlSettingParams) (*models.UserAmlSetting, error) {
-	row := q.db.QueryRow(ctx, upsertAmlSetting, arg.UserID, arg.Enabled, arg.ProviderSlug)
+	row := q.db.QueryRow(ctx, upsertAmlSetting,
+		arg.UserID,
+		arg.Enabled,
+		arg.ProviderSlug,
+		arg.MinCheckAmountUsd,
+	)
 	var i models.UserAmlSetting
 	err := row.Scan(
 		&i.ID,
@@ -58,6 +68,7 @@ func (q *Queries) UpsertAmlSetting(ctx context.Context, arg UpsertAmlSettingPara
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.UserID,
+		&i.MinCheckAmountUsd,
 	)
 	return &i, err
 }

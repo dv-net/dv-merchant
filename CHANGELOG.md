@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- feat: minimum deposit amount for the AML check: user AML setting `min_check_amount_usd` (`GET`/`POST /v1/dv-admin/aml/settings`); deposits with a smaller USD amount are not sent to the AML provider, a deposit exactly at the threshold is checked; `0` (default) checks every deposit, omitting the field in `POST` keeps the current value
+- fix: removing a user setting deleted the root setting and the same setting of every user and store; deletion now matches name, model id and model type, and root settings are removed only for the root
+- docs: add `from_address` to `ExternalRefundEstimateResponse` in the admin and external API docs
 - feat: add `blocked_transaction_id` to the `PaymentAMLBlocked` webhook payload
 - feat: refunds of blocked transactions through the external api (`/v1/external/blocked-transactions/{id}/refund`, `estimate`, `send-code`, `/v1/external/refunds/{id}`); a refund to a new address is confirmed by a one-time code sent to the wallet email and approved by the store owner, refund auth methods `api` and `api_email`
 - feat: add proxy and network interface settings for exchange connections, network interfaces endpoint
