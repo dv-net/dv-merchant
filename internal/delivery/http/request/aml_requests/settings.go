@@ -5,8 +5,9 @@ import (
 )
 
 type UpdateAmlSettingsRequest struct {
-	Enabled      bool   `json:"enabled"`
-	ProviderSlug string `json:"provider_slug"`
+	Enabled           bool             `json:"enabled"`
+	ProviderSlug      string           `json:"provider_slug"`
+	MinCheckAmountUsd *decimal.Decimal `json:"min_check_amount_usd,omitempty" validate:"omitempty,decimal_gte=0"`
 }
 
 type RiskRuleRequest struct {

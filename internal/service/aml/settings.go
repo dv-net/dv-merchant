@@ -7,6 +7,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_aml_settings"
 	"github.com/dv-net/dv-merchant/pkg/dbutils/pgerror"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 type IUserAmlSettings interface {
@@ -27,11 +28,16 @@ func (s *Service) GetAmlSettings(ctx context.Context, userID uuid.UUID) (*models
 }
 
 func (s *Service) UpdateAmlSettings(ctx context.Context, userID uuid.UUID, dto UpdateAmlSettingsDTO) (*models.UserAmlSetting, error) {
-	settings, err := s.st.UserAmlSettings().UpsertAmlSetting(ctx, repo_user_aml_settings.UpsertAmlSettingParams{
+	params := repo_user_aml_settings.UpsertAmlSettingParams{
 		UserID:       userID,
 		Enabled:      dto.Enabled,
 		ProviderSlug: dto.ProviderSlug,
-	})
+	}
+	if dto.MinCheckAmountUsd != nil {
+		params.MinCheckAmountUsd = decimal.NullDecimal{Decimal: *dto.MinCheckAmountUsd, Valid: true}
+	}
+
+	settings, err := s.st.UserAmlSettings().UpsertAmlSetting(ctx, params)
 	if err != nil {
 		s.log.Errorw("could not update settings", "error", err, "user_id", userID, "enabled", dto.Enabled, "provider_slug", dto.ProviderSlug)
 		return nil, pgerror.ParseError(err)

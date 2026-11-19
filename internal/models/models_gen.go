@@ -535,12 +535,13 @@ type UserAmlRiskRule struct {
 } //	@name	UserAmlRiskRule
 
 type UserAmlSetting struct {
-	ID           uuid.UUID          `db:"id" json:"id"`
-	Enabled      bool               `db:"enabled" json:"enabled"`
-	ProviderSlug *AMLSlug           `db:"provider_slug" json:"provider_slug"`
-	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	UserID       uuid.UUID          `db:"user_id" json:"user_id"`
+	ID                uuid.UUID          `db:"id" json:"id"`
+	Enabled           bool               `db:"enabled" json:"enabled"`
+	ProviderSlug      *AMLSlug           `db:"provider_slug" json:"provider_slug"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UserID            uuid.UUID          `db:"user_id" json:"user_id"`
+	MinCheckAmountUsd decimal.Decimal    `db:"min_check_amount_usd" json:"min_check_amount_usd"`
 } //	@name	UserAmlSetting
 
 type UserExchange struct {

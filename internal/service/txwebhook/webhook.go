@@ -93,7 +93,16 @@ func (s *Service) checkAMLBlock(ctx context.Context, ev transactions.Transaction
 	if !amlSettings.Enabled || amlSettings.ProviderSlug == nil {
 		return nil, false
 	}
+	if !amlCheckRequired(ev.GetTx().GetAmountUsd(), amlSettings.MinCheckAmountUsd) {
+		return nil, false
+	}
 	return s.amlGate(ctx, ev, amlSettings)
+}
+
+// amlCheckRequired reports whether a deposit of amountUsd reaches the user's AML threshold.
+// A zero threshold means every deposit is checked; a deposit exactly at the threshold is checked.
+func amlCheckRequired(amountUsd, minCheckAmountUsd decimal.Decimal) bool {
+	return !amountUsd.LessThan(minCheckAmountUsd)
 }
 
 func (s *Service) amlGate(ctx context.Context, ev transactions.TransactionEvent, settings *models.UserAmlSetting) (*models.AmlCheck, bool) {

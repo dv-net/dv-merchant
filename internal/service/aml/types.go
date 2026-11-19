@@ -45,6 +45,8 @@ type AutoScoreDepositDTO struct {
 type UpdateAmlSettingsDTO struct {
 	Enabled      bool
 	ProviderSlug *models.AMLSlug
+	// MinCheckAmountUsd - deposits below this USD amount skip the AML check; nil keeps the stored value
+	MinCheckAmountUsd *decimal.Decimal
 }
 
 type RiskRuleDTO struct {

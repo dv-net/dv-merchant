@@ -8,14 +8,16 @@ import (
 )
 
 type AmlSettingsResponse struct {
-	Enabled      bool            `json:"enabled"`
-	ProviderSlug *models.AMLSlug `json:"provider_slug"`
+	Enabled           bool            `json:"enabled"`
+	ProviderSlug      *models.AMLSlug `json:"provider_slug"`
+	MinCheckAmountUsd decimal.Decimal `json:"min_check_amount_usd"`
 } //	@name	AmlSettingsResponse
 
 func NewAmlSettingsResponse(s *models.UserAmlSetting) AmlSettingsResponse {
 	return AmlSettingsResponse{
-		Enabled:      s.Enabled,
-		ProviderSlug: s.ProviderSlug,
+		Enabled:           s.Enabled,
+		ProviderSlug:      s.ProviderSlug,
+		MinCheckAmountUsd: s.MinCheckAmountUsd,
 	}
 }
 
