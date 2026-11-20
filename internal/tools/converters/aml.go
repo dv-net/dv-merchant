@@ -48,6 +48,19 @@ func GetAMLCheckHistoryResponse(m *storecmn.FindResponseWithFullPagination[*repo
 			Status:      v.Status,
 			Score:       v.Score,
 			RiskLevel:   v.RiskLevel,
+			TxHash:      v.TxHash,
+			CurrencyID:  v.TxCurrencyID,
+			Email:       v.CustomerEmail,
+		}
+
+		if v.TransactionID.Valid {
+			item.TransactionID = new(v.TransactionID.UUID)
+		}
+		if v.TxAmount.Valid {
+			item.Amount = new(v.TxAmount.Decimal)
+		}
+		if v.TxAmountUsd.Valid {
+			item.AmountUsd = new(v.TxAmountUsd.Decimal)
 		}
 
 		if v.CreatedAt.Valid {

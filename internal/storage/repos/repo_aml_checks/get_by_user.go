@@ -13,18 +13,25 @@ import (
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
+	"github.com/shopspring/decimal"
 )
 
 type GetByUserParams struct {
 	storecmn.CommonFindParams
 	ServiceSlug *models.AMLSlug
+	Status      *models.AMLCheckStatus
 	DateFrom    *time.Time
 	DateTo      *time.Time
 }
 
 type AmlCheckDTO struct {
 	models.AmlCheck
-	Slug models.AMLSlug `json:"slug" db:"slug"`
+	Slug          models.AMLSlug      `json:"slug" db:"slug"`
+	TxHash        *string             `json:"tx_hash" db:"tx_hash"`
+	TxAmount      decimal.NullDecimal `json:"tx_amount" db:"tx_amount"`
+	TxAmountUsd   decimal.NullDecimal `json:"tx_amount_usd" db:"tx_amount_usd"`
+	TxCurrencyID  *string             `json:"tx_currency_id" db:"tx_currency_id"`
+	CustomerEmail *string             `json:"customer_email" db:"customer_email"`
 }
 
 type FindRow struct {
@@ -39,21 +46,21 @@ func (s *CustomQuerier) GetByUser(ctx context.Context, usr *models.User, params 
 	sb.Select(
 		`aml_checks.*`,
 		`aml_services.slug`,
+		`transactions.tx_hash AS tx_hash`,
+		`transactions.amount AS tx_amount`,
+		`transactions.amount_usd AS tx_amount_usd`,
+		`transactions.currency_id AS tx_currency_id`,
+		`wallets.email AS customer_email`,
 	).
 		From("aml_checks").
 		JoinWithOption("INNER", "aml_services", "aml_services.id = aml_checks.service_id").
-		Where(sb.Equal("aml_checks.user_id", usr.ID.String()))
+		JoinWithOption("LEFT", "transactions", "transactions.id = aml_checks.transaction_id").
+		JoinWithOption("LEFT", "wallets", "wallets.id = transactions.wallet_id")
 
 	countSb := sqlbuilder.PostgreSQL.NewSelectBuilder()
 	countSb.Select("COUNT(aml_checks.id)").
 		From("aml_checks").
-		JoinWithOption("INNER", "aml_services", "aml_services.id = aml_checks.service_id").
-		Where(countSb.Equal("aml_checks.user_id", usr.ID.String()))
-
-	if params.ServiceSlug != nil {
-		sb.Where(sb.Equal("aml_services.slug", params.ServiceSlug.String()))
-		countSb.Where(countSb.Equal("aml_services.slug", params.ServiceSlug.String()))
-	}
+		JoinWithOption("INNER", "aml_services", "aml_services.id = aml_checks.service_id")
 
 	timezone := time.UTC.String()
 	if usr.Location != "" {
@@ -62,17 +69,29 @@ func (s *CustomQuerier) GetByUser(ctx context.Context, usr *models.User, params 
 		}
 	}
 
-	if params.DateFrom != nil {
-		from := params.DateFrom.UTC().Format(time.RFC3339)
-		sb.Where(sb.GreaterEqualThan(fmt.Sprintf("aml_checks.created_at AT TIME ZONE '%s'", timezone), from))
-		countSb.Where(countSb.GreaterEqualThan("aml_checks.created_at", from))
+	// the same filters for the select and count queries, so the pagination matches the items
+	for _, b := range []*sqlbuilder.SelectBuilder{sb, countSb} {
+		b.Where(b.Equal("aml_checks.user_id", usr.ID.String()))
+
+		if params.ServiceSlug != nil {
+			b.Where(b.Equal("aml_services.slug", params.ServiceSlug.String()))
+		}
+
+		if params.Status != nil {
+			b.Where(b.Equal("aml_checks.status", params.Status.String()))
+		}
+
+		if params.DateFrom != nil {
+			from := params.DateFrom.UTC().Format(time.RFC3339Nano)
+			b.Where(b.GreaterEqualThan(fmt.Sprintf("aml_checks.created_at AT TIME ZONE '%s'", timezone), from))
+		}
+
+		if params.DateTo != nil {
+			to := params.DateTo.UTC().Format(time.RFC3339Nano)
+			b.Where(b.LessEqualThan(fmt.Sprintf("aml_checks.created_at AT TIME ZONE '%s'", timezone), to))
+		}
 	}
 
-	if params.DateTo != nil {
-		to := params.DateTo.UTC().Format(time.RFC3339)
-		sb.Where(sb.LessEqualThan(fmt.Sprintf("aml_checks.created_at AT TIME ZONE '%s'", timezone), to))
-		countSb.Where(countSb.LessEqualThan("aml_checks.created_at", to))
-	}
 	limit, offset, err := dbutils.Pagination(params.Page, params.PageSize, dbutils.WithMaxLimit(maxLimit))
 	if err != nil {
 		return nil, err

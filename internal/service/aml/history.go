@@ -17,6 +17,7 @@ import (
 
 type ChecksWithHistoryDTO struct {
 	Slug           *models.AMLSlug `json:"slug"`
+	Status         *models.AMLCheckStatus
 	DateFrom       *string
 	DateTo         *string
 	Page, PageSize *uint32
@@ -47,9 +48,14 @@ func (s *Service) GetCheckHistory(ctx context.Context, usr *models.User, dto Che
 
 	var dateTo *time.Time
 	if dto.DateTo != nil {
-		date, err := util.ParseDate(*dto.DateFrom)
+		date, err := util.ParseDate(*dto.DateTo)
 		if err != nil {
 			return nil, err
+		}
+
+		// a date without time includes the whole day
+		if len(*dto.DateTo) == len(time.DateOnly) {
+			date = new(date.AddDate(0, 0, 1).Add(-time.Microsecond))
 		}
 
 		dateTo = date
@@ -57,6 +63,7 @@ func (s *Service) GetCheckHistory(ctx context.Context, usr *models.User, dto Che
 
 	return s.st.AmlChecks().GetByUser(ctx, usr, repo_aml_checks.GetByUserParams{
 		ServiceSlug:      dto.Slug,
+		Status:           dto.Status,
 		DateFrom:         dateFrom,
 		DateTo:           dateTo,
 		CommonFindParams: *commonParams,
