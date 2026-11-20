@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- feat: `GET /v1/dv-admin/aml/history` returns the checked transaction (`transaction_id`, `tx_hash`, `amount`, `amount_usd`, `currency_id`) and the payer `email` from the wallet; new `status` filter (`pending`, `success`, `failed`)
+- fix: `date_to` filter of `GET /v1/dv-admin/aml/history` used the `date_from` value; a date without time now includes the whole day, the total count of the pagination applies the same date filters as the items
 - feat: minimum deposit amount for the AML check: user AML setting `min_check_amount_usd` (`GET`/`POST /v1/dv-admin/aml/settings`); deposits with a smaller USD amount are not sent to the AML provider, a deposit exactly at the threshold is checked; `0` (default) checks every deposit, omitting the field in `POST` keeps the current value
 - fix: removing a user setting deleted the root setting and the same setting of every user and store; deletion now matches name, model id and model type, and root settings are removed only for the root
 - docs: add `from_address` to `ExternalRefundEstimateResponse` in the admin and external API docs

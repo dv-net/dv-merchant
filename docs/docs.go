@@ -358,6 +358,21 @@ const docTemplate = `{
                         ],
                         "name": "provider_slug",
                         "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "pending",
+                            "success",
+                            "failed"
+                        ],
+                        "type": "string",
+                        "x-enum-varnames": [
+                            "AmlCheckStatusPending",
+                            "AmlCheckStatusSuccess",
+                            "AmlCheckStatusFailed"
+                        ],
+                        "name": "status",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -12108,7 +12123,19 @@ const docTemplate = `{
         "AmlHistoryResponse": {
             "type": "object",
             "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "amount_usd": {
+                    "type": "number"
+                },
                 "created_at": {
+                    "type": "string"
+                },
+                "currency_id": {
+                    "type": "string"
+                },
+                "email": {
                     "type": "string"
                 },
                 "external_id": {
@@ -12137,6 +12164,12 @@ const docTemplate = `{
                 },
                 "status": {
                     "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.AMLCheckStatus"
+                },
+                "transaction_id": {
+                    "type": "string"
+                },
+                "tx_hash": {
+                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"

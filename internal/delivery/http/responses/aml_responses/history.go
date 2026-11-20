@@ -18,6 +18,12 @@ type AmlHistoryResponse struct {
 	Status         models.AMLCheckStatus `json:"status"`
 	Score          decimal.Decimal       `json:"score"`
 	RiskLevel      *models.AmlRiskLevel  `json:"risk_level"`
+	TransactionID  *uuid.UUID            `json:"transaction_id"`
+	TxHash         *string               `json:"tx_hash"`
+	Amount         *decimal.Decimal      `json:"amount"`
+	AmountUsd      *decimal.Decimal      `json:"amount_usd"`
+	CurrencyID     *string               `json:"currency_id"`
+	Email          *string               `json:"email"`
 	CreatedAt      *time.Time            `json:"created_at"`
 	UpdatedAt      *time.Time            `json:"updated_at"`
 	RequestHistory []CheckHistory        `json:"request_history"`
