@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix: webhooks no longer go to private, loopback, link-local and other reserved IPs (SSRF guard, checked on every dial incl. redirects and DNS rebinding; env proxy is ignored); new config `web_hook.allow_private_networks` / `MERCHANT_WEB_HOOK_ALLOW_PRIVATE_NETWORKS` (default `false`) to turn it off
 - fix: store `return_url` / `success_url` and processing initialize `host` must be http(s) URLs
 - chore: bump `email-template` to v0.1.8
+- chore: bump frontend-for-rc
 
 ## [0.9.32]
 - bump frontend
