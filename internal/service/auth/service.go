@@ -33,7 +33,7 @@ type ClientInfo struct {
 	UserAgent string // User-Agent header from the client
 }
 
-type IAuth interface {
+type IAuth interface { //nolint:interfacebloat
 	RegisterUser(ctx context.Context, dto *user.CreateUserDTO) (*user.RegisterUserDTO, error)
 	Auth(ctx context.Context, dto auth_request.AuthRequest) (*Token, error)
 	GetUserByToken(ctx context.Context, hashedToken string) (*models.User, error)
