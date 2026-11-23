@@ -15,6 +15,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/service/currconv"
 	"github.com/dv-net/dv-merchant/internal/service/exrate"
 	"github.com/dv-net/dv-merchant/internal/service/processing"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_stores"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_wallet_addresses"
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
 	addressesv2 "github.com/dv-net/dv-proto/gen/go/eproxy/addresses/v2"
@@ -54,8 +55,23 @@ func (s *Service) GetWalletBalance(ctx context.Context, dto GetWalletBalanceDTO,
 
 	commonParams.IsAscOrdering = !dto.IsSortByBalance
 
+	// Never trust client-supplied store IDs: keep only stores the caller has access to.
+	if len(dto.StoreIDs) == 0 {
+		return emptyWalletBalanceResult(), nil
+	}
+	allowedStoreIDs, err := s.storage.UserStores().GetStoreIDsByUser(ctx, repo_user_stores.GetStoreIDsByUserParams{
+		UserID:     dto.UserID,
+		StoreUuids: dto.StoreIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("fetch user stores: %w", err)
+	}
+	if len(allowedStoreIDs) == 0 {
+		return emptyWalletBalanceResult(), nil
+	}
+
 	params := repo_wallet_addresses.FindParams{
-		StoreIDs:         dto.StoreIDs,
+		StoreIDs:         allowedStoreIDs,
 		CommonFindParams: *commonParams,
 		CurrencyID:       dto.CurrencyID,
 		Amount:           dto.Amount,
@@ -96,6 +112,12 @@ func (s *Service) GetWalletBalance(ctx context.Context, dto GetWalletBalanceDTO,
 		Items:      addresses,
 		Pagination: wallets.Pagination,
 	}, nil
+}
+
+func emptyWalletBalanceResult() *storecmn.FindResponseWithFullPagination[*models.WalletWithUSDBalance] {
+	return &storecmn.FindResponseWithFullPagination[*models.WalletWithUSDBalance]{
+		Items: []*models.WalletWithUSDBalance{},
+	}
 }
 
 func (s *Service) GetHotWalletsTotalBalance(ctx context.Context, user *models.User) (*AddressesTotalBalance, error) {

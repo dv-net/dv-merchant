@@ -18,6 +18,7 @@ import (
 	"github.com/dv-net/dv-processing/pkg/avalidator"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/samber/lo"
 )
 
@@ -352,11 +353,21 @@ func (s *service) CreateWithdrawalFromProcessing(ctx context.Context, dto Create
 	}
 	withdrawal, err := s.storage.WithdrawalsFromProcessing().Create(ctx, createParams)
 	if err != nil {
+		// A concurrent request with the same request_id won the race (partial unique index).
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation && pgErr.ConstraintName == queuedRequestIDUniqueIndex {
+			return nil, ErrWithdrawFromProcessingDuplicateRequestID
+		}
 		return nil, fmt.Errorf("withdrawal creation: %w", err)
 	}
 
 	return withdrawal, nil
 }
+
+const (
+	pgUniqueViolation          = "23505"
+	queuedRequestIDUniqueIndex = "withdrawal_from_processing_wallets_request_id_queued_uniq"
+)
 
 func (s *service) DeleteWithdrawalFromProcessing(ctx context.Context, id uuid.UUID, storeID uuid.UUID) error {
 	wfpw, err := s.storage.WithdrawalsFromProcessing().DeleteWithdrawalFromProcessingWallets(ctx, repo_withdrawal_from_processing_wallets.DeleteWithdrawalFromProcessingWalletsParams{

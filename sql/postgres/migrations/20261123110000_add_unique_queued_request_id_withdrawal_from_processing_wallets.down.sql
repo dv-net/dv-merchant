@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS withdrawal_from_processing_wallets_request_id_queued_uniq;

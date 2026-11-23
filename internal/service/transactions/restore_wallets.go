@@ -12,6 +12,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_stores"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_transactions"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_update_balance_queue"
+	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_user_stores"
 
 	commonv2 "github.com/dv-net/dv-proto/gen/go/eproxy/common/v2"
 	transactionsv2 "github.com/dv-net/dv-proto/gen/go/eproxy/transactions/v2"
@@ -23,8 +24,10 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+var ErrRestoreWalletNotFound = errors.New("wallet not found")
+
 type TxRestorer interface {
-	RestoreWallet(ctx context.Context, ID uuid.UUID) error
+	RestoreWallet(ctx context.Context, userID, ID uuid.UUID) error
 	RestoreAllWallets(ctx context.Context, blockchains []string) error
 }
 
@@ -58,9 +61,12 @@ func (s *Service) RestoreAllWallets(ctx context.Context, blockchains []string) e
 	return nil
 }
 
-func (s *Service) RestoreWallet(ctx context.Context, id uuid.UUID) error {
+func (s *Service) RestoreWallet(ctx context.Context, userID, id uuid.UUID) error {
 	wallet, err := s.storage.WalletAddresses().GetById(ctx, id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrRestoreWalletNotFound
+		}
 		return fmt.Errorf("find wallet: %w", err)
 	}
 
@@ -69,7 +75,21 @@ func (s *Service) RestoreWallet(ctx context.Context, id uuid.UUID) error {
 		CurrencyID: wallet.CurrencyID,
 	})
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrRestoreWalletNotFound
+		}
 		return fmt.Errorf("find store by wallet: %w", err)
+	}
+
+	hasAccess, err := s.storage.UserStores().CheckStoreHasUser(ctx, repo_user_stores.CheckStoreHasUserParams{
+		StoreID: storeRow.ID,
+		UserID:  userID,
+	})
+	if err != nil {
+		return fmt.Errorf("check store access: %w", err)
+	}
+	if !hasAccess {
+		return ErrRestoreWalletNotFound
 	}
 
 	curr, err := s.storage.Currencies().GetByID(ctx, wallet.CurrencyID)

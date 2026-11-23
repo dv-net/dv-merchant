@@ -254,6 +254,36 @@ definitions:
       token:
         type: string
     type: object
+  AuthUserResponse:
+    properties:
+      created_at:
+        format: date-time
+        type: string
+      email:
+        type: string
+      email_verified_at:
+        format: date-time
+        type: string
+      id:
+        format: uuid
+        type: string
+      language:
+        type: string
+      location:
+        type: string
+      processing_owner_id:
+        format: uuid
+        type: string
+      rate_source:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/UserRole'
+        type: array
+      updated_at:
+        format: date-time
+        type: string
+    type: object
   Balance:
     properties:
       native_token:
@@ -967,30 +997,6 @@ definitions:
       value_scale:
         type: string
     type: object
-  ExchangeSlug:
-    enum:
-    - htx
-    - okx
-    - binance
-    - bitget
-    - kucoin
-    - bybit
-    - gate
-    - bingx
-    - mexc
-    - kraken
-    type: string
-    x-enum-varnames:
-    - ExchangeSlugHtx
-    - ExchangeSlugOkx
-    - ExchangeSlugBinance
-    - ExchangeSlugBitget
-    - ExchangeSlugKucoin
-    - ExchangeSlugBybit
-    - ExchangeSlugGateio
-    - ExchangeSlugBingx
-    - ExchangeSlugMexc
-    - ExchangeSlugKraken
   ExchangeTestConnectionRequest:
     properties:
       credentials:
@@ -3451,12 +3457,19 @@ definitions:
       token:
         type: string
     type: object
+  RegisterUserInfo:
+    properties:
+      owner_info:
+        $ref: '#/definitions/RegisterOwnerInfo'
+      user:
+        $ref: '#/definitions/AuthUserResponse'
+    type: object
   RegisterUserResponse:
     properties:
       token:
         type: string
       user_info:
-        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_service_user.RegisterUserDTO'
+        $ref: '#/definitions/RegisterUserInfo'
     type: object
   RejectStoreRequest:
     properties:
@@ -4330,49 +4343,6 @@ definitions:
     required:
     - rules
     type: object
-  User:
-    properties:
-      banned:
-        $ref: '#/definitions/pgtype.Bool'
-      created_at:
-        type: string
-      deleted_at:
-        type: string
-      dvnet_token:
-        type: string
-      email:
-        type: string
-      email_verified_at:
-        type: string
-      exchange_slug:
-        $ref: '#/definitions/ExchangeSlug'
-      id:
-        type: string
-      language:
-        type: string
-      location:
-        type: string
-      password:
-        maxLength: 32
-        minLength: 8
-        type: string
-      processing_owner_id:
-        type: string
-      rate_scale:
-        type: number
-      rate_source:
-        $ref: '#/definitions/github_com_dv-net_dv-merchant_internal_models.RateSource'
-      remember_token:
-        type: string
-      two_fa_reset_expires_at:
-        type: string
-      updated_at:
-        type: string
-    required:
-    - email
-    - location
-    - password
-    type: object
   UserAMLKey:
     properties:
       name:
@@ -4793,8 +4763,6 @@ definitions:
       enabled:
         type: boolean
       min_check_amount_usd:
-        description: MinCheckAmountUsd - deposits below this USD amount are not checked;
-          omit to keep the current value
         type: number
       provider_slug:
         type: string
@@ -5060,30 +5028,6 @@ definitions:
     - MultiWithdrawalModeDisabled
     - MultiWithdrawalModeProcessing
     - MultiWithdrawalModeManual
-  github_com_dv-net_dv-merchant_internal_models.RateSource:
-    enum:
-    - okx
-    - htx
-    - binance
-    - bitget
-    - kucoin
-    - bybit
-    - gate
-    - bingx
-    - mexc
-    - kraken
-    type: string
-    x-enum-varnames:
-    - RateSourceOKX
-    - RateSourceHTX
-    - RateSourceBinance
-    - RateSourceBitGet
-    - RateSourceKucoin
-    - RateSourceBybit
-    - RateSourceGateio
-    - RateSourceBingx
-    - RateSourceMexc
-    - RateSourceKraken
   github_com_dv-net_dv-merchant_internal_models.WalletType:
     enum:
     - cold
@@ -5126,13 +5070,6 @@ definitions:
         type: string
       need_for_update:
         type: boolean
-    type: object
-  github_com_dv-net_dv-merchant_internal_service_user.RegisterUserDTO:
-    properties:
-      owner_info:
-        $ref: '#/definitions/RegisterOwnerInfo'
-      user:
-        $ref: '#/definitions/User'
     type: object
   github_com_dv-net_dv-merchant_internal_service_wallet.EVMData:
     properties:
@@ -5245,13 +5182,6 @@ definitions:
       items:
         $ref: '#/definitions/CabinetItemResponse'
       type: array
-    type: object
-  pgtype.Bool:
-    properties:
-      bool:
-        type: boolean
-      valid:
-        type: boolean
     type: object
   pgtype.Int8:
     properties:
@@ -5864,6 +5794,25 @@ paths:
           schema:
             $ref: '#/definitions/APIErrors'
       summary: Auth user
+      tags:
+      - Auth
+  /v1/dv-admin/auth/logout:
+    post:
+      description: Revoke the bearer token used for this request
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/JSONResponse-string'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/APIErrors'
+      security:
+      - BearerAuth: []
+      summary: Logout
       tags:
       - Auth
   /v1/dv-admin/auth/register:

@@ -259,6 +259,10 @@ func (s *Service) deleteSimpleAddress(ctx context.Context, usr *models.User, id 
 			return fmt.Errorf("failed to get address entry: %w", err)
 		}
 
+		if addressEntry.UserID != usr.ID {
+			return errors.New("address entry does not belong to user")
+		}
+
 		// Delete from address book
 		err = s.storage.UserAddressBook(repos.WithTx(tx)).SoftDelete(ctx, id)
 		if err != nil {

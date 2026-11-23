@@ -51,26 +51,25 @@ func (im *inMemory) Set(_ context.Context, key string, value interface{}, expira
 }
 
 func (im *inMemory) Delete(_ context.Context, key string) error {
+	// Like Redis DEL: removes the key whatever it holds, including counters.
 	im.client.Delete(key)
+	im.counters.Delete(key)
 	return nil
 }
 
 func (im *inMemory) IncrementCounterWithLimit(_ context.Context, key string, counterMax int64, ttl time.Duration) error {
-	res := im.counters.Get(key)
-	if res == nil {
-		counter := &atomic.Int64{}
-		counter.Add(1)
-		im.counters.Set(key, counter, ttl)
-		return nil
+	// GetOrSet + CAS loop: concurrent callers can neither create two counters nor overshoot the limit.
+	item, _ := im.counters.GetOrSet(key, &atomic.Int64{}, ttlcache.WithTTL[string, *atomic.Int64](ttl))
+	val := item.Value()
+	for {
+		cur := val.Load()
+		if cur >= counterMax {
+			return ErrCounterLimitExceeded
+		}
+		if val.CompareAndSwap(cur, cur+1) {
+			return nil
+		}
 	}
-
-	val := res.Value()
-	if val.Load() >= counterMax {
-		return ErrCounterLimitExceeded
-	}
-
-	val.Add(1)
-	return nil
 }
 
 func (im *inMemory) Keys(_ context.Context, pattern string) ([]string, error) {

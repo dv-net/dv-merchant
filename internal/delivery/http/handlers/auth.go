@@ -60,7 +60,7 @@ func (h *Handler) register(c fiber.Ctx) error {
 	}
 
 	return c.JSON(response.OkByData(auth_response.RegisterUserResponse{
-		UserInfo: regInfo,
+		UserInfo: auth_response.NewRegisterUserInfo(regInfo, []models.UserRole{dto.Role}),
 		Token:    token.FullToken,
 	}))
 }
@@ -143,14 +143,51 @@ func (h *Handler) login(c fiber.Ctx) error {
 func (h *Handler) initAuthRoutes(v1 fiber.Router) {
 	auth := v1.Group("/auth")
 	auth.Post("/register",
+		middleware.LimiterMiddleware(registerMaxAttempts, authLimiterWindowSec, middleware.WithSlidingWindow),
 		middleware.TurnstileMiddleware(h.services.TurnstileVerifier),
 		middleware.TimezoneNormalizer(),
 		h.register,
 	)
 	auth.Post("/register-root",
+		middleware.LimiterMiddleware(registerMaxAttempts, authLimiterWindowSec, middleware.WithSlidingWindow),
 		middleware.TurnstileMiddleware(h.services.TurnstileVerifier),
 		middleware.TimezoneNormalizer(),
 		h.registerRoot,
 	)
-	auth.Post("/login", h.login)
+	auth.Post("/login",
+		middleware.LimiterMiddleware(loginMaxAttempts, authLimiterWindowSec, middleware.WithSlidingWindow, middleware.WithIPAndBodyEmailKey),
+		h.login,
+	)
+	auth.Post("/logout", middleware.AuthMiddleware(h.services.AuthService), h.logout)
+}
+
+// Register limits are per client IP, login limits per client IP + email
+// (see http.proxy_header for deployments behind a reverse proxy).
+const (
+	authLimiterWindowSec = 60
+	loginMaxAttempts     = 10
+	registerMaxAttempts  = 5
+)
+
+// logout revokes the current bearer token
+//
+//	@Summary		Logout
+//	@Description	Revoke the bearer token used for this request
+//	@Tags			Auth
+//	@Produce		json
+//	@Success		200	{object}	response.Result[string]
+//	@Failure		401	{object}	apierror.Errors
+//	@Router			/v1/dv-admin/auth/logout [post]
+//	@Security		BearerAuth
+func (h *Handler) logout(c fiber.Ctx) error {
+	tokenHash, ok := c.Locals("token_hash").(string)
+	if !ok || tokenHash == "" {
+		return apierror.New().AddError(fiber.ErrUnauthorized).SetHttpCode(fiber.StatusUnauthorized)
+	}
+
+	if err := h.services.AuthService.Logout(c.Context(), tokenHash); err != nil {
+		return apierror.New().AddError(err).SetHttpCode(fiber.StatusInternalServerError)
+	}
+
+	return c.JSON(response.OkByMessage("ok"))
 }

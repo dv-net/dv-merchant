@@ -6,6 +6,7 @@ import (
 
 	"github.com/dv-net/dv-merchant/internal/delivery/http/request/wallet_request"
 	"github.com/dv-net/dv-merchant/internal/delivery/http/responses/wallet_response"
+	"github.com/dv-net/dv-merchant/internal/delivery/middleware"
 	"github.com/dv-net/dv-merchant/internal/models"
 	"github.com/dv-net/dv-merchant/internal/service/wallet"
 	"github.com/dv-net/dv-merchant/internal/storage/storecmn"
@@ -16,7 +17,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/util"
 
 	// Blank import for swaggen
-	_ "github.com/dv-net/dv-merchant/internal/service/transactions"
+	"github.com/dv-net/dv-merchant/internal/service/transactions"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
@@ -223,6 +224,7 @@ func (h *Handler) getWallets(c fiber.Ctx) error {
 	}
 
 	wallets, err := h.services.WalletBalanceService.GetWalletBalance(c.Context(), wallet.GetWalletBalanceDTO{
+		UserID:          usr.ID,
 		Amount:          request.Amount,
 		CurrencyID:      request.CurrencyID,
 		WalletIDs:       request.WalletIDs,
@@ -473,7 +475,7 @@ func (h *Handler) getHotWalletKeys(c fiber.Ctx) error {
 //	@Router			/v1/dv-admin/wallet/restore/{walletId} [POST]
 //	@Security		BearerAuth
 func (h *Handler) restoreTx(c fiber.Ctx) error {
-	_, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
@@ -483,7 +485,10 @@ func (h *Handler) restoreTx(c fiber.Ctx) error {
 		return err
 	}
 
-	if err := h.services.WalletRestorer.RestoreWallet(c.Context(), walletID); err != nil {
+	if err := h.services.WalletRestorer.RestoreWallet(c.Context(), usr.ID, walletID); err != nil {
+		if errors.Is(err, transactions.ErrRestoreWalletNotFound) {
+			return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)
+		}
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusBadRequest)
 	}
 
@@ -556,11 +561,19 @@ func (h *Handler) markIsDirty(c fiber.Ctx) error {
 
 func (h *Handler) initWalletRoutes(v1 fiber.Router) {
 	walletRouter := v1.Group("/wallet")
+
+	// Seed phrase and private key export share one per-user budget: each call is a TOTP guess
+	// against the most sensitive data in the system.
+	secretsExportLimiter := middleware.LimiterMiddleware(
+		secretsExportMaxAttempts, secretsExportWindowSec,
+		middleware.WithSlidingWindow, middleware.WithAuthUserKey,
+	)
+
 	walletRouter.Post("/", h.getWallets)
 	walletRouter.Get("/summary", h.getSummary)
 	walletRouter.Post("/addresses", h.createWalletWithAddresses)
-	walletRouter.Get("/addresses/keys", h.getWalletAddressesKeys)
-	walletRouter.Get("/addresses/seeds", h.getWalletSeeds)
+	walletRouter.Get("/addresses/keys", secretsExportLimiter, h.getWalletAddressesKeys)
+	walletRouter.Get("/addresses/seeds", secretsExportLimiter, h.getWalletSeeds)
 	walletRouter.Post("/addresses/converter", h.addressConverter)
 	walletRouter.Get("/balances/hot", h.getHotWalletBalances)
 	walletRouter.Get("/balances/cold", h.getColdWalletBalances)
@@ -569,5 +582,10 @@ func (h *Handler) initWalletRoutes(v1 fiber.Router) {
 	walletRouter.Post("/addresses/dirty", h.markIsDirty)
 	walletRouter.Post("/restore/:walletId", h.restoreTx)
 	walletRouter.Get("/:searchParam", h.findWalletsWithTransactions)
-	walletRouter.Post("/keys/hot", h.getHotWalletKeys)
+	walletRouter.Post("/keys/hot", secretsExportLimiter, h.getHotWalletKeys)
 }
+
+const (
+	secretsExportWindowSec   = 60
+	secretsExportMaxAttempts = 5
+)
