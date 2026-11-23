@@ -85,18 +85,29 @@ func (rs *redisStorage) Close() error {
 	return rs.client.Close()
 }
 
+// IncrementCounterWithLimit counts a call and returns ErrCounterLimitExceeded once more than
+// counterMax calls happened within ttl (the window starts at the first call).
+//
+// Both commands run in one MULTI/EXEC, so concurrent callers each get a distinct INCR result
+// and cannot all pass the check at once:
+//   - SET NX PX creates the counter with its TTL only if it does not exist yet;
+//   - INCR increments it and keeps the TTL.
+//
+// After the limit is reached the counter keeps growing; that does not change the outcome.
 func (rs *redisStorage) IncrementCounterWithLimit(ctx context.Context, key string, counterMax int64, ttl time.Duration) error {
-	return rs.client.Watch(ctx, func(tx *redis.Tx) error {
-		counter, err := tx.Get(ctx, key).Int64()
-		if errors.Is(err, redis.Nil) {
-			tx.Set(ctx, key, 1, ttl)
-			return nil
-		}
-
-		if counter >= counterMax {
-			return ErrCounterLimitExceeded
-		}
-
-		return tx.Incr(ctx, key).Err()
+	var incr *redis.IntCmd
+	_, err := rs.client.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		pipe.SetNX(ctx, key, 0, ttl)
+		incr = pipe.Incr(ctx, key)
+		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("increment counter: %w", err)
+	}
+
+	if incr.Val() > counterMax {
+		return ErrCounterLimitExceeded
+	}
+
+	return nil
 }

@@ -37,6 +37,7 @@ type IAuth interface {
 	RegisterUser(ctx context.Context, dto *user.CreateUserDTO) (*user.RegisterUserDTO, error)
 	Auth(ctx context.Context, dto auth_request.AuthRequest) (*Token, error)
 	GetUserByToken(ctx context.Context, hashedToken string) (*models.User, error)
+	Logout(ctx context.Context, hashedToken string) error
 	AuthByUser(ctx context.Context, user *models.User) (*Token, error)
 	AuthByWallet(ctx context.Context, w *models.Wallet) (*Token, error)
 	GetWalletByToken(ctx context.Context, hashedToken string) (*models.Wallet, error)
@@ -124,12 +125,13 @@ func (s *Service) Auth(ctx context.Context, dto auth_request.AuthRequest) (*Toke
 		return nil, err
 	}
 
-	var expiresAt *time.Time
-	if !dto.RememberMe {
-		expiresAt = new(time.Now().Add(time.Hour * 24))
+	// Every user token gets an expiry; "remember me" only extends it up to a hard ceiling.
+	ttl := userTokenTTL
+	if dto.RememberMe {
+		ttl = userRememberMeTokenTTL
 	}
 
-	token, err := s.createNewToken(ctx, "user", userForAuth.ID, "AuthToken", expiresAt)
+	token, err := s.createNewToken(ctx, "user", userForAuth.ID, "AuthToken", new(time.Now().Add(ttl)))
 	if err != nil {
 		return nil, err
 	}
@@ -138,8 +140,13 @@ func (s *Service) Auth(ctx context.Context, dto auth_request.AuthRequest) (*Toke
 }
 
 func (s *Service) AuthByUser(ctx context.Context, user *models.User) (*Token, error) {
-	return s.createNewToken(ctx, "user", user.ID, "AuthToken", new(time.Now().Add(time.Hour*24)))
+	return s.createNewToken(ctx, "user", user.ID, "AuthToken", new(time.Now().Add(userTokenTTL)))
 }
+
+const (
+	userTokenTTL           = 24 * time.Hour
+	userRememberMeTokenTTL = 30 * 24 * time.Hour
+)
 
 func (s *Service) GetUserByToken(ctx context.Context, hashedToken string) (*models.User, error) {
 	token, err := s.resolveToken(ctx, hashedToken)
@@ -152,6 +159,23 @@ func (s *Service) GetUserByToken(ctx context.Context, hashedToken string) (*mode
 		return nil, errors.New("user not found")
 	}
 	return u, nil
+}
+
+// Logout revokes the presented token. An already missing or expired token is not an error.
+func (s *Service) Logout(ctx context.Context, hashedToken string) error {
+	token, err := s.storage.PersonalAccessToken().GetByToken(ctx, hashedToken)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		return fmt.Errorf("fetch token: %w", err)
+	}
+
+	if err := s.storage.PersonalAccessToken().Delete(ctx, token.ID); err != nil {
+		return fmt.Errorf("delete token: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) AuthByWallet(ctx context.Context, w *models.Wallet) (*Token, error) {

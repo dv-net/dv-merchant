@@ -40,6 +40,7 @@ type GetProcessingWalletsDTO struct {
 }
 
 type GetWalletBalanceDTO struct {
+	UserID          uuid.UUID
 	Amount          *decimal.Decimal
 	CurrencyID      *string
 	WalletIDs       []*uuid.UUID

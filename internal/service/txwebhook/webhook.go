@@ -387,6 +387,14 @@ func (s *Service) SendMockWebhook(ctx context.Context, user *models.User, whID u
 		return webhook.Result{}, fmt.Errorf("fetch store webhook: %w", err)
 	}
 
+	hasAccess, err := s.storeService.CheckUserHasAccess(ctx, user.ID, wh.StoreID)
+	if err != nil {
+		return webhook.Result{}, fmt.Errorf("check user access: %w", err)
+	}
+	if !hasAccess {
+		return webhook.Result{}, store.ErrUserHasNoAccess
+	}
+
 	mockTxData, err := s.prepareMockTransactionDataForWhTest(whType, *wh, user.ID)
 	if err != nil {
 		return webhook.Result{}, fmt.Errorf("prepare mock transaction data for wh test: %w", err)

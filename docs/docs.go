@@ -923,6 +923,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/dv-admin/auth/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Revoke the bearer token used for this request",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Logout",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/JSONResponse-string"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/APIErrors"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/dv-admin/auth/register": {
             "post": {
                 "description": "Register a new user",
@@ -12279,6 +12310,49 @@ const docTemplate = `{
                 }
             }
         },
+        "AuthUserResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "email_verified_at": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "processing_owner_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "rate_source": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/UserRole"
+                    }
+                },
+                "updated_at": {
+                    "type": "string",
+                    "format": "date-time"
+                }
+            }
+        },
         "Balance": {
             "type": "object",
             "properties": {
@@ -13325,33 +13399,6 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
-        },
-        "ExchangeSlug": {
-            "type": "string",
-            "enum": [
-                "htx",
-                "okx",
-                "binance",
-                "bitget",
-                "kucoin",
-                "bybit",
-                "gate",
-                "bingx",
-                "mexc",
-                "kraken"
-            ],
-            "x-enum-varnames": [
-                "ExchangeSlugHtx",
-                "ExchangeSlugOkx",
-                "ExchangeSlugBinance",
-                "ExchangeSlugBitget",
-                "ExchangeSlugKucoin",
-                "ExchangeSlugBybit",
-                "ExchangeSlugGateio",
-                "ExchangeSlugBingx",
-                "ExchangeSlugMexc",
-                "ExchangeSlugKraken"
-            ]
         },
         "ExchangeTestConnectionRequest": {
             "type": "object",
@@ -17049,6 +17096,17 @@ const docTemplate = `{
                 }
             }
         },
+        "RegisterUserInfo": {
+            "type": "object",
+            "properties": {
+                "owner_info": {
+                    "$ref": "#/definitions/RegisterOwnerInfo"
+                },
+                "user": {
+                    "$ref": "#/definitions/AuthUserResponse"
+                }
+            }
+        },
         "RegisterUserResponse": {
             "type": "object",
             "properties": {
@@ -17056,7 +17114,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_info": {
-                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_service_user.RegisterUserDTO"
+                    "$ref": "#/definitions/RegisterUserInfo"
                 }
             }
         },
@@ -18345,69 +18403,6 @@ const docTemplate = `{
                 }
             }
         },
-        "User": {
-            "type": "object",
-            "required": [
-                "email",
-                "location",
-                "password"
-            ],
-            "properties": {
-                "banned": {
-                    "$ref": "#/definitions/pgtype.Bool"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "deleted_at": {
-                    "type": "string"
-                },
-                "dvnet_token": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "email_verified_at": {
-                    "type": "string"
-                },
-                "exchange_slug": {
-                    "$ref": "#/definitions/ExchangeSlug"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "language": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string",
-                    "maxLength": 32,
-                    "minLength": 8
-                },
-                "processing_owner_id": {
-                    "type": "string"
-                },
-                "rate_scale": {
-                    "type": "number"
-                },
-                "rate_source": {
-                    "$ref": "#/definitions/github_com_dv-net_dv-merchant_internal_models.RateSource"
-                },
-                "remember_token": {
-                    "type": "string"
-                },
-                "two_fa_reset_expires_at": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
         "UserAMLKey": {
             "type": "object",
             "required": [
@@ -19029,7 +19024,6 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "min_check_amount_usd": {
-                    "description": "MinCheckAmountUsd - deposits below this USD amount are not checked; omit to keep the current value",
                     "type": "number"
                 },
                 "provider_slug": {
@@ -19418,33 +19412,6 @@ const docTemplate = `{
                 "MultiWithdrawalModeManual"
             ]
         },
-        "github_com_dv-net_dv-merchant_internal_models.RateSource": {
-            "type": "string",
-            "enum": [
-                "okx",
-                "htx",
-                "binance",
-                "bitget",
-                "kucoin",
-                "bybit",
-                "gate",
-                "bingx",
-                "mexc",
-                "kraken"
-            ],
-            "x-enum-varnames": [
-                "RateSourceOKX",
-                "RateSourceHTX",
-                "RateSourceBinance",
-                "RateSourceBitGet",
-                "RateSourceKucoin",
-                "RateSourceBybit",
-                "RateSourceGateio",
-                "RateSourceBingx",
-                "RateSourceMexc",
-                "RateSourceKraken"
-            ]
-        },
         "github_com_dv-net_dv-merchant_internal_models.WalletType": {
             "type": "string",
             "enum": [
@@ -19506,17 +19473,6 @@ const docTemplate = `{
                 },
                 "need_for_update": {
                     "type": "boolean"
-                }
-            }
-        },
-        "github_com_dv-net_dv-merchant_internal_service_user.RegisterUserDTO": {
-            "type": "object",
-            "properties": {
-                "owner_info": {
-                    "$ref": "#/definitions/RegisterOwnerInfo"
-                },
-                "user": {
-                    "$ref": "#/definitions/User"
                 }
             }
         },
@@ -19684,17 +19640,6 @@ const docTemplate = `{
                 "type": "array",
                 "items": {
                     "$ref": "#/definitions/CabinetItemResponse"
-                }
-            }
-        },
-        "pgtype.Bool": {
-            "type": "object",
-            "properties": {
-                "bool": {
-                    "type": "boolean"
-                },
-                "valid": {
-                    "type": "boolean"
                 }
             }
         },

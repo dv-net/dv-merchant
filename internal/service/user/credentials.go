@@ -14,6 +14,7 @@ import (
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_personal_access_tokens"
 	"github.com/dv-net/dv-merchant/internal/storage/repos/repo_users"
 	"github.com/dv-net/dv-merchant/internal/tools"
+	"github.com/dv-net/dv-merchant/pkg/otp"
 	"github.com/dv-net/dv-merchant/pkg/pgtypeutils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -22,7 +23,7 @@ import (
 type IUserCredentials interface {
 	InitPasswordReset(ctx context.Context, email string) error
 	ResetPassword(ctx context.Context, dto ResetPasswordDto) error
-	ChangeUserPassword(ctx context.Context, userID uuid.UUID, newPassword string) error
+	ChangeUserPassword(ctx context.Context, userID uuid.UUID, newPassword string, opts ...repos.Option) error
 	ChangePassword(ctx context.Context, user *models.User, d dto.ChangePasswordDTO, currentToken string, opts ...repos.Option) error
 	InitEmailConfirmation(ctx context.Context, usr *models.User) error
 	ConfirmEmail(ctx context.Context, user *models.User, confirmationCode int) error
@@ -171,27 +172,30 @@ func (s *Service) InitPasswordReset(ctx context.Context, email string) error {
 	return nil
 }
 
+var errInvalidResetCode = errors.New("invalid email or code")
+
 func (s *Service) ResetPassword(ctx context.Context, dto ResetPasswordDto) error {
 	return repos.BeginTxFunc(ctx, s.storage.PSQLConn(), pgx.TxOptions{}, func(tx pgx.Tx) error {
-		usr, err := s.storage.Users(repos.WithTx(tx)).GetByEmail(ctx, dto.Email)
-		if err != nil {
-			return errors.New("user not found")
-		}
-
-		if !usr.EmailVerifiedAt.Valid {
-			return errors.New("email not verified")
-		}
-
-		if err = s.otpSvc.VerifyCode(ctx, dto.Code, "", usr.Email); err != nil {
-			s.logger.Warnw("failed to verify email", "error", err)
-			return errors.New("failed to verify email")
-		}
-
+		// Validate input before touching the code, so a typo does not burn a valid code.
 		if dto.NewPassword != dto.ConfirmPassword {
 			return fmt.Errorf("password mismatch")
 		}
 
-		if err = s.ChangeUserPassword(ctx, usr.ID, dto.NewPassword); err != nil {
+		// The same error for unknown email, unverified email and wrong code: no account enumeration.
+		usr, err := s.storage.Users(repos.WithTx(tx)).GetByEmail(ctx, dto.Email)
+		if err != nil || !usr.EmailVerifiedAt.Valid {
+			return errInvalidResetCode
+		}
+
+		if err = s.otpSvc.VerifyCode(ctx, dto.Code, "", usr.Email); err != nil {
+			s.logger.Warnw("failed to verify password reset code", "error", err)
+			if errors.Is(err, otp.ErrTooManyAttempts) {
+				return err
+			}
+			return errInvalidResetCode
+		}
+
+		if err = s.ChangeUserPassword(ctx, usr.ID, dto.NewPassword, repos.WithTx(tx)); err != nil {
 			return err
 		}
 
@@ -204,17 +208,27 @@ func (s *Service) ResetPassword(ctx context.Context, dto ResetPasswordDto) error
 	})
 }
 
-func (s *Service) ChangeUserPassword(ctx context.Context, userID uuid.UUID, newPassword string) error {
+// ChangeUserPassword sets a new password without knowing the old one (password reset, console)
+// and revokes every existing auth token of the user, so a stolen session does not survive the reset.
+func (s *Service) ChangeUserPassword(ctx context.Context, userID uuid.UUID, newPassword string, opts ...repos.Option) error {
 	hashPassword, err := tools.HashPassword(newPassword)
 	if err != nil {
 		return fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	if _, err := s.storage.Users().ChangePassword(ctx, repo_users.ChangePasswordParams{
+	if _, err := s.storage.Users(opts...).ChangePassword(ctx, repo_users.ChangePasswordParams{
 		Password: hashPassword,
 		ID:       userID,
 	}); err != nil {
 		return fmt.Errorf("failed to change user password: %w", err)
+	}
+
+	// Empty Token means no token is kept: ClearAllByUser deletes all tokens except the given one.
+	if err := s.storage.PersonalAccessToken(opts...).ClearAllByUser(ctx, repo_personal_access_tokens.ClearAllByUserParams{
+		TokenableID: userID,
+		Token:       "",
+	}); err != nil {
+		return fmt.Errorf("failed to revoke user tokens: %w", err)
 	}
 
 	return nil

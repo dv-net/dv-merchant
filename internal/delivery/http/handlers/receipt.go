@@ -28,7 +28,7 @@ import (
 //	@Router			/v1/dv-admin/receipts/{id} [get]
 //	@Security		BearerAuth
 func (h *Handler) loadReceiptByID(c fiber.Ctx) error {
-	_, err := loadAuthUser(c)
+	usr, err := loadAuthUser(c)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (h *Handler) loadReceiptByID(c fiber.Ctx) error {
 		return err
 	}
 
-	receipt, err := h.services.ReceiptService.GetByID(c.Context(), id)
+	receipt, err := h.services.ReceiptService.GetByIDForUser(c.Context(), usr.ID, id)
 	if err != nil {
 		return apierror.New().AddError(err).SetHttpCode(fiber.StatusNotFound)
 	}

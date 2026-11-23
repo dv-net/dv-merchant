@@ -221,7 +221,7 @@ All previous versions were private/internal and were never published.
 - Transaction stats rework [DV-2747]
 - Fixed minimum withdrawal amount calculation [DV-2792]
 - Take out root setting merchant_pay_form_domain on dictionary [DV-2861]
-- AmlBot risk level conversion fixed [DV-2855](https://mtask.org/issue/DV-2855)
+- AmlBot risk level conversion fixed [DV-2855]
 - Refactoring internal method for make wallet pay form [DV-2869]
 - Change swag annotation for params [DV-2859]
 - Fix bug update use location [DV-2859]
@@ -239,7 +239,7 @@ All previous versions were private/internal and were never published.
 - Relate notification history to stores and users [DV-2919]
 - Added L2 transfer estimation for EVM chains [DV-2820]
 - TG unlink API [DV-1379]
-- Adds anonymous telemetry to collect system information and transfer statistics [DV-2781](https://mtask.org/issue/DV-2781)
+- Adds anonymous telemetry to collect system information and transfer statistics [DV-2781]
 - Prevent application crash on nil order details from exchange [DV-2994]
 - Git tags creation with same commit hash fixed [DV-2557]
 - Traceback enabled by default in systemd [DV-3013]
